@@ -1,5 +1,16 @@
-import mammoth from 'mammoth'
-import { PDFParse } from 'pdf-parse'
+/* eslint-disable @typescript-eslint/no-require-imports */
+// Use require() for CJS packages to avoid Next.js ESM/CJS interop issues.
+// mammoth and pdf-parse are CommonJS — ESM `import` resolves to `.default`
+// which is undefined at runtime, causing silent 500s.
+const mammoth = require('mammoth') as {
+  extractRawText: (input: { buffer: Buffer }) => Promise<{ value: string; messages: unknown[] }>
+}
+
+const { PDFParse } = require('pdf-parse') as {
+  PDFParse: new (options: { data: Uint8Array }) => {
+    getText(): Promise<{ text: string }>
+  }
+}
 
 export async function extractTextFromFile(
   buffer: Buffer,
