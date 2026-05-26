@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Mic,
+  Plus,
+  Upload,
 } from "lucide-react";
 
 interface NavItem {
@@ -33,7 +35,7 @@ const NAV_BOTTOM: NavItem[] = [
 ];
 
 export default function Sidebar() {
-  const { activeSection, setActiveSection, sidebarCollapsed, toggleSidebar } =
+  const { activeSection, setActiveSection, sidebarCollapsed, toggleSidebar, setShowNewPositionFlow, setShowUploadFlow } =
     useAppStore();
 
   const sidebarWidth = sidebarCollapsed ? 64 : 240;
@@ -128,6 +130,92 @@ export default function Sidebar() {
           overflowX: "hidden",
         }}
       >
+        {/* New Position CTA */}
+        <button
+          onClick={() => {
+            setActiveSection("positions");
+            setShowNewPositionFlow(true);
+          }}
+          title={sidebarCollapsed ? "New Position" : undefined}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: sidebarCollapsed ? "center" : "flex-start",
+            gap: 8,
+            padding: sidebarCollapsed ? "9px" : "9px 12px",
+            borderRadius: 8,
+            background: "rgba(14,165,233,0.18)",
+            border: "1px solid rgba(14,165,233,0.30)",
+            color: "#38BDF8",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            transition: "all 0.15s",
+            marginBottom: 10,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(14,165,233,0.28)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(14,165,233,0.18)";
+          }}
+        >
+          <Plus size={16} style={{ flexShrink: 0 }} />
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12, delay: 0.04 }} style={{ whiteSpace: "nowrap" }}>
+                New Position
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+
+        {/* Upload Candidates CTA */}
+        <button
+          onClick={() => {
+            setActiveSection("candidates");
+            setShowUploadFlow(true);
+          }}
+          title={sidebarCollapsed ? "Upload Candidates" : undefined}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: sidebarCollapsed ? "center" : "flex-start",
+            gap: 8,
+            padding: sidebarCollapsed ? "9px" : "9px 12px",
+            borderRadius: 8,
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.70)",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            transition: "all 0.15s",
+            marginBottom: 10,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+            e.currentTarget.style.color = "#fff";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.70)";
+          }}
+        >
+          <Upload size={16} style={{ flexShrink: 0 }} />
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12, delay: 0.04 }} style={{ whiteSpace: "nowrap" }}>
+                Upload Candidates
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+
         {/* Label */}
         <AnimatePresence>
           {!sidebarCollapsed && (

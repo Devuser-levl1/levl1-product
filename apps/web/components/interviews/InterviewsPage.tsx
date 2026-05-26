@@ -3,6 +3,7 @@
 import { useAppStore, Interview } from "@/store/appStore";
 import { Video, Clock, Radio, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { SchedulingOverview, TodayInterviews } from "../candidates/SchedulingAgent";
 
 function formatDateTime(dt: string) {
   const d = new Date(dt);
@@ -208,6 +209,12 @@ export default function InterviewsPage() {
 
   return (
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 28, maxWidth: 1280 }}>
+
+      {/* Scheduling Overview */}
+      <SchedulingOverview />
+
+      {/* Today's interviews */}
+      <TodayInterviews />
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>

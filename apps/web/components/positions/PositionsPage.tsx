@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAppStore, Position } from "@/store/appStore";
 import { Plus, CheckCircle, Clock, Search } from "lucide-react";
-import toast from "react-hot-toast";
+import NewPositionFlow from "./NewPositionFlow";
 
 type FilterTab = "all" | Position["status"];
 
@@ -49,7 +49,7 @@ function ApprovalDot({ approved }: { approved: boolean }) {
 }
 
 export default function PositionsPage() {
-  const { positions } = useAppStore();
+  const { positions, showNewPositionFlow, setShowNewPositionFlow } = useAppStore();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [search, setSearch]       = useState("");
 
@@ -72,6 +72,8 @@ export default function PositionsPage() {
   }, {} as Record<FilterTab, number>);
 
   return (
+    <>
+    {showNewPositionFlow && <NewPositionFlow onClose={() => setShowNewPositionFlow(false)} />}
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1280 }}>
 
       {/* Header */}
@@ -84,7 +86,7 @@ export default function PositionsPage() {
             Manage open roles and track interview progress.
           </p>
         </div>
-        <button className="btn-primary" onClick={() => toast.success("New position form coming soon")}>
+        <button className="btn-primary" onClick={() => setShowNewPositionFlow(true)}>
           <Plus size={16} />
           New Position
         </button>
@@ -284,5 +286,6 @@ export default function PositionsPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
