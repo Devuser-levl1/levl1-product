@@ -65,6 +65,60 @@ export interface PositionSummaryReport {
   questionHealthFlags: Array<{ question: string; recommendation: string }>
 }
 
+/* ── Interview Session ──────────────────────────────────────────── */
+
+export type InterviewPhase =
+  | 'waiting'
+  | 'intro'
+  | 'questioning'
+  | 'listening'
+  | 'processing'
+  | 'speaking'
+  | 'closing'
+  | 'completed'
+
+export interface TranscriptEntry {
+  id: string
+  timestamp: string
+  speaker: 'ai' | 'candidate'
+  text: string
+  questionId?: string
+  type: 'intro' | 'preset' | 'dynamic' | 'followup' | 'transition' | 'closing'
+}
+
+export interface QuestionResponse {
+  questionId: string
+  questionText: string
+  questionType: string
+  isPreset: boolean
+  candidateResponse: string
+  score: number          // 0–100
+  keyPointsCovered: string[]
+  keyPointsMissed: string[]
+  evaluatorNote: string
+  timeSpent: number      // seconds
+}
+
+export interface InterviewSession {
+  interviewId: string
+  candidateId: string
+  positionId: string
+  phase: InterviewPhase
+  startedAt: string
+  elapsedSeconds: number
+  transcript: TranscriptEntry[]
+  questionResponses: QuestionResponse[]
+  codeEditorContent: string
+  codeEditorLanguage: string
+  whiteboardImageUrl?: string
+  runningScore: number
+  currentQuestionIndex: number
+  dynamicQuestionsGenerated: number
+  candidateTabSwitches: number
+}
+
+/* ── Store interface ────────────────────────────────────────────── */
+
 interface AppStore {
   activeSection: NavSection
   setActiveSection: (s: NavSection) => void
@@ -78,12 +132,25 @@ interface AppStore {
   addCandidates: (candidates: Candidate[]) => void
   updateCandidate: (id: string, updates: Partial<Candidate>) => void
   removeCandidate: (id: string) => void
+  updateInterview: (id: string, updates: Partial<Interview>) => void
   addPositionReport: (positionId: string, report: PositionSummaryReport) => void
   showNewPositionFlow: boolean
   setShowNewPositionFlow: (v: boolean) => void
   showUploadFlow: boolean
   setShowUploadFlow: (v: boolean) => void
+  /* Interview session */
+  activeSession: InterviewSession | null
+  setActiveSession: (session: InterviewSession | null) => void
+  updateSessionPhase: (phase: InterviewPhase) => void
+  appendTranscriptEntry: (entry: TranscriptEntry) => void
+  upsertQuestionResponse: (response: QuestionResponse) => void
+  updateSessionScore: (score: number) => void
+  updateSessionCode: (content: string, language: string) => void
+  updateSessionWhiteboard: (url: string) => void
+  incrementTabSwitch: () => void
 }
+
+/* ── Mock data ──────────────────────────────────────────────────── */
 
 const MOCK_POSITIONS: Position[] = [
   { id: 'p1', title: 'Technology Manager — Business Intelligence', company: 'FinEdge Technologies', department: 'Data & Analytics', experienceLevel: '8–12 years', techStack: ['Snowflake', 'dbt', 'Tableau', 'Airflow', 'Python'], status: 'active', interviewsScheduled: 4, interviewsCompleted: 7, createdAt: '2026-05-10', approvals: { techLead: true, hr: true }, interviewDuration: 45, dynamicQuestionIntensity: 'standard' },
@@ -108,6 +175,8 @@ const MOCK_INTERVIEWS: Interview[] = [
   { id: 'i2', candidateId: 'c4', candidateName: 'Karan Mehta', positionId: 'p3', positionTitle: 'Senior Data Engineer', scheduledAt: '2026-05-27T10:00:00', duration: 30, status: 'scheduled', agentOnline: false, candidateJoined: false },
 ]
 
+/* ── Store ──────────────────────────────────────────────────────── */
+
 export const useAppStore = create<AppStore>((set) => ({
   activeSection: 'dashboard',
   setActiveSection: (s) => set({ activeSection: s }),
@@ -123,6 +192,9 @@ export const useAppStore = create<AppStore>((set) => ({
     candidates: state.candidates.map((c) => c.id === id ? { ...c, ...updates } : c),
   })),
   removeCandidate: (id) => set((state) => ({ candidates: state.candidates.filter((c) => c.id !== id) })),
+  updateInterview: (id, updates) => set((state) => ({
+    interviews: state.interviews.map((i) => i.id === id ? { ...i, ...updates } : i),
+  })),
   addPositionReport: (positionId, report) => set((state) => ({
     positionReports: { ...state.positionReports, [positionId]: report },
   })),
@@ -130,4 +202,40 @@ export const useAppStore = create<AppStore>((set) => ({
   setShowNewPositionFlow: (v) => set({ showNewPositionFlow: v }),
   showUploadFlow: false,
   setShowUploadFlow: (v) => set({ showUploadFlow: v }),
+  /* Interview session */
+  activeSession: null,
+  setActiveSession: (session) => set({ activeSession: session }),
+  updateSessionPhase: (phase) => set((state) => ({
+    activeSession: state.activeSession ? { ...state.activeSession, phase } : null,
+  })),
+  appendTranscriptEntry: (entry) => set((state) => ({
+    activeSession: state.activeSession
+      ? { ...state.activeSession, transcript: [...state.activeSession.transcript, entry] }
+      : null,
+  })),
+  upsertQuestionResponse: (response) => set((state) => {
+    if (!state.activeSession) return {}
+    const existing = state.activeSession.questionResponses
+    const idx = existing.findIndex((r) => r.questionId === response.questionId)
+    const updated = idx >= 0
+      ? existing.map((r, i) => (i === idx ? response : r))
+      : [...existing, response]
+    return { activeSession: { ...state.activeSession, questionResponses: updated } }
+  }),
+  updateSessionScore: (score) => set((state) => ({
+    activeSession: state.activeSession ? { ...state.activeSession, runningScore: score } : null,
+  })),
+  updateSessionCode: (content, language) => set((state) => ({
+    activeSession: state.activeSession
+      ? { ...state.activeSession, codeEditorContent: content, codeEditorLanguage: language }
+      : null,
+  })),
+  updateSessionWhiteboard: (url) => set((state) => ({
+    activeSession: state.activeSession ? { ...state.activeSession, whiteboardImageUrl: url } : null,
+  })),
+  incrementTabSwitch: () => set((state) => ({
+    activeSession: state.activeSession
+      ? { ...state.activeSession, candidateTabSwitches: state.activeSession.candidateTabSwitches + 1 }
+      : null,
+  })),
 }))
