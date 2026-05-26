@@ -6,7 +6,7 @@ import {
 import { useAppStore, Candidate } from "@/store/appStore";
 import {
   X, Upload, Clipboard, UserPlus, CheckCircle2,
-  AlertCircle, Loader2, Trash2, Edit3, Check, ChevronRight,
+  AlertCircle, Loader2, Trash2, ChevronRight, ChevronDown, ChevronUp,
   AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -38,13 +38,13 @@ interface ExtractedCandidate {
   educationSummary: string | null;
   extractionConfidence: "high" | "medium" | "low";
   missingFields: string[];
-  // editing state
+  // state
   assignedPositionId: string;
   selected: boolean;
   isDuplicate?: boolean;
   duplicateInfo?: string;
-  // inline editing
-  editing: boolean;
+  rawText?: string;
+  rawTextOpen?: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -74,10 +74,10 @@ const INPUT_STYLE: React.CSSProperties = {
   outline: "none", width: "100%",
 };
 
-const SELECT_STYLE: React.CSSProperties = {
-  ...INPUT_STYLE,
-  cursor: "pointer",
-};
+const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: "pointer" };
+
+// Grid template shared between header + rows
+const COLS = "32px 1.8fr 1.3fr 0.75fr 0.9fr 1.1fr 68px 1.4fr 60px";
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function CandidateUploadFlow({ onClose }: { onClose: () => void }) {
@@ -88,25 +88,25 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
   const [tab, setTab] = useState<UploadTab>("upload");
 
   // File upload state
-  const [files,       setFiles]       = useState<FileItem[]>([]);
-  const [isDragOver,  setIsDragOver]  = useState(false);
-  const fileInputRef                  = useRef<HTMLInputElement>(null);
+  const [files,      setFiles]      = useState<FileItem[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef                = useRef<HTMLInputElement>(null);
 
   // Paste tab state
-  const [pasteText,   setPasteText]   = useState("");
-  const [pasteName,   setPasteName]   = useState("");
+  const [pasteText, setPasteText] = useState("");
+  const [pasteName, setPasteName] = useState("");
 
   // Manual tab state
-  const [manualName,   setManualName]   = useState("");
-  const [manualEmail,  setManualEmail]  = useState("");
-  const [manualPhone,  setManualPhone]  = useState("");
+  const [manualName,     setManualName]     = useState("");
+  const [manualEmail,    setManualEmail]    = useState("");
+  const [manualPhone,    setManualPhone]    = useState("");
   const [manualLinkedIn, setManualLinkedIn] = useState("");
-  const [manualYoe,    setManualYoe]    = useState("");
-  const [manualPos,    setManualPos]    = useState(defaultPositionId);
+  const [manualYoe,      setManualYoe]      = useState("");
+  const [manualPos,      setManualPos]      = useState(defaultPositionId);
 
   // Extraction results
-  const [extracted,   setExtracted]   = useState<ExtractedCandidate[]>([]);
-  const [bulkPos,     setBulkPos]     = useState(defaultPositionId);
+  const [extracted, setExtracted] = useState<ExtractedCandidate[]>([]);
+  const [bulkPos,   setBulkPos]   = useState(defaultPositionId);
 
   // Navigation guard
   useEffect(() => {
@@ -123,19 +123,15 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
       .slice(0, 20 - files.length);
 
     const items: FileItem[] = valid.map((f) => ({
-      id:       `${Date.now()}-${Math.random()}`,
-      file:     f,
-      name:     f.name,
-      size:     fmtSize(f.size),
-      status:   "queued",
-      progress: 0,
+      id: `${Date.now()}-${Math.random()}`,
+      file: f, name: f.name, size: fmtSize(f.size),
+      status: "queued", progress: 0,
     }));
     setFiles((prev) => [...prev, ...items]);
   }, [files.length]);
 
   const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
+    e.preventDefault(); setIsDragOver(false);
     addFiles(Array.from(e.dataTransfer.files));
   };
 
@@ -149,39 +145,45 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     if (!email) return { isDuplicate: false, info: "" };
     const existing = candidates.find((c) => c.email.toLowerCase() === email.toLowerCase());
     if (!existing) return { isDuplicate: false, info: "" };
-    return {
-      isDuplicate: true,
-      info: `${existing.name} is already in pipeline for ${existing.positionTitle}`,
-    };
+    return { isDuplicate: true, info: `${existing.name} is already in pipeline for ${existing.positionTitle}` };
   };
 
-  // ── Extract from file (sends real file bytes via FormData) ───────────────
+  // ── Update a single field of an extracted candidate ──────────────────
+  const updateField = <K extends keyof ExtractedCandidate>(
+    tempId: string, field: K, value: ExtractedCandidate[K],
+  ) => setExtracted((prev) => prev.map((x) => x.tempId === tempId ? { ...x, [field]: value } : x));
+
+  // ── Extract from file (sends real file bytes via FormData) ───────────
   const extractFile = async (item: FileItem): Promise<ExtractedCandidate | null> => {
     const formData = new FormData();
     formData.append("file", item.file);
-    // No Content-Type header — browser sets multipart boundary automatically
 
     try {
-      const res = await fetch("/api/extract-resume", {
-        method: "POST",
-        body: formData,
-      });
+      const res  = await fetch("/api/extract-resume", { method: "POST", body: formData });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // API returns flat object (no wrapper)
       const dup = checkDuplicate(data.email);
       return {
-        tempId:                `t-${Date.now()}-${Math.random()}`,
-        fileName:              item.name,
-        ...data,
-        topSkills:             data.topSkills    ?? [],
-        missingFields:         data.missingFields ?? [],
-        assignedPositionId:    defaultPositionId,
-        selected:              true,
-        isDuplicate:           dup.isDuplicate,
-        duplicateInfo:         dup.info,
-        editing:               false,
+        tempId:               `t-${Date.now()}-${Math.random()}`,
+        fileName:             item.name,
+        name:                 data.name             ?? null,
+        email:                data.email            ?? null,
+        phone:                data.phone            ?? null,
+        linkedIn:             data.linkedIn         ?? null,
+        currentTitle:         data.currentTitle     ?? null,
+        currentCompany:       data.currentCompany   ?? null,
+        totalYearsExperience: data.totalYearsExperience ?? null,
+        topSkills:            data.topSkills        ?? [],
+        educationSummary:     data.educationSummary ?? null,
+        extractionConfidence: data.extractionConfidence ?? "low",
+        missingFields:        data.missingFields    ?? [],
+        assignedPositionId:   defaultPositionId,
+        selected:             true,
+        isDuplicate:          dup.isDuplicate,
+        duplicateInfo:        dup.info,
+        rawText:              data.rawExtractedText ?? "",
+        rawTextOpen:          false,
       };
     } catch {
       return null;
@@ -200,11 +202,11 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
       topSkills: [], educationSummary: null,
       extractionConfidence: "low", missingFields: [],
       assignedPositionId: defaultPositionId, selected: true,
-      editing: false,
+      rawText: pasteText, rawTextOpen: false,
     }]);
 
     try {
-      const res = await fetch("/api/extract-resume", {
+      const res  = await fetch("/api/extract-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText: pasteText, fileName: pasteName || "pasted-resume" }),
@@ -212,7 +214,6 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // API returns flat object (no wrapper)
       const dup = checkDuplicate(data.email);
       setExtracted((prev) => prev.map((e) =>
         e.tempId === tempId ? {
@@ -221,10 +222,11 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
           missingFields: data.missingFields ?? [],
           isDuplicate:   dup.isDuplicate,
           duplicateInfo: dup.info,
+          rawText:       pasteText, // keep original paste text for debug
+          rawTextOpen:   false,
         } : e
       ));
-      setPasteText("");
-      setPasteName("");
+      setPasteText(""); setPasteName("");
       toast.success("Resume extracted");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Extraction failed";
@@ -240,9 +242,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
 
     for (const item of queued) {
       setFiles((prev) => prev.map((f) => f.id === item.id ? { ...f, status: "processing", progress: 30 } : f));
-
       const result = await extractFile(item);
-
       if (result) {
         setFiles((prev) => prev.map((f) => f.id === item.id ? { ...f, status: "extracted", progress: 100 } : f));
         setExtracted((prev) => [...prev, result]);
@@ -257,28 +257,28 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     if (!manualName.trim() || !manualEmail.trim()) { toast.error("Name and email are required"); return; }
     const dup = checkDuplicate(manualEmail);
     setExtracted((prev) => [...prev, {
-      tempId:                `manual-${Date.now()}`,
-      fileName:              "Manual Entry",
-      name:                  manualName.trim(),
-      email:                 manualEmail.trim(),
-      phone:                 manualPhone.trim() || null,
-      linkedIn:              manualLinkedIn.trim() || null,
-      currentTitle:          null,
-      currentCompany:        null,
-      totalYearsExperience:  manualYoe ? Number(manualYoe) : null,
-      topSkills:             [],
-      educationSummary:      null,
-      extractionConfidence:  "high",
-      missingFields:         [],
-      assignedPositionId:    manualPos,
-      selected:              true,
-      isDuplicate:           dup.isDuplicate,
-      duplicateInfo:         dup.info,
-      editing:               false,
+      tempId:               `manual-${Date.now()}`,
+      fileName:             "Manual Entry",
+      name:                 manualName.trim(),
+      email:                manualEmail.trim(),
+      phone:                manualPhone.trim() || null,
+      linkedIn:             manualLinkedIn.trim() || null,
+      currentTitle:         null,
+      currentCompany:       null,
+      totalYearsExperience: manualYoe ? Number(manualYoe) : null,
+      topSkills:            [],
+      educationSummary:     null,
+      extractionConfidence: "high",
+      missingFields:        [],
+      assignedPositionId:   manualPos,
+      selected:             true,
+      isDuplicate:          dup.isDuplicate,
+      duplicateInfo:        dup.info,
+      rawText:              undefined,
+      rawTextOpen:          false,
     }]);
     toast.success(`${manualName} added`);
     setManualName(""); setManualEmail(""); setManualPhone(""); setManualLinkedIn(""); setManualYoe("");
-    // Switch to extracted view
   };
 
   // ── Bulk assign position ─────────────────────────────────────────────
@@ -301,20 +301,20 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     const newCandidates: Candidate[] = toAdd.map((e) => {
       const pos = positions.find((p) => p.id === e.assignedPositionId);
       return {
-        id:                    `c-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        name:                  e.name ?? "Unknown",
-        email:                 e.email!,
-        phone:                 e.phone ?? undefined,
-        linkedIn:              e.linkedIn ?? undefined,
-        currentTitle:          e.currentTitle ?? undefined,
-        currentCompany:        e.currentCompany ?? undefined,
-        totalYearsExperience:  e.totalYearsExperience ?? undefined,
-        topSkills:             e.topSkills,
-        educationSummary:      e.educationSummary ?? undefined,
-        positionId:            e.assignedPositionId,
-        positionTitle:         pos?.title ?? "Unknown Position",
-        status:                "pending",
-        uploadedAt:            new Date().toISOString().split("T")[0],
+        id:                   `c-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name:                 e.name ?? "Unknown",
+        email:                e.email!,
+        phone:                e.phone ?? undefined,
+        linkedIn:             e.linkedIn ?? undefined,
+        currentTitle:         e.currentTitle ?? undefined,
+        currentCompany:       e.currentCompany ?? undefined,
+        totalYearsExperience: e.totalYearsExperience ?? undefined,
+        topSkills:            e.topSkills,
+        educationSummary:     e.educationSummary ?? undefined,
+        positionId:           e.assignedPositionId,
+        positionTitle:        pos?.title ?? "Unknown Position",
+        status:               "pending",
+        uploadedAt:           new Date().toISOString().split("T")[0],
       };
     });
 
@@ -334,7 +334,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     }}>
       {/* Slide-over panel */}
       <div style={{
-        width: "min(92vw, 1040px)", height: "100vh",
+        width: "min(92vw, 1060px)", height: "100vh",
         background: "#FAFAFA", display: "flex", flexDirection: "column",
         boxShadow: "-8px 0 32px rgba(15,33,71,0.18)",
         animation: "slideInRight 0.22s ease",
@@ -356,9 +356,9 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
           {/* Tab switcher */}
           <div style={{ display: "flex", gap: 0, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 4, flexShrink: 0 }}>
             {([
-              { key: "upload", icon: Upload,      label: "Upload PDF/Doc"  },
-              { key: "paste",  icon: Clipboard,   label: "Paste Resume"    },
-              { key: "manual", icon: UserPlus,    label: "Manual Entry"    },
+              { key: "upload", icon: Upload,    label: "Upload PDF / Doc" },
+              { key: "paste",  icon: Clipboard, label: "Paste Resume"     },
+              { key: "manual", icon: UserPlus,  label: "Manual Entry"     },
             ] as const).map(({ key, icon: Icon, label }) => (
               <button key={key} onClick={() => setTab(key)}
                 style={{
@@ -402,35 +402,35 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
               {files.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {files.map((f) => {
-                    const isPdf  = f.name.toLowerCase().endsWith(".pdf");
-                    const isDoc  = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
+                    const isPdf    = f.name.toLowerCase().endsWith(".pdf");
+                    const isDoc    = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
                     const fileIcon = isPdf ? "📄" : isDoc ? "📝" : "📎";
                     return (
-                    <div key={f.id} style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
-                    }}>
-                      <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "#0F2147", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
-                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{f.size}</div>
-                        {f.status === "processing" && (
-                          <div style={{ height: 3, background: "#E2E8F0", borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
-                            <div style={{ height: "100%", width: `${f.progress}%`, background: "#0EA5E9", borderRadius: 2, transition: "width 0.4s ease" }} />
-                          </div>
-                        )}
+                      <div key={f.id} style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                        background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
+                      }}>
+                        <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: "#0F2147", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
+                          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{f.size}</div>
+                          {f.status === "processing" && (
+                            <div style={{ height: 3, background: "#E2E8F0", borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
+                              <div style={{ height: "100%", width: `${f.progress}%`, background: "#0EA5E9", borderRadius: 2, transition: "width 0.4s ease" }} />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          {f.status === "queued"     && <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "2px 8px", borderRadius: 100 }}>Queued</span>}
+                          {f.status === "processing" && <Loader2 size={14} color="#0EA5E9" style={{ animation: "spin 1s linear infinite" }} />}
+                          {f.status === "extracted"  && <CheckCircle2 size={14} color="#10B981" />}
+                          {f.status === "error"      && <span title={f.error}><AlertCircle size={14} color="#EF4444" /></span>}
+                          <button onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 2, display: "flex" }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        {f.status === "queued"     && <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "2px 8px", borderRadius: 100 }}>Queued</span>}
-                        {f.status === "processing" && <Loader2 size={14} color="#0EA5E9" style={{ animation: "spin 1s linear infinite" }} />}
-                        {f.status === "extracted"  && <CheckCircle2 size={14} color="#10B981" />}
-                        {f.status === "error"      && <span title={f.error}><AlertCircle size={14} color="#EF4444" /></span>}
-                        <button onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 2, display: "flex" }}>
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  );
+                    );
                   })}
 
                   <button
@@ -478,11 +478,11 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {[
-                  { label: "Full Name *",          val: manualName,     set: setManualName,     type: "text",  ph: "e.g. Rahul Sharma"           },
-                  { label: "Email Address *",       val: manualEmail,    set: setManualEmail,    type: "email", ph: "e.g. rahul@email.com"        },
-                  { label: "Phone",                 val: manualPhone,    set: setManualPhone,    type: "text",  ph: "+91 98765 43210"              },
-                  { label: "LinkedIn URL",          val: manualLinkedIn, set: setManualLinkedIn, type: "url",   ph: "https://linkedin.com/in/…"    },
-                  { label: "Years of Experience",   val: manualYoe,      set: setManualYoe,      type: "number",ph: "e.g. 7"                      },
+                  { label: "Full Name *",         val: manualName,     set: setManualName,     type: "text",   ph: "e.g. Rahul Sharma"        },
+                  { label: "Email Address *",      val: manualEmail,    set: setManualEmail,    type: "email",  ph: "e.g. rahul@email.com"     },
+                  { label: "Phone",                val: manualPhone,    set: setManualPhone,    type: "text",   ph: "+91 98765 43210"           },
+                  { label: "LinkedIn URL",         val: manualLinkedIn, set: setManualLinkedIn, type: "url",    ph: "https://linkedin.com/in/…" },
+                  { label: "Years of Experience",  val: manualYoe,      set: setManualYoe,      type: "number", ph: "e.g. 7"                   },
                 ].map(({ label, val, set, type, ph }) => (
                   <div key={label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
@@ -522,117 +522,162 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
 
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
                 {/* Table header */}
-                <div style={{ display: "grid", gridTemplateColumns: "32px 1.8fr 1.4fr 0.9fr 0.8fr 1.2fr 80px 1.4fr 80px", padding: "10px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                  {["", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Confidence", "Position", ""].map((h, i) => (
+                <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "10px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                  {["", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Conf.", "Position", ""].map((h, i) => (
                     <div key={i} style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
                   ))}
                 </div>
 
+                {/* Rows — each wrapped in flex-col to allow collapsible section */}
                 {extracted.map((e, idx) => {
-                  const pos = positions.find((p) => p.id === e.assignedPositionId);
+                  const pos         = positions.find((p) => p.id === e.assignedPositionId);
                   const needsVerify = e.extractionConfidence !== "high" || e.missingFields.length > 0;
+                  const isLast      = idx === extracted.length - 1;
 
                   return (
-                    <div key={e.tempId} style={{
-                      display: "grid", gridTemplateColumns: "32px 1.8fr 1.4fr 0.9fr 0.8fr 1.2fr 80px 1.4fr 80px",
-                      alignItems: "center", padding: "12px 16px",
-                      borderBottom: idx < extracted.length - 1 ? "1px solid #F1F5F9" : "none",
-                      background: e.isDuplicate ? "rgba(239,68,68,0.03)" : needsVerify ? "rgba(245,158,11,0.03)" : "transparent",
-                    }}>
-                      {/* Checkbox */}
-                      <div>
-                        <input
-                          type="checkbox" checked={e.selected && !e.isDuplicate}
-                          disabled={e.isDuplicate}
-                          onChange={() => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, selected: !x.selected } : x))}
-                          style={{ cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: "#0EA5E9" }}
-                        />
+                    <div key={e.tempId} style={{ borderBottom: !isLast ? "1px solid #F1F5F9" : "none" }}>
+                      {/* ── Data row ── */}
+                      <div style={{
+                        display: "grid", gridTemplateColumns: COLS,
+                        alignItems: "start", padding: "12px 16px",
+                        background: e.isDuplicate ? "rgba(239,68,68,0.03)" : needsVerify ? "rgba(245,158,11,0.03)" : "transparent",
+                      }}>
+
+                        {/* Checkbox */}
+                        <div style={{ paddingTop: 7 }}>
+                          <input
+                            type="checkbox" checked={e.selected && !e.isDuplicate}
+                            disabled={e.isDuplicate}
+                            onChange={() => updateField(e.tempId, "selected", !e.selected)}
+                            style={{ cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: "#0EA5E9" }}
+                          />
+                        </div>
+
+                        {/* Name / email — always editable */}
+                        <div style={{ paddingRight: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                          <input
+                            style={INPUT_STYLE}
+                            value={e.name ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "name", ev.target.value)}
+                            placeholder="Full name"
+                          />
+                          <input
+                            style={{ ...INPUT_STYLE, borderColor: !e.email ? "#FCA5A5" : "#E2E8F0" }}
+                            value={e.email ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "email", ev.target.value)}
+                            placeholder="Email *"
+                          />
+                          {!e.email && (
+                            <div style={{ fontSize: 10, color: "#EF4444", display: "flex", alignItems: "center", gap: 3 }}>
+                              <AlertTriangle size={9} /> Required
+                            </div>
+                          )}
+                          {e.isDuplicate && (
+                            <div style={{ fontSize: 10, color: "#DC2626", display: "flex", alignItems: "center", gap: 3 }}>
+                              <AlertCircle size={9} /> {e.duplicateInfo}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Current role — always editable */}
+                        <div style={{ paddingRight: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                          <input
+                            style={INPUT_STYLE}
+                            value={e.currentTitle ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "currentTitle", ev.target.value)}
+                            placeholder="Job title"
+                          />
+                          <input
+                            style={INPUT_STYLE}
+                            value={e.currentCompany ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "currentCompany", ev.target.value)}
+                            placeholder="Company"
+                          />
+                        </div>
+
+                        {/* Years exp — always editable */}
+                        <div>
+                          <input
+                            style={INPUT_STYLE}
+                            type="number"
+                            value={e.totalYearsExperience ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "totalYearsExperience", ev.target.value ? Number(ev.target.value) : null)}
+                            placeholder="Yrs"
+                          />
+                        </div>
+
+                        {/* Phone — always editable */}
+                        <div>
+                          <input
+                            style={INPUT_STYLE}
+                            value={e.phone ?? ""}
+                            onChange={(ev) => updateField(e.tempId, "phone", ev.target.value || null)}
+                            placeholder="Phone"
+                          />
+                        </div>
+
+                        {/* Skills (display only — limited space) */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignContent: "flex-start", paddingTop: 4 }}>
+                          {e.topSkills.slice(0, 3).map((s) => (
+                            <span key={s} style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: 4, background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" }}>{s}</span>
+                          ))}
+                          {e.topSkills.length > 3 && <span style={{ fontSize: 10, color: "#94A3B8" }}>+{e.topSkills.length - 3}</span>}
+                        </div>
+
+                        {/* Confidence */}
+                        <div style={{ paddingTop: 4 }}><ConfidenceBadge level={e.extractionConfidence} /></div>
+
+                        {/* Position */}
+                        <div>
+                          <select
+                            value={e.assignedPositionId}
+                            onChange={(ev) => updateField(e.tempId, "assignedPositionId", ev.target.value)}
+                            style={SELECT_STYLE}
+                          >
+                            {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title.length > 22 ? p.title.slice(0, 22) + "…" : p.title}</option>)}
+                            {activePositions.length === 0 && <option value="">No active positions</option>}
+                          </select>
+                          {pos?.status !== "active" && pos && (
+                            <div style={{ fontSize: 10, color: "#EF4444", marginTop: 3 }}>Position not active</div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {/* Toggle raw text */}
+                          <button
+                            onClick={() => updateField(e.tempId, "rawTextOpen", !e.rawTextOpen)}
+                            title={e.rawTextOpen ? "Hide extracted text" : "View extracted text"}
+                            style={{ background: e.rawTextOpen ? "rgba(14,165,233,0.10)" : "#F8FAFC", border: `1px solid ${e.rawTextOpen ? "rgba(14,165,233,0.30)" : "#E2E8F0"}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: e.rawTextOpen ? "#0EA5E9" : "#64748B", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            {e.rawTextOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+                          {/* Delete */}
+                          <button
+                            onClick={() => setExtracted((prev) => prev.filter((x) => x.tempId !== e.tempId))}
+                            style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Name / email */}
-                      <div style={{ paddingRight: 8 }}>
-                        {e.editing ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <input style={INPUT_STYLE} value={e.name ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, name: ev.target.value } : x))} placeholder="Name" />
-                            <input style={INPUT_STYLE} value={e.email ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, email: ev.target.value } : x))} placeholder="Email" />
+                      {/* ── Collapsible raw text ── */}
+                      {e.rawTextOpen && (
+                        <div style={{ padding: "0 16px 14px", borderTop: "1px solid #F1F5F9", background: "#FAFCFF" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 6, marginTop: 10, textTransform: "uppercase", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 6 }}>
+                            Extracted text sent to Claude
+                            <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({(e.rawText ?? "").length} chars · {e.fileName})</span>
                           </div>
-                        ) : (
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>{e.name ?? <span style={{ color: "#94A3B8", fontStyle: "italic" }}>No name</span>}</div>
-                            {e.email
-                              ? <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{e.email}</div>
-                              : <div style={{ fontSize: 11, color: "#EF4444", marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> Email required</div>
-                            }
-                            {e.isDuplicate && (
-                              <div style={{ fontSize: 10, color: "#DC2626", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
-                                <AlertCircle size={9} /> {e.duplicateInfo}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Current role */}
-                      <div style={{ paddingRight: 8 }}>
-                        {e.editing ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <input style={INPUT_STYLE} value={e.currentTitle ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, currentTitle: ev.target.value } : x))} placeholder="Title" />
-                            <input style={INPUT_STYLE} value={e.currentCompany ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, currentCompany: ev.target.value } : x))} placeholder="Company" />
-                          </div>
-                        ) : (
-                          <div>
-                            <div style={{ fontSize: 12, color: "#0F2147" }}>{e.currentTitle ?? "—"}</div>
-                            <div style={{ fontSize: 11, color: "#94A3B8" }}>{e.currentCompany ?? ""}</div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Years exp */}
-                      <div style={{ fontSize: 12, color: "#475569" }}>
-                        {e.editing
-                          ? <input style={INPUT_STYLE} type="number" value={e.totalYearsExperience ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, totalYearsExperience: Number(ev.target.value) } : x))} placeholder="Yrs" />
-                          : e.totalYearsExperience ? `${e.totalYearsExperience}y` : "—"
-                        }
-                      </div>
-
-                      {/* Phone */}
-                      <div style={{ fontSize: 12, color: "#475569" }}>
-                        {e.editing
-                          ? <input style={INPUT_STYLE} value={e.phone ?? ""} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, phone: ev.target.value } : x))} placeholder="Phone" />
-                          : e.phone ?? <span style={{ color: "#CBD5E1" }}>—</span>
-                        }
-                      </div>
-
-                      {/* Skills */}
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                        {e.topSkills.slice(0, 3).map((s) => (
-                          <span key={s} style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: 4, background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" }}>{s}</span>
-                        ))}
-                        {e.topSkills.length > 3 && <span style={{ fontSize: 10, color: "#94A3B8" }}>+{e.topSkills.length - 3}</span>}
-                      </div>
-
-                      {/* Confidence */}
-                      <div><ConfidenceBadge level={e.extractionConfidence} /></div>
-
-                      {/* Position */}
-                      <div>
-                        <select value={e.assignedPositionId} onChange={(ev) => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, assignedPositionId: ev.target.value } : x))} style={SELECT_STYLE}>
-                          {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title.length > 22 ? p.title.slice(0, 22) + "…" : p.title}</option>)}
-                          {activePositions.length === 0 && <option value="">No active positions</option>}
-                        </select>
-                        {pos?.status !== "active" && pos && (
-                          <div style={{ fontSize: 10, color: "#EF4444", marginTop: 3 }}>Position not active</div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {e.editing
-                          ? <button onClick={() => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, editing: false } : x))} style={{ background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.22)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#059669", display: "flex", alignItems: "center" }}><Check size={12} /></button>
-                          : <button onClick={() => setExtracted((prev) => prev.map((x) => x.tempId === e.tempId ? { ...x, editing: true } : x))} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#64748B", display: "flex", alignItems: "center" }}><Edit3 size={12} /></button>
-                        }
-                        <button onClick={() => setExtracted((prev) => prev.filter((x) => x.tempId !== e.tempId))} style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center" }}><Trash2 size={12} /></button>
-                      </div>
+                          <pre style={{
+                            fontSize: 11, color: "#475569", background: "#F8FAFC", border: "1px solid #E2E8F0",
+                            borderRadius: 8, padding: "10px 12px", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                            maxHeight: 200, overflowY: "auto", fontFamily: "var(--font-mono)", lineHeight: 1.6, margin: 0,
+                          }}>
+                            {e.rawText?.trim() || "No raw text captured for this entry"}
+                          </pre>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -648,7 +693,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
               {extracted.some((e) => e.extractionConfidence === "low" && !e.isDuplicate) && (
                 <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 12, color: "#D97706", display: "flex", gap: 8, alignItems: "center" }}>
                   <AlertTriangle size={14} />
-                  Some candidates have low confidence — please verify highlighted fields before adding
+                  Some candidates have low confidence — verify fields above before adding
                 </div>
               )}
             </div>
