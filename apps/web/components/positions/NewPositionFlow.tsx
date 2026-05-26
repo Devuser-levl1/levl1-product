@@ -22,6 +22,8 @@ interface QuestionItem {
   approvedByTech?: boolean;
   approvedByHR?: boolean;
   editing?: boolean;
+  isNew?: boolean;         // freshly generated via "Generate 5 More"
+  isReplacement?: boolean; // swapped in via "Replace"
 }
 
 interface GeneratedQuestions {
@@ -198,14 +200,16 @@ function DiffBadge({ diff }: { diff: string }) {
 }
 
 function QuestionCard({
-  q, onApprove, onRemove, onEdit, approveLabel, approved,
+  q, onApprove, onRemove, onEdit, onReplace, approveLabel, approved, isReplacing,
 }: {
   q: QuestionItem;
   onApprove: () => void;
   onRemove: () => void;
   onEdit: (updated: QuestionItem) => void;
+  onReplace?: () => void;
   approveLabel: string;
   approved: boolean;
+  isReplacing?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing]   = useState(false);
@@ -219,10 +223,26 @@ function QuestionCard({
   return (
     <div style={{
       background: approved ? "rgba(16,185,129,0.03)" : "#fff",
-      border: `1px solid ${approved ? "rgba(16,185,129,0.25)" : "#E2E8F0"}`,
+      border: `1px solid ${approved ? "rgba(16,185,129,0.22)" : "#E2E8F0"}`,
+      borderLeft: `3px solid ${approved ? "#10B981" : "#CBD5E1"}`,
       borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10,
-      transition: "all 0.15s",
+      transition: "all 0.15s", position: "relative",
     }}>
+      {/* Badge row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+        {q.isNew && (
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#0EA5E9", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>New</span>
+        )}
+        {q.isReplacement && !q.isNew && (
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#8B5CF6", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>Replaced</span>
+        )}
+        {approved && (
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#059669", background: "rgba(16,185,129,0.10)", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 3 }}>
+            <Check size={8} /> Approved
+          </span>
+        )}
+      </div>
+
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1 }}>
@@ -263,6 +283,7 @@ function QuestionCard({
             </>
           ) : (
             <>
+              {/* Approve */}
               <button
                 type="button" onClick={onApprove}
                 style={{
@@ -275,10 +296,22 @@ function QuestionCard({
               >
                 <Check size={11} /> {approved ? "Approved" : approveLabel}
               </button>
-              <button type="button" onClick={() => setEditing(true)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontFamily: "var(--font-sans)" }}>
+              {/* Edit */}
+              <button type="button" onClick={() => setEditing(true)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4 }} title="Edit question">
                 <Edit3 size={11} />
               </button>
-              <button type="button" onClick={onRemove} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#EF4444", fontFamily: "var(--font-sans)" }}>
+              {/* Replace */}
+              {onReplace && (
+                <button
+                  type="button" onClick={onReplace} disabled={isReplacing}
+                  title="Replace with a new question on same topic"
+                  style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: isReplacing ? "not-allowed" : "pointer", border: "1px solid rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.06)", color: "#7C3AED", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4, opacity: isReplacing ? 0.6 : 1 }}
+                >
+                  {isReplacing ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw size={11} />}
+                </button>
+              )}
+              {/* Remove */}
+              <button type="button" onClick={onRemove} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#EF4444", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4 }} title="Remove question">
                 <Trash2 size={11} />
               </button>
             </>
@@ -357,6 +390,14 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
   // Step 7 — Dual Approval
   const [reviewTab, setReviewTab] = useState<"tech" | "hr">("tech");
+
+  // Question management
+  const [removedQuestionTexts, setRemovedQuestionTexts] = useState<string[]>([]);
+  const [replacingIds,  setReplacingIds]  = useState<Record<string, boolean>>({});
+  const [generatingMore, setGeneratingMore] = useState<Record<string, boolean>>({});
+
+  // Live Dynamic Questions
+  const [dynamicIntensity, setDynamicIntensity] = useState<"light" | "standard" | "deep">("standard");
 
   // Derived
   const finalJD = jdTab === "generate" ? generatedJD : pastedJD;
@@ -450,7 +491,94 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
   const removeQuestion = (section: keyof Omit<GeneratedQuestions, "timeAllocation">, id: string) => {
     if (!questions) return;
+    // Track removed text so regeneration can avoid it
+    const removed = (questions[section] as QuestionItem[]).find((q) => q.id === id);
+    if (removed) setRemovedQuestionTexts((prev) => [...prev, removed.question]);
     setQuestions({ ...questions, [section]: (questions[section] as QuestionItem[]).filter((q) => q.id !== id) });
+  };
+
+  // Replace a single question with a freshly generated one
+  const replaceQuestion = async (
+    section: keyof Omit<GeneratedQuestions, "timeAllocation">,
+    q: QuestionItem,
+    sectionType: string,
+  ) => {
+    setReplacingIds((prev) => ({ ...prev, [q.id]: true }));
+    try {
+      const res = await fetch("/api/generate-more-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sectionType,
+          positionTitle,
+          experienceLevel,
+          techStack: mustHaveTech,
+          domainContext,
+          existingQuestionTexts: (questions![section] as QuestionItem[])
+            .filter((x) => x.id !== q.id)
+            .map((x) => x.question),
+          removedQuestionTexts: [...removedQuestionTexts, q.question],
+          count: 1,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const [newQ] = data.questions as QuestionItem[];
+      if (!newQ) throw new Error("No replacement received");
+      setQuestions((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          [section]: (prev[section] as QuestionItem[]).map((x) =>
+            x.id === q.id ? { ...newQ, isReplacement: true } : x
+          ),
+        };
+      });
+      // Track old question so it isn't regenerated in "5 more"
+      setRemovedQuestionTexts((prev) => [...prev, q.question]);
+      toast.success("Question replaced");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Replace failed");
+    } finally {
+      setReplacingIds((prev) => { const n = { ...prev }; delete n[q.id]; return n; });
+    }
+  };
+
+  // Generate 5 more questions for a section
+  const generateMoreForSection = async (
+    section: keyof Omit<GeneratedQuestions, "timeAllocation">,
+    sectionType: string,
+  ) => {
+    if (!questions) return;
+    setGeneratingMore((prev) => ({ ...prev, [section]: true }));
+    try {
+      const res = await fetch("/api/generate-more-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sectionType,
+          positionTitle,
+          experienceLevel,
+          techStack: mustHaveTech,
+          domainContext,
+          existingQuestionTexts: (questions[section] as QuestionItem[]).map((x) => x.question),
+          removedQuestionTexts,
+          count: 5,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const newQs: QuestionItem[] = (data.questions as QuestionItem[]).map((q) => ({ ...q, isNew: true }));
+      setQuestions((prev) => {
+        if (!prev) return prev;
+        return { ...prev, [section]: [...(prev[section] as QuestionItem[]), ...newQs] };
+      });
+      toast.success(`${newQs.length} new questions added`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setGeneratingMore((prev) => { const n = { ...prev }; delete n[section]; return n; });
+    }
   };
 
   const approveAllTech = () => {
@@ -488,6 +616,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       interviewsCompleted: 0,
       createdAt: new Date().toISOString().split("T")[0],
       approvals: { techLead: true, hr: true },
+      interviewDuration: Number(interviewDuration),
+      dynamicQuestionIntensity: dynamicIntensity,
     });
     setStep(7);
   };
@@ -962,58 +1092,202 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
               {/* Tech Lead tab */}
               {reviewTab === "tech" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
                     <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={approveAllTech}>
                       <Check size={12} /> Approve All
                     </button>
                   </div>
+
                   {(["technicalQuestions","scenarioQuestions","whiteboardAssessment"] as const).map((section) => {
-                    const labels: Record<string, string> = { technicalQuestions: "Technical", scenarioQuestions: "Scenario", whiteboardAssessment: "Whiteboard" };
+                    const sectionMeta: Record<string, { label: string; type: string }> = {
+                      technicalQuestions:  { label: "Technical",  type: "technical"  },
+                      scenarioQuestions:   { label: "Scenario",   type: "scenario"   },
+                      whiteboardAssessment:{ label: "Whiteboard", type: "whiteboard" },
+                    };
+                    const { label, type } = sectionMeta[section];
+                    const sTotal    = questions[section].length;
+                    const sApproved = questions[section].filter((q) => q.approvedByTech).length;
+                    const isGenerating = !!generatingMore[section];
+
                     return (
-                      <div key={section}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{labels[section]}</p>
+                      <div key={section} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {/* Section header with progress */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>{label}</p>
+                            <span style={{ fontSize: 11, color: sApproved === sTotal && sTotal > 0 ? "#10B981" : "#94A3B8", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                              {sApproved}/{sTotal} approved
+                            </span>
+                            <div style={{ width: 60, height: 4, background: "#F1F5F9", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${sTotal > 0 ? (sApproved / sTotal) * 100 : 0}%`, background: "#10B981", borderRadius: 2, transition: "width 0.3s" }} />
+                            </div>
+                          </div>
+                        </div>
+
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {questions[section].map((q) => (
                             <QuestionCard
                               key={q.id} q={q} approveLabel="Approve"
                               approved={!!q.approvedByTech}
+                              isReplacing={!!replacingIds[q.id]}
                               onApprove={() => updateQuestion(section, q.id, { approvedByTech: !q.approvedByTech })}
                               onRemove={() => removeQuestion(section, q.id)}
                               onEdit={(updated) => updateQuestion(section, q.id, updated)}
+                              onReplace={() => replaceQuestion(section, q, type)}
                             />
                           ))}
                         </div>
+
+                        {/* Generate 5 More button */}
+                        <button
+                          type="button"
+                          disabled={isGenerating}
+                          onClick={() => generateMoreForSection(section, type)}
+                          style={{
+                            alignSelf: "flex-start", padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                            borderRadius: 8, cursor: isGenerating ? "not-allowed" : "pointer",
+                            border: "1px dashed #CBD5E1", background: "#F8FAFC",
+                            color: "#475569", fontFamily: "var(--font-sans)",
+                            display: "flex", alignItems: "center", gap: 6,
+                            opacity: isGenerating ? 0.7 : 1,
+                          }}
+                        >
+                          {isGenerating
+                            ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
+                            : <><Plus size={12} /> Generate 5 More {label} Questions</>
+                          }
+                        </button>
                       </div>
                     );
                   })}
+
+                  {/* ── Live Dynamic Questions panel ── */}
+                  <div style={{
+                    background: "rgba(15,33,71,0.03)",
+                    border: "1px solid rgba(15,33,71,0.10)",
+                    borderRadius: 12, padding: "18px 20px",
+                    display: "flex", flexDirection: "column", gap: 14,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14 }}>🔴</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#0F2147" }}>Live Dynamic Questions</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, margin: 0 }}>
+                      The AI interviewer will generate these in real time during the interview, based on each candidate&apos;s specific experience and responses. They cannot be pre-reviewed.
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {[
+                        "Resume project deep dives",
+                        "Coding challenges (if role is hands-on)",
+                        "Follow-up probes on strong answers",
+                        "Clarification on vague responses",
+                      ].map((topic) => (
+                        <div key={topic} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#475569" }}>
+                          <Check size={11} color="#10B981" /> {topic}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Dynamic Question Intensity</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {(["light","standard","deep"] as const).map((level) => {
+                          const cfg = {
+                            light:    { label: "Light",    sub: "1–2 questions" },
+                            standard: { label: "Standard", sub: "3–4 questions" },
+                            deep:     { label: "Deep",     sub: "5–6 questions" },
+                          };
+                          const active = dynamicIntensity === level;
+                          return (
+                            <button
+                              key={level} type="button"
+                              onClick={() => setDynamicIntensity(level)}
+                              style={{
+                                flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                                border: `1px solid ${active ? "#0EA5E9" : "#E2E8F0"}`,
+                                background: active ? "rgba(14,165,233,0.06)" : "#fff",
+                                textAlign: "left", fontFamily: "var(--font-sans)",
+                              }}
+                            >
+                              <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#0284C7" : "#0F2147" }}>{cfg[level].label}</div>
+                              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{cfg[level].sub}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#94A3B8", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13 }}>ℹ️</span>
+                      Dynamic questions use <strong>Claude Sonnet</strong> in real time. They are flagged <code style={{ fontSize: 10, background: "#F1F5F9", padding: "1px 5px", borderRadius: 3 }}>[DYNAMIC]</code> in the transcript.
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* HR tab */}
               {reviewTab === "hr" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
                     <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={approveAllHR}>
                       <Check size={12} /> Approve All
                     </button>
                   </div>
                   {(["behavioralQuestions","eqQuestions"] as const).map((section) => {
-                    const labels: Record<string, string> = { behavioralQuestions: "Behavioral", eqQuestions: "EQ / Values" };
+                    const sectionMeta: Record<string, { label: string; type: string }> = {
+                      behavioralQuestions: { label: "Behavioral", type: "behavioral" },
+                      eqQuestions:         { label: "EQ / Values", type: "eq" },
+                    };
+                    const { label, type } = sectionMeta[section];
+                    const sTotal    = questions[section].length;
+                    const sApproved = questions[section].filter((q) => q.approvedByHR).length;
+                    const isGenerating = !!generatingMore[section];
+
                     return (
-                      <div key={section}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{labels[section]}</p>
+                      <div key={section} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {/* Section header with progress */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>{label}</p>
+                          <span style={{ fontSize: 11, color: sApproved === sTotal && sTotal > 0 ? "#10B981" : "#94A3B8", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                            {sApproved}/{sTotal} approved
+                          </span>
+                          <div style={{ width: 60, height: 4, background: "#F1F5F9", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${sTotal > 0 ? (sApproved / sTotal) * 100 : 0}%`, background: "#10B981", borderRadius: 2, transition: "width 0.3s" }} />
+                          </div>
+                        </div>
+
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {questions[section].map((q) => (
                             <QuestionCard
                               key={q.id} q={q} approveLabel="Approve"
                               approved={!!q.approvedByHR}
+                              isReplacing={!!replacingIds[q.id]}
                               onApprove={() => updateQuestion(section, q.id, { approvedByHR: !q.approvedByHR })}
                               onRemove={() => removeQuestion(section, q.id)}
                               onEdit={(updated) => updateQuestion(section, q.id, updated)}
+                              onReplace={() => replaceQuestion(section, q, type)}
                             />
                           ))}
                         </div>
+
+                        {/* Generate 5 More button */}
+                        <button
+                          type="button"
+                          disabled={isGenerating}
+                          onClick={() => generateMoreForSection(section, type)}
+                          style={{
+                            alignSelf: "flex-start", padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                            borderRadius: 8, cursor: isGenerating ? "not-allowed" : "pointer",
+                            border: "1px dashed #CBD5E1", background: "#F8FAFC",
+                            color: "#475569", fontFamily: "var(--font-sans)",
+                            display: "flex", alignItems: "center", gap: 6,
+                            opacity: isGenerating ? 0.7 : 1,
+                          }}
+                        >
+                          {isGenerating
+                            ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
+                            : <><Plus size={12} /> Generate 5 More {label} Questions</>
+                          }
+                        </button>
                       </div>
                     );
                   })}

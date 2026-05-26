@@ -15,6 +15,7 @@ export interface Position {
   createdAt: string
   approvals: { techLead: boolean; hr: boolean }
   interviewDuration?: number
+  dynamicQuestionIntensity?: 'light' | 'standard' | 'deep'
 }
 
 export interface Candidate {
@@ -54,6 +55,16 @@ export interface Interview {
   score?: number
 }
 
+export interface PositionSummaryReport {
+  positionId: string
+  generatedAt: string
+  overallInsights: string
+  commonStrengths: string[]
+  commonGaps: string[]
+  marketObservation: string
+  questionHealthFlags: Array<{ question: string; recommendation: string }>
+}
+
 interface AppStore {
   activeSection: NavSection
   setActiveSection: (s: NavSection) => void
@@ -62,10 +73,12 @@ interface AppStore {
   positions: Position[]
   candidates: Candidate[]
   interviews: Interview[]
+  positionReports: Record<string, PositionSummaryReport>
   addPosition: (p: Position) => void
   addCandidates: (candidates: Candidate[]) => void
   updateCandidate: (id: string, updates: Partial<Candidate>) => void
   removeCandidate: (id: string) => void
+  addPositionReport: (positionId: string, report: PositionSummaryReport) => void
   showNewPositionFlow: boolean
   setShowNewPositionFlow: (v: boolean) => void
   showUploadFlow: boolean
@@ -73,9 +86,9 @@ interface AppStore {
 }
 
 const MOCK_POSITIONS: Position[] = [
-  { id: 'p1', title: 'Technology Manager — Business Intelligence', company: 'FinEdge Technologies', department: 'Data & Analytics', experienceLevel: '8–12 years', techStack: ['Snowflake', 'dbt', 'Tableau', 'Airflow', 'Python'], status: 'active', interviewsScheduled: 4, interviewsCompleted: 7, createdAt: '2026-05-10', approvals: { techLead: true, hr: true }, interviewDuration: 45 },
+  { id: 'p1', title: 'Technology Manager — Business Intelligence', company: 'FinEdge Technologies', department: 'Data & Analytics', experienceLevel: '8–12 years', techStack: ['Snowflake', 'dbt', 'Tableau', 'Airflow', 'Python'], status: 'active', interviewsScheduled: 4, interviewsCompleted: 7, createdAt: '2026-05-10', approvals: { techLead: true, hr: true }, interviewDuration: 45, dynamicQuestionIntensity: 'standard' },
   { id: 'p2', title: 'IT Risk & Compliance Manager', company: 'SecureAxis Technologies', department: 'GRC', experienceLevel: '8–12 years', techStack: ['SOX ITGC', 'SOC 2', 'HITRUST', 'Vanta', 'AuditBoard'], status: 'pending_approval', interviewsScheduled: 0, interviewsCompleted: 0, createdAt: '2026-05-22', approvals: { techLead: true, hr: false }, interviewDuration: 30 },
-  { id: 'p3', title: 'Senior Data Engineer', company: 'PayScale India', department: 'Engineering', experienceLevel: '5–8 years', techStack: ['Spark', 'Kafka', 'Databricks', 'Python', 'AWS'], status: 'active', interviewsScheduled: 2, interviewsCompleted: 3, createdAt: '2026-05-05', approvals: { techLead: true, hr: true }, interviewDuration: 30 },
+  { id: 'p3', title: 'Senior Data Engineer', company: 'PayScale India', department: 'Engineering', experienceLevel: '5–8 years', techStack: ['Spark', 'Kafka', 'Databricks', 'Python', 'AWS'], status: 'active', interviewsScheduled: 2, interviewsCompleted: 3, createdAt: '2026-05-05', approvals: { techLead: true, hr: true }, interviewDuration: 30, dynamicQuestionIntensity: 'light' },
   { id: 'p4', title: 'Product Manager — Payments', company: 'RazorPay', department: 'Product', experienceLevel: '4–7 years', techStack: ['Product Strategy', 'SQL', 'Figma', 'Agile', 'APIs'], status: 'draft', interviewsScheduled: 0, interviewsCompleted: 0, createdAt: '2026-05-24', approvals: { techLead: false, hr: false }, interviewDuration: 30 },
 ]
 
@@ -103,12 +116,16 @@ export const useAppStore = create<AppStore>((set) => ({
   positions: MOCK_POSITIONS,
   candidates: MOCK_CANDIDATES,
   interviews: MOCK_INTERVIEWS,
+  positionReports: {},
   addPosition: (p) => set((state) => ({ positions: [p, ...state.positions] })),
   addCandidates: (newCandidates) => set((state) => ({ candidates: [...newCandidates, ...state.candidates] })),
   updateCandidate: (id, updates) => set((state) => ({
     candidates: state.candidates.map((c) => c.id === id ? { ...c, ...updates } : c),
   })),
   removeCandidate: (id) => set((state) => ({ candidates: state.candidates.filter((c) => c.id !== id) })),
+  addPositionReport: (positionId, report) => set((state) => ({
+    positionReports: { ...state.positionReports, [positionId]: report },
+  })),
   showNewPositionFlow: false,
   setShowNewPositionFlow: (v) => set({ showNewPositionFlow: v }),
   showUploadFlow: false,
