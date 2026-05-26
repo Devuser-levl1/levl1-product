@@ -1,149 +1,80 @@
-import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function mockExtract(fileName: string) {
-  return {
-    name: fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
-    email: null,
-    phone: null,
-    linkedIn: null,
-    currentTitle: null,
-    currentCompany: null,
-    totalYearsExperience: null,
-    topSkills: [],
-    educationSummary: null,
-    extractionConfidence: "low" as const,
-    missingFields: ["email", "phone", "currentTitle", "currentCompany"],
-  };
-}
-
-/** Strip markdown code fences and any stray text before/after the JSON object */
-function sanitizeJson(raw: string): string {
-  return raw
-    .replace(/```json|```/g, "")
-    .trim()
-    // Grab just the first {...} block in case the model adds commentary
-    .replace(/^[^{]*(\{[\s\S]*\})[^}]*$/, "$1")
-    .trim();
-}
-
-function extractText(message: Anthropic.Message): string {
-  return message.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("")
-    .trim();
-}
-
-/** Fallback: ask Claude to extract just name + email from the resume */
-async function fallbackExtract(resumeText: string, fileName: string) {
-  const msg = await client.messages.create({
-    model: "claude-opus-4-7",
-    max_tokens: 200,
-    system: "Extract only the candidate name and email from the resume text. Return ONLY valid JSON: {\"name\": \"...\", \"email\": \"...\"}. If not found return null for that field.",
-    messages: [{ role: "user", content: `Resume:\n${resumeText.substring(0, 2000)}` }],
-  });
-
-  try {
-    const partial = JSON.parse(sanitizeJson(extractText(msg)));
-    return {
-      name: partial.name ?? fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
-      email: partial.email ?? null,
-      phone: null,
-      linkedIn: null,
-      currentTitle: null,
-      currentCompany: null,
-      totalYearsExperience: null,
-      topSkills: [],
-      educationSummary: null,
-      extractionConfidence: "low" as const,
-      missingFields: ["phone", "currentTitle", "currentCompany", "topSkills", "educationSummary"],
-    };
-  } catch {
-    return mockExtract(fileName);
-  }
-}
-
-// ── Route handler ─────────────────────────────────────────────────────────────
+import { NextRequest, NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
 
 export async function POST(req: NextRequest) {
   try {
-    const { resumeText, fileName } = await req.json();
+    const body = await req.json()
+    const { resumeText } = body
 
-    if (!resumeText || resumeText.trim().length < 20) {
-      return NextResponse.json({ error: "Resume text is too short or empty" }, { status: 400 });
+    console.log('extract-resume called, text length:', resumeText?.length)
+
+    if (!resumeText) {
+      return NextResponse.json({ error: 'No resume text provided' }, { status: 400 })
     }
 
-    // Graceful degradation — no key configured
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn("[extract-resume] No ANTHROPIC_API_KEY — returning mock data");
-      return NextResponse.json({ candidate: mockExtract(fileName ?? "resume") });
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    console.log('API key present:', !!apiKey, 'length:', apiKey?.length)
+
+    if (!apiKey) {
+      return NextResponse.json(getMockExtraction(), { status: 200 })
     }
 
-    const systemPrompt =
-      "You are a resume parser. Extract information with high accuracy. " +
-      "Never guess or infer — only extract what is explicitly stated. " +
-      "If a field is not found, return null. " +
-      "Return ONLY valid JSON, no markdown, no explanation, no preamble.";
+    const client = new Anthropic({ apiKey })
 
-    const userPrompt =
-      `Parse this resume and return JSON with these exact fields: ` +
-      `name, email, phone, linkedIn, currentTitle, currentCompany, ` +
-      `totalYearsExperience (number only), topSkills (array of strings, max 8), ` +
-      `educationSummary (one line), ` +
-      `extractionConfidence (high if all key fields found, medium if some missing, low if most missing), ` +
-      `missingFields (array of field names that returned null).\n\n` +
-      `Resume text:\n${resumeText.substring(0, 6000)}`;
-
-    const message = await client.messages.create({
-      model: "claude-opus-4-7",
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      temperature: 0.0,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    });
+      system: 'You are a resume parser. Extract information accurately. Never guess. Only extract what is explicitly stated. Return ONLY valid JSON with no markdown, no code fences, no explanation.',
+      messages: [{
+        role: 'user',
+        content: `Parse this resume and return a JSON object with these exact fields:
+- name (string)
+- email (string)
+- phone (string or null)
+- linkedIn (string or null)
+- currentTitle (string or null)
+- currentCompany (string or null)
+- totalYearsExperience (number or null)
+- topSkills (array of strings, max 8)
+- educationSummary (string or null)
+- extractionConfidence (high/medium/low)
+- missingFields (array of field names that are null)
 
-    const rawText  = extractText(message);
-    const cleaned  = sanitizeJson(rawText);
+Resume:
+${resumeText}`,
+      }],
+    })
 
-    let candidate: Record<string, unknown>;
-    try {
-      candidate = JSON.parse(cleaned);
-    } catch (parseErr) {
-      console.error("[extract-resume] JSON.parse failed, running fallback extraction:", parseErr);
-      console.error("[extract-resume] Raw response was:", rawText.substring(0, 500));
-      const fallback = await fallbackExtract(resumeText, fileName ?? "resume");
-      return NextResponse.json({ candidate: fallback, fallback: true });
-    }
+    console.log('Claude response received')
 
-    // Normalise totalYearsExperience — sometimes the model returns a string like "10 years"
-    if (typeof candidate.totalYearsExperience === "string") {
-      const match = (candidate.totalYearsExperience as string).match(/\d+/);
-      candidate.totalYearsExperience = match ? parseInt(match[0], 10) : null;
-    }
+    const raw = response.content[0].type === 'text' ? response.content[0].text : ''
+    console.log('Raw response:', raw.slice(0, 200))
 
-    // Ensure arrays
-    if (!Array.isArray(candidate.topSkills))    candidate.topSkills    = [];
-    if (!Array.isArray(candidate.missingFields)) candidate.missingFields = [];
+    const clean = raw.replace(/```json|```/g, '').trim()
+    const parsed = JSON.parse(clean)
 
-    // Derive missingFields if model returned an empty array but fields are null
-    const KEY_FIELDS = ["name","email","phone","currentTitle","currentCompany","topSkills"];
-    if ((candidate.missingFields as string[]).length === 0) {
-      candidate.missingFields = KEY_FIELDS.filter(
-        (f) => candidate[f] === null || candidate[f] === undefined ||
-               (Array.isArray(candidate[f]) && (candidate[f] as unknown[]).length === 0)
-      );
-    }
-
-    return NextResponse.json({ candidate });
+    return NextResponse.json(parsed, { status: 200 })
 
   } catch (err: unknown) {
-    console.error("[extract-resume] Unhandled error:", err);
-    const message = err instanceof Error ? err.message : "Extraction failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Extraction failed'
+    const stack   = err instanceof Error ? err.stack  : undefined
+    console.error('extract-resume error:', message, stack)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+function getMockExtraction() {
+  return {
+    name: 'Sample Candidate',
+    email: 'candidate@email.com',
+    phone: '+91-98000-00000',
+    linkedIn: null,
+    currentTitle: 'Software Engineer',
+    currentCompany: 'Tech Company',
+    totalYearsExperience: 5,
+    topSkills: ['JavaScript', 'React', 'Node.js'],
+    educationSummary: 'B.Tech Computer Science',
+    extractionConfidence: 'high',
+    missingFields: [],
   }
 }

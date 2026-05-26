@@ -172,13 +172,14 @@ In production, use pdf-parse or mammoth to extract real text.`;
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const dup = checkDuplicate(data.candidate.email);
+      // API returns flat object (no wrapper)
+      const dup = checkDuplicate(data.email);
       return {
         tempId:                `t-${Date.now()}-${Math.random()}`,
         fileName:              item.name,
-        ...data.candidate,
-        topSkills:             data.candidate.topSkills ?? [],
-        missingFields:         data.candidate.missingFields ?? [],
+        ...data,
+        topSkills:             data.topSkills    ?? [],
+        missingFields:         data.missingFields ?? [],
         assignedPositionId:    defaultPositionId,
         selected:              true,
         isDuplicate:           dup.isDuplicate,
@@ -214,14 +215,15 @@ In production, use pdf-parse or mammoth to extract real text.`;
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const dup = checkDuplicate(data.candidate.email);
+      // API returns flat object (no wrapper)
+      const dup = checkDuplicate(data.email);
       setExtracted((prev) => prev.map((e) =>
         e.tempId === tempId ? {
-          ...e, ...data.candidate,
-          topSkills:          data.candidate.topSkills ?? [],
-          missingFields:      data.candidate.missingFields ?? [],
-          isDuplicate:        dup.isDuplicate,
-          duplicateInfo:      dup.info,
+          ...e, ...data,
+          topSkills:     data.topSkills    ?? [],
+          missingFields: data.missingFields ?? [],
+          isDuplicate:   dup.isDuplicate,
+          duplicateInfo: dup.info,
         } : e
       ));
       setPasteText("");
