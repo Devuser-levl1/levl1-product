@@ -5,7 +5,7 @@ import {
 } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
 import {
-  X, Upload, FileText, Clipboard, UserPlus, CheckCircle2,
+  X, Upload, Clipboard, UserPlus, CheckCircle2,
   AlertCircle, Loader2, Trash2, Edit3, Check, ChevronRight,
   AlertTriangle,
 } from "lucide-react";
@@ -155,19 +155,16 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     };
   };
 
-  // ── Extract from file (reads text, sends to API) ───────────────────────
+  // ── Extract from file (sends real file bytes via FormData) ───────────────
   const extractFile = async (item: FileItem): Promise<ExtractedCandidate | null> => {
-    // For PDFs we send the file name + a note; for doc/docx we do same
-    // In a real app you'd use a PDF parser library. Here we simulate reading text.
-    const simulatedText = `Candidate resume file: ${item.name}
-This is a simulated text extraction for demonstration purposes.
-In production, use pdf-parse or mammoth to extract real text.`;
+    const formData = new FormData();
+    formData.append("file", item.file);
+    // No Content-Type header — browser sets multipart boundary automatically
 
     try {
       const res = await fetch("/api/extract-resume", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText: simulatedText, fileName: item.name }),
+        body: formData,
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -398,18 +395,22 @@ In production, use pdf-parse or mammoth to extract real text.`;
                 <p style={{ fontSize: 15, fontWeight: 600, color: isDragOver ? "#0EA5E9" : "#475569" }}>
                   {isDragOver ? "Drop files here" : "Drag & drop resumes, or click to browse"}
                 </p>
-                <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>PDF, DOC, DOCX · Up to 20 files · 10 MB each</p>
+                <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>PDF, Word (.doc, .docx) · Up to 20 files · 10 MB each</p>
               </div>
 
               {/* File list */}
               {files.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {files.map((f) => (
+                  {files.map((f) => {
+                    const isPdf  = f.name.toLowerCase().endsWith(".pdf");
+                    const isDoc  = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
+                    const fileIcon = isPdf ? "📄" : isDoc ? "📝" : "📎";
+                    return (
                     <div key={f.id} style={{
                       display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
                       background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
                     }}>
-                      <FileText size={16} color="#0EA5E9" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: "#0F2147", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
                         <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{f.size}</div>
@@ -429,7 +430,8 @@ In production, use pdf-parse or mammoth to extract real text.`;
                         </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
 
                   <button
                     className="btn-primary"
