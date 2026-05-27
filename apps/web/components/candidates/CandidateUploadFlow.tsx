@@ -70,7 +70,7 @@ function ConfidenceBadge({ level }: { level: "high" | "medium" | "low" }) {
 
 const INPUT_STYLE: React.CSSProperties = {
   background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6,
-  padding: "5px 8px", fontSize: 12, color: "#0F2147", fontFamily: "var(--font-sans)",
+  padding: "5px 8px", fontSize: 12, color: "#4F46E5", fontFamily: "var(--font-sans)",
   outline: "none", width: "100%",
 };
 
@@ -330,20 +330,20 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(15,33,71,0.45)", display: "flex", justifyContent: "flex-end",
+      background: "rgba(79,70,229,0.45)", display: "flex", justifyContent: "flex-end",
     }}>
       {/* Slide-over panel */}
       <div style={{
         width: "min(92vw, 1060px)", height: "100vh",
         background: "#FAFAFA", display: "flex", flexDirection: "column",
-        boxShadow: "-8px 0 32px rgba(15,33,71,0.18)",
+        boxShadow: "-8px 0 32px rgba(79,70,229,0.18)",
         animation: "slideInRight 0.22s ease",
       }}>
         {/* Header */}
         <div style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", padding: "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Upload size={18} color="#0EA5E9" />
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#0F2147" }}>Upload Candidates</span>
+            <Upload size={18} color="#7C3AED" />
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#4F46E5" }}>Upload Candidates</span>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 8, display: "flex" }}>
             <X size={20} />
@@ -365,8 +365,8 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                   flex: 1, padding: "8px 12px", borderRadius: 7, fontSize: 13, fontWeight: 500,
                   cursor: "pointer", border: "none", fontFamily: "var(--font-sans)",
                   background: tab === key ? "#fff" : "transparent",
-                  color: tab === key ? "#0F2147" : "#94A3B8",
-                  boxShadow: tab === key ? "0 1px 3px rgba(15,33,71,0.08)" : "none",
+                  color: tab === key ? "#4F46E5" : "#94A3B8",
+                  boxShadow: tab === key ? "0 1px 3px rgba(79,70,229,0.08)" : "none",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.15s",
                 }}>
                 <Icon size={13} /> {label}
@@ -384,15 +384,15 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${isDragOver ? "#0EA5E9" : "#CBD5E1"}`,
+                  border: `2px dashed ${isDragOver ? "#7C3AED" : "#CBD5E1"}`,
                   borderRadius: 14, padding: "48px 24px", textAlign: "center",
                   cursor: "pointer", transition: "all 0.2s",
-                  background: isDragOver ? "rgba(14,165,233,0.04)" : "#fff",
+                  background: isDragOver ? "rgba(124,58,237,0.04)" : "#fff",
                 }}
               >
                 <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx" onChange={onFileInput} style={{ display: "none" }} />
-                <Upload size={28} color={isDragOver ? "#0EA5E9" : "#CBD5E1"} style={{ margin: "0 auto 12px" }} />
-                <p style={{ fontSize: 15, fontWeight: 600, color: isDragOver ? "#0EA5E9" : "#475569" }}>
+                <Upload size={28} color={isDragOver ? "#7C3AED" : "#CBD5E1"} style={{ margin: "0 auto 12px" }} />
+                <p style={{ fontSize: 15, fontWeight: 600, color: isDragOver ? "#7C3AED" : "#475569" }}>
                   {isDragOver ? "Drop files here" : "Drag & drop resumes, or click to browse"}
                 </p>
                 <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>PDF, Word (.doc, .docx) · Up to 20 files · 10 MB each</p>
@@ -412,17 +412,17 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                       }}>
                         <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: "#0F2147", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: "#4F46E5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
                           <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{f.size}</div>
                           {f.status === "processing" && (
                             <div style={{ height: 3, background: "#E2E8F0", borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
-                              <div style={{ height: "100%", width: `${f.progress}%`, background: "#0EA5E9", borderRadius: 2, transition: "width 0.4s ease" }} />
+                              <div style={{ height: "100%", width: `${f.progress}%`, background: "#7C3AED", borderRadius: 2, transition: "width 0.4s ease" }} />
                             </div>
                           )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           {f.status === "queued"     && <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "2px 8px", borderRadius: 100 }}>Queued</span>}
-                          {f.status === "processing" && <Loader2 size={14} color="#0EA5E9" style={{ animation: "spin 1s linear infinite" }} />}
+                          {f.status === "processing" && <Loader2 size={14} color="#7C3AED" style={{ animation: "spin 1s linear infinite" }} />}
                           {f.status === "extracted"  && <CheckCircle2 size={14} color="#10B981" />}
                           {f.status === "error"      && <span title={f.error}><AlertCircle size={14} color="#EF4444" /></span>}
                           <button onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 2, display: "flex" }}>
@@ -462,7 +462,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                   placeholder="Paste the full resume content here…"
                   style={{
                     width: "100%", padding: "14px 16px", borderRadius: 10, border: "1px solid #E2E8F0",
-                    fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)", resize: "vertical",
+                    fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical",
                     outline: "none", lineHeight: 1.65, minHeight: 300, background: "#fff",
                   }}
                 />
@@ -507,7 +507,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
           {hasResults && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#0F2147" }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#4F46E5" }}>
                   Extraction Results — {extracted.length} candidate{extracted.length !== 1 ? "s" : ""}
                 </h3>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -549,7 +549,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                             type="checkbox" checked={e.selected && !e.isDuplicate}
                             disabled={e.isDuplicate}
                             onChange={() => updateField(e.tempId, "selected", !e.selected)}
-                            style={{ cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: "#0EA5E9" }}
+                            style={{ cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: "#7C3AED" }}
                           />
                         </div>
 
@@ -648,7 +648,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                           <button
                             onClick={() => updateField(e.tempId, "rawTextOpen", !e.rawTextOpen)}
                             title={e.rawTextOpen ? "Hide extracted text" : "View extracted text"}
-                            style={{ background: e.rawTextOpen ? "rgba(14,165,233,0.10)" : "#F8FAFC", border: `1px solid ${e.rawTextOpen ? "rgba(14,165,233,0.30)" : "#E2E8F0"}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: e.rawTextOpen ? "#0EA5E9" : "#64748B", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            style={{ background: e.rawTextOpen ? "rgba(124,58,237,0.10)" : "#F8FAFC", border: `1px solid ${e.rawTextOpen ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: e.rawTextOpen ? "#7C3AED" : "#64748B", display: "flex", alignItems: "center", justifyContent: "center" }}
                           >
                             {e.rawTextOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </button>

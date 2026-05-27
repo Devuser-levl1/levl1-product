@@ -16,7 +16,7 @@ type PipelineColumn = {
 const COLUMNS: PipelineColumn[] = [
   { key: "pending",           label: "Pending",             statuses: ["pending"],             dotColor: "#94A3B8" },
   { key: "invited",           label: "Invited",             statuses: ["invited"],             dotColor: "#F59E0B" },
-  { key: "scheduled",         label: "Scheduled",           statuses: ["scheduled"],           dotColor: "#0EA5E9" },
+  { key: "scheduled",         label: "Scheduled",           statuses: ["scheduled"],           dotColor: "#7C3AED" },
   { key: "interviewing",      label: "Interviewing",        statuses: ["interviewing"],        dotColor: "#8B5CF6" },
   { key: "completed",         label: "Completed",           statuses: ["completed"],           dotColor: "#10B981" },
   { key: "no_show_cancelled", label: "No Show / Cancelled", statuses: ["no_show","cancelled"], dotColor: "#EF4444" },
@@ -46,15 +46,15 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
         flexDirection: "column",
         gap: 8,
         transition: "all 0.15s",
-        boxShadow: "0 1px 3px rgba(15,33,71,0.04)",
+        boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#0EA5E9";
-        e.currentTarget.style.boxShadow   = "0 4px 12px rgba(14,165,233,0.10)";
+        e.currentTarget.style.borderColor = "#7C3AED";
+        e.currentTarget.style.boxShadow   = "0 4px 12px rgba(124,58,237,0.10)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = "#E2E8F0";
-        e.currentTarget.style.boxShadow   = "0 1px 3px rgba(15,33,71,0.04)";
+        e.currentTarget.style.boxShadow   = "0 1px 3px rgba(79,70,229,0.04)";
       }}
     >
       {/* Top row */}
@@ -64,12 +64,12 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
           background: "linear-gradient(135deg, #EEF2FF, #F1F5F9)",
           border: "1px solid #E2E8F0",
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 700, color: "#0284C7", flexShrink: 0,
+          fontSize: 12, fontWeight: 700, color: "#6D28D9", flexShrink: 0,
         }}>
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {candidate.name}
           </div>
           <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -77,7 +77,7 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
           </div>
         </div>
         {candidate.score !== undefined && (
-          <div className="font-mono" style={{ fontSize: 16, fontWeight: 800, color: "#0F2147", flexShrink: 0 }}>
+          <div className="font-mono" style={{ fontSize: 16, fontWeight: 800, color: "#4F46E5", flexShrink: 0 }}>
             {candidate.score}
           </div>
         )}
@@ -158,7 +158,7 @@ export default function CandidatesPage() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#0F2147", letterSpacing: "-0.025em" }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
               Candidates Pipeline
             </h1>
             <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
@@ -175,8 +175,8 @@ export default function CandidatesPage() {
                 onChange={(e) => setSelectedPosition(e.target.value)}
                 style={{
                   background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
-                  padding: "8px 14px", fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)",
-                  cursor: "pointer", outline: "none", minWidth: 180, boxShadow: "0 1px 3px rgba(15,33,71,0.05)",
+                  padding: "8px 14px", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
+                  cursor: "pointer", outline: "none", minWidth: 180, boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
                 }}
               >
                 <option value="all">All Positions</option>
@@ -194,10 +194,10 @@ export default function CandidatesPage() {
         {/* Pending invites banner */}
         {pendingAll.length > 0 && (
           <div style={{
-            padding: "12px 18px", background: "rgba(14,165,233,0.06)", border: "1px solid rgba(14,165,233,0.2)",
+            padding: "12px 18px", background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)",
             borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#0284C7" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6D28D9" }}>
               <Send size={14} />
               <span>
                 <strong>{pendingAll.length}</strong> candidate{pendingAll.length !== 1 ? "s" : ""} awaiting interview invite

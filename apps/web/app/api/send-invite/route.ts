@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
       positionTitle,
       company,
       duration,
-      agencyName = "InterviewCentral Agency",
+      agencyName = "Levl1 Agency",
     } = await req.json();
 
     if (!candidateEmail) {
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     // Generate a mock scheduling link
     const slug = candidateName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    const schedulingLink = `https://cal.com/interviewcentral/${slug}-${Date.now().toString(36)}`;
+    const schedulingLink = `https://cal.com/levl1/${slug}-${Date.now().toString(36)}`;
 
     const emailPreview = `Subject: Interview Invitation — ${positionTitle} at ${company}
 
@@ -39,7 +39,7 @@ If you have any questions, reply to this email.
 
 Best regards,
 ${agencyName}
-InterviewCentral Platform`;
+Levl1 Platform`;
 
     // In production, you would send a real email here (e.g., via Resend)
     console.log(`[send-invite] Simulated email to ${candidateEmail}:\n`, emailPreview);

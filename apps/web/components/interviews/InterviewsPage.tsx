@@ -59,7 +59,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
     <div
       style={{
         background: "#fff",
-        border: `1px solid ${isLive ? "rgba(14,165,233,0.4)" : "#E2E8F0"}`,
+        border: `1px solid ${isLive ? "rgba(124,58,237,0.4)" : "#E2E8F0"}`,
         borderRadius: 14,
         padding: "20px",
         display: "flex",
@@ -68,8 +68,8 @@ function InterviewCard({ interview }: { interview: Interview }) {
         position: "relative",
         overflow: "hidden",
         boxShadow: isLive
-          ? "0 0 0 1px rgba(14,165,233,0.15), 0 8px 24px rgba(14,165,233,0.10)"
-          : "0 1px 3px rgba(15,33,71,0.06)",
+          ? "0 0 0 1px rgba(124,58,237,0.15), 0 8px 24px rgba(124,58,237,0.10)"
+          : "0 1px 3px rgba(79,70,229,0.06)",
         transition: "box-shadow 0.2s",
       }}
     >
@@ -80,7 +80,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
           top: 0, left: 0, right: 0,
           height: 3,
           background: isLive
-            ? "linear-gradient(90deg, #0F2147, #0EA5E9)"
+            ? "linear-gradient(90deg, #4F46E5, #7C3AED)"
             : "transparent",
         }}
       />
@@ -116,14 +116,14 @@ function InterviewCard({ interview }: { interview: Interview }) {
             width: 46,
             height: 46,
             borderRadius: 12,
-            background: isLive ? "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(56,189,248,0.08))" : "#F1F5F9",
-            border: `1px solid ${isLive ? "rgba(14,165,233,0.25)" : "#E2E8F0"}`,
+            background: isLive ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))" : "#F1F5F9",
+            border: `1px solid ${isLive ? "rgba(124,58,237,0.25)" : "#E2E8F0"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 16,
             fontWeight: 800,
-            color: isLive ? "#0284C7" : "#64748B",
+            color: isLive ? "#6D28D9" : "#64748B",
             flexShrink: 0,
             fontFamily: "var(--font-display)",
           }}
@@ -131,7 +131,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
           {interview.candidateName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
             {interview.candidateName}
           </div>
           <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -160,7 +160,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
             <Video size={14} color="#64748B" />
           </div>
           <div>
-            <div className="font-mono" style={{ fontSize: 14, fontWeight: 700, color: "#0F2147" }}>{time}</div>
+            <div className="font-mono" style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>{time}</div>
             <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{date}</div>
           </div>
         </div>
@@ -178,7 +178,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
       {/* Status pills */}
       <div style={{ display: "flex", gap: 8 }}>
         <StatusPill on={interview.agentOnline}      label="AI Agent"  onColor="#10B981" />
-        <StatusPill on={interview.candidateJoined}  label="Candidate" onColor="#0EA5E9" />
+        <StatusPill on={interview.candidateJoined}  label="Candidate" onColor="#7C3AED" />
       </div>
 
       {/* CTA */}
@@ -219,7 +219,7 @@ export default function InterviewsPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#0F2147", letterSpacing: "-0.025em" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
             Interviews Monitor
           </h1>
           <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
@@ -237,7 +237,7 @@ export default function InterviewsPage() {
             borderRadius: 9,
             fontSize: 12,
             color: "#64748B",
-            boxShadow: "0 1px 3px rgba(15,33,71,0.05)",
+            boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
           }}
         >
           <div
@@ -272,7 +272,7 @@ export default function InterviewsPage() {
                 fontFamily: "var(--font-display)",
                 fontSize: 26,
                 fontWeight: 800,
-                color: "#0F2147",
+                color: "#4F46E5",
                 letterSpacing: "-0.02em",
               }}
             >
@@ -350,7 +350,7 @@ export default function InterviewsPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>{c.name}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{c.name}</div>
                     <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{c.positionTitle}</div>
                   </div>
                   <div className="font-mono" style={{ fontSize: 12, color: "#64748B" }}>

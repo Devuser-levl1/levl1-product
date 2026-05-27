@@ -31,7 +31,7 @@ Tips for your interview:
 - Be ready 2 minutes before your scheduled time
 
 Best of luck!
-InterviewCentral Platform`;
+Levl1 Platform`;
 
     console.log(`[schedule-confirm] Interview confirmed for candidate ${candidateId}:`, { scheduledAt, duration });
 

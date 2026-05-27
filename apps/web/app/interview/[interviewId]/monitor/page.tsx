@@ -21,7 +21,7 @@ function elapsed(startedAt: string) {
 }
 
 const SECTION_COLOR: Record<string, string> = {
-  technical:  '#0EA5E9',
+  technical:  '#7C3AED',
   behavioral: '#10B981',
   scenario:   '#8B5CF6',
   eq:         '#F59E0B',
@@ -82,7 +82,7 @@ export default function MonitorPage() {
   /* ── No session / no interview ──────────────────────────────── */
   if (!interview || !candidate || !position) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F2147' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5' }}>
         <div style={{ textAlign: 'center', color: '#94A3B8' }}>
           <AlertCircle size={40} color="#94A3B8" style={{ margin: '0 auto 12px' }} />
           <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Interview not found</div>
@@ -100,7 +100,7 @@ export default function MonitorPage() {
 
   const phaseColor =
     phase === 'listening'   ? '#10B981'
-    : phase === 'speaking'  ? '#0EA5E9'
+    : phase === 'speaking'  ? '#7C3AED'
     : phase === 'processing'? '#8B5CF6'
     : phase === 'completed' ? '#059669'
     : '#94A3B8'
@@ -124,7 +124,7 @@ export default function MonitorPage() {
      RENDER
   ═══════════════════════════════════════════════════════════════ */
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0F2147', color: '#fff', fontFamily: 'var(--font-sans)' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#4F46E5', color: '#fff', fontFamily: 'var(--font-sans)' }}>
 
       {/* ── Header ── */}
       <header style={{
@@ -158,7 +158,7 @@ export default function MonitorPage() {
             href={`/interview/${interviewId}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0EA5E9', textDecoration: 'none' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7C3AED', textDecoration: 'none' }}
           >
             <ExternalLink size={12} /> Candidate View
           </a>
@@ -213,7 +213,7 @@ export default function MonitorPage() {
                 <div style={{ fontSize: 12, marginTop: 6 }}>
                   Candidate must open{' '}
                   <a href={`/interview/${interviewId}`} target="_blank" rel="noopener noreferrer"
-                     style={{ color: '#0EA5E9', textDecoration: 'none' }}>
+                     style={{ color: '#7C3AED', textDecoration: 'none' }}>
                     their interview link
                   </a>{' '}
                   first.
@@ -226,7 +226,7 @@ export default function MonitorPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
-                    color: entry.speaker === 'ai' ? '#0EA5E9' : '#10B981',
+                    color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981',
                   }}>
                     {entry.speaker === 'ai' ? '🤖 AI (Alex)' : `👤 ${candidate.name.split(' ')[0]}`}
                   </span>
@@ -277,13 +277,13 @@ export default function MonitorPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Running Score</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: score >= 80 ? '#10B981' : score >= 60 ? '#0EA5E9' : '#F59E0B', lineHeight: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: score >= 80 ? '#10B981' : score >= 60 ? '#7C3AED' : '#F59E0B', lineHeight: 1 }}>
                     {responses.length > 0 ? `${score}` : '—'}
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${score}%`, background: score >= 80 ? '#10B981' : score >= 60 ? '#0EA5E9' : '#F59E0B', borderRadius: 3, transition: 'width 0.5s ease' }} />
+                    <div style={{ height: '100%', width: `${score}%`, background: score >= 80 ? '#10B981' : score >= 60 ? '#7C3AED' : '#F59E0B', borderRadius: 3, transition: 'width 0.5s ease' }} />
                   </div>
                   <div style={{ fontSize: 10, color: '#475569', marginTop: 4 }}>
                     {responses.length} question{responses.length !== 1 ? 's' : ''} evaluated
@@ -306,7 +306,7 @@ export default function MonitorPage() {
             )}
 
             {responses.map((r, idx) => {
-              const color = r.score >= 80 ? '#10B981' : r.score >= 60 ? '#0EA5E9' : '#F59E0B'
+              const color = r.score >= 80 ? '#10B981' : r.score >= 60 ? '#7C3AED' : '#F59E0B'
               return (
                 <div
                   key={r.questionId}
@@ -368,7 +368,7 @@ export default function MonitorPage() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {[
                 { label: 'Agent', active: true, color: '#10B981' },
-                { label: 'Candidate', active: !!session, color: '#0EA5E9' },
+                { label: 'Candidate', active: !!session, color: '#7C3AED' },
               ].map((s) => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{
@@ -396,7 +396,7 @@ export default function MonitorPage() {
 
             {/* Code / whiteboard indicators */}
             <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: session?.codeEditorContent ? '#0EA5E9' : '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: session?.codeEditorContent ? '#7C3AED' : '#334155' }}>
                 <Code2 size={12} />
                 <span>Code Editor: {session?.codeEditorContent ? 'active' : 'not opened'}</span>
               </div>
@@ -454,7 +454,7 @@ export default function MonitorPage() {
               <button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim()}
-                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#0EA5E9', color: '#fff', cursor: 'pointer', fontWeight: 700 }}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#7C3AED', color: '#fff', cursor: 'pointer', fontWeight: 700 }}
               >
                 Send
               </button>

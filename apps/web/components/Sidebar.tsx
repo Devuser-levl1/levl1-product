@@ -11,7 +11,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Mic,
+  Zap,
   Plus,
   Upload,
 } from "lucide-react";
@@ -49,7 +49,7 @@ export default function Sidebar() {
         top: 0,
         left: 0,
         height: "100vh",
-        background: "#0F2147",
+        background: "#4F46E5",
         borderRight: "1px solid rgba(255,255,255,0.07)",
         zIndex: 50,
         overflow: "hidden",
@@ -74,15 +74,15 @@ export default function Sidebar() {
             width: 32,
             height: 32,
             borderRadius: 9,
-            background: "linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)",
+            background: "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(14,165,233,0.40)",
+            boxShadow: "0 4px 12px rgba(124,58,237,0.40)",
           }}
         >
-          <Mic size={15} color="white" strokeWidth={2.5} />
+          <Zap size={15} color="white" strokeWidth={2.5} fill="white" />
         </div>
 
         <AnimatePresence>
@@ -104,7 +104,7 @@ export default function Sidebar() {
                   lineHeight: 1,
                 }}
               >
-                InterviewCentral
+                Levl1
               </div>
               <div
                 style={{
@@ -114,7 +114,7 @@ export default function Sidebar() {
                   fontFamily: "var(--font-sans)",
                 }}
               >
-                Recruiter Dashboard
+                AI Interview Platform
               </div>
             </motion.div>
           )}
@@ -145,9 +145,9 @@ export default function Sidebar() {
             gap: 8,
             padding: sidebarCollapsed ? "9px" : "9px 12px",
             borderRadius: 8,
-            background: "rgba(14,165,233,0.18)",
-            border: "1px solid rgba(14,165,233,0.30)",
-            color: "#38BDF8",
+            background: "rgba(124,58,237,0.18)",
+            border: "1px solid rgba(124,58,237,0.30)",
+            color: "#C4B5FD",
             cursor: "pointer",
             fontSize: 13,
             fontWeight: 600,
@@ -156,10 +156,10 @@ export default function Sidebar() {
             marginBottom: 10,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(14,165,233,0.28)";
+            e.currentTarget.style.background = "rgba(124,58,237,0.28)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(14,165,233,0.18)";
+            e.currentTarget.style.background = "rgba(124,58,237,0.18)";
           }}
         >
           <Plus size={16} style={{ flexShrink: 0 }} />
@@ -349,7 +349,7 @@ export default function Sidebar() {
                   width: 30,
                   height: 30,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)",
+                  background: "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

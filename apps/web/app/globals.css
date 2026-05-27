@@ -11,11 +11,11 @@
   --font-mono:    ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
 
   /* Brand */
-  --brand:       #0F2147;
-  --brand-dim:   #0B1A38;
-  --accent:      #0EA5E9;
-  --accent-dim:  #0284C7;
-  --accent-glow: rgba(14, 165, 233, 0.14);
+  --brand:       #4F46E5;
+  --brand-dim:   #3730A3;
+  --accent:      #7C3AED;
+  --accent-dim:  #6D28D9;
+  --accent-glow: rgba(124, 58, 237, 0.14);
 
   /* Backgrounds */
   --bg:          #FAFAFA;
@@ -25,10 +25,10 @@
 
   /* Borders */
   --border:        #E2E8F0;
-  --border-active: #0EA5E9;
+  --border-active: #7C3AED;
 
   /* Text */
-  --text-primary:   #0F2147;
+  --text-primary:   #4F46E5;
   --text-secondary: #475569;
   --text-muted:     #94A3B8;
 
@@ -38,18 +38,18 @@
   --danger:  #EF4444;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(15, 33, 71, 0.06), 0 1px 2px rgba(15, 33, 71, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 33, 71, 0.08), 0 2px 4px rgba(15, 33, 71, 0.04);
-  --shadow-lg: 0 8px 24px rgba(15, 33, 71, 0.10), 0 4px 8px rgba(15, 33, 71, 0.06);
+  --shadow-sm: 0 1px 3px rgba(79, 70, 229, 0.06), 0 1px 2px rgba(79, 70, 229, 0.04);
+  --shadow-md: 0 4px 12px rgba(79, 70, 229, 0.08), 0 2px 4px rgba(79, 70, 229, 0.04);
+  --shadow-lg: 0 8px 24px rgba(79, 70, 229, 0.10), 0 4px 8px rgba(79, 70, 229, 0.06);
 
   /* Sidebar (dark inverse panel) */
-  --sidebar-bg:             #0F2147;
+  --sidebar-bg:             #4F46E5;
   --sidebar-border:         rgba(255, 255, 255, 0.08);
   --sidebar-text:           rgba(255, 255, 255, 0.60);
   --sidebar-text-hover:     #FFFFFF;
-  --sidebar-active-bg:      rgba(14, 165, 233, 0.18);
-  --sidebar-active-text:    #38BDF8;
-  --sidebar-active-border:  rgba(14, 165, 233, 0.35);
+  --sidebar-active-bg:      rgba(124, 58, 237, 0.18);
+  --sidebar-active-text:    #C4B5FD;
+  --sidebar-active-border:  rgba(124, 58, 237, 0.35);
   --sidebar-hover-bg:       rgba(255, 255, 255, 0.07);
 
   /* Legacy aliases (keep existing components working) */
@@ -104,7 +104,7 @@ body {
 .btn-primary:hover {
   background: var(--accent-dim);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.30);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.30);
 }
 
 .btn-navy {
@@ -126,7 +126,7 @@ body {
 .btn-navy:hover {
   background: var(--brand-dim);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(15, 33, 71, 0.25);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25);
 }
 
 .btn-ghost {
@@ -184,7 +184,7 @@ body {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
-.badge-brand   { background: rgba(14,165,233,0.10);  color: #0284C7; border: 1px solid rgba(14,165,233,0.22); }
+.badge-brand   { background: rgba(124,58,237,0.10);  color: #6D28D9; border: 1px solid rgba(124,58,237,0.22); }
 .badge-success { background: rgba(16,185,129,0.10);  color: #059669; border: 1px solid rgba(16,185,129,0.22); }
 .badge-warning { background: rgba(245,158,11,0.10);  color: #D97706; border: 1px solid rgba(245,158,11,0.22); }
 .badge-danger  { background: rgba(239,68,68,0.10);   color: #DC2626; border: 1px solid rgba(239,68,68,0.22); }
@@ -205,7 +205,7 @@ body {
 }
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.10);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.10);
 }
 .input::placeholder { color: var(--text-muted); }
 

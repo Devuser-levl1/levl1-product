@@ -8,11 +8,11 @@ function Section({ icon: Icon, title, description, children }: { icon: React.Ele
   return (
     <div className="card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingBottom: 16, borderBottom: "1px solid #F1F5F9" }}>
-        <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={17} color="#0EA5E9" />
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={17} color="#7C3AED" />
         </div>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>{title}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>{title}</div>
           <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3, fontWeight: 500 }}>{description}</div>
         </div>
       </div>
@@ -36,13 +36,13 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       onClick={() => onChange(!checked)}
       style={{
         width: 44, height: 24, borderRadius: 100,
-        background: checked ? "#0EA5E9" : "#E2E8F0",
+        background: checked ? "#7C3AED" : "#E2E8F0",
         border: "none",
         cursor: "pointer",
         transition: "all 0.2s",
         position: "relative",
         flexShrink: 0,
-        boxShadow: checked ? "0 2px 8px rgba(14,165,233,0.30)" : "none",
+        boxShadow: checked ? "0 2px 8px rgba(124,58,237,0.30)" : "none",
       }}
     >
       <div
@@ -64,7 +64,7 @@ function ToggleRow({ label, sub, checked, onChange }: { label: string; sub?: str
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>{label}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{label}</div>
         {sub && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, fontWeight: 500 }}>{sub}</div>}
       </div>
       <Toggle checked={checked} onChange={onChange} />
@@ -78,7 +78,7 @@ const SELECT_STYLE: React.CSSProperties = {
   borderRadius: 8,
   padding: "10px 14px",
   fontSize: 14,
-  color: "#0F2147",
+  color: "#4F46E5",
   fontFamily: "var(--font-sans)",
   cursor: "pointer",
   outline: "none",
@@ -87,9 +87,9 @@ const SELECT_STYLE: React.CSSProperties = {
 };
 
 export default function SettingsPage() {
-  const [agencyName,    setAgencyName]    = useState("InterviewCentral Agency");
+  const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
   const [agencyEmail,   setAgencyEmail]   = useState("abma3005@gmail.com");
-  const [agencyWebsite, setAgencyWebsite] = useState("https://interviewcentral.ai");
+  const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
 
   const [notifEmail,      setNotifEmail]      = useState(true);
   const [notifSlack,      setNotifSlack]      = useState(false);
@@ -106,7 +106,7 @@ export default function SettingsPage() {
 
       {/* Header */}
       <div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#0F2147", letterSpacing: "-0.025em" }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
           Settings
         </h1>
         <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
@@ -172,8 +172,8 @@ export default function SettingsPage() {
       <Section icon={Users} title="Team Members" description="Manage who has access to this dashboard">
         {[
           { name: "Abhijit Majumdar", email: "abma3005@gmail.com",       role: "Owner"    },
-          { name: "HR Manager",       email: "hr@interviewcentral.ai",   role: "HR"       },
-          { name: "Tech Lead",        email: "tech@interviewcentral.ai", role: "Reviewer" },
+          { name: "HR Manager",       email: "hr@levl1.ai",   role: "HR"       },
+          { name: "Tech Lead",        email: "tech@levl1.ai", role: "Reviewer" },
         ].map((member) => (
           <div
             key={member.email}
@@ -189,16 +189,16 @@ export default function SettingsPage() {
               <div
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
-                  background: "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(56,189,248,0.08))",
-                  border: "1px solid rgba(14,165,233,0.20)",
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))",
+                  border: "1px solid rgba(124,58,237,0.20)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700, color: "#0284C7",
+                  fontSize: 12, fontWeight: 700, color: "#6D28D9",
                 }}
               >
                 {member.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>{member.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{member.name}</div>
                 <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{member.email}</div>
               </div>
             </div>

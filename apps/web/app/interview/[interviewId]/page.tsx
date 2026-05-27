@@ -146,7 +146,7 @@ const SECTION_LABEL: Record<string, string> = {
 }
 
 const SECTION_COLOR: Record<string, string> = {
-  technical:  '#0EA5E9',
+  technical:  '#7C3AED',
   behavioral: '#10B981',
   scenario:   '#8B5CF6',
   eq:         '#F59E0B',
@@ -630,7 +630,7 @@ export default function InterviewPage() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', color: '#94A3B8' }}>
           <AlertTriangle size={40} style={{ margin: '0 auto 12px' }} />
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#0F2147' }}>Interview not found</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Interview not found</div>
           <div style={{ fontSize: 13, marginTop: 6 }}>Interview ID: {interviewId}</div>
         </div>
       </div>
@@ -640,7 +640,7 @@ export default function InterviewPage() {
   /* Mobile warning */
   if (isMobile) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F2147', padding: 32 }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5', padding: 32 }}>
         <div style={{ textAlign: 'center', color: '#fff', maxWidth: 340 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>💻</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, marginBottom: 12 }}>
@@ -660,7 +660,7 @@ export default function InterviewPage() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>✅</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#0F2147', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>
             Interview Complete
           </div>
           <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
@@ -682,22 +682,22 @@ export default function InterviewPage() {
         justifyContent: 'center', background: '#F8FAFC', gap: 32,
       }}>
         {/* Logo */}
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#0F2147', letterSpacing: '-0.025em' }}>
-          Interview<span style={{ color: '#0EA5E9' }}>Central</span>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.025em' }}>
+          Interview<span style={{ color: '#7C3AED' }}>Central</span>
         </div>
 
-        <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(15,33,71,0.08)' }}>
+        <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(79,70,229,0.08)' }}>
           {/* AI Avatar */}
           <div style={{
             width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px',
-            background: 'linear-gradient(135deg, #0F2147, #1B3A6E)',
-            border: '3px solid #0EA5E9',
+            background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
+            border: '3px solid #7C3AED',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Mic size={32} color="#0EA5E9" />
+            <Mic size={32} color="#7C3AED" />
           </div>
 
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#0F2147', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>
             Your Interview is Ready
           </div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>
@@ -715,7 +715,7 @@ export default function InterviewPage() {
             onClick={startInterview}
             style={{
               width: '100%', padding: '14px 0',
-              background: 'linear-gradient(135deg, #0F2147, #1B3A6E)',
+              background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
               color: '#fff', border: 'none', borderRadius: 12,
               fontSize: 15, fontWeight: 700, cursor: 'pointer',
               letterSpacing: '-0.01em',
@@ -734,7 +734,7 @@ export default function InterviewPage() {
 
   /* ── Active interview UI ───────────────────────────────────── */
   const currentQ  = questions[currentQIdx]
-  const timerColor = timeRemaining <= 120 ? '#DC2626' : timeRemaining <= 300 ? '#D97706' : '#0F2147'
+  const timerColor = timeRemaining <= 120 ? '#DC2626' : timeRemaining <= 300 ? '#D97706' : '#4F46E5'
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
@@ -745,8 +745,8 @@ export default function InterviewPage() {
         padding: '0 28px', height: 56, background: '#fff',
         borderBottom: '1px solid #E2E8F0', flexShrink: 0,
       }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, color: '#0F2147', letterSpacing: '-0.02em' }}>
-          Interview<span style={{ color: '#0EA5E9' }}>Central</span>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.02em' }}>
+          Interview<span style={{ color: '#7C3AED' }}>Central</span>
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', textAlign: 'center' }}>
           {candidate.name} · {position.title}
@@ -799,13 +799,13 @@ export default function InterviewPage() {
             {/* Avatar */}
             <div style={{
               width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #0F2147 0%, #1B3A6E 100%)',
-              border: `3px solid ${isSpeaking ? '#0EA5E9' : '#1E3A6E'}`,
-              boxShadow: isSpeaking ? '0 0 0 6px rgba(14,165,233,0.15)' : 'none',
+              background: 'linear-gradient(135deg, #4F46E5 0%, #4338CA 100%)',
+              border: `3px solid ${isSpeaking ? '#7C3AED' : '#4338CA'}`,
+              boxShadow: isSpeaking ? '0 0 0 6px rgba(124,58,237,0.15)' : 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.4s ease',
             }}>
-              <Mic size={28} color={isSpeaking ? '#0EA5E9' : '#94A3B8'} />
+              <Mic size={28} color={isSpeaking ? '#7C3AED' : '#94A3B8'} />
             </div>
 
             {/* Waveform */}
@@ -815,7 +815,7 @@ export default function InterviewPage() {
                   key={i}
                   style={{
                     width: 4, borderRadius: 2,
-                    background: isSpeaking ? '#0EA5E9' : isListening ? '#10B981' : '#CBD5E1',
+                    background: isSpeaking ? '#7C3AED' : isListening ? '#10B981' : '#CBD5E1',
                     height: (isSpeaking || isListening) ? undefined : '4px',
                     animation: (isSpeaking || isListening)
                       ? `waveBar 1.1s ease-in-out ${i * 0.13}s infinite`
@@ -863,7 +863,7 @@ export default function InterviewPage() {
                     {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#0F2147', lineHeight: 1.65, margin: 0 }}>
+                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.65, margin: 0 }}>
                   {currentQ.question}
                 </p>
                 {currentQ.section === 'whiteboard' && (
@@ -906,7 +906,7 @@ export default function InterviewPage() {
               <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <span style={{
                   fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2,
-                  color: entry.speaker === 'ai' ? '#0EA5E9' : '#10B981',
+                  color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981',
                   letterSpacing: '0.04em',
                 }}>
                   {entry.speaker === 'ai' ? 'ALEX' : 'YOU'}
@@ -947,7 +947,7 @@ export default function InterviewPage() {
                 disabled={!textInputValue.trim()}
                 style={{
                   padding: '0 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: textInputValue.trim() ? '#0F2147' : '#E2E8F0',
+                  background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0',
                   color: textInputValue.trim() ? '#fff' : '#94A3B8',
                   fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
                 }}
@@ -1007,7 +1007,7 @@ export default function InterviewPage() {
                     onClick={() => setCodeLanguage(lang)}
                     style={{
                       padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                      background: codeLanguage === lang ? '#0F2147' : 'transparent',
+                      background: codeLanguage === lang ? '#4F46E5' : 'transparent',
                       color: codeLanguage === lang ? '#fff' : '#64748B',
                     }}
                   >
@@ -1070,12 +1070,12 @@ export default function InterviewPage() {
       {/* ── End confirm modal ── */}
       {showEndConfirm && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(15,33,71,0.5)',
+          position: 'fixed', inset: 0, background: 'rgba(79,70,229,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999,
         }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 360, textAlign: 'center', boxShadow: '0 20px 60px rgba(15,33,71,0.2)' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 360, textAlign: 'center', boxShadow: '0 20px 60px rgba(79,70,229,0.2)' }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#0F2147', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>
               End Interview?
             </div>
             <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 24 }}>

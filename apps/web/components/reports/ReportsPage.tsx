@@ -19,13 +19,13 @@ const REC_CFG = {
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 function ScoreBar({ score, max = 120 }: { score: number; max?: number }) {
-  const color = score >= 85 ? "#10B981" : score >= 70 ? "#0EA5E9" : "#F59E0B";
+  const color = score >= 85 ? "#10B981" : score >= 70 ? "#7C3AED" : "#F59E0B";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ flex: 1, height: 6, borderRadius: 3, background: "#F1F5F9", overflow: "hidden", maxWidth: max }}>
         <div style={{ height: "100%", width: `${score}%`, background: color, borderRadius: 3, transition: "width 0.6s ease" }} />
       </div>
-      <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: "#0F2147", minWidth: 28, textAlign: "right" }}>
+      <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: "#4F46E5", minWidth: 28, textAlign: "right" }}>
         {score}
       </span>
     </div>
@@ -188,7 +188,7 @@ export default function ReportsPage() {
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#0F2147", letterSpacing: "-0.025em" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
             Reports & Rankings
           </h1>
           <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
@@ -209,17 +209,17 @@ export default function ReportsPage() {
           background: "#fff",
           border: "1px solid #E2E8F0",
           borderRadius: 12,
-          boxShadow: "0 1px 3px rgba(15,33,71,0.05)",
+          boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
         }}
       >
-        <BarChart2 size={16} color="#0EA5E9" />
+        <BarChart2 size={16} color="#7C3AED" />
         <span style={{ fontSize: 13, fontWeight: 600, color: "#64748B" }}>Viewing report for:</span>
         <select
           value={selectedPositionId}
           onChange={(e) => { setSelectedPositionId(e.target.value); setExpandedId(null); setReportTab("rankings"); }}
           style={{
             background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8,
-            padding: "7px 14px", fontSize: 13, color: "#0F2147",
+            padding: "7px 14px", fontSize: 13, color: "#4F46E5",
             fontFamily: "var(--font-sans)", cursor: "pointer", outline: "none",
             flex: 1, maxWidth: 400, fontWeight: 500,
           }}
@@ -244,7 +244,7 @@ export default function ReportsPage() {
       {/* ── Stats row ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
-          { icon: Users,      label: "Total Candidates", value: allForPosition.length,              sub: "uploaded for this position", color: "#0EA5E9" },
+          { icon: Users,      label: "Total Candidates", value: allForPosition.length,              sub: "uploaded for this position", color: "#7C3AED" },
           { icon: Award,      label: "Evaluated",        value: completedCount,                     sub: "interviews completed",       color: "#10B981" },
           { icon: TrendingUp, label: "Avg Score",        value: completedCount > 0 ? avgScore : "—", sub: "across all evaluations",   color: "#8B5CF6" },
           { icon: Star,       label: "Recommended",      value: strongYes,                          sub: "Yes or Strong Yes",          color: "#F59E0B" },
@@ -259,7 +259,7 @@ export default function ReportsPage() {
               </div>
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 800, color: "#0F2147", lineHeight: 1, letterSpacing: "-0.02em" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 800, color: "#4F46E5", lineHeight: 1, letterSpacing: "-0.02em" }}>
                 {s.value}
               </div>
               <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>{s.sub}</div>
@@ -278,8 +278,8 @@ export default function ReportsPage() {
               padding: "8px 20px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer",
               border: "none", transition: "all 0.15s",
               background: reportTab === tab ? "#fff" : "transparent",
-              color: reportTab === tab ? "#0F2147" : "#64748B",
-              boxShadow: reportTab === tab ? "0 1px 3px rgba(15,33,71,0.08)" : "none",
+              color: reportTab === tab ? "#4F46E5" : "#64748B",
+              boxShadow: reportTab === tab ? "0 1px 3px rgba(79,70,229,0.08)" : "none",
             }}
           >
             {tab === "rankings" ? "Candidate Rankings" : "Position Summary"}
@@ -295,8 +295,8 @@ export default function ReportsPage() {
           {/* Rankings table */}
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "16px 24px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0F2147", display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-display)" }}>
-                <Award size={16} color="#0EA5E9" />
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-display)" }}>
+                <Award size={16} color="#7C3AED" />
                 Candidate Rankings
               </h2>
               {completedCount > 0 && <span className="badge badge-muted">{completedCount} evaluated</span>}
@@ -348,16 +348,16 @@ export default function ReportsPage() {
                         <div
                           style={{
                             width: 36, height: 36, borderRadius: "50%",
-                            background: isTop ? "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(56,189,248,0.08))" : "#F1F5F9",
-                            border: `1px solid ${isTop ? "rgba(14,165,233,0.22)" : "#E2E8F0"}`,
+                            background: isTop ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))" : "#F1F5F9",
+                            border: `1px solid ${isTop ? "rgba(124,58,237,0.22)" : "#E2E8F0"}`,
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 13, fontWeight: 700, color: isTop ? "#0284C7" : "#64748B", flexShrink: 0,
+                            fontSize: 13, fontWeight: 700, color: isTop ? "#6D28D9" : "#64748B", flexShrink: 0,
                           }}
                         >
                           {initials}
                         </div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>
                             {c.name}
                             {isTop && (
                               <span style={{ marginLeft: 8, fontSize: 10, color: "#D97706", fontWeight: 700, letterSpacing: "0.05em", background: "rgba(245,158,11,0.10)", padding: "1px 6px", borderRadius: 4 }}>
@@ -424,13 +424,13 @@ export default function ReportsPage() {
                         <div
                           style={{
                             padding: "14px 20px",
-                            background: "linear-gradient(135deg, rgba(14,165,233,0.06), rgba(139,92,246,0.04))",
+                            background: "linear-gradient(135deg, rgba(124,58,237,0.06), rgba(139,92,246,0.04))",
                             borderBottom: "1px solid #E2E8F0",
                             display: "flex", alignItems: "center", gap: 8,
                           }}
                         >
                           <Sparkles size={14} color="#8B5CF6" />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>
                             AI Candidate Report — {c.name}
                           </span>
                           {rec && (
@@ -454,7 +454,7 @@ export default function ReportsPage() {
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                               {[
-                                { label: "Technical",  score: sScores.technical,  color: "#0EA5E9" },
+                                { label: "Technical",  score: sScores.technical,  color: "#7C3AED" },
                                 { label: "Behavioral", score: sScores.behavioral, color: "#10B981" },
                                 { label: "Scenario",   score: sScores.scenario,   color: "#8B5CF6" },
                                 { label: "EQ",         score: sScores.eq,         color: "#F59E0B" },
@@ -512,8 +512,8 @@ export default function ReportsPage() {
                                     key={skill}
                                     style={{
                                       fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 6,
-                                      background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.18)",
-                                      color: "#0284C7",
+                                      background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.18)",
+                                      color: "#6D28D9",
                                     }}
                                   >
                                     {skill}
@@ -534,14 +534,14 @@ export default function ReportsPage() {
           {/* Score Distribution chart */}
           {positionCandidates.length > 0 && (
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0F2147", display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-display)" }}>
-                <BarChart2 size={15} color="#0EA5E9" />
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-display)" }}>
+                <BarChart2 size={15} color="#7C3AED" />
                 Score Distribution
               </h2>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 100, paddingBottom: 8 }}>
                 {positionCandidates.map((c) => {
                   const heightPct = ((c.score ?? 0) / 100) * 88 + 12;
-                  const color     = (c.score ?? 0) >= 85 ? "#10B981" : (c.score ?? 0) >= 70 ? "#0EA5E9" : "#F59E0B";
+                  const color     = (c.score ?? 0) >= 85 ? "#10B981" : (c.score ?? 0) >= 70 ? "#7C3AED" : "#F59E0B";
                   return (
                     <div key={c.id} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
                       <span className="font-mono" style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700 }}>{c.score}</span>
@@ -562,7 +562,7 @@ export default function ReportsPage() {
               <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#94A3B8" }}>
                 {[
                   { label: "85–100 · Excellent", color: "#10B981" },
-                  { label: "70–84 · Good",        color: "#0EA5E9" },
+                  { label: "70–84 · Good",        color: "#7C3AED" },
                   { label: "< 70 · Average",      color: "#F59E0B" },
                 ].map((l) => (
                   <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -594,7 +594,7 @@ export default function ReportsPage() {
               <div
                 style={{
                   width: 60, height: 60, borderRadius: 16,
-                  background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(14,165,233,0.08))",
+                  background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(124,58,237,0.08))",
                   border: "1px solid rgba(139,92,246,0.18)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
@@ -602,7 +602,7 @@ export default function ReportsPage() {
                 <Sparkles size={24} color="#8B5CF6" />
               </div>
               <div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#0F2147", marginBottom: 8 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>
                   Generate Position Summary
                 </div>
                 <div style={{ fontSize: 14, color: "#64748B", maxWidth: 420, lineHeight: 1.6 }}>
@@ -632,7 +632,7 @@ export default function ReportsPage() {
               <div
                 style={{
                   padding: "18px 24px",
-                  background: "linear-gradient(135deg, rgba(139,92,246,0.06), rgba(14,165,233,0.04))",
+                  background: "linear-gradient(135deg, rgba(139,92,246,0.06), rgba(124,58,237,0.04))",
                   border: "1px solid rgba(139,92,246,0.14)",
                   borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -641,7 +641,7 @@ export default function ReportsPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Sparkles size={16} color="#8B5CF6" />
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0F2147" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>
                       AI Position Summary · {selectedPosition?.title}
                     </div>
                     <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
@@ -663,7 +663,7 @@ export default function ReportsPage() {
               {/* Pipeline overview */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
                 {[
-                  { label: "Evaluated",       value: completedCount,  color: "#0EA5E9", sub: "completed interviews"  },
+                  { label: "Evaluated",       value: completedCount,  color: "#7C3AED", sub: "completed interviews"  },
                   { label: "Avg Score",        value: avgScore,        color: "#10B981", sub: "talent pool average"   },
                   { label: "Recommended",      value: strongYes,       color: "#8B5CF6", sub: "Yes or Strong Yes"     },
                   { label: "Hire Rate",        value: `${completedCount > 0 ? Math.round((strongYes / completedCount) * 100) : 0}%`, color: "#F59E0B", sub: "recommended / total" },
@@ -680,7 +680,7 @@ export default function ReportsPage() {
               <div className="card" style={{ padding: 0, overflow: "hidden" }}>
                 <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: 8 }}>
                   <Trophy size={15} color="#F59E0B" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
                     Candidate Ranking
                   </span>
                 </div>
@@ -697,7 +697,7 @@ export default function ReportsPage() {
                       }}
                     >
                       <RankMedal rank={idx} />
-                      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#0F2147" }}>{c.name}</div>
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{c.name}</div>
                       <ScoreBar score={c.score ?? 0} max={80} />
                       {rec && (
                         <span style={{ fontSize: 11, fontWeight: 700, color: rec.color, background: rec.bg, border: `1px solid ${rec.border}`, padding: "2px 8px", borderRadius: 100, whiteSpace: "nowrap" }}>
@@ -713,7 +713,7 @@ export default function ReportsPage() {
               <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Lightbulb size={15} color="#8B5CF6" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
                     AI Talent Pool Insights
                   </span>
                 </div>
@@ -728,7 +728,7 @@ export default function ReportsPage() {
                 <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <CheckCircle2 size={15} color="#10B981" />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
                       Common Strengths
                     </span>
                   </div>
@@ -748,7 +748,7 @@ export default function ReportsPage() {
                 <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Target size={15} color="#F59E0B" />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
                       Common Gaps
                     </span>
                   </div>
@@ -769,15 +769,15 @@ export default function ReportsPage() {
               <div
                 style={{
                   padding: "16px 20px",
-                  background: "rgba(14,165,233,0.05)",
-                  border: "1px solid rgba(14,165,233,0.15)",
+                  background: "rgba(124,58,237,0.05)",
+                  border: "1px solid rgba(124,58,237,0.15)",
                   borderRadius: 12,
                   display: "flex", alignItems: "flex-start", gap: 10,
                 }}
               >
-                <Globe size={15} color="#0EA5E9" style={{ marginTop: 2, flexShrink: 0 }} />
+                <Globe size={15} color="#7C3AED" style={{ marginTop: 2, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#0284C7", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6D28D9", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                     Market Observation
                   </div>
                   <p style={{ fontSize: 13, lineHeight: 1.65, color: "#334155", margin: 0 }}>
@@ -792,7 +792,7 @@ export default function ReportsPage() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Flag size={15} color="#DC2626" />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
                         Question Health Flags
                       </span>
                     </div>

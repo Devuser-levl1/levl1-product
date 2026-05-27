@@ -5,7 +5,7 @@ import { Pen, Square, Circle, Minus, Type, Eraser, Undo2, Download } from 'lucid
 
 type Tool = 'pen' | 'rect' | 'circle' | 'arrow' | 'text' | 'eraser'
 
-const PRESET_COLORS = ['#0F2147', '#0EA5E9', '#10B981', '#F59E0B', '#DC2626']
+const PRESET_COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#DC2626']
 const CANVAS_W = 1400
 const CANVAS_H = 480
 
@@ -191,8 +191,8 @@ export default function Whiteboard({ onExport }: Props) {
               onClick={() => setTool(t.id)}
               style={{
                 padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: tool === t.id ? 'rgba(14,165,233,0.25)' : 'transparent',
-                color: tool === t.id ? '#0EA5E9' : '#94A3B8',
+                background: tool === t.id ? 'rgba(124,58,237,0.25)' : 'transparent',
+                color: tool === t.id ? '#7C3AED' : '#94A3B8',
                 display: 'flex', alignItems: 'center',
                 transition: 'all 0.15s',
               }}

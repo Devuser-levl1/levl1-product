@@ -79,7 +79,7 @@ export default function PositionsPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#0F2147", letterSpacing: "-0.025em" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
             Positions
           </h1>
           <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
@@ -122,8 +122,8 @@ export default function PositionsPage() {
                 gap: 7,
                 fontFamily: "var(--font-sans)",
                 background: activeTab === tab.key ? "#fff" : "transparent",
-                color:      activeTab === tab.key ? "#0F2147" : "#94A3B8",
-                boxShadow:  activeTab === tab.key ? "0 1px 3px rgba(15,33,71,0.08)" : "none",
+                color:      activeTab === tab.key ? "#4F46E5" : "#94A3B8",
+                boxShadow:  activeTab === tab.key ? "0 1px 3px rgba(79,70,229,0.08)" : "none",
               }}
             >
               {tab.label}
@@ -131,8 +131,8 @@ export default function PositionsPage() {
                 style={{
                   fontSize: 10,
                   fontFamily: "var(--font-mono)",
-                  background: activeTab === tab.key ? "rgba(14,165,233,0.1)" : "#F1F5F9",
-                  color:      activeTab === tab.key ? "#0284C7" : "#94A3B8",
+                  background: activeTab === tab.key ? "rgba(124,58,237,0.1)" : "#F1F5F9",
+                  color:      activeTab === tab.key ? "#6D28D9" : "#94A3B8",
                   padding: "1px 6px",
                   borderRadius: 100,
                   fontWeight: 700,
@@ -204,7 +204,7 @@ export default function PositionsPage() {
               >
                 {/* Position */}
                 <div style={{ paddingRight: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", lineHeight: 1.3 }}>
                     {pos.title}
                   </div>
                   <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
@@ -273,7 +273,7 @@ export default function PositionsPage() {
                         {pos.interviewsCompleted}/{total}
                       </span>
                       <div style={{ width: 50, height: 3, borderRadius: 2, background: "#E2E8F0", overflow: "hidden", marginTop: 5 }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: "#0EA5E9", borderRadius: 2 }} />
+                        <div style={{ height: "100%", width: `${pct}%`, background: "#7C3AED", borderRadius: 2 }} />
                       </div>
                     </div>
                   ) : (

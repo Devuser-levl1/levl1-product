@@ -69,9 +69,9 @@ function RadioGroup({ options, value, onChange }: { options: string[]; value: st
             fontSize: 13,
             fontWeight: 500,
             cursor: "pointer",
-            border: `1px solid ${value === opt ? "#0EA5E9" : "#E2E8F0"}`,
-            background: value === opt ? "rgba(14,165,233,0.08)" : "#F8FAFC",
-            color: value === opt ? "#0284C7" : "#475569",
+            border: `1px solid ${value === opt ? "#7C3AED" : "#E2E8F0"}`,
+            background: value === opt ? "rgba(124,58,237,0.08)" : "#F8FAFC",
+            color: value === opt ? "#6D28D9" : "#475569",
             transition: "all 0.15s",
             fontFamily: "var(--font-sans)",
           }}
@@ -90,10 +90,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       onClick={() => onChange(!checked)}
       style={{
         width: 44, height: 24, borderRadius: 100,
-        background: checked ? "#0EA5E9" : "#E2E8F0",
+        background: checked ? "#7C3AED" : "#E2E8F0",
         border: "none", cursor: "pointer", transition: "all 0.2s",
         position: "relative", flexShrink: 0,
-        boxShadow: checked ? "0 2px 8px rgba(14,165,233,0.30)" : "none",
+        boxShadow: checked ? "0 2px 8px rgba(124,58,237,0.30)" : "none",
       }}
     >
       <div style={{
@@ -121,9 +121,9 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, minHeight: 44, alignItems: "center" }}>
       {tags.map((t) => (
-        <span key={t} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(14,165,233,0.10)", border: "1px solid rgba(14,165,233,0.22)", color: "#0284C7", fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 100, fontFamily: "var(--font-mono)" }}>
+        <span key={t} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(124,58,237,0.10)", border: "1px solid rgba(124,58,237,0.22)", color: "#6D28D9", fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 100, fontFamily: "var(--font-mono)" }}>
           {t}
-          <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} style={{ background: "none", border: "none", cursor: "pointer", color: "#0284C7", padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+          <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} style={{ background: "none", border: "none", cursor: "pointer", color: "#6D28D9", padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
         </span>
       ))}
       <input
@@ -132,7 +132,7 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (
         onKeyDown={handleKey}
         onBlur={add}
         placeholder={tags.length === 0 ? placeholder : ""}
-        style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#0F2147", flex: 1, minWidth: 120, fontFamily: "var(--font-sans)" }}
+        style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#4F46E5", flex: 1, minWidth: 120, fontFamily: "var(--font-sans)" }}
       />
     </div>
   );
@@ -158,17 +158,17 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const SELECT_STYLE: React.CSSProperties = {
   background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8,
-  padding: "10px 14px", fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)",
+  padding: "10px 14px", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
   cursor: "pointer", outline: "none", width: "100%", fontWeight: 500,
 };
 
 function SliderField({ label, hint, value, onChange }: { label: string; hint: string; value: number; onChange: (v: number) => void }) {
-  const color = value >= 70 ? "#10B981" : value >= 40 ? "#0EA5E9" : "#94A3B8";
+  const color = value >= 70 ? "#10B981" : value >= 40 ? "#7C3AED" : "#94A3B8";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 800, color: "#0F2147" }}>{value}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 800, color: "#4F46E5" }}>{value}</span>
       </div>
       <input
         type="range" min={0} max={100} value={value}
@@ -188,7 +188,7 @@ function SliderField({ label, hint, value, onChange }: { label: string; hint: st
 function DiffBadge({ diff }: { diff: string }) {
   const cfg: Record<string, { color: string; bg: string }> = {
     basic:        { color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-    intermediate: { color: "#0EA5E9", bg: "rgba(14,165,233,0.08)" },
+    intermediate: { color: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
     advanced:     { color: "#8B5CF6", bg: "rgba(139,92,246,0.08)" },
   };
   const c = cfg[diff] ?? cfg.intermediate;
@@ -231,7 +231,7 @@ function QuestionCard({
       {/* Badge row */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
         {q.isNew && (
-          <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#0EA5E9", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>New</span>
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#7C3AED", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>New</span>
         )}
         {q.isReplacement && !q.isNew && (
           <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#8B5CF6", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>Replaced</span>
@@ -250,11 +250,11 @@ function QuestionCard({
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #0EA5E9", fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)", resize: "vertical", outline: "none", minHeight: 80 }}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #7C3AED", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical", outline: "none", minHeight: 80 }}
               autoFocus
             />
           ) : (
-            <p style={{ fontSize: 13, color: "#0F2147", lineHeight: 1.55, fontWeight: 500, margin: 0 }}>{q.question}</p>
+            <p style={{ fontSize: 13, color: "#4F46E5", lineHeight: 1.55, fontWeight: 500, margin: 0 }}>{q.question}</p>
           )}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -268,7 +268,7 @@ function QuestionCard({
       {/* Tech tag + action row */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#0284C7", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.18)", padding: "2px 8px", borderRadius: 4 }}>
+          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#6D28D9", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.18)", padding: "2px 8px", borderRadius: 4 }}>
             {q.techTag}
           </span>
           <button type="button" onClick={() => setExpanded(!expanded)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 11, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans)" }}>
@@ -379,7 +379,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [jdWordCount,  setJdWordCount]  = useState(0);
 
   // Step 5 — JD Approval
-  const [techLeadEmail,    setTechLeadEmail]    = useState("tech@interviewcentral.ai");
+  const [techLeadEmail,    setTechLeadEmail]    = useState("tech@levl1.ai");
   const [jdSent,           setJdSent]           = useState(false);
   const [jdApproved,       setJdApproved]       = useState(false);
   const [approvedAt,       setApprovedAt]       = useState("");
@@ -644,10 +644,10 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         justifyContent: "space-between", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #0F2147, #0EA5E9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sparkles size={14} color="#fff" />
           </div>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#0F2147" }}>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#4F46E5" }}>
             New Position Setup
           </span>
         </div>
@@ -667,15 +667,15 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0,
-                    background: done ? "#10B981" : current ? "#0EA5E9" : "#F1F5F9",
+                    background: done ? "#10B981" : current ? "#7C3AED" : "#F1F5F9",
                     color: done || current ? "#fff" : "#94A3B8",
-                    border: current ? "2px solid rgba(14,165,233,0.3)" : "none",
-                    boxShadow: current ? "0 0 0 3px rgba(14,165,233,0.12)" : "none",
+                    border: current ? "2px solid rgba(124,58,237,0.3)" : "none",
+                    boxShadow: current ? "0 0 0 3px rgba(124,58,237,0.12)" : "none",
                     transition: "all 0.2s",
                   }}>
                     {done ? <Check size={12} /> : i + 1}
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: current ? 700 : 500, color: current ? "#0F2147" : done ? "#10B981" : "#94A3B8", whiteSpace: "nowrap", display: window.innerWidth < 900 ? "none" : undefined }}>
+                  <span style={{ fontSize: 11, fontWeight: current ? 700 : 500, color: current ? "#4F46E5" : done ? "#10B981" : "#94A3B8", whiteSpace: "nowrap", display: window.innerWidth < 900 ? "none" : undefined }}>
                     {s.short}
                   </span>
                 </div>
@@ -696,7 +696,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 0 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Basic Position Info</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Basic Position Info</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Tell us about the role you&apos;re hiring for.</p>
               </div>
 
@@ -733,7 +733,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 {isSeniorRole(roleType) && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>Budget Ownership</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>Budget Ownership</div>
                       <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>This role manages a budget</div>
                     </div>
                     <Toggle checked={hasBudgetOwnership} onChange={setHasBudgetOwnership} />
@@ -741,7 +741,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 )}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147" }}>Hiring Responsibility</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>Hiring Responsibility</div>
                     <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>This role participates in hiring decisions</div>
                   </div>
                   <Toggle checked={hasHiringResponsibility} onChange={setHasHiringResponsibility} />
@@ -758,7 +758,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 1 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Technical & Domain Context</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Technical & Domain Context</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Help us understand the technical and business environment.</p>
               </div>
 
@@ -816,7 +816,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 2 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Soft Skill Weightage</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Soft Skill Weightage</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Calibrate how Claude weights each dimension when generating questions and scoring.</p>
               </div>
 
@@ -845,7 +845,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 3 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Job Description</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Job Description</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Generate, paste, or upload your job description.</p>
               </div>
 
@@ -860,8 +860,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                       flex: 1, padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: t === "upload" ? "not-allowed" : "pointer",
                       border: "none", fontFamily: "var(--font-sans)",
                       background: jdTab === t ? "#fff" : "transparent",
-                      color: t === "upload" ? "#CBD5E1" : jdTab === t ? "#0F2147" : "#94A3B8",
-                      boxShadow: jdTab === t ? "0 1px 3px rgba(15,33,71,0.08)" : "none",
+                      color: t === "upload" ? "#CBD5E1" : jdTab === t ? "#4F46E5" : "#94A3B8",
+                      boxShadow: jdTab === t ? "0 1px 3px rgba(79,70,229,0.08)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                       transition: "all 0.15s",
                     }}
@@ -879,7 +879,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               {jdTab === "generate" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {/* Summary */}
-                  <div className="card" style={{ background: "#F8FAFF", border: "1px solid rgba(14,165,233,0.15)" }}>
+                  <div className="card" style={{ background: "#F8FAFF", border: "1px solid rgba(124,58,237,0.15)" }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Input Summary</p>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: "#475569" }}>
                       {[
@@ -894,7 +894,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                       ].map(([k,v]) => (
                         <div key={k} style={{ display: "flex", gap: 6 }}>
                           <span style={{ color: "#94A3B8", minWidth: 70 }}>{k}:</span>
-                          <span style={{ fontWeight: 600, color: "#0F2147" }}>{v}</span>
+                          <span style={{ fontWeight: 600, color: "#4F46E5" }}>{v}</span>
                         </div>
                       ))}
                     </div>
@@ -913,7 +913,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                         onChange={(e) => setGeneratedJD(e.target.value)}
                         style={{
                           width: "100%", padding: "16px", borderRadius: 10, border: "1px solid #E2E8F0",
-                          fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)",
+                          fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
                           resize: "vertical", outline: "none", lineHeight: 1.65,
                           minHeight: 400, background: "#fff",
                         }}
@@ -936,7 +936,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                     placeholder="Paste your job description here…"
                     style={{
                       width: "100%", padding: "16px", borderRadius: 10, border: "1px solid #E2E8F0",
-                      fontSize: 13, color: "#0F2147", fontFamily: "var(--font-sans)",
+                      fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
                       resize: "vertical", outline: "none", lineHeight: 1.65,
                       minHeight: 360, background: "#fff",
                     }}
@@ -955,7 +955,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 4 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>JD Approval</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>JD Approval</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Send the job description to your Tech Lead for review.</p>
               </div>
 
@@ -1021,14 +1021,14 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 5 && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Question Generation</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Question Generation</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Claude will generate a tailored question bank for this position.</p>
               </div>
 
               {questionsLoading ? (
                 <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-                  <Loader2 size={32} color="#0EA5E9" style={{ animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#0F2147" }}>Generating interview questions…</p>
+                  <Loader2 size={32} color="#7C3AED" style={{ animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5" }}>Generating interview questions…</p>
                   <p style={{ fontSize: 13, color: "#94A3B8", marginTop: 6 }}>Claude is tailoring questions to the approved JD and role context.</p>
                 </div>
               ) : questions ? (
@@ -1042,7 +1042,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               ) : (
                 <div className="card" style={{ textAlign: "center", padding: "48px 20px" }}>
                   <FileText size={32} color="#CBD5E1" style={{ margin: "0 auto 16px" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#0F2147", marginBottom: 6 }}>Ready to generate</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", marginBottom: 6 }}>Ready to generate</p>
                   <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 20 }}>
                     Based on the approved JD, Claude will create technical, behavioral, scenario, EQ, and whiteboard questions.
                   </p>
@@ -1058,14 +1058,14 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {step === 6 && questions && (
             <>
               <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#0F2147" }}>Dual Review & Approval</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Dual Review & Approval</h2>
                 <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Tech Lead reviews technical questions · HR reviews behavioral questions.</p>
               </div>
 
               {/* Progress bar */}
               <div style={{ display: "flex", gap: 12 }}>
                 {[
-                  { label: "Tech Lead Review", approved: techApproved, total: techTotal, color: "#0EA5E9" },
+                  { label: "Tech Lead Review", approved: techApproved, total: techTotal, color: "#7C3AED" },
                   { label: "HR Review",        approved: hrApproved,   total: hrTotal,   color: "#10B981" },
                 ].map((b) => (
                   <div key={b.label} style={{ flex: 1, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px 16px" }}>
@@ -1084,7 +1084,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               <div style={{ display: "flex", gap: 0, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 4 }}>
                 {([["tech","Tech Lead Review"],["hr","HR Review"]] as const).map(([k,l]) => (
                   <button key={k} type="button" onClick={() => setReviewTab(k)}
-                    style={{ flex: 1, padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", fontFamily: "var(--font-sans)", background: reviewTab === k ? "#fff" : "transparent", color: reviewTab === k ? "#0F2147" : "#94A3B8", boxShadow: reviewTab === k ? "0 1px 3px rgba(15,33,71,0.08)" : "none", transition: "all 0.15s" }}>
+                    style={{ flex: 1, padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", fontFamily: "var(--font-sans)", background: reviewTab === k ? "#fff" : "transparent", color: reviewTab === k ? "#4F46E5" : "#94A3B8", boxShadow: reviewTab === k ? "0 1px 3px rgba(79,70,229,0.08)" : "none", transition: "all 0.15s" }}>
                     {l}
                   </button>
                 ))}
@@ -1164,14 +1164,14 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
                   {/* ── Live Dynamic Questions panel ── */}
                   <div style={{
-                    background: "rgba(15,33,71,0.03)",
-                    border: "1px solid rgba(15,33,71,0.10)",
+                    background: "rgba(79,70,229,0.03)",
+                    border: "1px solid rgba(79,70,229,0.10)",
                     borderRadius: 12, padding: "18px 20px",
                     display: "flex", flexDirection: "column", gap: 14,
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 14 }}>🔴</span>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#0F2147" }}>Live Dynamic Questions</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>Live Dynamic Questions</span>
                     </div>
                     <p style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, margin: 0 }}>
                       The AI interviewer will generate these in real time during the interview, based on each candidate&apos;s specific experience and responses. They cannot be pre-reviewed.
@@ -1204,12 +1204,12 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                               onClick={() => setDynamicIntensity(level)}
                               style={{
                                 flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer",
-                                border: `1px solid ${active ? "#0EA5E9" : "#E2E8F0"}`,
-                                background: active ? "rgba(14,165,233,0.06)" : "#fff",
+                                border: `1px solid ${active ? "#7C3AED" : "#E2E8F0"}`,
+                                background: active ? "rgba(124,58,237,0.06)" : "#fff",
                                 textAlign: "left", fontFamily: "var(--font-sans)",
                               }}
                             >
-                              <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#0284C7" : "#0F2147" }}>{cfg[level].label}</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#6D28D9" : "#4F46E5" }}>{cfg[level].label}</div>
                               <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{cfg[level].sub}</div>
                             </button>
                           );
@@ -1325,7 +1325,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               }}>
                 <CheckCircle2 size={36} color="#10B981" />
               </div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, color: "#0F2147", marginBottom: 8 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>
                 Position is now ACTIVE
               </h2>
               <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 28 }}>
@@ -1341,7 +1341,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 ].map((s) => (
                   <div key={s.label} style={{ padding: "14px 20px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, minWidth: 120 }}>
                     <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0F2147" }}>{s.value}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>{s.value}</div>
                   </div>
                 ))}
               </div>

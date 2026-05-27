@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mic, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Zap, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 function GoogleIcon() {
   return (
@@ -91,25 +91,25 @@ export default function LoginPage() {
                 height: 36,
                 borderRadius: 10,
                 background:
-                  "linear-gradient(135deg, #0F2147 0%, #0EA5E9 100%)",
+                  "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(14,165,233,0.25)",
+                boxShadow: "0 4px 12px rgba(124,58,237,0.25)",
               }}
             >
-              <Mic size={16} color="white" strokeWidth={2.5} />
+              <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
             </div>
             <span
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: 17,
                 fontWeight: 700,
-                color: "#0F2147",
+                color: "#4F46E5",
                 letterSpacing: "-0.02em",
               }}
             >
-              InterviewCentral
+              Levl1
             </span>
           </Link>
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
               fontFamily: "var(--font-display)",
               fontSize: 30,
               fontWeight: 800,
-              color: "#0F2147",
+              color: "#4F46E5",
               letterSpacing: "-0.025em",
               lineHeight: 1.2,
               marginBottom: 8,
@@ -154,11 +154,11 @@ export default function LoginPage() {
               background: "#fff",
               fontSize: 14,
               fontWeight: 600,
-              color: "#0F2147",
+              color: "#4F46E5",
               cursor: loading ? "not-allowed" : "pointer",
               fontFamily: "var(--font-sans)",
               transition: "all 0.15s",
-              boxShadow: "0 1px 3px rgba(15,33,71,0.06)",
+              boxShadow: "0 1px 3px rgba(79,70,229,0.06)",
               opacity: loading ? 0.7 : 1,
             }}
             onMouseEnter={(e) => {
@@ -198,7 +198,7 @@ export default function LoginPage() {
                   display: "block",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#0F2147",
+                  color: "#4F46E5",
                   marginBottom: 6,
                 }}
               >
@@ -229,7 +229,7 @@ export default function LoginPage() {
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: "#0F2147",
+                    color: "#4F46E5",
                   }}
                 >
                   Password
@@ -238,7 +238,7 @@ export default function LoginPage() {
                   href="#"
                   style={{
                     fontSize: 12,
-                    color: "#0EA5E9",
+                    color: "#7C3AED",
                     textDecoration: "none",
                     fontWeight: 500,
                   }}
@@ -298,7 +298,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               style={{
-                background: loading ? "#94A3B8" : "#0F2147",
+                background: loading ? "#94A3B8" : "#4F46E5",
                 color: "#fff",
                 border: "none",
                 borderRadius: 9,
@@ -316,7 +316,7 @@ export default function LoginPage() {
                 marginTop: 4,
                 boxShadow: loading
                   ? "none"
-                  : "0 4px 14px rgba(15,33,71,0.2)",
+                  : "0 4px 14px rgba(79,70,229,0.2)",
               }}
             >
               {loading ? (
@@ -343,7 +343,7 @@ export default function LoginPage() {
             <Link
               href="/"
               style={{
-                color: "#0EA5E9",
+                color: "#7C3AED",
                 textDecoration: "none",
                 fontWeight: 600,
               }}
@@ -359,7 +359,7 @@ export default function LoginPage() {
         style={{
           position: "relative",
           overflow: "hidden",
-          background: "#0F2147",
+          background: "#4F46E5",
         }}
       >
         {/* Photo */}
@@ -383,7 +383,7 @@ export default function LoginPage() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to bottom, rgba(15,33,71,0.25) 0%, rgba(15,33,71,0.15) 40%, rgba(15,33,71,0.75) 80%, rgba(15,33,71,0.95) 100%)",
+              "linear-gradient(to bottom, rgba(79,70,229,0.25) 0%, rgba(79,70,229,0.15) 40%, rgba(79,70,229,0.75) 80%, rgba(79,70,229,0.95) 100%)",
           }}
         />
 
@@ -429,7 +429,7 @@ export default function LoginPage() {
               fontStyle: "italic",
             }}
           >
-            &ldquo;We onboarded InterviewCentral in a single afternoon. Within
+            &ldquo;We onboarded Levl1 in a single afternoon. Within
             a week, we&apos;d screened more candidates than the previous
             month.&rdquo;
           </p>
@@ -440,7 +440,7 @@ export default function LoginPage() {
                 width: 38,
                 height: 38,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #0EA5E9, #38BDF8)",
+                background: "linear-gradient(135deg, #7C3AED, #C4B5FD)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

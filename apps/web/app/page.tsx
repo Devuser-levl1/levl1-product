@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Mic,
   ArrowRight,
   BarChart2,
   Users,
@@ -15,10 +14,10 @@ import {
 
 const FEATURES = [
   {
-    icon: Mic,
+    icon: Zap,
     title: "AI Voice Screening",
     desc: "Conduct structured, role-specific interviews 24/7 — no human scheduling required. Candidates interview on their own time.",
-    color: "#0EA5E9",
+    color: "#7C3AED",
   },
   {
     icon: BarChart2,
@@ -48,7 +47,7 @@ const FEATURES = [
     icon: Zap,
     title: "Instant Rankings",
     desc: "After each position closes, get a ranked shortlist with scores, recommendations, and side-by-side comparisons.",
-    color: "#0F2147",
+    color: "#4F46E5",
   },
 ];
 
@@ -94,25 +93,25 @@ export default function LandingPage() {
                 width: 34,
                 height: 34,
                 borderRadius: 9,
-                background: "linear-gradient(135deg, #0F2147 0%, #0EA5E9 100%)",
+                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(14,165,233,0.25)",
+                boxShadow: "0 4px 12px rgba(124,58,237,0.25)",
               }}
             >
-              <Mic size={15} color="white" strokeWidth={2.5} />
+              <Zap size={15} color="white" strokeWidth={2.5} fill="white" />
             </div>
             <span
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: 17,
                 fontWeight: 700,
-                color: "#0F2147",
+                color: "#4F46E5",
                 letterSpacing: "-0.02em",
               }}
             >
-              InterviewCentral
+              Levl1
             </span>
           </div>
 
@@ -130,7 +129,7 @@ export default function LandingPage() {
                   transition: "color 0.15s",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "#0F2147")
+                  (e.currentTarget.style.color = "#4F46E5")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.color = "#475569")
@@ -158,7 +157,7 @@ export default function LandingPage() {
             <Link
               href="/login"
               style={{
-                background: "#0EA5E9",
+                background: "#7C3AED",
                 color: "#fff",
                 border: "none",
                 borderRadius: 8,
@@ -171,7 +170,7 @@ export default function LandingPage() {
                 alignItems: "center",
                 gap: 6,
                 transition: "all 0.2s",
-                boxShadow: "0 2px 8px rgba(14,165,233,0.25)",
+                boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
               }}
             >
               Get Started
@@ -204,8 +203,8 @@ export default function LandingPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "rgba(14,165,233,0.08)",
-              border: "1px solid rgba(14,165,233,0.2)",
+              background: "rgba(124,58,237,0.08)",
+              border: "1px solid rgba(124,58,237,0.2)",
               borderRadius: 100,
               padding: "5px 14px",
               marginBottom: 28,
@@ -216,19 +215,19 @@ export default function LandingPage() {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#0EA5E9",
-                boxShadow: "0 0 8px rgba(14,165,233,0.6)",
+                background: "#7C3AED",
+                boxShadow: "0 0 8px rgba(124,58,237,0.6)",
               }}
             />
             <span
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#0284C7",
+                color: "#6D28D9",
                 letterSpacing: "0.04em",
               }}
             >
-              AI-POWERED RECRUITMENT
+              AI-POWERED L1 INTERVIEWS
             </span>
           </div>
 
@@ -238,23 +237,23 @@ export default function LandingPage() {
               fontFamily: "var(--font-display)",
               fontSize: 62,
               fontWeight: 800,
-              color: "#0F2147",
+              color: "#4F46E5",
               lineHeight: 1.1,
               letterSpacing: "-0.03em",
               marginBottom: 20,
             }}
           >
-            Hire smarter,{" "}
+            AI interviews that{" "}
             <span
               style={{
                 background:
-                  "linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)",
+                  "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}
             >
-              faster.
+              never miss great talent.
             </span>
           </h1>
 
@@ -269,8 +268,8 @@ export default function LandingPage() {
               fontWeight: 400,
             }}
           >
-            InterviewCentral automates technical screening with AI voice agents
-            — so your team spends time on offers, not phone screens.
+            Levl1 conducts structured L1 interviews so your best candidates
+            don&apos;t get lost to scheduling delays and panel availability.
           </p>
 
           {/* CTAs */}
@@ -286,7 +285,7 @@ export default function LandingPage() {
             <Link
               href="/login"
               style={{
-                background: "#0EA5E9",
+                background: "#7C3AED",
                 color: "#fff",
                 borderRadius: 10,
                 padding: "14px 28px",
@@ -296,7 +295,7 @@ export default function LandingPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                boxShadow: "0 6px 24px rgba(14,165,233,0.35)",
+                boxShadow: "0 6px 24px rgba(124,58,237,0.35)",
                 transition: "all 0.2s",
                 letterSpacing: "-0.01em",
               }}
@@ -308,7 +307,7 @@ export default function LandingPage() {
               href="#"
               style={{
                 background: "#fff",
-                color: "#0F2147",
+                color: "#4F46E5",
                 border: "1px solid #E2E8F0",
                 borderRadius: 10,
                 padding: "14px 28px",
@@ -318,7 +317,7 @@ export default function LandingPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                boxShadow: "0 1px 3px rgba(15,33,71,0.06)",
+                boxShadow: "0 1px 3px rgba(79,70,229,0.06)",
                 transition: "all 0.2s",
               }}
             >
@@ -355,7 +354,7 @@ export default function LandingPage() {
                     fontFamily: "var(--font-display)",
                     fontSize: 30,
                     fontWeight: 800,
-                    color: "#0F2147",
+                    color: "#4F46E5",
                     letterSpacing: "-0.02em",
                     lineHeight: 1,
                   }}
@@ -394,7 +393,7 @@ export default function LandingPage() {
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: "#0EA5E9",
+                color: "#7C3AED",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 marginBottom: 12,
@@ -407,7 +406,7 @@ export default function LandingPage() {
                 fontFamily: "var(--font-display)",
                 fontSize: 42,
                 fontWeight: 800,
-                color: "#0F2147",
+                color: "#4F46E5",
                 letterSpacing: "-0.025em",
                 lineHeight: 1.15,
                 marginBottom: 16,
@@ -437,20 +436,20 @@ export default function LandingPage() {
                   border: "1px solid #E2E8F0",
                   borderRadius: 16,
                   padding: "28px",
-                  boxShadow: "0 1px 3px rgba(15,33,71,0.05)",
+                  boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
                   transition: "all 0.2s",
                   cursor: "default",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "#CBD5E1";
                   e.currentTarget.style.boxShadow =
-                    "0 8px 24px rgba(15,33,71,0.08)";
+                    "0 8px 24px rgba(79,70,229,0.08)";
                   e.currentTarget.style.transform = "translateY(-2px)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = "#E2E8F0";
                   e.currentTarget.style.boxShadow =
-                    "0 1px 3px rgba(15,33,71,0.05)";
+                    "0 1px 3px rgba(79,70,229,0.05)";
                   e.currentTarget.style.transform = "none";
                 }}
               >
@@ -474,7 +473,7 @@ export default function LandingPage() {
                     fontFamily: "var(--font-display)",
                     fontSize: 17,
                     fontWeight: 700,
-                    color: "#0F2147",
+                    color: "#4F46E5",
                     marginBottom: 8,
                     letterSpacing: "-0.01em",
                   }}
@@ -524,13 +523,13 @@ export default function LandingPage() {
               fontFamily: "var(--font-display)",
               fontSize: 26,
               fontWeight: 600,
-              color: "#0F2147",
+              color: "#4F46E5",
               lineHeight: 1.45,
               letterSpacing: "-0.02em",
               marginBottom: 32,
             }}
           >
-            &ldquo;InterviewCentral cut our time-to-screen by 78%. We now
+            &ldquo;Levl1 cut our time-to-screen by 78%. We now
             evaluate 10× more candidates with the same team — and the quality
             of our shortlists has never been better.&rdquo;
           </blockquote>
@@ -548,7 +547,7 @@ export default function LandingPage() {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #0F2147 0%, #0EA5E9 100%)",
+                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -563,7 +562,7 @@ export default function LandingPage() {
               <div
                 style={{
                   fontWeight: 600,
-                  color: "#0F2147",
+                  color: "#4F46E5",
                   fontSize: 15,
                 }}
               >
@@ -581,7 +580,7 @@ export default function LandingPage() {
       <section
         style={{
           padding: "96px 32px",
-          background: "linear-gradient(135deg, #0F2147 0%, #0B2E6B 100%)",
+          background: "linear-gradient(135deg, #4F46E5 0%, #312E81 100%)",
           textAlign: "center",
         }}
       >
@@ -597,7 +596,7 @@ export default function LandingPage() {
               marginBottom: 16,
             }}
           >
-            Ready to hire smarter?
+            Start running L1 interviews today
           </h2>
           <p
             style={{
@@ -607,8 +606,8 @@ export default function LandingPage() {
               marginBottom: 40,
             }}
           >
-            Join 500+ recruitment agencies already using InterviewCentral to
-            screen more candidates in less time.
+            Let Levl1 handle your first-round screens — so your team focuses
+            on the candidates who actually matter.
           </p>
           <div
             style={{
@@ -621,7 +620,7 @@ export default function LandingPage() {
             <Link
               href="/login"
               style={{
-                background: "#0EA5E9",
+                background: "#7C3AED",
                 color: "#fff",
                 borderRadius: 10,
                 padding: "14px 28px",
@@ -631,7 +630,7 @@ export default function LandingPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                boxShadow: "0 6px 24px rgba(14,165,233,0.4)",
+                boxShadow: "0 6px 24px rgba(124,58,237,0.4)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -666,7 +665,7 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer
         style={{
-          background: "#090F1F",
+          background: "#0F0A2E",
           padding: "48px 32px",
           borderTop: "1px solid rgba(255,255,255,0.06)",
         }}
@@ -696,13 +695,13 @@ export default function LandingPage() {
                   height: 30,
                   borderRadius: 8,
                   background:
-                    "linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)",
+                    "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Mic size={13} color="white" strokeWidth={2.5} />
+                <Zap size={13} color="white" strokeWidth={2.5} fill="white" />
               </div>
               <span
                 style={{
@@ -712,7 +711,7 @@ export default function LandingPage() {
                   color: "#fff",
                 }}
               >
-                InterviewCentral
+                Levl1
               </span>
             </div>
             <p
@@ -723,7 +722,7 @@ export default function LandingPage() {
                 maxWidth: 240,
               }}
             >
-              AI voice interview automation for modern recruitment agencies.
+              AI-powered L1 interviews for tech and product roles.
             </p>
           </div>
 
@@ -799,7 +798,7 @@ export default function LandingPage() {
           }}
         >
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
-            © 2026 InterviewCentral. All rights reserved.
+            © 2026 Levl1. Built for recruitment agencies and enterprises.
           </p>
           <div style={{ display: "flex", gap: 6 }}>
             {["SOC 2", "GDPR", "ISO 27001"].map((badge) => (

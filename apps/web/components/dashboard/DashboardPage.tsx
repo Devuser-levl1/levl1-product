@@ -43,7 +43,7 @@ function StatCard({
             fontFamily: "var(--font-display)",
             fontSize: 36,
             fontWeight: 800,
-            color: "#0F2147",
+            color: "#4F46E5",
             lineHeight: 1,
             letterSpacing: "-0.02em",
           }}
@@ -109,7 +109,7 @@ export default function DashboardPage() {
               fontFamily: "var(--font-display)",
               fontSize: 30,
               fontWeight: 800,
-              color: "#0F2147",
+              color: "#4F46E5",
               letterSpacing: "-0.025em",
               lineHeight: 1.15,
             }}
@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#0EA5E9" />
+        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#7C3AED" />
         <StatCard icon={Users}       label="Candidates"         value={totalCandidates}      sub={`${topCandidates.length} interviews completed`} accentColor="#10B981" />
         <StatCard icon={Video}       label="Upcoming"           value={upcomingInterviews.length} sub="Interviews scheduled"                      accentColor="#F59E0B" />
         <StatCard icon={TrendingUp}  label="Avg Score"          value={scoredCandidates.length > 0 ? avgScore : "—"} sub={`Across ${scoredCandidates.length} evaluations`} accentColor="#8B5CF6" />
@@ -139,7 +139,7 @@ export default function DashboardPage() {
         {/* Upcoming Interviews */}
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
               Upcoming Interviews
             </h2>
             <span className="badge badge-brand">{upcomingInterviews.length} scheduled</span>
@@ -169,18 +169,18 @@ export default function DashboardPage() {
                       width: 38,
                       height: 38,
                       borderRadius: 10,
-                      background: "rgba(14,165,233,0.08)",
-                      border: "1px solid rgba(14,165,233,0.18)",
+                      background: "rgba(124,58,237,0.08)",
+                      border: "1px solid rgba(124,58,237,0.18)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
                     }}
                   >
-                    <Video size={17} color="#0EA5E9" />
+                    <Video size={17} color="#7C3AED" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {iv.candidateName}
                     </div>
                     <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div className="font-mono" style={{ fontSize: 12, color: "#0F2147", fontWeight: 600 }}>
+                    <div className="font-mono" style={{ fontSize: 12, color: "#4F46E5", fontWeight: 600 }}>
                       {new Date(iv.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </div>
                     <div className="font-mono" style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
         {/* Top Candidates */}
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
               Top Candidates
             </h2>
             <span className="badge badge-success">{topCandidates.length} evaluated</span>
@@ -252,22 +252,22 @@ export default function DashboardPage() {
                         height: 34,
                         borderRadius: "50%",
                         background: idx === 0
-                          ? "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(56,189,248,0.1))"
+                          ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(56,189,248,0.1))"
                           : "#F1F5F9",
-                        border: `1px solid ${idx === 0 ? "rgba(14,165,233,0.25)" : "#E2E8F0"}`,
+                        border: `1px solid ${idx === 0 ? "rgba(124,58,237,0.25)" : "#E2E8F0"}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 12,
                         fontWeight: 700,
-                        color: idx === 0 ? "#0284C7" : "#64748B",
+                        color: idx === 0 ? "#6D28D9" : "#64748B",
                         flexShrink: 0,
                       }}
                     >
                       {initials}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {c.name}
                       </div>
                       <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                      <div className="font-mono" style={{ fontSize: 18, fontWeight: 800, color: "#0F2147", lineHeight: 1 }}>
+                      <div className="font-mono" style={{ fontSize: 18, fontWeight: 800, color: "#4F46E5", lineHeight: 1 }}>
                         {c.score}
                       </div>
                       {rec && (
@@ -295,7 +295,7 @@ export default function DashboardPage() {
       {/* Positions Overview */}
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0F2147", fontFamily: "var(--font-display)" }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
             Positions Overview
           </h2>
           <ArrowRight size={15} color="#CBD5E1" />
@@ -330,7 +330,7 @@ export default function DashboardPage() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {pos.title}
                   </div>
                   <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                   {total > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ width: 72, height: 4, borderRadius: 2, background: "#E2E8F0", overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: "#0EA5E9", borderRadius: 2, transition: "width 0.5s ease" }} />
+                        <div style={{ height: "100%", width: `${pct}%`, background: "#7C3AED", borderRadius: 2, transition: "width 0.5s ease" }} />
                       </div>
                       <span className="font-mono" style={{ fontSize: 11, color: "#94A3B8", minWidth: 32 }}>
                         {pos.interviewsCompleted}/{total}

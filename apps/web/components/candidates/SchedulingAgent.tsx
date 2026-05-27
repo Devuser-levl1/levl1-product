@@ -91,12 +91,12 @@ export function InviteModal({ candidate, position, onClose }: InviteModalProps) 
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(15,33,71,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 560px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(15,33,71,0.25)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(79,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 560px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(79,70,229,0.25)" }}>
         {/* Header */}
         <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#0F2147" }}>Send Interview Invite</h3>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#4F46E5" }}>Send Interview Invite</h3>
             <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 3 }}>This will mark the candidate as &ldquo;Invited&rdquo;</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}><X size={18} /></button>
@@ -116,7 +116,7 @@ export function InviteModal({ candidate, position, onClose }: InviteModalProps) 
             ].map((s) => (
               <div key={s.label} style={{ padding: "10px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2147", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.value}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -205,15 +205,15 @@ export function ScheduleModal({ candidate, position, onClose }: ScheduleModalPro
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(15,33,71,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 440px)", boxShadow: "0 24px 64px rgba(15,33,71,0.25)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(79,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 440px)", boxShadow: "0 24px 64px rgba(79,70,229,0.25)" }}>
         <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#0F2147" }}>Schedule Interview</h3>
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#4F46E5" }}>Schedule Interview</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}><X size={18} /></button>
         </div>
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ fontSize: 13, color: "#475569" }}>
-            Scheduling interview for <strong style={{ color: "#0F2147" }}>{candidate.name}</strong> — {position.title}
+            Scheduling interview for <strong style={{ color: "#4F46E5" }}>{candidate.name}</strong> — {position.title}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Interview Date & Time</label>
@@ -225,7 +225,7 @@ export function ScheduleModal({ candidate, position, onClose }: ScheduleModalPro
               min={new Date().toISOString().slice(0, 16)}
             />
           </div>
-          <div style={{ padding: "10px 12px", background: "#F8FAFF", border: "1px solid rgba(14,165,233,0.2)", borderRadius: 8, fontSize: 12, color: "#0284C7" }}>
+          <div style={{ padding: "10px 12px", background: "#F8FAFF", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 8, fontSize: 12, color: "#6D28D9" }}>
             Duration: {position.interviewDuration ?? 30} minutes · AI Voice Interview
           </div>
         </div>
@@ -293,12 +293,12 @@ export function SchedulingBadge({
           )}
           <div style={{ display: "flex", gap: 6 }}>
             {candidate.schedulingLink && (
-              <a href={candidate.schedulingLink} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#0284C7", display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}>
+              <a href={candidate.schedulingLink} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#6D28D9", display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}>
                 <ExternalLink size={9} /> Scheduling link
               </a>
             )}
             <button
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#0EA5E9", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
               onClick={() => setShowSchedule(true)}
             >
               <Calendar size={9} /> Book slot
@@ -339,11 +339,11 @@ export function SchedulingBadge({
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#0F2147", fontFamily: "var(--font-mono)" }}>{dateStr} · {timeStr}</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#4F46E5", fontFamily: "var(--font-mono)" }}>{dateStr} · {timeStr}</div>
           <div style={{ display: "flex", gap: 8, fontSize: 10 }}>
             <span style={{ color: "#10B981", display: "flex", alignItems: "center", gap: 3 }}><CheckCircle2 size={9} /> Scheduled</span>
             <button
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#0EA5E9", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
               onClick={() => { updateCandidate(candidate.id, { remindersSent: (candidate.remindersSent ?? 0) + 1 }); toast.success("Reminder sent"); }}
             >
               <Mail size={9} /> Send Reminder {candidate.remindersSent ? `(${candidate.remindersSent})` : ""}
@@ -437,7 +437,7 @@ export function SchedulingOverview() {
   const buckets = [
     { key: "pending",   label: "Pending Invite", color: "#94A3B8" },
     { key: "invited",   label: "Invited",         color: "#F59E0B" },
-    { key: "scheduled", label: "Scheduled",        color: "#0EA5E9" },
+    { key: "scheduled", label: "Scheduled",        color: "#7C3AED" },
     { key: "completed", label: "Completed",        color: "#10B981" },
     { key: "no_show",   label: "No Show",          color: "#EF4444" },
   ];
@@ -463,7 +463,7 @@ export function SchedulingOverview() {
               fontFamily: "var(--font-sans)",
             }}
           >
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: filter === b.key ? b.color : "#0F2147", letterSpacing: "-0.02em" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: filter === b.key ? b.color : "#4F46E5", letterSpacing: "-0.02em" }}>
               {counts[b.key]}
             </div>
             <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3, fontWeight: 500 }}>{b.label}</div>
@@ -473,7 +473,7 @@ export function SchedulingOverview() {
       </div>
       {filter && (
         <div style={{ fontSize: 12, color: "#94A3B8", display: "flex", alignItems: "center", gap: 6 }}>
-          Filtering by: <strong style={{ color: "#0F2147" }}>{buckets.find((b) => b.key === filter)?.label}</strong>
+          Filtering by: <strong style={{ color: "#4F46E5" }}>{buckets.find((b) => b.key === filter)?.label}</strong>
           <button onClick={() => setFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 0 }}><X size={12} /></button>
         </div>
       )}
@@ -501,9 +501,9 @@ export function TodayInterviews() {
           const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
           return (
             <div key={i.id} style={{ padding: "12px 16px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, minWidth: 200 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#0F2147" }}>{i.candidateName}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>{i.candidateName}</div>
               <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{i.positionTitle}</div>
-              <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#0EA5E9", marginTop: 6 }}>{timeStr} · {i.duration}m</div>
+              <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#7C3AED", marginTop: 6 }}>{timeStr} · {i.duration}m</div>
               <button className="btn-primary" style={{ fontSize: 11, padding: "5px 10px", marginTop: 8 }} onClick={() => toast(`Monitoring ${i.candidateName}`)}>
                 Monitor
               </button>
