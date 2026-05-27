@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Filter, Calendar, Mail, Star, Upload, Send } from "lucide-react";
+import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor } from "lucide-react";
 import CandidateUploadFlow from "./CandidateUploadFlow";
 import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
+import StartInterviewModal from "@/components/interview/StartInterviewModal";
 
 type PipelineColumn = {
   key: string;
@@ -29,11 +30,50 @@ const REC_CFG = {
   no:          { label: "No",         color: "#DC2626", bg: "rgba(239,68,68,0.10)"  },
 } as const;
 
-function CandidateCard({ candidate }: { candidate: Candidate }) {
-  const { positions } = useAppStore();
+/* ─── CandidateCard ─────────────────────────────────────────────── */
+function CandidateCard({
+  candidate,
+  onStartInterview,
+}: {
+  candidate: Candidate;
+  onStartInterview: (c: Candidate) => void;
+}) {
+  const { positions, interviews, addInterview, updateCandidate } = useAppStore();
   const position = positions.find((p) => p.id === candidate.positionId);
   const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-  const rec      = candidate.recommendation ? REC_CFG[candidate.recommendation as keyof typeof REC_CFG] : null;
+  const rec = candidate.recommendation ? REC_CFG[candidate.recommendation as keyof typeof REC_CFG] : null;
+
+  const isScheduled    = candidate.status === "scheduled";
+  const isInterviewing = candidate.status === "interviewing";
+  const showActions    = isScheduled || isInterviewing;
+
+  /* Resolve or lazily create an interviewId for the Monitor button */
+  function getInterviewId(): string {
+    if (candidate.interviewId) return candidate.interviewId;
+    const existing = interviews.find((iv) => iv.candidateId === candidate.id);
+    if (existing) { updateCandidate(candidate.id, { interviewId: existing.id }); return existing.id; }
+    const newId = `iv-${Date.now()}`;
+    addInterview({
+      id: newId,
+      candidateId: candidate.id,
+      candidateName: candidate.name,
+      positionId: candidate.positionId,
+      positionTitle: candidate.positionTitle,
+      scheduledAt: candidate.scheduledAt ?? new Date().toISOString(),
+      duration: position?.interviewDuration ?? 45,
+      status: "scheduled",
+      agentOnline: true,
+      candidateJoined: false,
+    });
+    updateCandidate(candidate.id, { interviewId: newId });
+    return newId;
+  }
+
+  function handleMonitor(e: React.MouseEvent) {
+    e.stopPropagation();
+    const id = getInterviewId();
+    window.open(`/interview/${id}/monitor`, "_blank");
+  }
 
   return (
     <div
@@ -61,10 +101,14 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{
           width: 34, height: 34, borderRadius: "50%",
-          background: "linear-gradient(135deg, #EEF2FF, #F1F5F9)",
-          border: "1px solid #E2E8F0",
+          background: isScheduled
+            ? "linear-gradient(135deg, #EDE9FE, #F1F5F9)"
+            : "linear-gradient(135deg, #EEF2FF, #F1F5F9)",
+          border: `1px solid ${isScheduled ? "rgba(124,58,237,0.25)" : "#E2E8F0"}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 700, color: "#6D28D9", flexShrink: 0,
+          fontSize: 12, fontWeight: 700,
+          color: isScheduled ? "#7C3AED" : "#6D28D9",
+          flexShrink: 0,
         }}>
           {initials}
         </div>
@@ -101,7 +145,7 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
         </div>
       )}
 
-      {/* Footer */}
+      {/* Scheduled time + recommendation */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
         {candidate.scheduledAt ? (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748B" }}>
@@ -125,17 +169,62 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
         )}
       </div>
 
-      {/* Scheduling action */}
+      {/* Scheduling badge */}
       <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
         <SchedulingBadge candidate={candidate} position={position} />
       </div>
+
+      {/* ── Start Interview / Monitor actions ── */}
+      {showActions && (
+        <div style={{ display: "flex", gap: 6, borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}
+            style={{
+              flex: 1,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+              border: "none", borderRadius: 8, color: "#fff",
+              fontSize: 12, fontWeight: 700, padding: "8px 10px",
+              cursor: "pointer", letterSpacing: "-0.01em",
+              boxShadow: "0 3px 10px rgba(124,58,237,0.30)",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 5px 14px rgba(124,58,237,0.45)"; e.currentTarget.style.transform = "translateY(-1px)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 3px 10px rgba(124,58,237,0.30)"; e.currentTarget.style.transform = "none" }}
+          >
+            <Play size={11} fill="white" strokeWidth={0} />
+            Start Interview
+          </button>
+
+          <button
+            onClick={handleMonitor}
+            title="Open recruiter monitor in new tab"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              background: "rgba(124,58,237,0.08)",
+              border: "1px solid rgba(124,58,237,0.22)",
+              borderRadius: 8, color: "#7C3AED",
+              fontSize: 12, fontWeight: 700, padding: "8px 10px",
+              cursor: "pointer", whiteSpace: "nowrap",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.08)" }}
+          >
+            <Monitor size={11} />
+            Monitor
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ─── Page ──────────────────────────────────────────────────────── */
 export default function CandidatesPage() {
   const { candidates, positions, showUploadFlow, setShowUploadFlow } = useAppStore();
   const [selectedPosition, setSelectedPosition] = useState<string>("all");
+  const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
 
   const filtered =
     selectedPosition === "all"
@@ -149,9 +238,22 @@ export default function CandidatesPage() {
 
   const pendingAll = candidates.filter((c) => c.status === "pending");
 
+  const modalPosition = modalCandidate
+    ? positions.find((p) => p.id === modalCandidate.positionId)
+    : undefined;
+
   return (
     <>
       {showUploadFlow && <CandidateUploadFlow onClose={() => setShowUploadFlow(false)} />}
+
+      {/* Start Interview modal */}
+      {modalCandidate && (
+        <StartInterviewModal
+          candidate={modalCandidate}
+          position={modalPosition}
+          onClose={() => setModalCandidate(null)}
+        />
+      )}
 
       <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1600 }}>
 
@@ -167,7 +269,6 @@ export default function CandidatesPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Position filter */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Filter size={14} color="#94A3B8" />
               <select
@@ -184,7 +285,6 @@ export default function CandidatesPage() {
               </select>
             </div>
 
-            {/* Upload Resumes */}
             <button className="btn-primary" onClick={() => setShowUploadFlow(true)}>
               <Upload size={15} /> Upload Resumes
             </button>
@@ -226,7 +326,7 @@ export default function CandidatesPage() {
                   </span>
                 </div>
 
-                {/* Drop zone */}
+                {/* Cards */}
                 <div style={{
                   minHeight: 80, background: "#F8FAFC", border: "1px dashed #CBD5E1",
                   borderRadius: 12, padding: "8px", display: "flex", flexDirection: "column", gap: 8,
@@ -236,7 +336,13 @@ export default function CandidatesPage() {
                       No candidates
                     </div>
                   ) : (
-                    cards.map((c) => <CandidateCard key={c.id} candidate={c} />)
+                    cards.map((c) => (
+                      <CandidateCard
+                        key={c.id}
+                        candidate={c}
+                        onStartInterview={setModalCandidate}
+                      />
+                    ))
                   )}
                 </div>
               </div>

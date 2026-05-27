@@ -200,6 +200,7 @@ interface AppStore {
   updateCandidate: (id: string, updates: Partial<Candidate>) => void
   removeCandidate: (id: string) => void
   updateInterview: (id: string, updates: Partial<Interview>) => void
+  addInterview: (iv: Interview) => void
   addReport: (interviewId: string, report: CandidateReport) => void
   addPositionReport: (positionId: string, report: PositionReport) => void
   showNewPositionFlow: boolean
@@ -229,9 +230,9 @@ const MOCK_POSITIONS: Position[] = [
 
 const MOCK_CANDIDATES: Candidate[] = [
   { id: 'c1', name: 'Rohan Krishnamurthy', email: 'rohan.k@email.com', phone: '+91 98765 43210', currentTitle: 'BI Manager', currentCompany: 'TechCorp', totalYearsExperience: 10, topSkills: ['Snowflake', 'dbt', 'Tableau'], positionId: 'p1', positionTitle: 'Technology Manager — BI', status: 'completed', scheduledAt: '2026-05-20T10:00:00', score: 82, recommendation: 'yes', uploadedAt: '2026-05-15', interviewId: 'i-rohan', reportGenerated: true, reportGeneratedAt: '2026-05-20T11:32:00' },
-  { id: 'c2', name: 'Archita Mishra', email: 'archita.mishra@email.com', currentTitle: 'GRC Analyst', currentCompany: 'SecureAxis', totalYearsExperience: 9, topSkills: ['SOX ITGC', 'SOC 2'], positionId: 'p2', positionTitle: 'IT Risk & Compliance Manager', status: 'scheduled', scheduledAt: '2026-05-26T14:30:00', uploadedAt: '2026-05-22', invitedAt: '2026-05-22', schedulingLink: 'https://cal.com/mock/archita' },
+  { id: 'c2', name: 'Archita Mishra', email: 'archita.mishra@email.com', currentTitle: 'GRC Analyst', currentCompany: 'SecureAxis', totalYearsExperience: 9, topSkills: ['SOX ITGC', 'SOC 2'], positionId: 'p2', positionTitle: 'IT Risk & Compliance Manager', status: 'scheduled', scheduledAt: '2026-05-26T14:30:00', uploadedAt: '2026-05-22', invitedAt: '2026-05-22', schedulingLink: 'https://cal.com/mock/archita', interviewId: 'i1' },
   { id: 'c3', name: 'Priya Venkatesh', email: 'priya.v@email.com', totalYearsExperience: 8, topSkills: ['Tableau', 'Python', 'Airflow'], positionId: 'p1', positionTitle: 'Technology Manager — BI', status: 'completed', scheduledAt: '2026-05-19T11:00:00', score: 74, recommendation: 'maybe', uploadedAt: '2026-05-14', interviewId: 'i-priya', reportGenerated: true, reportGeneratedAt: '2026-05-19T12:18:00' },
-  { id: 'c4', name: 'Karan Mehta', email: 'karan.m@email.com', currentTitle: 'Data Engineer', currentCompany: 'PayScale', totalYearsExperience: 6, topSkills: ['Spark', 'Kafka', 'Python'], positionId: 'p3', positionTitle: 'Senior Data Engineer', status: 'scheduled', scheduledAt: '2026-05-27T10:00:00', uploadedAt: '2026-05-23', invitedAt: '2026-05-23' },
+  { id: 'c4', name: 'Karan Mehta', email: 'karan.m@email.com', currentTitle: 'Data Engineer', currentCompany: 'PayScale', totalYearsExperience: 6, topSkills: ['Spark', 'Kafka', 'Python'], positionId: 'p3', positionTitle: 'Senior Data Engineer', status: 'scheduled', scheduledAt: '2026-05-27T10:00:00', uploadedAt: '2026-05-23', invitedAt: '2026-05-23', interviewId: 'i2' },
   { id: 'c5', name: 'Divya Sharma', email: 'divya.s@email.com', totalYearsExperience: 11, topSkills: ['Snowflake', 'dbt', 'Python'], positionId: 'p1', positionTitle: 'Technology Manager — BI', status: 'completed', score: 91, recommendation: 'strong_yes', uploadedAt: '2026-05-12', interviewId: 'i-divya', reportGenerated: true, reportGeneratedAt: '2026-05-18T15:45:00', scheduledAt: '2026-05-18T14:00:00' },
   { id: 'c6', name: 'Arun Nair', email: 'arun.n@email.com', totalYearsExperience: 5, topSkills: ['Kafka', 'Databricks'], positionId: 'p3', positionTitle: 'Senior Data Engineer', status: 'no_show', scheduledAt: '2026-05-21T09:00:00', uploadedAt: '2026-05-16' },
   { id: 'c7', name: 'Sneha Iyer', email: 'sneha.iyer@email.com', currentTitle: 'Data Engineer II', currentCompany: 'Amazon', totalYearsExperience: 5, topSkills: ['Spark', 'AWS', 'Python'], positionId: 'p3', positionTitle: 'Senior Data Engineer', status: 'pending', uploadedAt: '2026-05-25' },
@@ -604,6 +605,9 @@ export const useAppStore = create<AppStore>((set) => ({
   removeCandidate: (id) => set((state) => ({ candidates: state.candidates.filter((c) => c.id !== id) })),
   updateInterview: (id, updates) => set((state) => ({
     interviews: state.interviews.map((i) => i.id === id ? { ...i, ...updates } : i),
+  })),
+  addInterview: (iv) => set((state) => ({
+    interviews: [...state.interviews, iv],
   })),
   addReport: (interviewId, report) => set((state) => ({
     reports: { ...state.reports, [interviewId]: report },

@@ -1,7 +1,9 @@
 "use client";
 
-import { useAppStore } from "@/store/appStore";
-import { Briefcase, Users, Video, TrendingUp, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { useAppStore, Candidate } from "@/store/appStore";
+import { Briefcase, Users, Video, TrendingUp, ArrowRight, Play, Monitor } from "lucide-react";
+import StartInterviewModal from "@/components/interview/StartInterviewModal";
 
 function StatCard({
   icon: Icon,
@@ -75,6 +77,7 @@ const STATUS_CONFIG = {
 
 export default function DashboardPage() {
   const { positions, candidates, interviews } = useAppStore();
+  const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
 
   const activePositions  = positions.filter((p) => p.status === "active").length;
   const totalCandidates  = candidates.length;
@@ -98,7 +101,19 @@ export default function DashboardPage() {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
+  const modalPosition = modalCandidate
+    ? positions.find((p) => p.id === modalCandidate.positionId)
+    : undefined;
+
   return (
+    <>
+    {modalCandidate && (
+      <StartInterviewModal
+        candidate={modalCandidate}
+        position={modalPosition}
+        onClose={() => setModalCandidate(null)}
+      />
+    )}
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 28, maxWidth: 1280 }}>
 
       {/* Header */}
@@ -151,62 +166,101 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {upcomingInterviews.map((iv) => (
-                <div
-                  key={iv.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "12px 14px",
-                    background: "#F8FAFF",
-                    borderRadius: 10,
-                    border: "1px solid #EEF2FF",
-                  }}
-                >
+              {upcomingInterviews.map((iv) => {
+                const linkedCandidate = candidates.find((c) => c.id === iv.candidateId);
+                return (
                   <div
+                    key={iv.id}
                     style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      background: "rgba(124,58,237,0.08)",
-                      border: "1px solid rgba(124,58,237,0.18)",
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      flexDirection: "column",
+                      gap: 10,
+                      padding: "12px 14px",
+                      background: "#F8FAFF",
+                      borderRadius: 10,
+                      border: "1px solid #EEF2FF",
                     }}
                   >
-                    <Video size={17} color="#7C3AED" />
+                    {/* Interview info row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 38, height: 38, borderRadius: 10,
+                          background: "rgba(124,58,237,0.08)",
+                          border: "1px solid rgba(124,58,237,0.18)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Video size={17} color="#7C3AED" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {iv.candidateName}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {iv.positionTitle}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div className="font-mono" style={{ fontSize: 12, color: "#4F46E5", fontWeight: 600 }}>
+                          {new Date(iv.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </div>
+                        <div className="font-mono" style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
+                          {new Date(iv.scheduledAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: iv.agentOnline ? "#10B981" : "#E2E8F0",
+                          flexShrink: 0,
+                          boxShadow: iv.agentOnline ? "0 0 6px rgba(16,185,129,0.5)" : "none",
+                        }}
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{ display: "flex", gap: 7 }}>
+                      <button
+                        onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}
+                        style={{
+                          flex: 1,
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                          background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                          border: "none", borderRadius: 7, color: "#fff",
+                          fontSize: 12, fontWeight: 700, padding: "7px 10px",
+                          cursor: "pointer",
+                          boxShadow: "0 3px 10px rgba(124,58,237,0.28)",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 5px 14px rgba(124,58,237,0.42)" }}
+                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 3px 10px rgba(124,58,237,0.28)" }}
+                      >
+                        <Play size={11} fill="white" strokeWidth={0} />
+                        Start
+                      </button>
+                      <button
+                        onClick={() => window.open(`/interview/${iv.id}/monitor`, "_blank")}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                          background: "rgba(124,58,237,0.08)",
+                          border: "1px solid rgba(124,58,237,0.22)",
+                          borderRadius: 7, color: "#7C3AED",
+                          fontSize: 12, fontWeight: 700, padding: "7px 12px",
+                          cursor: "pointer", whiteSpace: "nowrap",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)" }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.08)" }}
+                      >
+                        <Monitor size={11} />
+                        Monitor
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {iv.candidateName}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {iv.positionTitle}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div className="font-mono" style={{ fontSize: 12, color: "#4F46E5", fontWeight: 600 }}>
-                      {new Date(iv.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    </div>
-                    <div className="font-mono" style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
-                      {new Date(iv.scheduledAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: iv.agentOnline ? "#10B981" : "#E2E8F0",
-                      flexShrink: 0,
-                      boxShadow: iv.agentOnline ? "0 0 6px rgba(16,185,129,0.5)" : "none",
-                    }}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -356,5 +410,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
