@@ -299,27 +299,35 @@ export default function InterviewPage() {
     setIsSpeaking(true)
     setPhase('speaking')
 
-    // Try ElevenLabs via API route
-    try {
-      const res = await fetch('/api/interview/generate-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      })
-      const ct = res.headers.get('Content-Type') || ''
-      if (ct.includes('audio/mpeg')) {
-        const blob = await res.blob()
-        const url  = URL.createObjectURL(blob)
-        await new Promise<void>((resolve) => {
-          const audio = new Audio(url)
-          audio.onended = () => { URL.revokeObjectURL(url); resolve() }
-          audio.onerror = () => { URL.revokeObjectURL(url); resolve() }
-          audio.play().catch(() => resolve())
+    if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
+      // Use ElevenLabs via server-side API route (key stays secret on server)
+      try {
+        const res = await fetch('/api/interview/generate-speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID,
+          }),
         })
-        setIsSpeaking(false)
-        return
+        const ct = res.headers.get('Content-Type') || ''
+        if (ct.includes('audio/mpeg')) {
+          const blob = await res.blob()
+          const url  = URL.createObjectURL(blob)
+          await new Promise<void>((resolve) => {
+            const audio = new Audio(url)
+            audio.onended = () => { URL.revokeObjectURL(url); resolve() }
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve() }
+            audio.play().catch(() => resolve())
+          })
+          setIsSpeaking(false)
+          return
+        }
+        // If we get here, ElevenLabs returned a non-audio response — fall through
+      } catch (err) {
+        console.warn('ElevenLabs TTS failed, falling back to browser TTS:', err)
       }
-    } catch {}
+    }
 
     // Browser TTS fallback
     await new Promise<void>((resolve) => {
