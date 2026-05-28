@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '@/store/appStore'
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X } from 'lucide-react'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -229,7 +229,7 @@ export default function InterviewPage() {
   const [showCode, setShowCode]      = useState(false)
   const [showWhiteboard, setShowWhiteboard] = useState(false)
   const [codeContent, setCodeContent] = useState('')
-  const [codeLanguage, setCodeLanguage] = useState('python')
+  const [codeLanguage, setCodeLanguage] = useState('javascript')
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [isMobile, setIsMobile]      = useState(false)
   const [messageFromRecruiter, setMessageFromRecruiter] = useState<string | null>(null)
@@ -247,7 +247,9 @@ export default function InterviewPage() {
   const capturedRef       = useRef(false)
   const hasSpokenRef      = useRef(false)
   const rephraseCountRef  = useRef(0)
-  const transcriptBoxRef  = useRef<HTMLDivElement>(null)
+  const transcriptBoxRef      = useRef<HTMLDivElement>(null)
+  const codeTriggerShownRef   = useRef(false)
+  const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* ── Sync setters ─────────────────────────────────────────── */
   const setPhase = useCallback((p: InterviewPhase) => {
@@ -650,8 +652,11 @@ export default function InterviewPage() {
     const q    = qs[idx]
     const prevQ = idx > 0 ? qs[idx - 1] : null
 
-    // Auto-open whiteboard panel
+    // Auto-open panels
     if (q.section === 'whiteboard') setShowWhiteboard(true)
+    if (q.section === 'technical' || q.section === 'scenario') setShowCode(true)
+
+    const isFirstCodeTrigger = (q.section === 'technical' || q.section === 'scenario') && !codeTriggerShownRef.current
 
     // Section-change preamble (skip on first question)
     if (prevQ && q.section !== prevQ.section) {
@@ -665,6 +670,20 @@ export default function InterviewPage() {
     // Speak the question itself
     addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
     await speakText(q.question)
+
+    // Verbal cue for panels (fires once per panel type)
+    if (q.section === 'whiteboard' && prevQ?.section !== 'whiteboard') {
+      const cue = 'You can use the whiteboard below to sketch your thinking.'
+      addTranscript({ speaker: 'ai', text: cue, type: 'transition' })
+      await speakText(cue)
+      await delay(400)
+    } else if (isFirstCodeTrigger) {
+      codeTriggerShownRef.current = true
+      const cue = 'Feel free to use the code editor below to write or illustrate your answer.'
+      addTranscript({ speaker: 'ai', text: cue, type: 'transition' })
+      await speakText(cue)
+      await delay(400)
+    }
 
     // 1.5 s warmup — let the candidate process before mic opens
     setIsWarmingUp(true)
@@ -774,11 +793,14 @@ export default function InterviewPage() {
     addTranscript, speakText, moveToQuestion,
   ])
 
-  /* ── Code editor sync ─────────────────────────────────────── */
+  /* ── Code editor sync (debounced 1 s) ────────────────────── */
   const handleCodeChange = (val: string | undefined) => {
     const v = val ?? ''
     setCodeContent(v)
-    updateSessionCode(v, codeLanguage)
+    if (codeDebounceRef.current) clearTimeout(codeDebounceRef.current)
+    codeDebounceRef.current = setTimeout(() => {
+      updateSessionCode(v, codeLanguage)
+    }, 1000)
   }
 
   /* ── Whiteboard export ────────────────────────────────────── */
@@ -1064,42 +1086,79 @@ export default function InterviewPage() {
           </div>
         </div>
 
-        {/* ── Code Editor panel ── */}
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <button onClick={() => setShowCode(v => !v)} style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, borderBottom: showCode ? '1px solid #E2E8F0' : 'none' }}>
-            <Code2 size={14} color="#64748B" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Code Editor</span>
-            {showCode ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} /> : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
+      </main>
+
+      {/* ── Bottom dock — always visible ──────────────────────── */}
+      <div style={{ flexShrink: 0, background: '#fff', borderTop: '1px solid #E2E8F0', zIndex: 10 }}>
+
+        {/* Toggle buttons */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 20px',
+          borderBottom: (showCode || showWhiteboard) ? '1px solid #E2E8F0' : 'none',
+        }}>
+          <button
+            onClick={() => setShowCode(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: showCode ? '#4F46E5' : '#F1F5F9',
+              color: showCode ? '#fff' : '#64748B',
+              fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            <Code2 size={13} />
+            ≡ Code Editor
           </button>
-          {showCode && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
-                {['python', 'javascript', 'typescript', 'java', 'sql', 'go'].map(lang => (
-                  <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
-                    {lang}
-                  </button>
-                ))}
-              </div>
-              <MonacoEditor height={260} language={codeLanguage} theme="vs-dark" value={codeContent} onChange={handleCodeChange} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }} />
-              <div style={{ padding: '8px 12px', background: '#1E1E1E', borderTop: '1px solid #333', display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button style={{ padding: '4px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', background: '#10B981', color: '#fff', fontSize: 12, fontWeight: 700 }} onClick={() => {}}>▶ Run</button>
-                <span style={{ fontSize: 11, color: '#4EC9B0', fontFamily: 'monospace' }}>{'// Output will appear here — explain your code verbally'}</span>
-              </div>
-            </div>
-          )}
+          <button
+            onClick={() => setShowWhiteboard(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: showWhiteboard ? '#4F46E5' : '#F1F5F9',
+              color: showWhiteboard ? '#fff' : '#64748B',
+              fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            <PenLine size={13} />
+            ⬜ Whiteboard
+          </button>
         </div>
 
-        {/* ── Whiteboard panel ── */}
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <button onClick={() => setShowWhiteboard(v => !v)} style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
-            <PenLine size={14} color="#64748B" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Whiteboard</span>
-            {showWhiteboard ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} /> : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
-          </button>
-          {showWhiteboard && <Whiteboard onExport={handleWhiteboardExport} />}
-        </div>
-      </main>
+        {/* Code Editor panel */}
+        {showCode && (
+          <div style={{ borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
+            <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
+              {(['javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setCodeLanguage(lang)}
+                  style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}
+                >
+                  {lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                </button>
+              ))}
+            </div>
+            <MonacoEditor
+              height={220}
+              language={codeLanguage}
+              theme="vs-dark"
+              value={codeContent}
+              onChange={handleCodeChange}
+              options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }}
+            />
+          </div>
+        )}
+
+        {/* Whiteboard panel */}
+        {showWhiteboard && (
+          <div style={{ maxHeight: 320, overflow: 'hidden' }}>
+            <Whiteboard onExport={handleWhiteboardExport} />
+          </div>
+        )}
+      </div>
 
       {/* ── End confirm modal ── */}
       {showEndConfirm && (
@@ -1125,6 +1184,13 @@ export default function InterviewPage() {
         @keyframes pulseDot {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
