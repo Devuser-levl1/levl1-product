@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '@/store/appStore'
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
+import { AIVisualizer } from '@/components/interview/AIVisualizer'
 import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X } from 'lucide-react'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
@@ -218,7 +219,6 @@ export default function InterviewPage() {
   const [liveTranscript, setLiveTranscript] = useState('')
   const [listeningHint, setListeningHint]   = useState('')
   const [isWarmingUp, setIsWarmingUp]       = useState(false)
-  const [isSpeaking, setIsSpeaking]  = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [micFailed, setMicFailed]    = useState(false)
   const [textInputMode, setTextInputMode]   = useState(false)
@@ -335,7 +335,6 @@ export default function InterviewPage() {
     console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_API_KEY present:', !!process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
     console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_VOICE_ID:', process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID ?? 'UNDEFINED')
 
-    setIsSpeaking(true)
     setPhase('speaking')
 
     if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
@@ -358,7 +357,6 @@ export default function InterviewPage() {
             audio.onerror = (e) => { console.error('[speakText] Audio error:', e); URL.revokeObjectURL(url); resolve() }
             audio.play().catch(e => { console.error('[speakText] play() rejected:', e); resolve() })
           })
-          setIsSpeaking(false)
           return
         }
         const bodyText = await res.text().catch(() => '(unreadable)')
@@ -383,7 +381,6 @@ export default function InterviewPage() {
       utt.onerror = () => resolve()
       window.speechSynthesis.speak(utt)
     })
-    setIsSpeaking(false)
   }, [setPhase])
 
   /* ── STT ──────────────────────────────────────────────────── */
@@ -887,23 +884,6 @@ export default function InterviewPage() {
   const currentQ   = questions[currentQIdx]
   const timerColor = timeRemaining <= 120 ? '#DC2626' : timeRemaining <= 300 ? '#D97706' : '#4F46E5'
 
-  // Derive mic status label
-  const micStatusLabel =
-    isWarmingUp         ? '◎ TAKE YOUR TIME'
-    : phase === 'listening'  ? '● LISTENING'
-    : phase === 'processing' ? '⟳ THINKING'
-    : phase === 'speaking'   ? '◈ SPEAKING'
-    : phase === 'intro'      ? '◈ SPEAKING'
-    : 'WAITING'
-
-  const micStatusColor =
-    isWarmingUp         ? '#94A3B8'
-    : phase === 'listening'  ? '#10B981'
-    : phase === 'processing' ? '#F59E0B'
-    : phase === 'speaking'   ? '#7C3AED'
-    : phase === 'intro'      ? '#7C3AED'
-    : '#CBD5E1'
-
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
 
@@ -941,38 +921,17 @@ export default function InterviewPage() {
         )}
 
         {/* ── AI + Question row ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, alignItems: 'start' }}>
 
-          {/* AI Interviewer Panel */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #4F46E5 0%, #4338CA 100%)',
-              border: `3px solid ${isSpeaking ? '#7C3AED' : '#4338CA'}`,
-              boxShadow: isSpeaking ? '0 0 0 6px rgba(124,58,237,0.15)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.4s ease',
-            }}>
-              <Mic size={28} color={isSpeaking ? '#7C3AED' : '#94A3B8'} />
-            </div>
-
-            {/* Waveform bars */}
-            <div style={{ height: 24, display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Array.from({ length: 7 }, (_, i) => (
-                <div key={i} style={{
-                  width: 4, borderRadius: 2,
-                  background: isSpeaking ? '#7C3AED' : isListening ? '#10B981' : '#CBD5E1',
-                  height: (isSpeaking || isListening) ? undefined : '4px',
-                  animation: (isSpeaking || isListening) ? `waveBar 1.1s ease-in-out ${i * 0.13}s infinite` : undefined,
-                }} />
-              ))}
-            </div>
-
-            <div style={{ fontSize: 11, fontWeight: 700, color: micStatusColor, textAlign: 'center', letterSpacing: '0.03em' }}>
-              {micStatusLabel}
-            </div>
-            <div style={{ fontSize: 11, color: '#CBD5E1', textAlign: 'center', fontWeight: 600 }}>Alex · AI Interviewer</div>
-          </div>
+          {/* AI Interviewer Panel — premium visualizer */}
+          <AIVisualizer
+            phase={phase}
+            isWarmingUp={isWarmingUp}
+            liveTranscriptLength={liveTranscript.length}
+            timeRemaining={timeRemaining}
+            candidateName={candidate.name}
+            positionTitle={position.title}
+          />
 
           {/* Current question card */}
           <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
