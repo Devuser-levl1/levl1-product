@@ -1,7 +1,8 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, CheckCircle2, AlertTriangle, Play } from 'lucide-react'
+import { X, CheckCircle2, AlertTriangle, Play, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import type { Candidate, Position, Interview } from '@/store/appStore'
 
@@ -25,6 +26,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export default function StartInterviewModal({ candidate, position, onClose }: Props) {
   const router = useRouter()
   const { interviews, addInterview, updateCandidate } = useAppStore()
+
+  /* ── ElevenLabs status (fetched server-side so the key stays secret) ── */
+  const [elevenLabsOk, setElevenLabsOk] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/check-status')
+      .then((r) => r.json())
+      .then((data) => setElevenLabsOk(!!data.elevenLabsConfigured))
+      .catch(() => setElevenLabsOk(false))
+  }, [])
 
   /* ── Resolve or create an interviewId ─────────────────────────── */
   function resolveInterviewId(): string {
@@ -65,7 +76,7 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
   }
 
   /* ── Pre-flight checks ────────────────────────────────────────── */
-  type Check = { label: string; ok: boolean; sub?: string }
+  type Check = { label: string; ok: boolean; sub?: string; loading?: boolean }
 
   const positionApproved = !!(position?.approvals?.techLead && position?.approvals?.hr)
   const candidateInvited = !!(candidate.invitedAt || candidate.status === 'scheduled')
@@ -84,9 +95,15 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
       ok: candidateInvited,
     },
     {
-      label: 'ElevenLabs key not configured',
-      ok: false,
-      sub: 'Will use browser TTS as fallback',
+      label:
+        elevenLabsOk === null
+          ? 'Checking ElevenLabs…'
+          : elevenLabsOk
+          ? 'ElevenLabs configured'
+          : 'ElevenLabs key not configured',
+      ok: !!elevenLabsOk,
+      sub: elevenLabsOk ? undefined : elevenLabsOk === null ? undefined : 'Will use browser TTS as fallback',
+      loading: elevenLabsOk === null,
     },
   ]
 
@@ -172,12 +189,14 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {checks.map((c, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  {c.ok
+                  {c.loading
+                    ? <Loader2 size={15} color="#94A3B8" style={{ marginTop: 1.5, flexShrink: 0, animation: 'spin 1s linear infinite' }} />
+                    : c.ok
                     ? <CheckCircle2 size={15} color="#10B981" style={{ marginTop: 1.5, flexShrink: 0 }} />
                     : <AlertTriangle size={15} color="#F59E0B" style={{ marginTop: 1.5, flexShrink: 0 }} />
                   }
                   <div>
-                    <span style={{ fontSize: 13, color: c.ok ? '#334155' : '#92400E', fontWeight: 500, lineHeight: 1.4 }}>
+                    <span style={{ fontSize: 13, color: c.loading ? '#94A3B8' : c.ok ? '#334155' : '#92400E', fontWeight: 500, lineHeight: 1.4 }}>
                       {c.label}
                     </span>
                     {c.sub && (
