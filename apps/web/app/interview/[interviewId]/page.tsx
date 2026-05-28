@@ -8,11 +8,63 @@ import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, ChevronDown, ChevronUp } from 'lucide-react'
 
-/* ── Web Speech API type shims ───────────────────────────────────── */
-interface SpeechRecognitionAlternative {
-  transcript: string
-  confidence: number
+/* ── Utility helpers ─────────────────────────────────────────────── */
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
 }
+function delay(ms: number): Promise<void> {
+  return new Promise(r => setTimeout(r, ms))
+}
+function playChime(): void {
+  try {
+    const ctx = new AudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 440
+    gain.gain.setValueAtTime(0.1, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.5)
+  } catch {}
+}
+
+/* ── Transition phrase pools ─────────────────────────────────────── */
+const TR_GOOD = [
+  'Thank you, that gives me a clear picture. Let me ask you about something different.',
+  'Understood. Moving on —',
+  'That is helpful context. Next —',
+] as const
+
+const TR_BRIEF = [
+  'Got it. Let me try a different angle.',
+  'Noted. Let us move forward.',
+  'Thank you. I have one more area I would like to cover.',
+] as const
+
+const TR_SECTION: Partial<Record<string, readonly string[]>> = {
+  scenario: [
+    'Great, I would like to shift gears now and ask you a few scenario-based questions.',
+    'Let us move to something a bit different — I will describe a situation and I would like your take on it.',
+    'Now I would like to understand how you approach certain situations.',
+  ],
+  behavioral: [
+    'Let us shift to some questions about how you have worked in teams.',
+    'I would like to hear about some specific experiences now.',
+  ],
+  whiteboard: [
+    'I would like to do a quick design exercise now.',
+    'Let us work through a system design together.',
+  ],
+  eq: [
+    'We are in the final stretch. Just a couple more questions.',
+    'Last section — I would like to learn a bit more about you beyond the technical.',
+  ],
+}
+
+/* ── Web Speech API type shims ───────────────────────────────────── */
+interface SpeechRecognitionAlternative { transcript: string; confidence: number }
 interface SpeechRecognitionResult {
   readonly length: number
   [index: number]: SpeechRecognitionAlternative
@@ -22,12 +74,8 @@ interface SpeechRecognitionResultList {
   readonly length: number
   [index: number]: SpeechRecognitionResult
 }
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList
-}
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string
-}
+interface SpeechRecognitionEvent extends Event { results: SpeechRecognitionResultList }
+interface SpeechRecognitionErrorEvent extends Event { error: string }
 interface ISpeechRecognition extends EventTarget {
   continuous: boolean
   interimResults: boolean
@@ -37,9 +85,7 @@ interface ISpeechRecognition extends EventTarget {
   onresult: ((event: SpeechRecognitionEvent) => void) | null
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
 }
-interface ISpeechRecognitionConstructor {
-  new(): ISpeechRecognition
-}
+interface ISpeechRecognitionConstructor { new(): ISpeechRecognition }
 declare global {
   interface Window {
     SpeechRecognition: ISpeechRecognitionConstructor
@@ -47,7 +93,7 @@ declare global {
   }
 }
 
-/* ── Dynamic import for Monaco (browser only) ───────────────────── */
+/* ── Dynamic Monaco ─────────────────────────────────────────────── */
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
@@ -67,7 +113,6 @@ interface LocalQuestion {
   estimatedMinutes: number
   isPreset: boolean
 }
-
 interface EvalResult {
   score: number
   keyPointsCovered: string[]
@@ -84,10 +129,9 @@ function buildQuestions(pos: Position): LocalQuestion[] {
   const tech  = pos.techStack
   const t0    = tech[0] || 'your primary technology'
   const t1    = tech[1] || t0
-  const isDev = ['Python', 'Java', 'Spark', 'Kafka', 'AWS', 'Databricks', 'React', 'Node'].some((t) =>
-    tech.map((x) => x.toLowerCase()).includes(t.toLowerCase())
+  const isDev = ['Python', 'Java', 'Spark', 'Kafka', 'AWS', 'Databricks', 'React', 'Node'].some(t =>
+    tech.map(x => x.toLowerCase()).includes(t.toLowerCase())
   )
-
   const qs: LocalQuestion[] = [
     {
       id: 'qt1', section: 'technical',
@@ -102,7 +146,6 @@ function buildQuestions(pos: Position): LocalQuestion[] {
       techTag: 'Architecture', estimatedMinutes: 7, isPreset: true,
     },
   ]
-
   if (isDev) {
     qs.push({
       id: 'qw1', section: 'whiteboard',
@@ -111,7 +154,6 @@ function buildQuestions(pos: Position): LocalQuestion[] {
       techTag: `${t1} Design`, estimatedMinutes: 8, isPreset: true,
     })
   }
-
   qs.push(
     {
       id: 'qs1', section: 'scenario',
@@ -132,28 +174,18 @@ function buildQuestions(pos: Position): LocalQuestion[] {
       techTag: 'Collaboration', estimatedMinutes: 3, isPreset: true,
     }
   )
-
   return qs
 }
 
-/* ── Section labels ─────────────────────────────────────────────── */
+/* ── Section meta ───────────────────────────────────────────────── */
 const SECTION_LABEL: Record<string, string> = {
-  technical:  'Technical',
-  behavioral: 'Behavioral',
-  scenario:   'Scenario',
-  eq:         'Values',
-  whiteboard: 'System Design',
+  technical: 'Technical', behavioral: 'Behavioral',
+  scenario: 'Scenario', eq: 'Values', whiteboard: 'System Design',
 }
-
 const SECTION_COLOR: Record<string, string> = {
-  technical:  '#7C3AED',
-  behavioral: '#10B981',
-  scenario:   '#8B5CF6',
-  eq:         '#F59E0B',
-  whiteboard: '#EC4899',
+  technical: '#7C3AED', behavioral: '#10B981',
+  scenario: '#8B5CF6', eq: '#F59E0B', whiteboard: '#EC4899',
 }
-
-/* ── Timer format ───────────────────────────────────────────────── */
 function fmt(secs: number) {
   const m = Math.floor(Math.max(0, secs) / 60)
   const s = Math.max(0, secs) % 60
@@ -174,34 +206,35 @@ export default function InterviewPage() {
     updateSessionWhiteboard, incrementTabSwitch, updateCandidate, updateInterview,
   } = useAppStore()
 
-  /* ── Look up entities ─────────────────────────────────────── */
-  const interview = interviews.find((i) => i.id === interviewId)
-  const candidate = interview ? candidates.find((c) => c.id === interview.candidateId) : null
-  const position  = interview ? positions.find((p) => p.id === interview.positionId) : null
+  const interview = interviews.find(i => i.id === interviewId)
+  const candidate = interview ? candidates.find(c => c.id === interview.candidateId) : null
+  const position  = interview ? positions.find(p => p.id === interview.positionId) : null
 
-  /* ── Core state ───────────────────────────────────────────── */
-  const [phase, setPhaseState] = useState<InterviewPhase>('waiting')
-  const [questions, setQuestions] = useState<LocalQuestion[]>([])
+  /* ── State ────────────────────────────────────────────────── */
+  const [phase, setPhaseState]       = useState<InterviewPhase>('waiting')
+  const [questions, setQuestions]    = useState<LocalQuestion[]>([])
   const [currentQIdx, setCurrentQIdx] = useState(0)
-  const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
+  const [transcript, setTranscript]  = useState<TranscriptEntry[]>([])
   const [liveTranscript, setLiveTranscript] = useState('')
-  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [listeningHint, setListeningHint]   = useState('')
+  const [isWarmingUp, setIsWarmingUp]       = useState(false)
+  const [isSpeaking, setIsSpeaking]  = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [micFailed, setMicFailed] = useState(false)
-  const [textInputMode, setTextInputMode] = useState(false)
+  const [micFailed, setMicFailed]    = useState(false)
+  const [textInputMode, setTextInputMode]   = useState(false)
   const [textInputValue, setTextInputValue] = useState('')
-  const [timeRemaining, setTimeRemaining] = useState(0)
-  const [, setQuestionResponses] = useState<QuestionResponse[]>([])
+  const [timeRemaining, setTimeRemaining]   = useState(0)
+  const [, setQuestionResponses]     = useState<QuestionResponse[]>([])
   const [runningScore, setRunningScore] = useState(0)
-  const [showCode, setShowCode] = useState(false)
+  const [showCode, setShowCode]      = useState(false)
   const [showWhiteboard, setShowWhiteboard] = useState(false)
   const [codeContent, setCodeContent] = useState('')
   const [codeLanguage, setCodeLanguage] = useState('python')
   const [showEndConfirm, setShowEndConfirm] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile]      = useState(false)
   const [messageFromRecruiter, setMessageFromRecruiter] = useState<string | null>(null)
 
-  /* ── Refs (stable across renders for callbacks) ───────────── */
+  /* ── Refs ─────────────────────────────────────────────────── */
   const phaseRef          = useRef<InterviewPhase>('waiting')
   const questionsRef      = useRef<LocalQuestion[]>([])
   const currentQIdxRef    = useRef(0)
@@ -209,9 +242,11 @@ export default function InterviewPage() {
   const transcriptRef     = useRef<TranscriptEntry[]>([])
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
-  const silenceTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const silenceTimersRef  = useRef<ReturnType<typeof setTimeout>[]>([])
   const timerIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
-  const capturedRef       = useRef(false) // prevent double-capture per utterance
+  const capturedRef       = useRef(false)
+  const hasSpokenRef      = useRef(false)
+  const rephraseCountRef  = useRef(0)
   const transcriptBoxRef  = useRef<HTMLDivElement>(null)
 
   /* ── Sync setters ─────────────────────────────────────────── */
@@ -230,18 +265,14 @@ export default function InterviewPage() {
     transcriptRef.current = [...transcriptRef.current, full]
     setTranscript([...transcriptRef.current])
     appendTranscriptEntry(full)
-    // Scroll transcript box
     setTimeout(() => {
-      if (transcriptBoxRef.current) {
+      if (transcriptBoxRef.current)
         transcriptBoxRef.current.scrollTop = transcriptBoxRef.current.scrollHeight
-      }
     }, 50)
   }, [appendTranscriptEntry])
 
   /* ── Mobile detection ─────────────────────────────────────── */
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768)
-  }, [])
+  useEffect(() => { setIsMobile(window.innerWidth < 768) }, [])
 
   /* ── Tab visibility tracking ──────────────────────────────── */
   useEffect(() => {
@@ -275,61 +306,70 @@ export default function InterviewPage() {
   useEffect(() => {
     if (phase === 'waiting' || phase === 'completed') return
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-
     timerIntervalRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
+      setTimeRemaining(prev => {
         const next = prev - 1
         if (next <= 0) {
           clearInterval(timerIntervalRef.current!)
-          if (phaseRef.current !== 'completed' && phaseRef.current !== 'closing') {
-            handleTimeUp()
-          }
+          if (phaseRef.current !== 'completed' && phaseRef.current !== 'closing') handleTimeUp()
           return 0
         }
         return next
       })
     }, 1000)
-
     return () => clearInterval(timerIntervalRef.current!)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase === 'waiting', phase === 'completed'])
 
+  /* ── Clear all silence timers ─────────────────────────────── */
+  const clearSilenceTimers = useCallback(() => {
+    silenceTimersRef.current.forEach(t => clearTimeout(t))
+    silenceTimersRef.current = []
+  }, [])
+
   /* ── TTS ──────────────────────────────────────────────────── */
   const speakText = useCallback(async (text: string): Promise<void> => {
+    console.log('[speakText] called with:', text.slice(0, 50))
+    console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_API_KEY present:', !!process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
+    console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_VOICE_ID:', process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID ?? 'UNDEFINED')
+
     setIsSpeaking(true)
     setPhase('speaking')
 
     if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
-      // Use ElevenLabs via server-side API route (key stays secret on server)
+      console.log('[speakText] Using ElevenLabs path')
       try {
         const res = await fetch('/api/interview/generate-speech', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text,
-            voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID,
-          }),
+          body: JSON.stringify({ text, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
         })
         const ct = res.headers.get('Content-Type') || ''
+        console.log('[speakText] API response status:', res.status, '| Content-Type:', ct)
         if (ct.includes('audio/mpeg')) {
+          console.log('[speakText] Playing ElevenLabs audio ✅')
           const blob = await res.blob()
           const url  = URL.createObjectURL(blob)
           await new Promise<void>((resolve) => {
             const audio = new Audio(url)
             audio.onended = () => { URL.revokeObjectURL(url); resolve() }
-            audio.onerror = () => { URL.revokeObjectURL(url); resolve() }
-            audio.play().catch(() => resolve())
+            audio.onerror = (e) => { console.error('[speakText] Audio error:', e); URL.revokeObjectURL(url); resolve() }
+            audio.play().catch(e => { console.error('[speakText] play() rejected:', e); resolve() })
           })
           setIsSpeaking(false)
           return
         }
-        // If we get here, ElevenLabs returned a non-audio response — fall through
+        const bodyText = await res.text().catch(() => '(unreadable)')
+        console.warn('[speakText] Non-audio response:', bodyText)
       } catch (err) {
-        console.warn('ElevenLabs TTS failed, falling back to browser TTS:', err)
+        console.warn('[speakText] fetch threw:', err)
       }
+    } else {
+      console.log('[speakText] No NEXT_PUBLIC key → browser TTS')
     }
 
     // Browser TTS fallback
+    console.log('[speakText] Using browser TTS fallback')
     await new Promise<void>((resolve) => {
       if (typeof window === 'undefined' || !window.speechSynthesis) { resolve(); return }
       window.speechSynthesis.cancel()
@@ -352,28 +392,41 @@ export default function InterviewPage() {
       window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SR) { setMicFailed(true); setTextInputMode(true); return }
 
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop() } catch {}
-    }
+    if (recognitionRef.current) { try { recognitionRef.current.stop() } catch {} }
+
+    // Reset per-listen state
+    clearSilenceTimers()
+    hasSpokenRef.current = false
+    capturedRef.current  = false
+    setListeningHint('')
+
+    // Soft chime → signals mic is live
+    playChime()
 
     const rec = new SR()
-    rec.continuous      = true
-    rec.interimResults  = true
-    rec.lang            = 'en-US'
-    capturedRef.current = false
+    rec.continuous     = true
+    rec.interimResults = true
+    rec.lang           = 'en-US'
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
-      const text = Array.from(event.results).map((r) => r[0].transcript).join(' ').trim()
+      const text = Array.from(event.results).map(r => r[0].transcript).join(' ').trim()
       liveTranscriptRef.current = text
       setLiveTranscript(text)
 
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = setTimeout(() => {
-        if (liveTranscriptRef.current.trim() && !capturedRef.current) {
-          capturedRef.current = true
-          captureResponse(liveTranscriptRef.current)
-        }
-      }, 3000)
+      if (text) {
+        hasSpokenRef.current = true
+        setListeningHint('')  // clear cold-start hints once they begin speaking
+        clearSilenceTimers()
+
+        // 3 s of silence after speaking → capture response
+        const captureTimer = setTimeout(() => {
+          if (liveTranscriptRef.current.trim() && !capturedRef.current) {
+            capturedRef.current = true
+            captureResponse(liveTranscriptRef.current)
+          }
+        }, 3000)
+        silenceTimersRef.current = [captureTimer]
+      }
     }
 
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -387,18 +440,71 @@ export default function InterviewPage() {
     rec.start()
     setIsListening(true)
     setPhase('listening')
+
+    // ── Graduated cold-start silence hints ────────────────────
+    const t3 = setTimeout(() => {
+      if (!hasSpokenRef.current && !capturedRef.current)
+        setListeningHint('● Still listening…')
+    }, 3000)
+
+    const t6 = setTimeout(() => {
+      if (!hasSpokenRef.current && !capturedRef.current)
+        setListeningHint('Take your time, I am here when you are ready.')
+    }, 6000)
+
+    const t12 = setTimeout(async () => {
+      if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
+      clearSilenceTimers()   // prevent t20 from also firing
+      setListeningHint('')
+      try { recognitionRef.current?.stop() } catch {}
+      setIsListening(false)
+
+      const nudge = pick([
+        'Take all the time you need — there is no rush.',
+        'Would you like a moment to think that through?',
+        'Feel free to think out loud if that helps.',
+      ])
+      addTranscript({ speaker: 'ai', text: nudge, type: 'transition' })
+      await speakText(nudge)
+
+      // Re-read phase after async; cast to string to avoid TS narrowing from the guard above
+      const phaseAfter12 = phaseRef.current as string
+      if (phaseAfter12 !== 'completed' && phaseAfter12 !== 'closing') {
+        await delay(1500)
+        startListening()
+      }
+    }, 12000)
+
+    const t20 = setTimeout(async () => {
+      if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
+      clearSilenceTimers()
+      setListeningHint('')
+      try { recognitionRef.current?.stop() } catch {}
+      setIsListening(false)
+
+      const prompt = 'Shall we come back to this one, or would you like to move on to the next question?'
+      addTranscript({ speaker: 'ai', text: prompt, type: 'transition' })
+      await speakText(prompt)
+
+      const phaseAfter20 = phaseRef.current as string
+      if (phaseAfter20 !== 'completed' && phaseAfter20 !== 'closing') {
+        await delay(1500)
+        startListening()
+      }
+    }, 20000)
+
+    silenceTimersRef.current = [t3, t6, t12, t20]
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [micFailed, setPhase])
+  }, [micFailed, setPhase, clearSilenceTimers])
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop() } catch {}
-    }
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    if (recognitionRef.current) { try { recognitionRef.current.stop() } catch {} }
+    clearSilenceTimers()
     setIsListening(false)
     setLiveTranscript('')
+    setListeningHint('')
     liveTranscriptRef.current = ''
-  }, [])
+  }, [clearSilenceTimers])
 
   /* ── Submit text input (fallback) ─────────────────────────── */
   const submitTextInput = useCallback(() => {
@@ -417,23 +523,59 @@ export default function InterviewPage() {
     stopListening()
     setPhase('processing')
     setLiveTranscript('')
+    setListeningHint('')
 
     const q = questionsRef.current[currentQIdxRef.current]
     if (!q) return
 
+    const lower = responseText.toLowerCase()
+
+    // ── Skip / move on ────────────────────────────────────────
+    const SKIP = ['skip', 'pass', 'move on', 'next question', 'next please']
+    if (SKIP.some(w => lower.includes(w))) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      const ack = 'Of course, let us move on.'
+      addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+      await speakText(ack)
+      await delay(1500)
+      await moveToQuestion(currentQIdxRef.current + 1)
+      return
+    }
+
+    // ── Clarification request ─────────────────────────────────
+    const CLARIFY = ['can you repeat', 'repeat that', 'what do you mean', 'can you explain',
+      "i don't understand", "i dont understand", 'come again', 'pardon']
+    if (CLARIFY.some(w => lower.includes(w))) {
+      if (rephraseCountRef.current >= 1) {
+        const defer = 'Let me know when you are ready and I will move on.'
+        addTranscript({ speaker: 'ai', text: defer, type: 'transition' })
+        await speakText(defer)
+        await delay(1500)
+        startListening()
+        return
+      }
+      rephraseCountRef.current++
+      const rephrase = `Sure — let me put it another way. ${q.question}`
+      addTranscript({ speaker: 'ai', text: rephrase, questionId: q.id, type: 'preset' })
+      await speakText(rephrase)
+      await delay(1500)
+      startListening()
+      return
+    }
+
     addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
 
-    // Evaluate in background
+    // ── Evaluate ──────────────────────────────────────────────
     let ev: EvalResult = {
       score: 5, keyPointsCovered: [], keyPointsMissed: [],
       evaluatorNote: '', shouldAskFollowUp: false, generateDynamic: false,
-      suggestedTransition: 'Thank you.',
+      suggestedTransition: '',
     }
     try {
       const prevQ = transcriptRef.current
-        .filter((t) => t.speaker === 'ai' && t.questionId)
+        .filter(t => t.speaker === 'ai' && t.questionId)
         .slice(-3)
-        .map((t) => ({ question: t.text, response: '' }))
+        .map(t => ({ question: t.text, response: '' }))
 
       const res = await fetch('/api/interview/evaluate-response', {
         method: 'POST',
@@ -449,18 +591,18 @@ export default function InterviewPage() {
       ev = await res.json()
     } catch {}
 
-    // Save response
+    // ── Save response ─────────────────────────────────────────
     const qr: QuestionResponse = {
-      questionId:       q.id,
-      questionText:     q.question,
-      questionType:     q.section,
-      isPreset:         q.isPreset,
+      questionId:        q.id,
+      questionText:      q.question,
+      questionType:      q.section,
+      isPreset:          q.isPreset,
       candidateResponse: responseText,
-      score:            Math.round((ev.score / 10) * 100),
-      keyPointsCovered: ev.keyPointsCovered ?? [],
-      keyPointsMissed:  ev.keyPointsMissed ?? [],
-      evaluatorNote:    ev.evaluatorNote ?? '',
-      timeSpent:        0,
+      score:             Math.round((ev.score / 10) * 100),
+      keyPointsCovered:  ev.keyPointsCovered ?? [],
+      keyPointsMissed:   ev.keyPointsMissed ?? [],
+      evaluatorNote:     ev.evaluatorNote ?? '',
+      timeSpent:         0,
     }
     const updatedResponses = [...responsesRef.current, qr]
     responsesRef.current = updatedResponses
@@ -471,18 +613,26 @@ export default function InterviewPage() {
     setRunningScore(avg)
     updateSessionScore(avg)
 
-    // Decide next action
+    // ── Next action ───────────────────────────────────────────
+    const nextIdx = currentQIdxRef.current + 1
+    const nextQ   = questionsRef.current[nextIdx]
+    const isSectionChange = nextQ && nextQ.section !== q.section
+
     if (ev.shouldAskFollowUp && ev.followUpQuestion) {
-      const followUp = ev.followUpQuestion
-      addTranscript({ speaker: 'ai', text: followUp, questionId: q.id, type: 'followup' })
-      await speakText(followUp)
+      addTranscript({ speaker: 'ai', text: ev.followUpQuestion, questionId: q.id, type: 'followup' })
+      await speakText(ev.followUpQuestion)
+      await delay(1500)
       startListening()
     } else {
-      const transition = ev.suggestedTransition || ''
-      if (transition && transition !== 'Thank you.') {
-        addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
+      // Speak response-quality transition if NOT a section change
+      // (section changes get their own preamble in moveToQuestion)
+      if (!isSectionChange) {
+        const transText = (ev.score ?? 5) >= 6 ? pick(TR_GOOD) : pick(TR_BRIEF)
+        addTranscript({ speaker: 'ai', text: transText, type: 'transition' })
+        await speakText(transText)
+        await delay(400)
       }
-      await moveToQuestion(currentQIdxRef.current + 1)
+      await moveToQuestion(nextIdx)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopListening, setPhase, addTranscript, upsertQuestionResponse, updateSessionScore, speakText, position, startListening])
@@ -490,33 +640,39 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const moveToQuestion = useCallback(async (idx: number) => {
     const qs = questionsRef.current
-    if (idx >= qs.length) {
-      await startClosing()
-      return
-    }
+    if (idx >= qs.length) { await startClosing(); return }
 
     currentQIdxRef.current = idx
     setCurrentQIdx(idx)
     setPhase('questioning')
+    rephraseCountRef.current = 0  // reset per question
 
-    const q = qs[idx]
+    const q    = qs[idx]
+    const prevQ = idx > 0 ? qs[idx - 1] : null
 
-    // Auto-open panels
+    // Auto-open whiteboard panel
     if (q.section === 'whiteboard') setShowWhiteboard(true)
 
-    const preambles = [
-      `Let us begin with a ${SECTION_LABEL[q.section]?.toLowerCase()} question.`,
-      'Moving on.',
-      'Next,',
-      'Let us shift to another area.',
-      '',
-      'Here is my next question.',
-    ]
-    const preamble = idx === 0 ? preambles[0] : (preambles[1 + (idx % (preambles.length - 1))] || '')
-    const fullText = preamble ? `${preamble} ${q.question}` : q.question
+    // Section-change preamble (skip on first question)
+    if (prevQ && q.section !== prevQ.section) {
+      const sectionLines = TR_SECTION[q.section] ?? ['Moving on.']
+      const sectionText  = pick(sectionLines)
+      addTranscript({ speaker: 'ai', text: sectionText, type: 'transition' })
+      await speakText(sectionText)
+      await delay(500)
+    }
 
-    addTranscript({ speaker: 'ai', text: fullText, questionId: q.id, type: 'preset' })
-    await speakText(fullText)
+    // Speak the question itself
+    addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
+    await speakText(q.question)
+
+    // 1.5 s warmup — let the candidate process before mic opens
+    setIsWarmingUp(true)
+    setListeningHint('Take your time…')
+    await delay(1500)
+    setIsWarmingUp(false)
+    setListeningHint('')
+
     startListening()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setPhase, addTranscript, speakText, startListening])
@@ -542,21 +698,17 @@ export default function InterviewPage() {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
     stopListening()
 
-    // Update store
     updateCandidate(interview?.candidateId ?? '', {
       status: 'completed',
       score: runningScore > 0 ? runningScore : 72,
     })
-    if (interview) {
-      updateInterview(interview.id, { status: 'completed', candidateJoined: true })
-    }
+    if (interview) updateInterview(interview.id, { status: 'completed', candidateJoined: true })
 
-    // Persist to localStorage
     try {
       localStorage.setItem(`ic_interview_${interviewId}_complete`, JSON.stringify({
         completedAt: new Date().toISOString(),
-        transcript: transcriptRef.current,
-        responses: responsesRef.current,
+        transcript:  transcriptRef.current,
+        responses:   responsesRef.current,
       }))
     } catch {}
   }, [setPhase, stopListening, updateCandidate, updateInterview, interview, interviewId, runningScore])
@@ -578,27 +730,28 @@ export default function InterviewPage() {
     const duration = position.interviewDuration ?? 30
     setTimeRemaining(duration * 60)
 
-    // Init session in store
     setActiveSession({
-      interviewId:             interviewId,
-      candidateId:             interview.candidateId,
-      positionId:              interview.positionId,
-      phase:                   'intro',
-      startedAt:               new Date().toISOString(),
-      elapsedSeconds:          0,
-      transcript:              [],
-      questionResponses:       [],
-      codeEditorContent:       '',
-      codeEditorLanguage:      'python',
-      runningScore:            0,
-      currentQuestionIndex:    0,
+      interviewId,
+      candidateId:   interview.candidateId,
+      positionId:    interview.positionId,
+      phase:         'intro',
+      startedAt:     new Date().toISOString(),
+      elapsedSeconds: 0,
+      transcript:    [],
+      questionResponses: [],
+      codeEditorContent:  '',
+      codeEditorLanguage: 'python',
+      runningScore:   0,
+      currentQuestionIndex:      0,
       dynamicQuestionsGenerated: 0,
-      candidateTabSwitches:    0,
+      candidateTabSwitches:      0,
     })
 
     updateInterview(interviewId, { status: 'in_progress', candidateJoined: true })
-
     setPhase('intro')
+
+    // 2 s pause — give candidate time to settle before Alex speaks
+    await delay(2000)
 
     const firstName = candidate.name.split(' ')[0]
     const intro =
@@ -610,6 +763,10 @@ export default function InterviewPage() {
 
     addTranscript({ speaker: 'ai', text: intro, type: 'intro' })
     await speakText(intro)
+
+    // 2 s natural pause before first question
+    await delay(2000)
+
     await moveToQuestion(0)
   }, [
     candidate, position, interview, interviewId,
@@ -645,15 +802,12 @@ export default function InterviewPage() {
     )
   }
 
-  /* Mobile warning */
   if (isMobile) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5', padding: 32 }}>
         <div style={{ textAlign: 'center', color: '#fff', maxWidth: 340 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>💻</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, marginBottom: 12 }}>
-            Desktop Required
-          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Desktop Required</div>
           <div style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.6 }}>
             This interview is optimised for desktop. Please open this link on a laptop or desktop computer to begin.
           </div>
@@ -662,17 +816,14 @@ export default function InterviewPage() {
     )
   }
 
-  /* Completed screen */
   if (phase === 'completed') {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>✅</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>
-            Interview Complete
-          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>Interview Complete</div>
           <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
-            Thank you, {candidate.name.split(' ')[0]}. Your interview has been submitted successfully. The team at {position.company} will review your evaluation and be in touch with next steps.
+            Thank you, {candidate.name.split(' ')[0]}. Your interview has been submitted. The team at {position.company} will be in touch with next steps.
           </div>
           <div style={{ marginTop: 32, padding: '14px 24px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)', borderRadius: 12, color: '#059669', fontSize: 13, fontWeight: 600 }}>
             You may now close this window.
@@ -682,97 +833,74 @@ export default function InterviewPage() {
     )
   }
 
-  /* Waiting / start screen */
   if (phase === 'waiting') {
     return (
-      <div style={{
-        height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', background: '#F8FAFC', gap: 32,
-      }}>
-        {/* Logo */}
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', gap: 32 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.025em' }}>
-          Interview<span style={{ color: '#7C3AED' }}>Central</span>
+          Levl<span style={{ color: '#7C3AED' }}>1</span>
         </div>
-
         <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(79,70,229,0.08)' }}>
-          {/* AI Avatar */}
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px',
-            background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
-            border: '3px solid #7C3AED',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', border: '3px solid #7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Mic size={32} color="#7C3AED" />
           </div>
-
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>
-            Your Interview is Ready
-          </div>
-          <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>
-            {position.title} · {position.company}
-          </div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>
-            Duration: {position.interviewDuration ?? 30} minutes · AI Interviewer: Alex
-          </div>
-
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
+          <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? 30} minutes · AI Interviewer: Alex</div>
           <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
-
           <button
             onClick={startInterview}
-            style={{
-              width: '100%', padding: '14px 0',
-              background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
-              color: '#fff', border: 'none', borderRadius: 12,
-              fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              letterSpacing: '-0.01em',
-            }}
+            style={{ width: '100%', padding: '14px 0', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}
           >
             Start Interview →
           </button>
-
-          <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>
-            By starting, you consent to this interview being recorded and evaluated.
-          </div>
+          <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>By starting, you consent to this interview being recorded and evaluated.</div>
         </div>
       </div>
     )
   }
 
   /* ── Active interview UI ───────────────────────────────────── */
-  const currentQ  = questions[currentQIdx]
+  const currentQ   = questions[currentQIdx]
   const timerColor = timeRemaining <= 120 ? '#DC2626' : timeRemaining <= 300 ? '#D97706' : '#4F46E5'
+
+  // Derive mic status label
+  const micStatusLabel =
+    isWarmingUp         ? '◎ TAKE YOUR TIME'
+    : phase === 'listening'  ? '● LISTENING'
+    : phase === 'processing' ? '⟳ THINKING'
+    : phase === 'speaking'   ? '◈ SPEAKING'
+    : phase === 'intro'      ? '◈ SPEAKING'
+    : 'WAITING'
+
+  const micStatusColor =
+    isWarmingUp         ? '#94A3B8'
+    : phase === 'listening'  ? '#10B981'
+    : phase === 'processing' ? '#F59E0B'
+    : phase === 'speaking'   ? '#7C3AED'
+    : phase === 'intro'      ? '#7C3AED'
+    : '#CBD5E1'
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
 
       {/* ── Header ── */}
-      <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 28px', height: 56, background: '#fff',
-        borderBottom: '1px solid #E2E8F0', flexShrink: 0,
-      }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: '#fff', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.02em' }}>
-          Interview<span style={{ color: '#7C3AED' }}>Central</span>
+          Levl<span style={{ color: '#7C3AED' }}>1</span>
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', textAlign: 'center' }}>
           {candidate.name} · {position.title}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Timer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Clock size={14} color={timerColor} />
-            <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: timerColor, letterSpacing: '0.05em' }}>
-              {fmt(timeRemaining)}
-            </span>
+            <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: timerColor, letterSpacing: '0.05em' }}>{fmt(timeRemaining)}</span>
           </div>
           <button
             onClick={() => setShowEndConfirm(true)}
-            style={{
-              padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-              border: '1px solid #FCA5A5', background: 'rgba(239,68,68,0.06)', color: '#DC2626', cursor: 'pointer',
-            }}
+            style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #FCA5A5', background: 'rgba(239,68,68,0.06)', color: '#DC2626', cursor: 'pointer' }}
           >
             End Interview
           </button>
@@ -784,15 +912,9 @@ export default function InterviewPage() {
 
         {/* Recruiter message banner */}
         {messageFromRecruiter && (
-          <div style={{
-            padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)',
-            borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
+          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>📋 {messageFromRecruiter}</span>
-            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}>
-              <X size={14} />
-            </button>
+            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
           </div>
         )}
 
@@ -800,11 +922,7 @@ export default function InterviewPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, alignItems: 'start' }}>
 
           {/* AI Interviewer Panel */}
-          <div style={{
-            background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0',
-            padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-          }}>
-            {/* Avatar */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <div style={{
               width: 72, height: 72, borderRadius: '50%',
               background: 'linear-gradient(135deg, #4F46E5 0%, #4338CA 100%)',
@@ -816,35 +934,22 @@ export default function InterviewPage() {
               <Mic size={28} color={isSpeaking ? '#7C3AED' : '#94A3B8'} />
             </div>
 
-            {/* Waveform */}
+            {/* Waveform bars */}
             <div style={{ height: 24, display: 'flex', alignItems: 'center', gap: 3 }}>
               {Array.from({ length: 7 }, (_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 4, borderRadius: 2,
-                    background: isSpeaking ? '#7C3AED' : isListening ? '#10B981' : '#CBD5E1',
-                    height: (isSpeaking || isListening) ? undefined : '4px',
-                    animation: (isSpeaking || isListening)
-                      ? `waveBar 1.1s ease-in-out ${i * 0.13}s infinite`
-                      : undefined,
-                  }}
-                />
+                <div key={i} style={{
+                  width: 4, borderRadius: 2,
+                  background: isSpeaking ? '#7C3AED' : isListening ? '#10B981' : '#CBD5E1',
+                  height: (isSpeaking || isListening) ? undefined : '4px',
+                  animation: (isSpeaking || isListening) ? `waveBar 1.1s ease-in-out ${i * 0.13}s infinite` : undefined,
+                }} />
               ))}
             </div>
 
-            {/* Status */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textAlign: 'center', letterSpacing: '0.03em' }}>
-              {phase === 'listening'    ? '● LISTENING'
-               : phase === 'processing' ? '⟳ THINKING'
-               : phase === 'speaking'   ? '◈ SPEAKING'
-               : phase === 'intro'      ? '◈ SPEAKING'
-               : 'WAITING'}
+            <div style={{ fontSize: 11, fontWeight: 700, color: micStatusColor, textAlign: 'center', letterSpacing: '0.03em' }}>
+              {micStatusLabel}
             </div>
-
-            <div style={{ fontSize: 11, color: '#CBD5E1', textAlign: 'center', fontWeight: 600 }}>
-              Alex · AI Interviewer
-            </div>
+            <div style={{ fontSize: 11, color: '#CBD5E1', textAlign: 'center', fontWeight: 600 }}>Alex · AI Interviewer</div>
           </div>
 
           {/* Current question card */}
@@ -852,32 +957,17 @@ export default function InterviewPage() {
             {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 100,
-                    background: `${SECTION_COLOR[currentQ.section]}15`,
-                    border: `1px solid ${SECTION_COLOR[currentQ.section]}30`,
-                    color: SECTION_COLOR[currentQ.section],
-                    letterSpacing: '0.06em',
-                  }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
                     {SECTION_LABEL[currentQ.section]?.toUpperCase()}
                   </span>
-                  <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>
-                    Question {currentQIdx + 1} of {questions.length}
-                  </span>
-                  <span style={{
-                    marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: '#64748B',
-                    background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em',
-                  }}>
+                  <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: '#64748B', background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
                     {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.65, margin: 0 }}>
-                  {currentQ.question}
-                </p>
+                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.65, margin: 0 }}>{currentQ.question}</p>
                 {currentQ.section === 'whiteboard' && (
-                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>
-                    ✏️ Use the whiteboard below to sketch your answer
-                  </div>
+                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>✏️ Use the whiteboard below to sketch your answer</div>
                 )}
               </>
             ) : (
@@ -892,7 +982,11 @@ export default function InterviewPage() {
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            {isListening ? (
+            {isWarmingUp ? (
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', fontStyle: 'italic' }}>
+                Take your time…
+              </span>
+            ) : isListening ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#DC2626' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
                 Recording… speak your answer
@@ -905,33 +999,27 @@ export default function InterviewPage() {
             )}
           </div>
 
+          {/* Silence hint (3 s / 6 s graduated messages) */}
+          {listeningHint && (
+            <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '2px 0' }}>
+              {listeningHint}
+            </div>
+          )}
+
           {/* Live transcript */}
-          <div
-            ref={transcriptBoxRef}
-            style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}
-          >
-            {transcript.slice(-4).map((entry) => (
+          <div ref={transcriptBoxRef} style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {transcript.slice(-4).map(entry => (
               <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2,
-                  color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981',
-                  letterSpacing: '0.04em',
-                }}>
+                <span style={{ fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>
                   {entry.speaker === 'ai' ? 'ALEX' : 'YOU'}
                 </span>
-                <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>
-                  {entry.text}
-                </span>
+                <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}
             {liveTranscript && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2, color: '#10B981', letterSpacing: '0.04em' }}>
-                  YOU
-                </span>
-                <span style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', lineHeight: 1.55 }}>
-                  {liveTranscript}
-                </span>
+                <span style={{ fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
+                <span style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
               </div>
             )}
           </div>
@@ -941,24 +1029,15 @@ export default function InterviewPage() {
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <textarea
                 value={textInputValue}
-                onChange={(e) => setTextInputValue(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) submitTextInput() }}
+                onChange={e => setTextInputValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) submitTextInput() }}
                 placeholder="Type your response here… (⌘+Enter to submit)"
-                style={{
-                  flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0',
-                  fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 72,
-                  fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155',
-                }}
+                style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 72, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
               />
               <button
                 onClick={submitTextInput}
                 disabled={!textInputValue.trim()}
-                style={{
-                  padding: '0 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0',
-                  color: textInputValue.trim() ? '#fff' : '#94A3B8',
-                  fontSize: 13, fontWeight: 700, transition: 'all 0.15s',
-                }}
+                style={{ padding: '0 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700, transition: 'all 0.15s' }}
               >
                 Submit
               </button>
@@ -975,11 +1054,7 @@ export default function InterviewPage() {
               const color   = SECTION_COLOR[q.section]
               return (
                 <div key={q.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div style={{
-                    height: 5, borderRadius: 3,
-                    background: done ? color : current ? `${color}55` : '#E2E8F0',
-                    transition: 'all 0.4s ease',
-                  }} />
+                  <div style={{ height: 5, borderRadius: 3, background: done ? color : current ? `${color}55` : '#E2E8F0', transition: 'all 0.4s ease' }} />
                   <div style={{ fontSize: 9, fontWeight: 700, color: done ? color : current ? color : '#CBD5E1', letterSpacing: '0.04em', textAlign: 'center' }}>
                     {done ? '✓' : SECTION_LABEL[q.section]?.slice(0, 4).toUpperCase()}
                   </div>
@@ -991,64 +1066,25 @@ export default function InterviewPage() {
 
         {/* ── Code Editor panel ── */}
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <button
-            onClick={() => setShowCode((v) => !v)}
-            style={{
-              width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8,
-              borderBottom: showCode ? '1px solid #E2E8F0' : 'none',
-            }}
-          >
+          <button onClick={() => setShowCode(v => !v)} style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, borderBottom: showCode ? '1px solid #E2E8F0' : 'none' }}>
             <Code2 size={14} color="#64748B" />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Code Editor</span>
-            {showCode ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />
-                       : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
+            {showCode ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} /> : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
           </button>
           {showCode && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {/* Language selector */}
               <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
-                {['python', 'javascript', 'typescript', 'java', 'sql', 'go'].map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setCodeLanguage(lang)}
-                    style={{
-                      padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                      background: codeLanguage === lang ? '#4F46E5' : 'transparent',
-                      color: codeLanguage === lang ? '#fff' : '#64748B',
-                    }}
-                  >
+                {['python', 'javascript', 'typescript', 'java', 'sql', 'go'].map(lang => (
+                  <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
                     {lang}
                   </button>
                 ))}
               </div>
-              <MonacoEditor
-                height={260}
-                language={codeLanguage}
-                theme="vs-dark"
-                value={codeContent}
-                onChange={handleCodeChange}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  lineNumbers: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  wordWrap: 'on',
-                  padding: { top: 12, bottom: 12 },
-                }}
-              />
+              <MonacoEditor height={260} language={codeLanguage} theme="vs-dark" value={codeContent} onChange={handleCodeChange} options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }} />
               <div style={{ padding: '8px 12px', background: '#1E1E1E', borderTop: '1px solid #333', display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button
-                  style={{ padding: '4px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', background: '#10B981', color: '#fff', fontSize: 12, fontWeight: 700 }}
-                  onClick={() => {/* mock run */}}
-                >
-                  ▶ Run
-                </button>
-                <span style={{ fontSize: 11, color: '#4EC9B0', fontFamily: 'monospace' }}>
-                  {'// Output will appear here — explain your code verbally'}
-                </span>
+                <button style={{ padding: '4px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', background: '#10B981', color: '#fff', fontSize: 12, fontWeight: 700 }} onClick={() => {}}>▶ Run</button>
+                <span style={{ fontSize: 11, color: '#4EC9B0', fontFamily: 'monospace' }}>{'// Output will appear here — explain your code verbally'}</span>
               </div>
             </div>
           )}
@@ -1056,52 +1092,25 @@ export default function InterviewPage() {
 
         {/* ── Whiteboard panel ── */}
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <button
-            onClick={() => setShowWhiteboard((v) => !v)}
-            style={{
-              width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8,
-              borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none',
-            }}
-          >
+          <button onClick={() => setShowWhiteboard(v => !v)} style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
             <PenLine size={14} color="#64748B" />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Whiteboard</span>
-            {showWhiteboard ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />
-                             : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
+            {showWhiteboard ? <ChevronUp size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} /> : <ChevronDown size={14} color="#94A3B8" style={{ marginLeft: 'auto' }} />}
           </button>
-          {showWhiteboard && (
-            <Whiteboard onExport={handleWhiteboardExport} />
-          )}
+          {showWhiteboard && <Whiteboard onExport={handleWhiteboardExport} />}
         </div>
       </main>
 
       {/* ── End confirm modal ── */}
       {showEndConfirm && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(79,70,229,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999,
-        }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(79,70,229,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 360, textAlign: 'center', boxShadow: '0 20px 60px rgba(79,70,229,0.2)' }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>
-              End Interview?
-            </div>
-            <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 24 }}>
-              This will end your interview session. Your responses so far will be submitted for evaluation.
-            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>End Interview?</div>
+            <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 24 }}>This will end your interview session. Your responses so far will be submitted for evaluation.</div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setShowEndConfirm(false)}
-                style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
-              >
-                Continue
-              </button>
-              <button
-                onClick={() => { setShowEndConfirm(false); stopListening(); startClosing() }}
-                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}
-              >
-                End Now
-              </button>
+              <button onClick={() => setShowEndConfirm(false)} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Continue</button>
+              <button onClick={() => { setShowEndConfirm(false); stopListening(); startClosing() }} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>End Now</button>
             </div>
           </div>
         </div>
