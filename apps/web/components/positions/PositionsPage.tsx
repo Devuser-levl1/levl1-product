@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppStore, Position } from "@/store/appStore";
 import { Plus, CheckCircle, Clock, Search } from "lucide-react";
 import NewPositionFlow from "./NewPositionFlow";
+import toast from "react-hot-toast";
 
 type FilterTab = "all" | Position["status"];
 
@@ -190,6 +191,7 @@ export default function PositionsPage() {
             return (
               <div
                 key={pos.id}
+                onClick={() => toast(`Position detail view coming soon for: ${pos.title}`)}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "2fr 1.2fr 1.2fr 1fr 130px 70px",

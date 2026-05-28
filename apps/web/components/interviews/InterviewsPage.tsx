@@ -1,9 +1,11 @@
 "use client";
 
-import { useAppStore, Interview } from "@/store/appStore";
-import { Video, Clock, Radio, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { useAppStore, Interview, Candidate } from "@/store/appStore";
+import { Video, Clock, Radio, AlertCircle, Play, Monitor } from "lucide-react";
 import toast from "react-hot-toast";
 import { SchedulingOverview, TodayInterviews } from "../candidates/SchedulingAgent";
+import StartInterviewModal from "@/components/interview/StartInterviewModal";
 
 function formatDateTime(dt: string) {
   const d = new Date(dt);
@@ -50,7 +52,7 @@ function StatusPill({ on, label, onColor }: { on: boolean; label: string; onColo
   );
 }
 
-function InterviewCard({ interview }: { interview: Interview }) {
+function InterviewCard({ interview, onStart }: { interview: Interview; onStart: (iv: Interview) => void }) {
   const { date, time } = formatDateTime(interview.scheduledAt);
   const until          = timeUntil(interview.scheduledAt);
   const isLive         = interview.status === "in_progress";
@@ -182,32 +184,61 @@ function InterviewCard({ interview }: { interview: Interview }) {
       </div>
 
       {/* CTA */}
-      <button
-        className={isLive ? "btn-primary" : "btn-ghost"}
-        style={{ width: "100%", justifyContent: "center", fontSize: 13 }}
-        onClick={() =>
-          toast(isLive ? `Joining live: ${interview.candidateName}` : `Details: ${new Date(interview.scheduledAt).toLocaleString("en-GB")}`)
-        }
-      >
-        {isLive ? (
-          <><Radio size={14} />Join Live Session</>
-        ) : (
-          <><Clock size={14} />View Details</>
-        )}
-      </button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          className={isLive ? "btn-primary" : "btn-primary"}
+          style={{ flex: 1, justifyContent: "center", fontSize: 13 }}
+          onClick={() => onStart(interview)}
+        >
+          {isLive ? (
+            <><Radio size={14} />Join Live</>
+          ) : (
+            <><Play size={13} fill="white" strokeWidth={0} />Start</>
+          )}
+        </button>
+        <button
+          className="btn-ghost"
+          style={{ justifyContent: "center", fontSize: 13, padding: "9px 12px" }}
+          onClick={() => window.open(`/interview/${interview.id}/monitor`, "_blank")}
+        >
+          <Monitor size={13} />
+          Monitor
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function InterviewsPage() {
-  const { interviews, candidates } = useAppStore();
+  const { interviews, candidates, positions } = useAppStore();
+  const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
+  const [modalPosition, setModalPosition] = useState<ReturnType<typeof positions.find>>(undefined);
 
   const liveInterviews     = interviews.filter((i) => i.status === "in_progress");
   const upcomingInterviews = interviews.filter((i) => i.status === "scheduled");
   const noShowCandidates   = candidates.filter((c) => c.status === "no_show");
   const allActive          = [...liveInterviews, ...upcomingInterviews];
 
+  function handleStart(iv: Interview) {
+    const candidate = candidates.find((c) => c.id === iv.candidateId);
+    const position  = positions.find((p) => p.id === iv.positionId);
+    if (candidate) {
+      setModalCandidate(candidate);
+      setModalPosition(position);
+    } else {
+      toast.error("Candidate not found");
+    }
+  }
+
   return (
+    <>
+      {modalCandidate && (
+        <StartInterviewModal
+          candidate={modalCandidate}
+          position={modalPosition}
+          onClose={() => { setModalCandidate(null); setModalPosition(undefined); }}
+        />
+      )}
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 28, maxWidth: 1280 }}>
 
       {/* Scheduling Overview */}
@@ -290,7 +321,7 @@ export default function InterviewsPage() {
             {liveInterviews.length > 0 ? "Live & Upcoming" : "Upcoming"}
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-            {allActive.map((iv) => <InterviewCard key={iv.id} interview={iv} />)}
+            {allActive.map((iv) => <InterviewCard key={iv.id} interview={iv} onStart={handleStart} />)}
           </div>
         </div>
       ) : (
@@ -365,5 +396,6 @@ export default function InterviewsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

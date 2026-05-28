@@ -1,0 +1,262 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Bell, ChevronDown, Settings, LogOut, User } from "lucide-react";
+import { useAppStore } from "@/store/appStore";
+import toast from "react-hot-toast";
+
+const MOCK_NOTIFICATIONS = [
+  {
+    id: "n1",
+    title: "Interview completed",
+    body: "Divya Sharma completed her L1 interview — score: 91",
+    time: "2m ago",
+    unread: true,
+  },
+  {
+    id: "n2",
+    title: "New candidate uploaded",
+    body: "3 resumes added for Senior Data Engineer",
+    time: "14m ago",
+    unread: true,
+  },
+  {
+    id: "n3",
+    title: "Position approved",
+    body: "IT Risk & Compliance Manager approved by HR",
+    time: "1h ago",
+    unread: false,
+  },
+];
+
+export default function Header() {
+  const router = useRouter();
+  const { setActiveSection } = useAppStore();
+
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [showUser, setShowUser] = useState(false);
+  const [unread, setUnread] = useState(2);
+
+  const notifsRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) {
+        setShowNotifs(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setShowUser(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function handleSignOut() {
+    setShowUser(false);
+    router.push("/");
+  }
+
+  function handleOpenNotifs() {
+    setShowNotifs(!showNotifs);
+    if (!showNotifs) setUnread(0);
+    setShowUser(false);
+  }
+
+  return (
+    <header
+      style={{
+        height: 64,
+        background: "#fff",
+        borderBottom: "1px solid #E2E8F0",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 32px",
+        gap: 16,
+        position: "sticky",
+        top: 0,
+        zIndex: 40,
+        boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
+      }}
+    >
+      {/* Search */}
+      <div style={{ flex: 1, maxWidth: 400 }}>
+        <button
+          onClick={() => toast("Search coming soon")}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 14px",
+            borderRadius: 9,
+            border: "1px solid #E2E8F0",
+            background: "#F8FAFC",
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            transition: "border-color 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#CBD5E1"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
+        >
+          <Search size={14} color="#94A3B8" />
+          <span style={{ fontSize: 13, color: "#94A3B8" }}>Search candidates, positions…</span>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: "#CBD5E1", fontFamily: "var(--font-mono)", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 4, padding: "1px 6px" }}>⌘K</span>
+        </button>
+      </div>
+
+      {/* Right side controls */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+        {/* Notifications bell */}
+        <div ref={notifsRef} style={{ position: "relative" }}>
+          <button
+            onClick={handleOpenNotifs}
+            style={{
+              width: 36, height: 36, borderRadius: 9,
+              background: showNotifs ? "#EEF2FF" : "transparent",
+              border: "1px solid transparent",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", position: "relative", transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = showNotifs ? "#EEF2FF" : "transparent"; }}
+          >
+            <Bell size={17} color={showNotifs ? "#4F46E5" : "#64748B"} />
+            {unread > 0 && (
+              <span style={{
+                position: "absolute", top: 6, right: 6,
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#EF4444",
+                border: "1.5px solid #fff",
+              }} />
+            )}
+          </button>
+
+          {showNotifs && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 8px)", right: 0,
+              width: 340, background: "#fff",
+              border: "1px solid #E2E8F0", borderRadius: 14,
+              boxShadow: "0 12px 40px rgba(79,70,229,0.12)",
+              zIndex: 100, overflow: "hidden",
+            }}>
+              <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>Notifications</span>
+                <button onClick={() => setShowNotifs(false)} style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>Mark all read</button>
+              </div>
+              {MOCK_NOTIFICATIONS.map((n) => (
+                <div key={n.id} style={{
+                  padding: "12px 18px",
+                  borderBottom: "1px solid #F8FAFC",
+                  background: n.unread ? "rgba(79,70,229,0.02)" : "#fff",
+                  cursor: "pointer", transition: "background 0.15s",
+                  display: "flex", gap: 12, alignItems: "flex-start",
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFF"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = n.unread ? "rgba(79,70,229,0.02)" : "#fff"; }}
+                >
+                  {n.unread && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4F46E5", marginTop: 6, flexShrink: 0 }} />}
+                  {!n.unread && <div style={{ width: 6, height: 6, marginTop: 6, flexShrink: 0 }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", marginBottom: 2 }}>{n.title}</div>
+                    <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{n.body}</div>
+                    <div style={{ fontSize: 11, color: "#CBD5E1", marginTop: 4 }}>{n.time}</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{ padding: "10px 18px" }}>
+                <button onClick={() => setShowNotifs(false)} style={{ width: "100%", fontSize: 12, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 0", fontFamily: "var(--font-sans)" }}>View all notifications</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 20, background: "#E2E8F0" }} />
+
+        {/* User avatar/name dropdown */}
+        <div ref={userRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => { setShowUser(!showUser); setShowNotifs(false); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "6px 10px", borderRadius: 9,
+              background: showUser ? "#EEF2FF" : "transparent",
+              border: "1px solid transparent",
+              cursor: "pointer", transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = showUser ? "#EEF2FF" : "transparent"; }}
+          >
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0,
+            }}>
+              AM
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", lineHeight: 1.2 }}>Abhijit M.</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.2 }}>Admin</div>
+            </div>
+            <ChevronDown size={13} color="#94A3B8" />
+          </button>
+
+          {showUser && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 8px)", right: 0,
+              width: 220, background: "#fff",
+              border: "1px solid #E2E8F0", borderRadius: 12,
+              boxShadow: "0 8px 32px rgba(79,70,229,0.10)",
+              zIndex: 100, overflow: "hidden",
+              padding: "6px",
+            }}>
+              {[
+                { icon: User, label: "Profile", action: () => { setActiveSection("settings"); setShowUser(false); router.push("/dashboard"); } },
+                { icon: Settings, label: "Settings", action: () => { setActiveSection("settings"); setShowUser(false); router.push("/dashboard"); } },
+              ].map(({ icon: Icon, label, action }) => (
+                <button
+                  key={label}
+                  onClick={action}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 8,
+                    background: "transparent", border: "none", cursor: "pointer",
+                    fontSize: 13, fontWeight: 500, color: "#475569",
+                    fontFamily: "var(--font-sans)", transition: "all 0.12s", textAlign: "left",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; e.currentTarget.style.color = "#4F46E5"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; }}
+                >
+                  <Icon size={14} />
+                  {label}
+                </button>
+              ))}
+              <div style={{ height: 1, background: "#F1F5F9", margin: "4px 0" }} />
+              <button
+                onClick={handleSignOut}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 12px", borderRadius: 8,
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontSize: 13, fontWeight: 500, color: "#EF4444",
+                  fontFamily: "var(--font-sans)", transition: "all 0.12s", textAlign: "left",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <LogOut size={14} />
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}

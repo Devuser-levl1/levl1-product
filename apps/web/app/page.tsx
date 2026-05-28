@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,7 +11,9 @@ import {
   Zap,
   Star,
   ChevronRight,
+  X,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const FEATURES = [
   {
@@ -58,11 +61,134 @@ const STATS = [
   { value: "4.9★", label: "Average rating" },
 ];
 
-const NAV_LINKS = ["Features", "Pricing", "About", "Blog"];
+const NAV_LINKS = [
+  { label: "Features", sectionId: "features" },
+  { label: "Pricing",  sectionId: "pricing"  },
+  { label: "About",    sectionId: "about"     },
+  { label: "Blog",     sectionId: "blog"      },
+];
+
+function scrollToSection(sectionId: string) {
+  const el = document.getElementById(sectionId);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    toast("Section coming soon");
+  }
+}
+
+function ContactModal({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitted(true);
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "rgba(15,10,46,0.55)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "#fff", borderRadius: 18, width: 480, maxWidth: "calc(100vw - 32px)",
+          boxShadow: "0 32px 80px rgba(79,70,229,0.18), 0 8px 24px rgba(0,0,0,0.08)",
+          overflow: "hidden", border: "1px solid #E2E8F0",
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.01em" }}>Book a Demo</div>
+            <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>We&apos;ll get back to you within 24 hours</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 7, display: "flex" }}>
+            <X size={17} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "24px" }}>
+          {submitted ? (
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <Star size={24} color="#10B981" />
+              </div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>Thank you!</div>
+              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6 }}>Thank you, we will be in touch.</div>
+              <button
+                onClick={onClose}
+                style={{ marginTop: 24, background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Full Name</label>
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane Smith"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Email Address</label>
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jane@company.com"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Message</label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Tell us about your use case…"
+                  rows={4}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", resize: "vertical", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button type="button" onClick={onClose} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, color: "#475569", fontSize: 13, fontWeight: 600, padding: "9px 18px", cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button type="submit" style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "9px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
+                  Send Message
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
+  const [showDemoModal, setShowDemoModal] = useState(false);
+
   return (
     <div style={{ fontFamily: "var(--font-sans)", background: "#fff", color: "var(--brand)" }}>
+      {showDemoModal && <ContactModal onClose={() => setShowDemoModal(false)} />}
+
       {/* ── Nav ── */}
       <header
         style={{
@@ -118,25 +244,26 @@ export default function LandingPage() {
           {/* Links */}
           <nav style={{ display: "flex", alignItems: "center", gap: 32 }}>
             {NAV_LINKS.map((l) => (
-              <a
-                key={l}
-                href="#"
+              <button
+                key={l.label}
+                onClick={() => scrollToSection(l.sectionId)}
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
                   color: "#475569",
                   textDecoration: "none",
                   transition: "color 0.15s",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  padding: 0,
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "#4F46E5")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "#475569")
-                }
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#4F46E5")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
               >
-                {l}
-              </a>
+                {l.label}
+              </button>
             ))}
           </nav>
 
@@ -303,8 +430,8 @@ export default function LandingPage() {
               Get Started Free
               <ArrowRight size={16} />
             </Link>
-            <a
-              href="#"
+            <button
+              onClick={() => scrollToSection("features")}
               style={{
                 background: "#fff",
                 color: "#4F46E5",
@@ -319,10 +446,12 @@ export default function LandingPage() {
                 gap: 8,
                 boxShadow: "0 1px 3px rgba(79,70,229,0.06)",
                 transition: "all 0.2s",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
               }}
             >
-              Watch Demo
-            </a>
+              See How It Works
+            </button>
           </div>
 
           {/* Stats row */}
@@ -379,6 +508,7 @@ export default function LandingPage() {
 
       {/* ── Features ── */}
       <section
+        id="features"
         style={{
           padding: "96px 32px",
           background: "#FAFAFA",
@@ -386,9 +516,7 @@ export default function LandingPage() {
       >
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           {/* Section header */}
-          <div
-            style={{ textAlign: "center", marginBottom: 60 }}
-          >
+          <div style={{ textAlign: "center", marginBottom: 60 }}>
             <p
               style={{
                 fontSize: 12,
@@ -495,6 +623,11 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing placeholder ── */}
+      <section id="pricing" style={{ height: 1 }} />
+      <section id="about" style={{ height: 1 }} />
+      <section id="blog" style={{ height: 1 }} />
+
       {/* ── Testimonial ── */}
       <section
         style={{
@@ -530,7 +663,7 @@ export default function LandingPage() {
             }}
           >
             &ldquo;Levl1 cut our time-to-screen by 78%. We now
-            evaluate 10× more candidates with the same team — and the quality
+            evaluate 10&times; more candidates with the same team — and the quality
             of our shortlists has never been better.&rdquo;
           </blockquote>
 
@@ -637,8 +770,8 @@ export default function LandingPage() {
               Start for Free
               <ArrowRight size={16} />
             </Link>
-            <a
-              href="#"
+            <button
+              onClick={() => setShowDemoModal(true)}
               style={{
                 background: "rgba(255,255,255,0.08)",
                 color: "rgba(255,255,255,0.85)",
@@ -651,10 +784,12 @@ export default function LandingPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
               }}
             >
               Book a Demo
-            </a>
+            </button>
           </div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 20 }}>
             No credit card required &nbsp;·&nbsp; 14-day free trial
@@ -798,7 +933,7 @@ export default function LandingPage() {
           }}
         >
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
-            © 2026 Levl1. Built for recruitment agencies and enterprises.
+            &copy; 2026 Levl1. Built for recruitment agencies and enterprises.
           </p>
           <div style={{ display: "flex", gap: 6 }}>
             {["SOC 2", "GDPR", "ISO 27001"].map((badge) => (

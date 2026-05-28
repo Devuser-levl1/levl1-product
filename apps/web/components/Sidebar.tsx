@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore, NavSection } from "@/store/appStore";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Briefcase,
@@ -35,6 +36,7 @@ const NAV_BOTTOM: NavItem[] = [
 ];
 
 export default function Sidebar() {
+  const router = useRouter();
   const { activeSection, setActiveSection, sidebarCollapsed, toggleSidebar, setShowNewPositionFlow, setShowUploadFlow } =
     useAppStore();
 
@@ -58,7 +60,8 @@ export default function Sidebar() {
       }}
     >
       {/* ── Brand ── */}
-      <div
+      <button
+        onClick={() => { setActiveSection("dashboard"); router.push("/dashboard"); }}
         style={{
           height: 64,
           borderBottom: "1px solid rgba(255,255,255,0.08)",
@@ -67,6 +70,12 @@ export default function Sidebar() {
           padding: "0 16px",
           gap: 12,
           flexShrink: 0,
+          background: "none",
+          border: "none",
+          borderRadius: 0,
+          cursor: "pointer",
+          width: "100%",
+          textAlign: "left",
         }}
       >
         <div
@@ -119,7 +128,7 @@ export default function Sidebar() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </button>
 
       {/* ── Navigation ── */}
       <nav
@@ -330,7 +339,8 @@ export default function Sidebar() {
         {/* User row */}
         <AnimatePresence>
           {!sidebarCollapsed && (
-            <motion.div
+            <motion.button
+              onClick={() => setActiveSection("settings")}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
@@ -342,7 +352,13 @@ export default function Sidebar() {
                 padding: "8px 10px",
                 borderRadius: 9,
                 background: "rgba(255,255,255,0.06)",
+                border: "none",
+                cursor: "pointer",
+                width: "100%",
+                textAlign: "left",
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
             >
               <div
                 style={{
@@ -389,7 +405,7 @@ export default function Sidebar() {
                   abma3005@gmail.com
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           )}
         </AnimatePresence>
 

@@ -2,6 +2,7 @@
 
 import { useAppStore } from "@/store/appStore";
 import Sidebar from "./Sidebar";
+import Header from "./Header";
 import DashboardPage from "./dashboard/DashboardPage";
 import PositionsPage from "./positions/PositionsPage";
 import CandidatesPage from "./candidates/CandidatesPage";
@@ -52,9 +53,14 @@ export default function DashboardShell() {
           transition: "margin-left 0.25s ease",
           minHeight: "100vh",
           overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        {renderPage()}
+        <Header />
+        <div style={{ flex: 1 }}>
+          {renderPage()}
+        </div>
       </main>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
 import { Briefcase, Users, Video, TrendingUp, ArrowRight, Play, Monitor } from "lucide-react";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
+import { useRouter } from "next/navigation";
 
 function StatCard({
   icon: Icon,
@@ -11,15 +12,23 @@ function StatCard({
   value,
   sub,
   accentColor,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   value: string | number;
   sub: string;
   accentColor: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div
+      className="card"
+      style={{ display: "flex", flexDirection: "column", gap: 16, cursor: onClick ? "pointer" : "default", transition: "box-shadow 0.15s, border-color 0.15s" }}
+      onClick={onClick}
+      onMouseEnter={(e) => { if (onClick) { e.currentTarget.style.boxShadow = "0 6px 20px rgba(79,70,229,0.10)"; e.currentTarget.style.borderColor = "#CBD5E1"; } }}
+      onMouseLeave={(e) => { if (onClick) { e.currentTarget.style.boxShadow = ""; e.currentTarget.style.borderColor = ""; } }}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
           {label}
@@ -76,7 +85,8 @@ const STATUS_CONFIG = {
 } as const;
 
 export default function DashboardPage() {
-  const { positions, candidates, interviews } = useAppStore();
+  const router = useRouter();
+  const { positions, candidates, interviews, setActiveSection } = useAppStore();
   const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
 
   const activePositions  = positions.filter((p) => p.status === "active").length;
@@ -142,10 +152,10 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#7C3AED" />
-        <StatCard icon={Users}       label="Candidates"         value={totalCandidates}      sub={`${topCandidates.length} interviews completed`} accentColor="#10B981" />
-        <StatCard icon={Video}       label="Upcoming"           value={upcomingInterviews.length} sub="Interviews scheduled"                      accentColor="#F59E0B" />
-        <StatCard icon={TrendingUp}  label="Avg Score"          value={scoredCandidates.length > 0 ? avgScore : "—"} sub={`Across ${scoredCandidates.length} evaluations`} accentColor="#8B5CF6" />
+        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#7C3AED" onClick={() => setActiveSection("positions")} />
+        <StatCard icon={Users}       label="Candidates"         value={totalCandidates}      sub={`${topCandidates.length} interviews completed`} accentColor="#10B981" onClick={() => setActiveSection("candidates")} />
+        <StatCard icon={Video}       label="Upcoming"           value={upcomingInterviews.length} sub="Interviews scheduled"                      accentColor="#F59E0B" onClick={() => setActiveSection("interviews")} />
+        <StatCard icon={TrendingUp}  label="Avg Score"          value={scoredCandidates.length > 0 ? avgScore : "—"} sub={`Across ${scoredCandidates.length} evaluations`} accentColor="#8B5CF6" onClick={() => setActiveSection("reports")} />
       </div>
 
       {/* Middle row */}
@@ -271,7 +281,15 @@ export default function DashboardPage() {
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
               Top Candidates
             </h2>
-            <span className="badge badge-success">{topCandidates.length} evaluated</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span className="badge badge-success">{topCandidates.length} evaluated</span>
+              <button
+                onClick={() => setActiveSection("reports")}
+                style={{ fontSize: 12, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", padding: 0, display: "flex", alignItems: "center", gap: 3 }}
+              >
+                View all <ArrowRight size={11} />
+              </button>
+            </div>
           </div>
 
           {topCandidates.length === 0 ? (
@@ -287,6 +305,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={c.id}
+                    onClick={() => c.interviewId && router.push(`/report/${c.interviewId}`)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -295,7 +314,11 @@ export default function DashboardPage() {
                       background: "#FAFAFA",
                       borderRadius: 10,
                       border: "1px solid #F1F5F9",
+                      cursor: c.interviewId ? "pointer" : "default",
+                      transition: "background 0.15s, border-color 0.15s",
                     }}
+                    onMouseEnter={(e) => { if (c.interviewId) { e.currentTarget.style.background = "#EEF2FF"; e.currentTarget.style.borderColor = "#E0E7FF"; } }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#F1F5F9"; }}
                   >
                     <div style={{ width: 22, fontSize: 11, fontWeight: 700, color: idx === 0 ? "#F59E0B" : "#94A3B8", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
                       #{idx + 1}
@@ -352,7 +375,9 @@ export default function DashboardPage() {
           <h2 style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
             Positions Overview
           </h2>
-          <ArrowRight size={15} color="#CBD5E1" />
+          <button onClick={() => setActiveSection("positions")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: "#7C3AED", fontWeight: 600, fontFamily: "var(--font-sans)", padding: 0 }}>
+            View all <ArrowRight size={11} />
+          </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {positions.map((pos) => {
@@ -363,6 +388,7 @@ export default function DashboardPage() {
             return (
               <div
                 key={pos.id}
+                onClick={() => setActiveSection("positions")}
                 style={{
                   display: "flex",
                   alignItems: "center",
