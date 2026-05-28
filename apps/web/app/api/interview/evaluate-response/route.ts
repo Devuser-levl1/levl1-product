@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
         'You are evaluating a candidate\'s interview response. Be objective and evidence-based. ' +
         'Only credit points the candidate explicitly mentioned — never infer or assume knowledge not demonstrated. ' +
         'Decide if a follow-up is warranted (answer was vague, too short, or incomplete). ' +
-        'Keep evaluatorNote to 1-2 factual sentences only. ' +
+        'Keep evaluatorNote to 1-2 factual sentences only.\n\n' +
+        'When generating followUpQuestion, use natural conversational language:\n' +
+        '- Strong answer: start with "You mentioned [X] — how did that play out in practice?" or "Interesting. What would you do differently in hindsight?"\n' +
+        '- Vague or incomplete: "Can you walk me through a specific example of that?" or "That makes sense at a high level — can you get more concrete?"\n' +
+        '- Off-topic response: "I appreciate that context. Let me bring it back to [specific aspect of the original question]."\n' +
+        '- Candidate struggled: "No worries — let me come at it from a different angle." or "Fair enough — let us move on and come back to this if time allows."\n\n' +
+        'NEVER use in followUpQuestion: "Great answer", "Excellent", "Perfect", "Wonderful", "Fantastic".\n' +
+        'Instead use: "Understood", "Thank you", "Got it", "Noted", "That is helpful".\n\n' +
         'Return ONLY valid JSON — no markdown, no explanation.',
       messages: [{
         role: 'user',

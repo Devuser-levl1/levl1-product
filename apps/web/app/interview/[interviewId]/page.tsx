@@ -250,6 +250,9 @@ export default function InterviewPage() {
   const transcriptBoxRef      = useRef<HTMLDivElement>(null)
   const codeTriggerShownRef   = useRef(false)
   const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /* Audio abort mechanism */
+  const audioRef          = useRef<HTMLAudioElement | null>(null)
+  const isMountedRef      = useRef(true)
 
   /* ── Sync setters ─────────────────────────────────────────── */
   const setPhase = useCallback((p: InterviewPhase) => {
@@ -287,6 +290,32 @@ export default function InterviewPage() {
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [addTranscript, incrementTabSwitch])
+
+  /* ── Audio cleanup on unmount ────────────────────────────── */
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+        audioRef.current = null
+      }
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+    }
+  }, [])
+
+  /* ── Kill audio when interview completes ──────────────────── */
+  useEffect(() => {
+    if (phase === 'completed') {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+        audioRef.current = null
+      }
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+    }
+  }, [phase])
 
   /* ── localStorage backup every 30 s ──────────────────────── */
   useEffect(() => {
@@ -329,33 +358,54 @@ export default function InterviewPage() {
     silenceTimersRef.current = []
   }, [])
 
+  /* ── Stop all audio immediately ──────────────────────────── */
+  const stopAllAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+      audioRef.current = null
+    }
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  }, [])
+
   /* ── TTS ──────────────────────────────────────────────────── */
   const speakText = useCallback(async (text: string): Promise<void> => {
-    console.log('[speakText] called with:', text.slice(0, 50))
-    console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_API_KEY present:', !!process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
-    console.log('[speakText] NEXT_PUBLIC_ELEVENLABS_VOICE_ID:', process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID ?? 'UNDEFINED')
+    // Abort any currently playing audio before starting new
+    stopAllAudio()
 
+    if (!isMountedRef.current) return
     setPhase('speaking')
 
     if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
-      console.log('[speakText] Using ElevenLabs path')
       try {
         const res = await fetch('/api/interview/generate-speech', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
         })
+        if (!isMountedRef.current) return
         const ct = res.headers.get('Content-Type') || ''
-        console.log('[speakText] API response status:', res.status, '| Content-Type:', ct)
         if (ct.includes('audio/mpeg')) {
-          console.log('[speakText] Playing ElevenLabs audio ✅')
           const blob = await res.blob()
-          const url  = URL.createObjectURL(blob)
+          if (!isMountedRef.current) return
+          const url = URL.createObjectURL(blob)
           await new Promise<void>((resolve) => {
             const audio = new Audio(url)
-            audio.onended = () => { URL.revokeObjectURL(url); resolve() }
-            audio.onerror = (e) => { console.error('[speakText] Audio error:', e); URL.revokeObjectURL(url); resolve() }
-            audio.play().catch(e => { console.error('[speakText] play() rejected:', e); resolve() })
+            audioRef.current = audio
+            audio.onended = () => {
+              URL.revokeObjectURL(url)
+              audioRef.current = null
+              resolve()
+            }
+            audio.onerror = () => {
+              URL.revokeObjectURL(url)
+              audioRef.current = null
+              resolve()
+            }
+            audio.play().catch(() => {
+              audioRef.current = null
+              resolve()
+            })
           })
           return
         }
@@ -364,12 +414,11 @@ export default function InterviewPage() {
       } catch (err) {
         console.warn('[speakText] fetch threw:', err)
       }
-    } else {
-      console.log('[speakText] No NEXT_PUBLIC key → browser TTS')
     }
 
+    if (!isMountedRef.current) return
+
     // Browser TTS fallback
-    console.log('[speakText] Using browser TTS fallback')
     await new Promise<void>((resolve) => {
       if (typeof window === 'undefined' || !window.speechSynthesis) { resolve(); return }
       window.speechSynthesis.cancel()
@@ -381,7 +430,7 @@ export default function InterviewPage() {
       utt.onerror = () => resolve()
       window.speechSynthesis.speak(utt)
     })
-  }, [setPhase])
+  }, [setPhase, stopAllAudio])
 
   /* ── STT ──────────────────────────────────────────────────── */
   const startListening = useCallback(() => {
@@ -790,6 +839,45 @@ export default function InterviewPage() {
     addTranscript, speakText, moveToQuestion,
   ])
 
+  /* ── End Interview flow ───────────────────────────────────── */
+  const END_CONFIRM_PHRASES = [
+    'Just to confirm — would you like to end the interview now?',
+    'Are you sure you would like to end the session early?',
+    'Before we wrap up — are you certain you want to end now?',
+  ] as const
+
+  const handleEndInterviewRequest = useCallback(async () => {
+    // Immediately stop mic and clear silence timers
+    stopListening()
+    clearSilenceTimers()
+
+    // Show modal + speak confirmation simultaneously
+    setShowEndConfirm(true)
+    const phrase = pick(END_CONFIRM_PHRASES)
+    addTranscript({ speaker: 'ai', text: phrase, type: 'transition' })
+    await speakText(phrase)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopListening, clearSilenceTimers, addTranscript, speakText])
+
+  const handleEndConfirmContinue = useCallback(async () => {
+    setShowEndConfirm(false)
+    const continuePhrase = 'Great, let us continue.'
+    addTranscript({ speaker: 'ai', text: continuePhrase, type: 'transition' })
+    await speakText(continuePhrase)
+    if (isMountedRef.current && phaseRef.current !== 'completed' && phaseRef.current !== 'closing') {
+      await delay(500)
+      startListening()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addTranscript, speakText, startListening])
+
+  const handleEndConfirmEnd = useCallback(async () => {
+    setShowEndConfirm(false)
+    stopAllAudio()
+    await startClosing()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopAllAudio, startClosing])
+
   /* ── Code editor sync (debounced 1 s) ────────────────────── */
   const handleCodeChange = (val: string | undefined) => {
     const v = val ?? ''
@@ -901,7 +989,7 @@ export default function InterviewPage() {
             <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: timerColor, letterSpacing: '0.05em' }}>{fmt(timeRemaining)}</span>
           </div>
           <button
-            onClick={() => setShowEndConfirm(true)}
+            onClick={handleEndInterviewRequest}
             style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #FCA5A5', background: 'rgba(239,68,68,0.06)', color: '#DC2626', cursor: 'pointer' }}
           >
             End Interview
@@ -1121,14 +1209,82 @@ export default function InterviewPage() {
 
       {/* ── End confirm modal ── */}
       {showEndConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(79,70,229,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 360, textAlign: 'center', boxShadow: '0 20px 60px rgba(79,70,229,0.2)' }}>
-            <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>End Interview?</div>
-            <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 24 }}>This will end your interview session. Your responses so far will be submitted for evaluation.</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowEndConfirm(false)} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Continue</button>
-              <button onClick={() => { setShowEndConfirm(false); stopListening(); startClosing() }} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>End Now</button>
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(15,10,46,0.65)',
+          backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeUp 0.18s ease both',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 18, width: 400,
+            boxShadow: '0 32px 80px rgba(79,70,229,0.22), 0 8px 24px rgba(0,0,0,0.1)',
+            border: '1px solid #E2E8F0', overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '22px 28px 0', borderBottom: '1px solid #F1F5F9', paddingBottom: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={18} color="#DC2626" />
+                </div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, color: '#1E293B' }}>
+                  End Interview?
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '20px 28px' }}>
+              {timeRemaining > 0 && (
+                <div style={{
+                  padding: '10px 14px', background: 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
+                  fontSize: 13, fontWeight: 600, color: '#92400E', marginBottom: 14,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <Clock size={14} color="#D97706" />
+                  You have {fmt(timeRemaining)} remaining.
+                </div>
+              )}
+              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.65, margin: 0 }}>
+                Ending now will generate a report based on the questions answered so far.
+                {timeRemaining > 0 ? ' You still have time remaining.' : ''}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '16px 28px', borderTop: '1px solid #F1F5F9',
+              display: 'flex', gap: 10, justifyContent: 'flex-end',
+            }}>
+              <button
+                onClick={handleEndConfirmContinue}
+                style={{
+                  padding: '9px 20px', borderRadius: 9,
+                  border: '1px solid #E2E8F0', background: '#fff',
+                  color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: 13,
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFF'; e.currentTarget.style.borderColor = '#CBD5E1' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E2E8F0' }}
+              >
+                Continue Interview
+              </button>
+              <button
+                onClick={handleEndConfirmEnd}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 20px', borderRadius: 9, border: 'none',
+                  background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                  color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13,
+                  boxShadow: '0 4px 14px rgba(79,70,229,0.35)', transition: 'all 0.15s',
+                  letterSpacing: '-0.01em',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(79,70,229,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.35)'; e.currentTarget.style.transform = 'none' }}
+              >
+                End &amp; Report →
+              </button>
             </div>
           </div>
         </div>
