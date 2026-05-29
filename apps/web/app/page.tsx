@@ -1,204 +1,339 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BarChart2,
-  Users,
-  Video,
-  Shield,
-  Zap,
-  Star,
-  ChevronRight,
-  X,
-} from "lucide-react";
 import toast from "react-hot-toast";
+import { X } from "lucide-react";
 
-const FEATURES = [
-  {
-    icon: Zap,
-    title: "AI Voice Screening",
-    desc: "Conduct structured, role-specific interviews 24/7 — no human scheduling required. Candidates interview on their own time.",
-    color: "#7C3AED",
-  },
-  {
-    icon: BarChart2,
-    title: "Automated Scoring",
-    desc: "Every answer is evaluated in real-time. AI generates a structured score with a detailed recommendation for each candidate.",
-    color: "#8B5CF6",
-  },
-  {
-    icon: Users,
-    title: "Pipeline Management",
-    desc: "Manage every candidate across every open role from a single Kanban view. Filter, sort, and move candidates instantly.",
-    color: "#10B981",
-  },
-  {
-    icon: Video,
-    title: "Live Monitoring",
-    desc: "Watch AI interviews in real-time. See agent status, candidate join events, and live transcripts as they happen.",
-    color: "#F59E0B",
-  },
-  {
-    icon: Shield,
-    title: "Enterprise Security",
-    desc: "SOC 2 Type II compliant. Data encrypted in transit and at rest. Role-based access control for every team member.",
-    color: "#EF4444",
-  },
-  {
-    icon: Zap,
-    title: "Instant Rankings",
-    desc: "After each position closes, get a ranked shortlist with scores, recommendations, and side-by-side comparisons.",
-    color: "#4F46E5",
-  },
-];
-
-const STATS = [
-  { value: "500+", label: "Agencies worldwide" },
-  { value: "50k+", label: "Interviews per month" },
-  { value: "78%", label: "Faster time-to-screen" },
-  { value: "4.9★", label: "Average rating" },
-];
-
-const NAV_LINKS = [
-  { label: "Features", sectionId: "features" },
-  { label: "Pricing",  sectionId: "pricing"  },
-  { label: "About",    sectionId: "about"     },
-  { label: "Blog",     sectionId: "blog"      },
-];
-
-function scrollToSection(sectionId: string) {
-  const el = document.getElementById(sectionId);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  } else {
-    toast("Section coming soon");
-  }
-}
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  CONTACT MODAL                                                           */
+/* ──────────────────────────────────────────────────────────────────────── */
 
 function ContactModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [message, setMessage] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    toast.success("Thank you, we will be in touch!");
+    onClose();
   }
 
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 9999,
-        background: "rgba(15,10,46,0.55)",
-        display: "flex", alignItems: "center", justifyContent: "center",
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "rgba(15,23,42,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
+        padding: 16,
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         style={{
-          background: "#fff", borderRadius: 18, width: 480, maxWidth: "calc(100vw - 32px)",
-          boxShadow: "0 32px 80px rgba(79,70,229,0.18), 0 8px 24px rgba(0,0,0,0.08)",
-          overflow: "hidden", border: "1px solid #E2E8F0",
+          background: "#fff",
+          borderRadius: 18,
+          width: 480,
+          maxWidth: "100%",
+          boxShadow:
+            "0 32px 80px rgba(79,70,229,0.18), 0 8px 24px rgba(0,0,0,0.08)",
+          overflow: "hidden",
+          border: "1px solid #E2E8F0",
         }}
       >
-        {/* Header */}
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div
+          style={{
+            padding: "20px 24px 16px",
+            borderBottom: "1px solid #F1F5F9",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.01em" }}>Book a Demo</div>
-            <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>We&apos;ll get back to you within 24 hours</div>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 18,
+                fontWeight: 800,
+                color: "#0F172A",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Book a Demo
+            </div>
+            <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>
+              We&apos;ll get back to you within 24 hours
+            </div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 7, display: "flex" }}>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#94A3B8",
+              padding: 6,
+              borderRadius: 7,
+              display: "flex",
+            }}
+          >
             <X size={17} />
           </button>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "24px" }}>
-          {submitted ? (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <Star size={24} color="#10B981" />
-              </div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>Thank you!</div>
-              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6 }}>Thank you, we will be in touch.</div>
-              <button
-                onClick={onClose}
-                style={{ marginTop: 24, background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+        <div style={{ padding: 24 }}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#475569",
+                  marginBottom: 6,
+                }}
               >
-                Close
+                Full Name
+              </label>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Smith"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  fontSize: 14,
+                  fontFamily: "var(--font-sans)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#475569",
+                  marginBottom: 6,
+                }}
+              >
+                Email Address
+              </label>
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jane@company.com"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  fontSize: 14,
+                  fontFamily: "var(--font-sans)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#475569",
+                  marginBottom: 6,
+                }}
+              >
+                Company
+              </label>
+              <input
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Acme Inc."
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  fontSize: 14,
+                  fontFamily: "var(--font-sans)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#475569",
+                  marginBottom: 6,
+                }}
+              >
+                Message
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tell us about your use case…"
+                rows={4}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  fontSize: 14,
+                  fontFamily: "var(--font-sans)",
+                  outline: "none",
+                  resize: "vertical",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div
+              style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 9,
+                  color: "#475569",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "9px 18px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 9,
+                  padding: "9px 22px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+                }}
+              >
+                Send Message
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Full Name</label>
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Jane Smith"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Email Address</label>
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@company.com"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Message</label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Tell us about your use case…"
-                  rows={4}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", resize: "vertical", boxSizing: "border-box" }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button type="button" onClick={onClose} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, color: "#475569", fontSize: 13, fontWeight: 600, padding: "9px 18px", cursor: "pointer" }}>
-                  Cancel
-                </button>
-                <button type="submit" style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "9px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
-                  Send Message
-                </button>
-              </div>
-            </form>
-          )}
+          </form>
         </div>
       </div>
     </div>
   );
 }
 
+/* ──────────────────────────────────────────────────────────────────────── */
+/*  PAGE                                                                    */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+function scrollToId(id: string) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function LandingPage() {
-  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Scroll shadow on nav
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 20);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Intersection observer for section fade-ins
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections((prev) => {
+              const next = new Set(prev);
+              next.add(entry.target.id);
+              return next;
+            });
+          }
+        });
+      },
+      { threshold: 0.1 },
+    );
+    observerRef.current = observer;
+    document.querySelectorAll("section[id]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  function sectionStyle(id: string): React.CSSProperties {
+    const visible = visibleSections.has(id);
+    return {
+      opacity: visible ? 1 : 0,
+      transform: visible ? "none" : "translateY(24px)",
+      transition: "opacity 0.6s ease, transform 0.6s ease",
+    };
+  }
 
   return (
-    <div style={{ fontFamily: "var(--font-sans)", background: "#fff", color: "var(--brand)" }}>
-      {showDemoModal && <ContactModal onClose={() => setShowDemoModal(false)} />}
+    <div
+      style={{
+        fontFamily: "var(--font-sans)",
+        background: "#fff",
+        color: "#0F172A",
+        overflowX: "hidden",
+      }}
+    >
+      {showModal && <ContactModal onClose={() => setShowModal(false)} />}
 
-      {/* ── Nav ── */}
+      {/* ── NAV ─────────────────────────────────────────────────────────── */}
       <header
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 100,
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderBottom: "1px solid #E2E8F0",
+          zIndex: 50,
+          background: "#fff",
+          borderBottom: "1px solid #F1F5F9",
+          boxShadow: scrolled ? "0 1px 20px rgba(0,0,0,0.08)" : "none",
+          transition: "box-shadow 0.2s ease",
         }}
       >
         <div
@@ -206,58 +341,55 @@ export default function LandingPage() {
             maxWidth: 1200,
             margin: "0 auto",
             padding: "0 32px",
-            height: 64,
+            height: 68,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 24,
           }}
         >
           {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 9,
-                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(124,58,237,0.25)",
-              }}
-            >
-              <Zap size={15} color="white" strokeWidth={2.5} fill="white" />
-            </div>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 17,
-                fontWeight: 700,
-                color: "#4F46E5",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Levl1
-            </span>
-          </div>
+          <Link
+            href="/"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 22,
+              fontWeight: 700,
+              color: "#0F172A",
+              letterSpacing: "-0.02em",
+              textDecoration: "none",
+            }}
+          >
+            Levl<span style={{ color: "#7C3AED" }}>1</span>
+          </Link>
 
-          {/* Links */}
-          <nav style={{ display: "flex", alignItems: "center", gap: 32 }}>
-            {NAV_LINKS.map((l) => (
+          {/* Center links */}
+          <nav
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 32,
+            }}
+          >
+            {[
+              { label: "How it works", id: "how-it-works" },
+              { label: "For Agencies", id: "agencies" },
+              { label: "For Enterprise", id: "enterprise" },
+              { label: "Pricing", id: "pricing" },
+            ].map((l) => (
               <button
-                key={l.label}
-                onClick={() => scrollToSection(l.sectionId)}
+                key={l.id}
+                onClick={() => scrollToId(l.id)}
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
                   color: "#475569",
-                  textDecoration: "none",
-                  transition: "color 0.15s",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: "var(--font-sans)",
                   padding: 0,
+                  transition: "color 0.15s",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#4F46E5")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
@@ -273,402 +405,1089 @@ export default function LandingPage() {
               href="/login"
               style={{
                 fontSize: 14,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: "#475569",
                 textDecoration: "none",
-                padding: "8px 16px",
+                padding: "9px 16px",
+                border: "1px solid #E2E8F0",
+                borderRadius: 9,
+                background: "#fff",
+                transition: "all 0.15s",
               }}
             >
               Sign in
             </Link>
-            <Link
-              href="/login"
+            <button
+              onClick={() => setShowModal(true)}
               style={{
-                background: "#7C3AED",
+                background: "#4F46E5",
                 color: "#fff",
                 border: "none",
-                borderRadius: 8,
-                padding: "9px 20px",
+                borderRadius: 9,
+                padding: "10px 18px",
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: "pointer",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                transition: "all 0.2s",
-                boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
+                fontFamily: "var(--font-sans)",
+                boxShadow: "0 4px 14px rgba(79,70,229,0.28)",
+                transition: "all 0.15s",
               }}
             >
-              Get Started
-              <ChevronRight size={14} />
-            </Link>
+              Book a Demo
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ── */}
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section
+        id="hero"
         style={{
-          background:
-            "linear-gradient(165deg, #F8FAFF 0%, #FAFAFA 50%, #F0F9FF 100%)",
-          borderBottom: "1px solid #E2E8F0",
-          padding: "100px 32px 80px",
+          minHeight: "100vh",
+          background: "#fff",
+          padding: "80px 32px",
+          position: "relative",
+          ...sectionStyle("hero"),
         }}
       >
         <div
           style={{
-            maxWidth: 900,
+            maxWidth: 1200,
             margin: "0 auto",
-            textAlign: "center",
-            animation: "fadeUp 0.6s ease both",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 64,
+            alignItems: "center",
           }}
+          className="hero-grid"
         >
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "rgba(124,58,237,0.08)",
-              border: "1px solid rgba(124,58,237,0.2)",
-              borderRadius: 100,
-              padding: "5px 14px",
-              marginBottom: 28,
-            }}
-          >
+          {/* LEFT */}
+          <div>
             <div
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#7C3AED",
-                boxShadow: "0 0 8px rgba(124,58,237,0.6)",
-              }}
-            />
-            <span
-              style={{
+                display: "inline-block",
+                background: "#EEF2FF",
+                color: "#4F46E5",
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#6D28D9",
-                letterSpacing: "0.04em",
+                padding: "6px 14px",
+                borderRadius: 100,
+                marginBottom: 28,
+                letterSpacing: "0.01em",
               }}
             >
-              AI-POWERED L1 INTERVIEWS
-            </span>
+              AI-Powered L1 Interviews for Tech & Product Roles
+            </div>
+
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 52,
+                fontWeight: 800,
+                color: "#0F172A",
+                lineHeight: 1.15,
+                letterSpacing: "-0.03em",
+                margin: 0,
+                marginBottom: 18,
+              }}
+            >
+              Your best candidate
+              <br />
+              just accepted
+              <br />
+              another offer.
+            </h1>
+
+            <p
+              style={{
+                fontSize: 20,
+                fontStyle: "italic",
+                color: "#64748B",
+                margin: 0,
+                marginBottom: 24,
+                lineHeight: 1.4,
+              }}
+            >
+              While you were finding time for a 30-minute call.
+            </p>
+
+            <p
+              style={{
+                fontSize: 17,
+                color: "#475569",
+                lineHeight: 1.7,
+                maxWidth: 500,
+                margin: 0,
+                marginBottom: 36,
+              }}
+            >
+              Levl1 conducts structured technical and behavioral interviews
+              autonomously — so your pipeline never stalls on panel availability
+              again.
+            </p>
+
+            <div style={{ display: "flex", gap: 12, marginBottom: 48, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 12,
+                  height: 48,
+                  padding: "0 20px",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  boxShadow: "0 6px 20px rgba(79,70,229,0.3)",
+                  transition: "all 0.15s",
+                }}
+              >
+                Book a Demo
+              </button>
+              <button
+                onClick={() => scrollToId("how-it-works")}
+                style={{
+                  background: "#fff",
+                  color: "#4F46E5",
+                  border: "1px solid #4F46E5",
+                  borderRadius: 12,
+                  height: 48,
+                  padding: "0 20px",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  transition: "all 0.15s",
+                }}
+              >
+                See How It Works ↓
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div
+              style={{
+                display: "flex",
+                gap: 32,
+                alignItems: "stretch",
+                flexWrap: "wrap",
+              }}
+            >
+              {[
+                { v: "48 hrs", l: "Average time to evaluated shortlist" },
+                { v: "60%", l: "Reduction in time-to-hire" },
+                { v: "3x", l: "More candidates evaluated per week" },
+              ].map((s, i) => (
+                <div
+                  key={s.v}
+                  style={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    gap: 32,
+                  }}
+                >
+                  <div style={{ maxWidth: 160 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: 32,
+                        fontWeight: 800,
+                        color: "#4F46E5",
+                        letterSpacing: "-0.02em",
+                        lineHeight: 1,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {s.v}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#64748B",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {s.l}
+                    </div>
+                  </div>
+                  {i < 2 && (
+                    <div
+                      style={{
+                        width: 1,
+                        background: "#E2E8F0",
+                        alignSelf: "stretch",
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Headline */}
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 62,
-              fontWeight: 800,
-              color: "#4F46E5",
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              marginBottom: 20,
-            }}
-          >
-            AI interviews that{" "}
-            <span
-              style={{
-                background:
-                  "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              never miss great talent.
-            </span>
-          </h1>
-
-          {/* Sub */}
-          <p
-            style={{
-              fontSize: 20,
-              color: "#475569",
-              lineHeight: 1.65,
-              maxWidth: 680,
-              margin: "0 auto 40px",
-              fontWeight: 400,
-            }}
-          >
-            Levl1 conducts structured L1 interviews so your best candidates
-            don&apos;t get lost to scheduling delays and panel availability.
-          </p>
-
-          {/* CTAs */}
+          {/* RIGHT */}
           <div
             style={{
+              position: "relative",
+              minHeight: 540,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 12,
-              marginBottom: 64,
             }}
           >
-            <Link
-              href="/login"
+            {/* Indigo radial glow */}
+            <div
               style={{
-                background: "#7C3AED",
-                color: "#fff",
-                borderRadius: 10,
-                padding: "14px 28px",
-                fontSize: 15,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: "0 6px 24px rgba(124,58,237,0.35)",
-                transition: "all 0.2s",
-                letterSpacing: "-0.01em",
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(circle at 50% 50%, rgba(79,70,229,0.18) 0%, rgba(124,58,237,0.08) 40%, transparent 70%)",
+                filter: "blur(20px)",
+                zIndex: 0,
               }}
-            >
-              Get Started Free
-              <ArrowRight size={16} />
-            </Link>
-            <button
-              onClick={() => scrollToSection("features")}
-              style={{
-                background: "#fff",
-                color: "#4F46E5",
-                border: "1px solid #E2E8F0",
-                borderRadius: 10,
-                padding: "14px 28px",
-                fontSize: 15,
-                fontWeight: 600,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: "0 1px 3px rgba(79,70,229,0.06)",
-                transition: "all 0.2s",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              See How It Works
-            </button>
-          </div>
+            />
 
-          {/* Stats row */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 1,
-              background: "#E2E8F0",
-              borderRadius: 16,
-              overflow: "hidden",
-              border: "1px solid #E2E8F0",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            {STATS.map((s, i) => (
+            {/* Main dark card */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                background: "#0F172A",
+                borderRadius: 20,
+                padding: 24,
+                width: "100%",
+                maxWidth: 500,
+                boxShadow:
+                  "0 24px 60px rgba(79,70,229,0.25), 0 8px 24px rgba(15,23,42,0.4)",
+                border: "1px solid rgba(124,58,237,0.2)",
+                animation: "float 4s ease-in-out infinite alternate",
+                color: "#E2E8F0",
+              }}
+            >
+              {/* Header row */}
               <div
-                key={s.label}
                 style={{
-                  background: "#fff",
-                  padding: "24px 20px",
-                  textAlign: "center",
-                  borderRight:
-                    i < STATS.length - 1 ? "1px solid #E2E8F0" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingBottom: 14,
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "rgba(239,68,68,0.15)",
+                      border: "1px solid rgba(239,68,68,0.3)",
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#EF4444",
+                        animation: "pulseDot 1.4s ease-in-out infinite",
+                        display: "inline-block",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "#FCA5A5",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      LIVE
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: "#94A3B8" }}>
+                    Alex · AI Interviewer
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontFamily: "var(--font-mono, monospace)",
+                    color: "#94A3B8",
+                  }}
+                >
+                  23:41
+                </span>
+              </div>
+
+              {/* Candidate */}
+              <div
+                style={{
+                  padding: "14px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
                 <div
                   style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: 30,
-                    fontWeight: 800,
-                    color: "#4F46E5",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "#fff",
+                    marginBottom: 2,
                   }}
                 >
-                  {s.value}
+                  Priya Sharma · Senior Data Engineer
+                </div>
+                <div style={{ fontSize: 12, color: "#94A3B8" }}>
+                  DataTech Solutions
+                </div>
+              </div>
+
+              {/* Waveform */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 5,
+                  height: 56,
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                {[0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((delay, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: "inline-block",
+                      width: 4,
+                      borderRadius: 2,
+                      background:
+                        "linear-gradient(180deg, #7C3AED 0%, #4F46E5 100%)",
+                      animation: `waveBar 1.2s ease-in-out ${delay}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Question */}
+              <div
+                style={{
+                  padding: "14px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#7C3AED",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginBottom: 6,
+                  }}
+                >
+                  Current Question
+                </div>
+                <div style={{ fontSize: 14, color: "#E2E8F0", lineHeight: 1.6 }}>
+                  &ldquo;Describe the architecture of a system you designed.
+                  Walk me through the key trade-offs you made.&rdquo;
+                </div>
+              </div>
+
+              {/* Transcript */}
+              <div style={{ paddingTop: 14 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#7C3AED",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginBottom: 6,
+                  }}
+                >
+                  Live Transcript
                 </div>
                 <div
                   style={{
-                    fontSize: 12,
-                    color: "#94A3B8",
-                    marginTop: 6,
-                    fontWeight: 500,
+                    fontSize: 13,
+                    color: "#CBD5E1",
+                    lineHeight: 1.6,
+                    fontStyle: "italic",
                   }}
                 >
-                  {s.label}
+                  &ldquo;Sure. So in my last role at Scale9x, we were dealing
+                  with a real-time data pipeline that needed to handle…&rdquo;
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Overlapping score card */}
+            <div
+              style={{
+                position: "absolute",
+                left: -10,
+                bottom: 10,
+                zIndex: 2,
+                background: "#fff",
+                borderRadius: 14,
+                padding: 16,
+                width: 240,
+                boxShadow: "0 16px 40px rgba(15,23,42,0.18)",
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#10B981",
+                  marginBottom: 8,
+                }}
+              >
+                <span>✅</span>
+                <span>Interview Complete</span>
+              </div>
+              <div style={{ fontSize: 13, color: "#0F172A", fontWeight: 600 }}>
+                Priya Sharma · 23 min
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#64748B",
+                  marginTop: 2,
+                  marginBottom: 10,
+                }}
+              >
+                Score: <span style={{ fontWeight: 700, color: "#0F172A" }}>87/100</span>
+              </div>
+              <div
+                style={{
+                  display: "inline-block",
+                  background: "#DCFCE7",
+                  color: "#15803D",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "4px 10px",
+                  borderRadius: 100,
+                  marginBottom: 8,
+                }}
+              >
+                Strong Hire
+              </div>
+              <div style={{ fontSize: 12, color: "#64748B" }}>
+                3 key strengths identified
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* ── PROBLEM ─────────────────────────────────────────────────────── */}
       <section
-        id="features"
+        id="problem"
         style={{
+          background: "#F8FAFC",
           padding: "96px 32px",
-          background: "#FAFAFA",
+          ...sectionStyle("problem"),
         }}
       >
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          {/* Section header */}
-          <div style={{ textAlign: "center", marginBottom: 60 }}>
-            <p
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <span
               style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#7C3AED",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginBottom: 12,
-              }}
-            >
-              What we do
-            </p>
-            <h2
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 42,
-                fontWeight: 800,
+                display: "inline-block",
+                background: "#EEF2FF",
                 color: "#4F46E5",
-                letterSpacing: "-0.025em",
-                lineHeight: 1.15,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                padding: "6px 12px",
+                borderRadius: 100,
                 marginBottom: 16,
               }}
             >
-              Everything your team needs
+              THE PROBLEM
+            </span>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 44,
+                fontWeight: 800,
+                color: "#0F172A",
+                letterSpacing: "-0.025em",
+                lineHeight: 1.15,
+                margin: 0,
+                marginBottom: 12,
+              }}
+            >
+              Great candidates don&apos;t wait.
             </h2>
-            <p style={{ fontSize: 17, color: "#475569", maxWidth: 500, margin: "0 auto", lineHeight: 1.6 }}>
-              One platform to screen, score, and shortlist — without the
-              scheduling chaos.
+            <p style={{ fontSize: 20, color: "#64748B", margin: 0 }}>
+              But your hiring process does.
             </p>
           </div>
 
-          {/* Grid */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 20,
+              gap: 24,
             }}
+            className="problem-grid"
           >
-            {FEATURES.map((f) => (
+            {[
+              {
+                icon: "📅",
+                stat: "15–20%",
+                title:
+                  "Of a senior engineer's week goes to interviewing",
+                body: "Your best people are your scarcest interviewers. Every hour they spend on L1 panels is an hour not spent building. And candidates still wait weeks for a slot.",
+              },
+              {
+                icon: "👋",
+                stat: "58%",
+                title: "Of top candidates drop out after 2 weeks of silence",
+                body: "The best candidates have options. When your process stalls at the screening stage, they don't wait — they accept the offer that moved faster.",
+              },
+              {
+                icon: "⚖️",
+                stat: "0.28",
+                title: "Inter-rater reliability of unstructured interviews",
+                body: "Without a structured evaluation framework, two interviewers assess the same candidate completely differently. You're not measuring talent — you're measuring who showed up that day.",
+              },
+            ].map((c) => (
               <div
-                key={f.title}
+                key={c.stat}
                 style={{
                   background: "#fff",
                   border: "1px solid #E2E8F0",
                   borderRadius: 16,
-                  padding: "28px",
-                  boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
-                  transition: "all 0.2s",
-                  cursor: "default",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#CBD5E1";
-                  e.currentTarget.style.boxShadow =
-                    "0 8px 24px rgba(79,70,229,0.08)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#E2E8F0";
-                  e.currentTarget.style.boxShadow =
-                    "0 1px 3px rgba(79,70,229,0.05)";
-                  e.currentTarget.style.transform = "none";
+                  padding: 32,
+                  boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
                 }}
               >
+                <div style={{ fontSize: 32, marginBottom: 16 }}>{c.icon}</div>
                 <div
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: `${f.color}14`,
-                    border: `1px solid ${f.color}22`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 18,
+                    fontFamily: "var(--font-display)",
+                    fontSize: 48,
+                    fontWeight: 800,
+                    color: "#4F46E5",
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                    marginBottom: 12,
                   }}
                 >
-                  <f.icon size={22} color={f.color} strokeWidth={1.75} />
+                  {c.stat}
                 </div>
                 <h3
                   style={{
                     fontFamily: "var(--font-display)",
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: 700,
-                    color: "#4F46E5",
-                    marginBottom: 8,
-                    letterSpacing: "-0.01em",
+                    color: "#0F172A",
+                    lineHeight: 1.35,
+                    marginBottom: 12,
                   }}
                 >
-                  {f.title}
+                  {c.title}
                 </h3>
                 <p
                   style={{
                     fontSize: 14,
-                    color: "#475569",
+                    color: "#64748B",
                     lineHeight: 1.65,
+                    margin: 0,
                   }}
                 >
-                  {f.desc}
+                  {c.body}
                 </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 56 }}>
+            <p
+              style={{
+                fontSize: 18,
+                color: "#475569",
+                fontStyle: "italic",
+                margin: 0,
+                marginBottom: 12,
+                lineHeight: 1.5,
+                maxWidth: 720,
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
+            >
+              &ldquo;We lost three strong candidates last quarter to competing
+              offers — all while waiting for panel availability.&rdquo;
+            </p>
+            <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>
+              — Head of Engineering, Series B Fintech, Bengaluru
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
+      <section
+        id="how-it-works"
+        style={{
+          background: "#fff",
+          padding: "96px 32px",
+          ...sectionStyle("how-it-works"),
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span
+              style={{
+                display: "inline-block",
+                background: "#EEF2FF",
+                color: "#4F46E5",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                padding: "6px 12px",
+                borderRadius: 100,
+                marginBottom: 16,
+              }}
+            >
+              HOW IT WORKS
+            </span>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 44,
+                fontWeight: 800,
+                color: "#0F172A",
+                letterSpacing: "-0.025em",
+                lineHeight: 1.15,
+                margin: 0,
+              }}
+            >
+              From JD to evaluated shortlist in 48 hours
+            </h2>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "stretch",
+              gap: 12,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            {[
+              {
+                n: "01",
+                icon: "📄",
+                title: "Create Position",
+                body: "Generate or paste your JD. AI creates a tailored question bank for your role, tech stack, and seniority level.",
+              },
+              {
+                n: "02",
+                icon: "✅",
+                title: "One-Time Approval",
+                body: "Your tech lead reviews technical questions. HR reviews behavioral. Approve once — use for every candidate.",
+              },
+              {
+                n: "03",
+                icon: "🎙️",
+                title: "AI Interviews",
+                body: "Levl1 conducts structured voice interviews — technical, scenario, behavioral, and EQ. No panel needed.",
+              },
+              {
+                n: "04",
+                icon: "📊",
+                title: "Ranked Reports",
+                body: "Every candidate gets an evidence-based report with scores, strengths, concerns, and a clear recommendation.",
+              },
+            ].map((s, i, arr) => (
+              <div
+                key={s.n}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flex: "1 1 220px",
+                  minWidth: 220,
+                }}
+              >
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: 16,
+                    padding: 28,
+                    display: "flex",
+                    flexDirection: "column",
+                    flex: 1,
+                    boxShadow: "0 1px 3px rgba(15,23,42,0.03)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#C7D2FE";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 24px rgba(79,70,229,0.08)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                    e.currentTarget.style.boxShadow =
+                      "0 1px 3px rgba(15,23,42,0.03)";
+                    e.currentTarget.style.transform = "none";
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: "#4F46E5",
+                      letterSpacing: "0.08em",
+                      marginBottom: 12,
+                    }}
+                  >
+                    {s.n}
+                  </div>
+                  <div style={{ fontSize: 28, marginBottom: 14 }}>{s.icon}</div>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: "#0F172A",
+                      lineHeight: 1.3,
+                      margin: 0,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "#64748B",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    {s.body}
+                  </p>
+                </div>
+                {i < arr.length - 1 && (
+                  <div
+                    style={{
+                      color: "#4F46E5",
+                      fontSize: 24,
+                      fontWeight: 700,
+                      padding: "0 4px",
+                      flexShrink: 0,
+                    }}
+                    className="how-arrow"
+                  >
+                    →
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Pricing placeholder ── */}
-      <section id="pricing" style={{ height: 1 }} />
-      <section id="about" style={{ height: 1 }} />
-      <section id="blog" style={{ height: 1 }} />
-
-      {/* ── Testimonial ── */}
+      {/* ── AGENCIES vs ENTERPRISE ──────────────────────────────────────── */}
       <section
+        id="agencies"
         style={{
-          padding: "96px 32px",
           background: "#fff",
-          borderTop: "1px solid #E2E8F0",
-          borderBottom: "1px solid #E2E8F0",
+          padding: "96px 32px",
+          ...sectionStyle("agencies"),
         }}
       >
-        <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div
             style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 4,
-              marginBottom: 28,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 24,
+            }}
+            className="two-panel-grid"
+          >
+            {/* LEFT - Agencies (indigo) */}
+            <div
+              style={{
+                background: "#4F46E5",
+                borderRadius: 20,
+                padding: 48,
+                color: "#fff",
+                boxShadow: "0 20px 50px rgba(79,70,229,0.25)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#A5B4FC",
+                  letterSpacing: "0.12em",
+                  marginBottom: 16,
+                  textTransform: "uppercase",
+                }}
+              >
+                For Recruitment Agencies
+              </div>
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 36,
+                  fontWeight: 800,
+                  color: "#fff",
+                  lineHeight: 1.15,
+                  letterSpacing: "-0.025em",
+                  margin: 0,
+                  marginBottom: 16,
+                }}
+              >
+                Charge more. Deliver more.
+              </h3>
+              <p
+                style={{
+                  fontSize: 16,
+                  color: "#C7D2FE",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  marginBottom: 28,
+                }}
+              >
+                Stop sending raw CVs. Send evaluated, ranked shortlists backed
+                by AI interview reports. Your clients get better candidates
+                faster — and you command a premium for it.
+              </p>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  marginBottom: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {[
+                  "Multi-client position management",
+                  "White-label reports with your branding",
+                  "Client approval workflow",
+                  "Push evaluated shortlists to clients",
+                  "Per-interview or per-position pricing",
+                  "No panel dependency — ever",
+                ].map((feat) => (
+                  <li
+                    key={feat}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      fontSize: 14,
+                      color: "#E0E7FF",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#fff",
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </span>
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#fff",
+                  color: "#4F46E5",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "12px 24px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Book a Demo
+              </button>
+            </div>
+
+            {/* RIGHT - Enterprise (white outlined) */}
+            <div
+              id="enterprise"
+              style={{
+                background: "#fff",
+                border: "2px solid #4F46E5",
+                borderRadius: 20,
+                padding: 48,
+                boxShadow: "0 20px 50px rgba(15,23,42,0.08)",
+                scrollMarginTop: 80,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#4F46E5",
+                  letterSpacing: "0.12em",
+                  marginBottom: 16,
+                  textTransform: "uppercase",
+                }}
+              >
+                For Enterprise Hiring Teams
+              </div>
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 36,
+                  fontWeight: 800,
+                  color: "#0F172A",
+                  lineHeight: 1.15,
+                  letterSpacing: "-0.025em",
+                  margin: 0,
+                  marginBottom: 16,
+                }}
+              >
+                Scale hiring without scaling headcount.
+              </h3>
+              <p
+                style={{
+                  fontSize: 16,
+                  color: "#64748B",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  marginBottom: 28,
+                }}
+              >
+                Run hundreds of L1 interviews simultaneously without burning
+                out your engineering team. Consistent evaluation. Zero
+                scheduling overhead.
+              </p>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  marginBottom: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {[
+                  "Internal HRMS and ATS integration",
+                  "Department-level access controls",
+                  "SSO / SAML authentication",
+                  "SLA guarantees and dedicated CSM",
+                  "Custom question banks per department",
+                  "Full audit trail and compliance reporting",
+                ].map((feat) => (
+                  <li
+                    key={feat}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      fontSize: 14,
+                      color: "#334155",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#4F46E5",
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </span>
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "12px 24px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.28)",
+                }}
+              >
+                Contact Sales
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIAL ─────────────────────────────────────────────────── */}
+      <section
+        id="testimonial"
+        style={{
+          background: "#EEF2FF",
+          padding: "80px 32px",
+          textAlign: "center",
+          ...sectionStyle("testimonial"),
+        }}
+      >
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div
+            style={{
+              fontSize: "5rem",
+              color: "#7C3AED",
+              fontFamily: "Georgia, serif",
+              lineHeight: 0.8,
+              marginBottom: 8,
             }}
           >
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} size={20} color="#F59E0B" fill="#F59E0B" />
-            ))}
+            &ldquo;
           </div>
-
           <blockquote
             style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 26,
-              fontWeight: 600,
-              color: "#4F46E5",
-              lineHeight: 1.45,
-              letterSpacing: "-0.02em",
-              marginBottom: 32,
+              fontSize: 24,
+              color: "#0F172A",
+              maxWidth: 800,
+              margin: "0 auto",
+              lineHeight: 1.6,
+              fontStyle: "italic",
+              fontWeight: 500,
+              padding: 0,
             }}
           >
-            &ldquo;Levl1 cut our time-to-screen by 78%. We now
-            evaluate 10&times; more candidates with the same team — and the quality
-            of our shortlists has never been better.&rdquo;
+            We reduced our time-to-shortlist from 3 weeks to 4 days. The AI
+            interview quality is genuinely impressive — our clients trust the
+            reports more than traditional screening calls.
           </blockquote>
 
           <div
             style={{
+              marginTop: 32,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -677,132 +1496,501 @@ export default function LandingPage() {
           >
             <div
               style={{
-                width: 48,
-                height: 48,
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                background: "#4F46E5",
+                color: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: 700,
-                color: "#fff",
               }}
             >
-              PS
+              SK
             </div>
             <div style={{ textAlign: "left" }}>
-              <div
-                style={{
-                  fontWeight: 600,
-                  color: "#4F46E5",
-                  fontSize: 15,
-                }}
-              >
-                Priya Sharma
+              <div style={{ fontWeight: 700, color: "#0F172A", fontSize: 15 }}>
+                Sneha Kapoor
               </div>
-              <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>
-                Head of Talent, FinEdge Technologies
+              <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>
+                Managing Director, TalentBridge India
               </div>
             </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 40,
+              display: "flex",
+              justifyContent: "center",
+              gap: 24,
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              { v: "3 weeks → 4 days", l: "Time to shortlist" },
+              { v: "40%", l: "Increase in placement fees" },
+              { v: "3x", l: "Candidates evaluated per recruiter" },
+            ].map((m) => (
+              <div
+                key={m.l}
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  padding: "20px 28px",
+                  textAlign: "center",
+                  boxShadow: "0 4px 16px rgba(79,70,229,0.08)",
+                  minWidth: 200,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: "#4F46E5",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {m.v}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#64748B",
+                    marginTop: 6,
+                  }}
+                >
+                  {m.l}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA Section ── */}
+      {/* ── PRICING ─────────────────────────────────────────────────────── */}
       <section
+        id="pricing"
         style={{
+          background: "#fff",
           padding: "96px 32px",
-          background: "linear-gradient(135deg, #4F46E5 0%, #312E81 100%)",
-          textAlign: "center",
+          ...sectionStyle("pricing"),
         }}
       >
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span
+              style={{
+                display: "inline-block",
+                background: "#EEF2FF",
+                color: "#4F46E5",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                padding: "6px 12px",
+                borderRadius: 100,
+                marginBottom: 16,
+              }}
+            >
+              PRICING
+            </span>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 44,
+                fontWeight: 800,
+                color: "#0F172A",
+                letterSpacing: "-0.025em",
+                lineHeight: 1.15,
+                margin: 0,
+                marginBottom: 12,
+              }}
+            >
+              Built for agencies. Scaled for enterprise.
+            </h2>
+            <p style={{ fontSize: 18, color: "#64748B", margin: 0 }}>
+              We price based on your volume and use case. No hidden fees.
+            </p>
+          </div>
+
+          <div
+            style={{
+              maxWidth: 960,
+              margin: "0 auto",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 24,
+            }}
+            className="pricing-grid"
+          >
+            {/* Agency */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #E2E8F0",
+                borderRadius: 20,
+                padding: 36,
+                position: "relative",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  background: "#EEF2FF",
+                  color: "#4F46E5",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  padding: "5px 10px",
+                  borderRadius: 100,
+                  marginBottom: 16,
+                }}
+              >
+                FOR AGENCIES
+              </span>
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: "#0F172A",
+                  letterSpacing: "-0.02em",
+                  margin: 0,
+                  marginBottom: 14,
+                }}
+              >
+                Agency
+              </h3>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: "#4F46E5",
+                  marginBottom: 4,
+                }}
+              >
+                Pricing on request
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#94A3B8",
+                  marginBottom: 24,
+                }}
+              >
+                Based on interviews per month
+              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "12px 0",
+                  width: "100%",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.22)",
+                  marginBottom: 28,
+                }}
+              >
+                Book a Demo
+              </button>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {[
+                  "Everything in How It Works",
+                  "Multi-client management",
+                  "White-label reports",
+                  "Client approval workflows",
+                  "Evaluated shortlist delivery",
+                  "Email + chat support",
+                  "Onboarding included",
+                ].map((f) => (
+                  <li
+                    key={f}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      fontSize: 14,
+                      color: "#334155",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <span style={{ color: "#4F46E5", fontWeight: 700 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Enterprise */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #4F46E5",
+                borderRadius: 20,
+                padding: 36,
+                position: "relative",
+                boxShadow: "0 20px 50px rgba(79,70,229,0.15)",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: 20,
+                  right: 20,
+                  background: "#7C3AED",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  padding: "5px 10px",
+                  borderRadius: 100,
+                }}
+              >
+                FOR SCALE
+              </span>
+              <span
+                style={{
+                  display: "inline-block",
+                  background: "#EEF2FF",
+                  color: "#4F46E5",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  padding: "5px 10px",
+                  borderRadius: 100,
+                  marginBottom: 16,
+                }}
+              >
+                FOR ENTERPRISE
+              </span>
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: "#0F172A",
+                  letterSpacing: "-0.02em",
+                  margin: 0,
+                  marginBottom: 14,
+                }}
+              >
+                Enterprise
+              </h3>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: "#4F46E5",
+                  marginBottom: 4,
+                }}
+              >
+                Pricing on request
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#94A3B8",
+                  marginBottom: 24,
+                }}
+              >
+                Based on hiring volume and departments
+              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "12px 0",
+                  width: "100%",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.28)",
+                  marginBottom: 28,
+                }}
+              >
+                Contact Sales
+              </button>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {[
+                  "Everything in Agency plan",
+                  "ATS and HRMS integration",
+                  "SSO / SAML",
+                  "Department-level controls",
+                  "Dedicated Customer Success Manager",
+                  "SLA guarantees",
+                  "Custom contract and invoicing",
+                  "Priority support",
+                ].map((f) => (
+                  <li
+                    key={f}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      fontSize: 14,
+                      color: "#334155",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <span style={{ color: "#4F46E5", fontWeight: 700 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: 32,
+              fontSize: 13,
+              color: "#94A3B8",
+              maxWidth: 720,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            All plans include: unlimited positions, AI question generation,
+            ElevenLabs voice, evaluation reports, and candidate rankings.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ───────────────────────────────────────────────────── */}
+      <section
+        id="final-cta"
+        style={{
+          background: "#0F172A",
+          padding: "96px 32px",
+          textAlign: "center",
+          ...sectionStyle("final-cta"),
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <h2
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 42,
+              fontSize: 48,
               fontWeight: 800,
               color: "#fff",
               letterSpacing: "-0.025em",
               lineHeight: 1.15,
-              marginBottom: 16,
+              margin: 0,
+              marginBottom: 20,
             }}
           >
-            Start running L1 interviews today
+            Stop losing great candidates to scheduling delays.
           </h2>
           <p
             style={{
-              fontSize: 17,
-              color: "rgba(255,255,255,0.65)",
+              fontSize: 18,
+              color: "#94A3B8",
+              maxWidth: 560,
+              margin: "0 auto",
               lineHeight: 1.6,
-              marginBottom: 40,
             }}
           >
-            Let Levl1 handle your first-round screens — so your team focuses
-            on the candidates who actually matter.
+            Join recruitment agencies and enterprise teams already using Levl1
+            to evaluate faster, fairer, and at scale.
           </p>
+
           <div
             style={{
+              marginTop: 40,
               display: "flex",
-              alignItems: "center",
               justifyContent: "center",
-              gap: 12,
+              gap: 16,
+              flexWrap: "wrap",
             }}
           >
-            <Link
-              href="/login"
-              style={{
-                background: "#7C3AED",
-                color: "#fff",
-                borderRadius: 10,
-                padding: "14px 28px",
-                fontSize: 15,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: "0 6px 24px rgba(124,58,237,0.4)",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Start for Free
-              <ArrowRight size={16} />
-            </Link>
             <button
-              onClick={() => setShowDemoModal(true)}
+              onClick={() => setShowModal(true)}
               style={{
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.85)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 10,
-                padding: "14px 28px",
-                fontSize: 15,
-                fontWeight: 600,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
+                background: "#4F46E5",
+                color: "#fff",
+                border: "none",
+                borderRadius: 12,
+                padding: "16px 32px",
+                fontSize: 16,
+                fontWeight: 700,
                 cursor: "pointer",
                 fontFamily: "var(--font-sans)",
+                boxShadow: "0 8px 28px rgba(79,70,229,0.4)",
               }}
             >
               Book a Demo
             </button>
+            <Link
+              href="/login"
+              style={{
+                background: "transparent",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 12,
+                padding: "16px 32px",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              Sign in
+            </Link>
           </div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 20 }}>
-            No credit card required &nbsp;·&nbsp; 14-day free trial
+
+          <p
+            style={{
+              marginTop: 24,
+              fontSize: 13,
+              color: "#475569",
+            }}
+          >
+            No setup fee. Onboarding included. First 10 interviews free.
           </p>
         </div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer
         style={{
-          background: "#0F0A2E",
-          padding: "48px 32px",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          background: "#fff",
+          padding: "64px 32px 32px",
+          borderTop: "1px solid #F1F5F9",
         }}
       >
         <div
@@ -810,115 +1998,153 @@ export default function LandingPage() {
             maxWidth: 1200,
             margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
+            gridTemplateColumns: "1.5fr 1fr 1fr",
             gap: 48,
           }}
+          className="footer-grid"
         >
-          {/* Brand */}
           <div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 14,
+                fontFamily: "var(--font-display)",
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#0F172A",
+                letterSpacing: "-0.02em",
+                marginBottom: 12,
               }}
             >
-              <div
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 8,
-                  background:
-                    "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Zap size={13} color="white" strokeWidth={2.5} fill="white" />
-              </div>
-              <span
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: "#fff",
-                }}
-              >
-                Levl1
-              </span>
+              Levl<span style={{ color: "#7C3AED" }}>1</span>
             </div>
             <p
               style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,0.4)",
-                lineHeight: 1.65,
-                maxWidth: 240,
+                fontSize: 14,
+                color: "#64748B",
+                lineHeight: 1.6,
+                maxWidth: 280,
+                margin: 0,
+                marginBottom: 12,
               }}
             >
-              AI-powered L1 interviews for tech and product roles.
+              AI-powered L1 interviews for tech and product roles. Built for
+              agencies and enterprise hiring teams.
             </p>
+            <a
+              href="#"
+              style={{
+                fontSize: 13,
+                color: "#4F46E5",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              levl1.app
+            </a>
           </div>
 
-          {/* Link groups */}
-          {[
-            {
-              title: "Product",
-              links: ["Features", "Pricing", "Changelog", "Roadmap"],
-            },
-            {
-              title: "Company",
-              links: ["About", "Blog", "Careers", "Press"],
-            },
-            {
-              title: "Legal",
-              links: ["Privacy", "Terms", "Security", "Cookies"],
-            },
-          ].map((g) => (
-            <div key={g.title}>
-              <div
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#94A3B8",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              Product
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { label: "How it Works", id: "how-it-works" },
+                { label: "For Agencies", id: "agencies" },
+                { label: "For Enterprise", id: "enterprise" },
+                { label: "Pricing", id: "pricing" },
+              ].map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => scrollToId(l.id)}
+                  style={{
+                    fontSize: 14,
+                    color: "#475569",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-sans)",
+                    padding: 0,
+                    textAlign: "left",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "#4F46E5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "#475569")
+                  }
+                >
+                  {l.label}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowModal(true)}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "rgba(255,255,255,0.35)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: 16,
+                  fontSize: 14,
+                  color: "#475569",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  padding: 0,
+                  textAlign: "left",
+                  transition: "color 0.15s",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#4F46E5")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
               >
-                {g.title}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                }}
-              >
-                {g.links.map((l) => (
+                Book a Demo
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#94A3B8",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              Company
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {["About", "Privacy Policy", "Terms of Service", "Contact"].map(
+                (l) => (
                   <a
                     key={l}
                     href="#"
                     style={{
-                      fontSize: 13,
-                      color: "rgba(255,255,255,0.50)",
+                      fontSize: 14,
+                      color: "#475569",
                       textDecoration: "none",
                       transition: "color 0.15s",
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
+                      (e.currentTarget.style.color = "#4F46E5")
                     }
                     onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "rgba(255,255,255,0.50)")
+                      (e.currentTarget.style.color = "#475569")
                     }
                   >
                     {l}
                   </a>
-                ))}
-              </div>
+                ),
+              )}
             </div>
-          ))}
+          </div>
         </div>
 
         <div
@@ -926,36 +2152,58 @@ export default function LandingPage() {
             maxWidth: 1200,
             margin: "40px auto 0",
             paddingTop: 24,
-            borderTop: "1px solid rgba(255,255,255,0.07)",
+            borderTop: "1px solid #F1F5F9",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
           }}
         >
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
-            &copy; 2026 Levl1. Built for recruitment agencies and enterprises.
+          <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>
+            © 2026 Levl1. All rights reserved.
           </p>
-          <div style={{ display: "flex", gap: 6 }}>
-            {["SOC 2", "GDPR", "ISO 27001"].map((badge) => (
-              <span
-                key={badge}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,0.4)",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 4,
-                  padding: "3px 8px",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
+          <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>
+            Privacy · Terms
+          </p>
         </div>
       </footer>
+
+      {/* ── Keyframes ───────────────────────────────────────────────────── */}
+      <style>{`
+        @keyframes float {
+          from { transform: translateY(0px); }
+          to   { transform: translateY(-12px); }
+        }
+        @keyframes waveBar {
+          0%, 100% { height: 8px;  opacity: 0.5; }
+          50%      { height: 32px; opacity: 1;   }
+        }
+        @keyframes pulseDot {
+          0%, 100% { opacity: 1;   transform: scale(1);   }
+          50%      { opacity: 0.4; transform: scale(0.7); }
+        }
+        @media (max-width: 900px) {
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .problem-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .two-panel-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .pricing-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .how-arrow {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
