@@ -20,36 +20,43 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
     const container = mountRef.current
     if (!container) return
 
-    let animId = 0
-
+    let animId    = 0
+    let cancelled = false
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let renderer: any
+    let renderer: any = null
 
     async function init() {
-      if (!container) return          // re-check after await
-      const THREE = await import('three')
+      if (!container) return
 
-      /* ── Scene + Camera ───────────────────────────────────────── */
+      /* ── Guard 1: did React StrictMode unmount us before the await resolved? */
+      const THREE = await import('three')
+      if (cancelled) return
+
+      /* ── Guard 2: a canvas already exists (StrictMode second-call race).
+           If we're here it means the first init() resolved AFTER cleanup ran
+           and the second init() already attached a canvas — bail out. */
+      if (container.querySelector('canvas')) return
+
+      /* ── Scene + Camera ─────────────────────────────────────────── */
       const scene  = new THREE.Scene()
       const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100)
       camera.position.z = 2.8
 
-      /* ── Renderer ─────────────────────────────────────────────── */
+      /* ── Renderer ───────────────────────────────────────────────── */
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
       renderer.setSize(SIZE, SIZE)
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
       renderer.setClearColor(0x000000, 0)
       container.appendChild(renderer.domElement)
 
-      /* ── Geometry ─────────────────────────────────────────────── */
+      /* ── Geometry ───────────────────────────────────────────────── */
       const geomWire  = new THREE.IcosahedronGeometry(1, 6)
       const geomSolid = new THREE.IcosahedronGeometry(1, 6)
 
-      // Capture originals before any displacement
       const origWire  = Float32Array.from(geomWire.attributes.position.array)
       const origSolid = Float32Array.from(geomSolid.attributes.position.array)
 
-      /* ── Materials ────────────────────────────────────────────── */
+      /* ── Materials ──────────────────────────────────────────────── */
       const wireMat = new THREE.MeshPhongMaterial({
         color:       0x7C3AED,
         wireframe:   true,
@@ -68,7 +75,7 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
       scene.add(solidMesh)
       scene.add(wireMesh)
 
-      /* ── Lights ───────────────────────────────────────────────── */
+      /* ── Lights ─────────────────────────────────────────────────── */
       const dir1 = new THREE.DirectionalLight(0xA78BFA, 1.3)
       dir1.position.set(2, 2, 2)
       scene.add(dir1)
@@ -79,7 +86,7 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
 
       scene.add(new THREE.AmbientLight(0x6366F1, 0.45))
 
-      /* ── Animation loop ───────────────────────────────────────── */
+      /* ── Animation loop ─────────────────────────────────────────── */
       let time = 0
 
       function displaceGeom(
@@ -110,12 +117,11 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
         animId = requestAnimationFrame(animate)
         time += 0.012
 
-        const morph = 0.10 + intensRef.current * 0.30   // 0.10 idle → 0.40 at full
+        const morph = 0.10 + intensRef.current * 0.30
 
         displaceGeom(geomWire,  origWire,  morph)
         displaceGeom(geomSolid, origSolid, morph * 0.6)
 
-        /* Slow Y + tiny X rotation */
         wireMesh.rotation.y  += 0.006
         wireMesh.rotation.x  += 0.002
         solidMesh.rotation.y  = wireMesh.rotation.y
@@ -130,10 +136,21 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
     init().catch(console.error)
 
     return () => {
+      /* ── Signal any in-flight init() to abort after its await ── */
+      cancelled = true
+
       cancelAnimationFrame(animId)
+
+      /* ── Dispose renderer and remove canvas from DOM ─────────── */
       try {
         renderer?.dispose()
-        if (container.firstChild) container.removeChild(container.firstChild)
+      } catch {}
+
+      try {
+        /* Use querySelector so we always find the canvas even if
+           firstChild is the glow div or something else in the wrapper */
+        const canvas = container.querySelector('canvas')
+        if (canvas) container.removeChild(canvas)
       } catch {}
     }
   }, [])  // run once — intensity updates flow via ref
