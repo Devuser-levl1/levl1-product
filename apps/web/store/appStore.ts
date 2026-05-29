@@ -195,6 +195,9 @@ interface AppStore {
   interviews: Interview[]
   reports: Record<string, CandidateReport>
   positionReports: Record<string, PositionReport>
+  setPositions: (positions: Position[]) => void
+  setCandidates: (candidates: Candidate[]) => void
+  setInterviews: (interviews: Interview[]) => void
   addPosition: (p: Position) => void
   addCandidates: (candidates: Candidate[]) => void
   updateCandidate: (id: string, updates: Partial<Candidate>) => void
@@ -597,6 +600,9 @@ export const useAppStore = create<AppStore>((set) => ({
   interviews: MOCK_INTERVIEWS,
   reports: MOCK_REPORTS,
   positionReports: MOCK_POSITION_REPORTS,
+  setPositions: (positions) => set({ positions }),
+  setCandidates: (candidates) => set({ candidates }),
+  setInterviews: (interviews) => set({ interviews }),
   addPosition: (p) => set((state) => ({ positions: [p, ...state.positions] })),
   addCandidates: (newCandidates) => set((state) => ({ candidates: [...newCandidates, ...state.candidates] })),
   updateCandidate: (id, updates) => set((state) => ({

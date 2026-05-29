@@ -354,7 +354,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [teamSize,               setTeamSize]               = useState("2–5");
   const [hasBudgetOwnership,     setHasBudgetOwnership]     = useState(false);
   const [hasHiringResponsibility,setHasHiringResponsibility]= useState(false);
-  const [interviewDuration,      setInterviewDuration]      = useState("30");
+  const [interviewDuration]                                 = useState("30");
 
   // Step 2 — Tech Context
   const [primaryDomain,  setPrimaryDomain]  = useState("Backend Engineering");
@@ -749,7 +749,22 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               </div>
 
               <Field label="Interview Duration">
-                <RadioGroup options={["30 minutes","45 minutes"]} value={`${interviewDuration} minutes`} onChange={(v) => setInterviewDuration(v.replace(" minutes",""))} />
+                <div style={{
+                  padding: "10px 14px",
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: "#4F46E5",
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontFamily: "var(--font-sans)",
+                }}>
+                  30 minutes
+                  <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 500 }}>(fixed)</span>
+                </div>
               </Field>
             </>
           )}

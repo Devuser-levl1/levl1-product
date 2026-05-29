@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model Agency {
+  id        String   @id @default(cuid())
+  name      String
+  website   String?
+  plan      String   @default("agency")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  positions Position[]
+  users     User[]
+}
+
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  role     String @default("recruiter")
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Position {
+  id                 String    @id @default(cuid())
+  title              String
+  company            String
+  department         String?
+  roleType           String    @default("IC")
+  experienceLevel    String
+  primaryDomain      String?
+  techStack          String[]
+  goodToHave         String[]
+  domainContext      String?
+  companyStage       String?
+  workMode           String    @default("hybrid")
+  interviewDuration  Int       @default(30)
+  status             String    @default("draft")
+  jdText             String?   @db.Text
+  jdApprovedBy       String?
+  jdApprovedAt       DateTime?
+  techLeadApproved   Boolean   @default(false)
+  hrApproved         Boolean   @default(false)
+  techLeadEmail      String?
+  hrEmail            String?
+  dynamicIntensity   String    @default("standard")
+  softSkillWeightage Json?
+  agencyId           String?
+  agency             Agency?   @relation(fields: [agencyId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  candidates     Candidate[]
+  questionSet    QuestionSet?
+  interviews     Interview[]
+  positionReport PositionReport?
+}
+
+model QuestionSet {
+  id                  String   @id @default(cuid())
+  positionId          String   @unique
+  position            Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  technicalQuestions  Json
+  scenarioQuestions   Json
+  behavioralQuestions Json
+  eqQuestions         Json
+  whiteboardQuestions Json
+  timeAllocation      Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Candidate {
+  id               String    @id @default(cuid())
+  name             String
+  email            String
+  phone            String?
+  linkedIn         String?
+  currentTitle     String?
+  currentCompany   String?
+  totalYears       Int?
+  topSkills        String[]
+  educationSummary String?
+  resumeText       String?   @db.Text
+  positionId       String
+  position         Position  @relation(fields: [positionId], references: [id])
+  status           String    @default("pending")
+  invitedAt        DateTime?
+  scheduledAt      DateTime?
+  interviewedAt    DateTime?
+  score            Int?
+  recommendation   String?
+  uploadedAt       DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  interview Interview?
+  report    Report?
+}
+
+model Interview {
+  id                String    @id @default(cuid())
+  candidateId       String    @unique
+  candidate         Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  positionId        String
+  position          Position  @relation(fields: [positionId], references: [id])
+  status            String    @default("scheduled")
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  duration          Int       @default(30)
+  actualDuration    Int?
+  agentOnline       Boolean   @default(false)
+  candidateJoined   Boolean   @default(false)
+  transcript        Json?
+  questionResponses Json?
+  codeEditorContent String?   @db.Text
+  whiteboardUrl     String?
+  runningScore      Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Report {
+  id                     String    @id @default(cuid())
+  candidateId            String    @unique
+  candidate              Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  overallScore           Int
+  recommendation         String
+  professionalSummary    String    @db.Text
+  sectionScores          Json
+  strengthAreas          Json
+  concernAreas           Json
+  questionWiseEvaluation Json
+  transcriptHighlights   Json
+  hrNote                 String    @db.Text
+  l2Recommendation       String    @db.Text
+  generatedAt            DateTime  @default(now())
+}
+
+model PositionReport {
+  id                   String   @id @default(cuid())
+  positionId           String   @unique
+  position             Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  poolStrengths        Json
+  poolGaps             Json
+  marketObservation    String   @db.Text
+  questionHealthFlags  Json
+  hiringRecommendation String   @db.Text
+  generatedAt          DateTime @default(now())
+}
