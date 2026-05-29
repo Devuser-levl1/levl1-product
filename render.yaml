@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: interviewcentral-web
+    runtime: node
+    rootDir: apps/web
+    buildCommand: npm install && npx prisma generate && npx prisma db push && npx prisma db seed && npm run build
+    startCommand: npm run start
+    envVars:
+      # Set these in the Render dashboard — never commit values to source control
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: NEXT_PUBLIC_ELEVENLABS_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_ELEVENLABS_VOICE_ID
+        sync: false
+      - key: NODE_ENV
+        value: production

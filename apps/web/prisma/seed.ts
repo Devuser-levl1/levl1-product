@@ -16,9 +16,18 @@ function daysFromNow(n: number, hour = 14, minute = 30): Date {
 }
 
 async function main() {
+  console.log('🌱 Checking database state...')
+
+  // ── Seed guard: skip entirely if data already exists ──────────────────
+  const existing = await prisma.agency.findFirst({ select: { id: true } })
+  if (existing) {
+    console.log('⏭️  Database already seeded (agency record found) — skipping.')
+    return
+  }
+
   console.log('🌱 Seeding database...')
 
-  // ── Clear existing data (respect FK constraints) ──────────────────────
+  // ── Clear any partial data (respect FK constraints) ───────────────────
   await prisma.positionReport.deleteMany()
   await prisma.report.deleteMany()
   await prisma.interview.deleteMany()
