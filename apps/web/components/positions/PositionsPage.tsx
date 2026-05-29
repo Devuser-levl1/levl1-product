@@ -5,6 +5,7 @@ import { useAppStore, Position } from "@/store/appStore";
 import { Plus, CheckCircle, Clock, Search } from "lucide-react";
 import NewPositionFlow from "./NewPositionFlow";
 import toast from "react-hot-toast";
+import { Tooltip, HelpIcon } from "@/components/ui/Tooltip";
 
 type FilterTab = "all" | Position["status"];
 
@@ -25,27 +26,24 @@ const STATUS_CFG = {
   closed:           { label: "Closed",           badge: "badge-danger"  },
 } as const;
 
-function ApprovalDot({ approved }: { approved: boolean }) {
+function ApprovalDot({ approved, role }: { approved: boolean; role: string }) {
+  const tip = approved
+    ? `${role} has approved the questions`
+    : `${role} approval pending — position cannot go live until approved`;
   return (
-    <div
-      title={approved ? "Approved" : "Pending"}
-      style={{
-        width: 18,
-        height: 18,
-        borderRadius: "50%",
-        background: approved ? "rgba(16,185,129,0.10)" : "#F1F5F9",
-        border: `1px solid ${approved ? "rgba(16,185,129,0.25)" : "#E2E8F0"}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {approved ? (
-        <CheckCircle size={10} color="#10B981" />
-      ) : (
-        <Clock size={10} color="#94A3B8" />
-      )}
-    </div>
+    <Tooltip content={tip} position="top">
+      <div
+        style={{
+          width: 18, height: 18, borderRadius: "50%",
+          background: approved ? "rgba(16,185,129,0.10)" : "#F1F5F9",
+          border: `1px solid ${approved ? "rgba(16,185,129,0.25)" : "#E2E8F0"}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "default",
+        }}
+      >
+        {approved ? <CheckCircle size={10} color="#10B981" /> : <Clock size={10} color="#94A3B8" />}
+      </div>
+    </Tooltip>
   );
 }
 
@@ -80,17 +78,25 @@ export default function PositionsPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
-            Positions
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
+              Positions
+            </h1>
+            <HelpIcon
+              content="Each position has a dedicated question set approved by your tech lead and HR. Once approved, every candidate for that role uses the same questions."
+              position="right"
+            />
+          </div>
           <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
             Manage open roles and track interview progress.
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowNewPositionFlow(true)}>
-          <Plus size={16} />
-          New Position
-        </button>
+        <Tooltip content="Claude AI generates tailored questions based on the JD and tech stack" position="left">
+          <button className="btn-primary" onClick={() => setShowNewPositionFlow(true)}>
+            <Plus size={16} />
+            New Position
+          </button>
+        </Tooltip>
       </div>
 
       {/* Controls */}
@@ -212,10 +218,10 @@ export default function PositionsPage() {
                   <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
                     {pos.experienceLevel}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                    <ApprovalDot approved={pos.approvals.techLead} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }} data-tour="positions-approval">
+                    <ApprovalDot approved={pos.approvals.techLead} role="Tech Lead" />
                     <span style={{ fontSize: 10, color: "#94A3B8" }}>Tech Lead</span>
-                    <ApprovalDot approved={pos.approvals.hr} />
+                    <ApprovalDot approved={pos.approvals.hr} role="HR" />
                     <span style={{ fontSize: 10, color: "#94A3B8" }}>HR</span>
                   </div>
                 </div>
@@ -264,7 +270,18 @@ export default function PositionsPage() {
 
                 {/* Status */}
                 <div>
-                  <span className={`badge ${cfg.badge}`}>{cfg.label}</span>
+                  <Tooltip
+                    content={
+                      pos.status === "active"           ? "Live — candidates can be invited to interview" :
+                      pos.status === "pending_approval" ? "Awaiting tech lead or HR approval before going live" :
+                      pos.status === "draft"            ? "Still being set up — questions not yet generated" :
+                      pos.status === "paused"           ? "Interviews paused — no new invites will be sent" :
+                                                          "Role filled or cancelled — no more interviews"
+                    }
+                    position="left"
+                  >
+                    <span className={`badge ${cfg.badge}`} style={{ cursor: "default" }}>{cfg.label}</span>
+                  </Tooltip>
                 </div>
 
                 {/* Progress */}

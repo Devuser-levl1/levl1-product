@@ -15,7 +15,10 @@ import {
   Zap,
   Plus,
   Upload,
+  LifeBuoy,
 } from "lucide-react";
+import { useState } from "react";
+import { SupportModal } from "@/components/ui/SupportModal";
 
 interface NavItem {
   section: NavSection;
@@ -39,6 +42,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { activeSection, setActiveSection, sidebarCollapsed, toggleSidebar, setShowNewPositionFlow, setShowUploadFlow } =
     useAppStore();
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const sidebarWidth = sidebarCollapsed ? 64 : 240;
 
@@ -59,8 +63,11 @@ export default function Sidebar() {
         flexDirection: "column",
       }}
     >
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
+
       {/* ── Brand ── */}
       <button
+        data-tour="logo"
         onClick={() => { setActiveSection("dashboard"); router.push("/dashboard"); }}
         style={{
           height: 64,
@@ -141,6 +148,7 @@ export default function Sidebar() {
       >
         {/* New Position CTA */}
         <button
+          data-tour="new-position"
           onClick={() => {
             setActiveSection("positions");
             setShowNewPositionFlow(true);
@@ -254,6 +262,7 @@ export default function Sidebar() {
             return (
               <button
                 key={section}
+                data-tour={`nav-${section}`}
                 className={`sidebar-link${isActive ? " active" : ""}`}
                 onClick={() => setActiveSection(section)}
                 title={sidebarCollapsed ? label : undefined}
@@ -408,6 +417,47 @@ export default function Sidebar() {
             </motion.button>
           )}
         </AnimatePresence>
+
+        {/* Help & Support */}
+        <button
+          onClick={() => setSupportOpen(true)}
+          title={sidebarCollapsed ? "Help & Support" : undefined}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: sidebarCollapsed ? "center" : "flex-start",
+            gap: 8,
+            padding: sidebarCollapsed ? "7px" : "7px 10px",
+            borderRadius: 8,
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "rgba(255,255,255,0.55)",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 500,
+            fontFamily: "var(--font-sans)",
+            transition: "all 0.15s",
+            minHeight: 34,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.85)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+          }}
+        >
+          <LifeBuoy size={14} style={{ flexShrink: 0 }} />
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} style={{ whiteSpace: "nowrap" }}>
+                Help &amp; Support
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
 
         {/* Collapse toggle */}
         <button

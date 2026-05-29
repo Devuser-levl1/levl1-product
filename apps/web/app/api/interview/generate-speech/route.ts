@@ -1,34 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getVoiceId } from '@/lib/voiceOptions'
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, voiceId } = await req.json()
+    const { text, voiceId, voiceAccent } = await req.json()
 
-    // ── DEBUG ─────────────────────────────────────────────────────────
-    console.log('[generate-speech] called, text length:', text?.length ?? 0)
-    console.log('[generate-speech] ELEVENLABS_API_KEY present:', !!process.env.ELEVENLABS_API_KEY)
-    console.log('[generate-speech] ELEVENLABS_VOICE_ID:', process.env.ELEVENLABS_VOICE_ID)
-    // ─────────────────────────────────────────────────────────────────
-
-    // Server-side API routes must use non-NEXT_PUBLIC_ env vars —
-    // NEXT_PUBLIC_ vars are only guaranteed to be inlined in the browser bundle.
     const apiKey = process.env.ELEVENLABS_API_KEY
-
     if (!apiKey) {
-      console.error('[generate-speech] ELEVENLABS_API_KEY is not set in environment')
+      console.error('[generate-speech] ELEVENLABS_API_KEY is not set')
       return NextResponse.json(
         { error: 'ElevenLabs API key not configured on server' },
         { status: 500 }
       )
     }
 
-    // Prefer voiceId from the request body, then server env var, then a safe default
+    // Priority: explicit voiceId in request → voiceAccent key → env var → Rachel fallback
     const vid =
       voiceId ||
+      (voiceAccent ? getVoiceId(voiceAccent) : null) ||
       process.env.ELEVENLABS_VOICE_ID ||
-      '21m00Tcm4TlvDq8ikWAM' // ElevenLabs "Rachel" — always available
+      '21m00Tcm4TlvDq8ikWAM' // Rachel — always available
 
-    console.log('[generate-speech] Using voice ID:', vid)
+    console.log('[generate-speech] text length:', text?.length ?? 0, 'voice:', vid)
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${vid}`,
@@ -47,11 +40,9 @@ export async function POST(req: NextRequest) {
       }
     )
 
-    console.log('[generate-speech] ElevenLabs response status:', response.status)
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[generate-speech] ElevenLabs API error:', response.status, errorText)
+      console.error('[generate-speech] ElevenLabs error:', response.status, errorText)
       return NextResponse.json(
         { error: `ElevenLabs returned ${response.status}`, detail: errorText },
         { status: response.status }
@@ -59,7 +50,6 @@ export async function POST(req: NextRequest) {
     }
 
     const audioBuffer = await response.arrayBuffer()
-    console.log('[generate-speech] Returning audio buffer, byteLength:', audioBuffer.byteLength)
 
     return new NextResponse(audioBuffer, {
       headers: {
@@ -70,9 +60,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[generate-speech] Unexpected error:', err)
-    return NextResponse.json(
-      { error: String(err) },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }

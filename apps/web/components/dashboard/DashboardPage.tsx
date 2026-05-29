@@ -5,6 +5,7 @@ import { useAppStore, Candidate } from "@/store/appStore";
 import { Briefcase, Users, Video, TrendingUp, ArrowRight, Play, Monitor } from "lucide-react";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
 import { useRouter } from "next/navigation";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 function StatCard({
   icon: Icon,
@@ -232,41 +233,45 @@ export default function DashboardPage() {
 
                     {/* Action buttons */}
                     <div style={{ display: "flex", gap: 7 }}>
-                      <button
-                        onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}
-                        style={{
-                          flex: 1,
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                          background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-                          border: "none", borderRadius: 7, color: "#fff",
-                          fontSize: 12, fontWeight: 700, padding: "7px 10px",
-                          cursor: "pointer",
-                          boxShadow: "0 3px 10px rgba(124,58,237,0.28)",
-                          transition: "all 0.15s",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 5px 14px rgba(124,58,237,0.42)" }}
-                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 3px 10px rgba(124,58,237,0.28)" }}
-                      >
-                        <Play size={11} fill="white" strokeWidth={0} />
-                        Start
-                      </button>
-                      <button
-                        onClick={() => window.open(`/interview/${iv.id}/monitor`, "_blank")}
-                        style={{
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                          background: "rgba(124,58,237,0.08)",
-                          border: "1px solid rgba(124,58,237,0.22)",
-                          borderRadius: 7, color: "#7C3AED",
-                          fontSize: 12, fontWeight: 700, padding: "7px 12px",
-                          cursor: "pointer", whiteSpace: "nowrap",
-                          transition: "background 0.15s",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)" }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.08)" }}
-                      >
-                        <Monitor size={11} />
-                        Monitor
-                      </button>
+                      <Tooltip content="Launch the AI interview room for this candidate" position="top">
+                        <button
+                          onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}
+                          style={{
+                            flex: 1,
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                            background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                            border: "none", borderRadius: 7, color: "#fff",
+                            fontSize: 12, fontWeight: 700, padding: "7px 10px",
+                            cursor: "pointer",
+                            boxShadow: "0 3px 10px rgba(124,58,237,0.28)",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 5px 14px rgba(124,58,237,0.42)" }}
+                          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 3px 10px rgba(124,58,237,0.28)" }}
+                        >
+                          <Play size={11} fill="white" strokeWidth={0} />
+                          Start
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Watch the live transcript and scores in a separate tab" position="top">
+                        <button
+                          onClick={() => window.open(`/interview/${iv.id}/monitor`, "_blank")}
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                            background: "rgba(124,58,237,0.08)",
+                            border: "1px solid rgba(124,58,237,0.22)",
+                            borderRadius: 7, color: "#7C3AED",
+                            fontSize: 12, fontWeight: 700, padding: "7px 12px",
+                            cursor: "pointer", whiteSpace: "nowrap",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)" }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.08)" }}
+                        >
+                          <Monitor size={11} />
+                          Monitor
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
                 );
@@ -352,13 +357,25 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                      <div className="font-mono" style={{ fontSize: 18, fontWeight: 800, color: "#4F46E5", lineHeight: 1 }}>
-                        {c.score}
-                      </div>
-                      {rec && (
-                        <div style={{ fontSize: 10, fontWeight: 700, color: rec.color, letterSpacing: "0.03em" }}>
-                          {rec.label}
+                      <Tooltip content="Composite score across all interview sections (0–100)" position="left">
+                        <div className="font-mono" style={{ fontSize: 18, fontWeight: 800, color: "#4F46E5", lineHeight: 1, cursor: "default" }}>
+                          {c.score}
                         </div>
+                      </Tooltip>
+                      {rec && (
+                        <Tooltip
+                          content={
+                            c.recommendation === "strong_yes" ? "Strong Yes — top 15% of candidates" :
+                            c.recommendation === "yes"        ? "Yes — clear hire recommendation" :
+                            c.recommendation === "maybe"      ? "Maybe — further assessment recommended" :
+                                                                "No — does not meet the bar for this role"
+                          }
+                          position="left"
+                        >
+                          <div style={{ fontSize: 10, fontWeight: 700, color: rec.color, letterSpacing: "0.03em", cursor: "default" }}>
+                            {rec.label}
+                          </div>
+                        </Tooltip>
                       )}
                     </div>
                   </div>

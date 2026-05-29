@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Settings, Bell, Mic, Users, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, Bell, Mic, Users, ChevronRight, Play, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
+import { restartTour } from "@/components/ui/ProductTour";
 
 function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
   return (
@@ -37,25 +39,18 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       style={{
         width: 44, height: 24, borderRadius: 100,
         background: checked ? "#7C3AED" : "#E2E8F0",
-        border: "none",
-        cursor: "pointer",
-        transition: "all 0.2s",
-        position: "relative",
-        flexShrink: 0,
+        border: "none", cursor: "pointer", transition: "all 0.2s",
+        position: "relative", flexShrink: 0,
         boxShadow: checked ? "0 2px 8px rgba(124,58,237,0.30)" : "none",
       }}
     >
-      <div
-        style={{
-          position: "absolute", top: 3,
-          left: checked ? 22 : 3,
-          width: 18, height: 18,
-          borderRadius: "50%",
-          background: "#fff",
-          transition: "left 0.2s",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
-        }}
-      />
+      <div style={{
+        position: "absolute", top: 3,
+        left: checked ? 22 : 3,
+        width: 18, height: 18, borderRadius: "50%",
+        background: "#fff", transition: "left 0.2s",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
+      }} />
     </button>
   );
 }
@@ -73,17 +68,9 @@ function ToggleRow({ label, sub, checked, onChange }: { label: string; sub?: str
 }
 
 const SELECT_STYLE: React.CSSProperties = {
-  background: "#F8FAFC",
-  border: "1px solid #E2E8F0",
-  borderRadius: 8,
-  padding: "10px 14px",
-  fontSize: 14,
-  color: "#4F46E5",
-  fontFamily: "var(--font-sans)",
-  cursor: "pointer",
-  outline: "none",
-  width: "100%",
-  fontWeight: 500,
+  background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8,
+  padding: "10px 14px", fontSize: 14, color: "#4F46E5", fontFamily: "var(--font-sans)",
+  cursor: "pointer", outline: "none", width: "100%", fontWeight: 500,
 };
 
 export default function SettingsPage() {
@@ -97,9 +84,67 @@ export default function SettingsPage() {
   const [notifCompletion, setNotifCompletion] = useState(true);
 
   const [defaultDuration, setDefaultDuration] = useState("30");
-  const [defaultLanguage, setDefaultLanguage] = useState("en");
   const [recordTranscript, setRecordTranscript] = useState(true);
   const [autoScore,         setAutoScore]       = useState(true);
+
+  // Voice & Accent
+  const [voiceAccent,    setVoiceAccent]    = useState("american");
+  const [previewLoading, setPreviewLoading] = useState<string | null>(null);
+  const [savingVoice,    setSavingVoice]    = useState(false);
+
+  // Load current agency voice on mount
+  useEffect(() => {
+    fetch("/api/agency/voice")
+      .then((r) => r.json())
+      .then((d) => { if (d.voiceAccent) setVoiceAccent(d.voiceAccent); })
+      .catch(() => {});
+  }, []);
+
+  const previewVoice = async (key: string) => {
+    if (previewLoading) return;
+    setPreviewLoading(key);
+    const option = getVoiceOption(key);
+    try {
+      const res = await fetch("/api/interview/generate-speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `Hi, I am ${option.interviewerName}, your AI interviewer for today. Let us get started.`,
+          voiceAccent: key,
+        }),
+      });
+      if (res.ok) {
+        const buf = await res.arrayBuffer();
+        const audio = new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" })));
+        audio.play();
+      } else {
+        toast.error("Preview unavailable");
+      }
+    } catch {
+      toast.error("Preview failed");
+    } finally {
+      setPreviewLoading(null);
+    }
+  };
+
+  const saveVoiceSettings = async () => {
+    setSavingVoice(true);
+    try {
+      const res = await fetch("/api/agency/voice", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voiceAccent }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      toast.success("Voice settings saved");
+    } catch {
+      toast.error("Failed to save voice settings");
+    } finally {
+      setSavingVoice(false);
+    }
+  };
+
+  const selectedOption = getVoiceOption(voiceAccent);
 
   return (
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 760 }}>
@@ -129,6 +174,89 @@ export default function SettingsPage() {
         </Field>
       </Section>
 
+      {/* Voice & Accent */}
+      <Section icon={Mic} title="Voice &amp; Accent" description="Default AI interviewer voice for all interviews">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {VOICE_OPTIONS.map((v) => (
+            <div
+              key={v.key}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "12px 14px", borderRadius: 10,
+                border: `1.5px solid ${voiceAccent === v.key ? "rgba(124,58,237,0.35)" : "#E2E8F0"}`,
+                background: voiceAccent === v.key ? "rgba(124,58,237,0.05)" : "#F8FAFC",
+                cursor: "pointer", transition: "all 0.15s",
+              }}
+              onClick={() => setVoiceAccent(v.key)}
+            >
+              {/* Radio */}
+              <div style={{
+                width: 18, height: 18, borderRadius: "50%",
+                border: `2px solid ${voiceAccent === v.key ? "#7C3AED" : "#CBD5E1"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "border-color 0.15s",
+              }}>
+                {voiceAccent === v.key && (
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#7C3AED" }} />
+                )}
+              </div>
+
+              {/* Flag + name */}
+              <span style={{ fontSize: 20, flexShrink: 0 }}>{v.flag}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "#6D28D9" : "#4F46E5" }}>
+                  {v.accent}
+                </div>
+                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{v.description}</div>
+              </div>
+
+              {/* Preview button */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); previewVoice(v.key); }}
+                disabled={!!previewLoading}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 12px", borderRadius: 7,
+                  border: "1px solid rgba(124,58,237,0.20)",
+                  background: "rgba(124,58,237,0.07)", color: "#7C3AED",
+                  fontSize: 12, fontWeight: 600, cursor: previewLoading ? "wait" : "pointer",
+                  fontFamily: "var(--font-sans)", flexShrink: 0, transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.07)"; }}
+              >
+                {previewLoading === v.key
+                  ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+                  : <Play size={11} fill="#7C3AED" />
+                }
+                Preview
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Interviewer name display */}
+        <div style={{
+          marginTop: 4, padding: "12px 16px",
+          background: "rgba(124,58,237,0.05)",
+          border: "1px solid rgba(124,58,237,0.15)",
+          borderRadius: 8, fontSize: 13, color: "#475569",
+        }}>
+          Your AI interviewer will introduce as:{" "}
+          <strong style={{ color: "#7C3AED" }}>{selectedOption.interviewerName}</strong>
+        </div>
+
+        <button
+          onClick={saveVoiceSettings}
+          disabled={savingVoice}
+          className="btn-navy"
+          style={{ alignSelf: "flex-start", fontSize: 13 }}
+        >
+          {savingVoice ? "Saving…" : "Save Voice Settings"}
+        </button>
+      </Section>
+
       {/* Notifications */}
       <Section icon={Bell} title="Notifications" description="Choose when and how you get notified">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -153,13 +281,6 @@ export default function SettingsPage() {
               <option value="60">60 minutes</option>
             </select>
           </Field>
-          <Field label="Language">
-            <select value={defaultLanguage} onChange={(e) => setDefaultLanguage(e.target.value)} style={SELECT_STYLE}>
-              <option value="en">English</option>
-              <option value="hi">Hindi</option>
-              <option value="en-in">English (India)</option>
-            </select>
-          </Field>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <ToggleRow label="Auto-generate transcript"   sub="Save a full text transcript of each interview"             checked={recordTranscript} onChange={setRecordTranscript} />
@@ -175,26 +296,9 @@ export default function SettingsPage() {
           { name: "HR Manager",       email: "hr@levl1.ai",   role: "HR"       },
           { name: "Tech Lead",        email: "tech@levl1.ai", role: "Reviewer" },
         ].map((member) => (
-          <div
-            key={member.email}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "10px 0",
-              borderBottom: "1px solid #F1F5F9",
-            }}
-          >
+          <div key={member.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))",
-                  border: "1px solid rgba(124,58,237,0.20)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700, color: "#6D28D9",
-                }}
-              >
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))", border: "1px solid rgba(124,58,237,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#6D28D9" }}>
                 {member.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div>
@@ -204,10 +308,7 @@ export default function SettingsPage() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span className="badge badge-muted">{member.role}</span>
-              <button
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", padding: 4 }}
-                onClick={() => toast(`Manage ${member.name}`)}
-              >
+              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", padding: 4 }} onClick={() => toast(`Manage ${member.name}`)}>
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -225,6 +326,13 @@ export default function SettingsPage() {
         </button>
         <button className="btn-ghost" onClick={() => toast("Changes discarded")}>
           Discard
+        </button>
+        <button
+          className="btn-ghost"
+          onClick={restartTour}
+          style={{ marginLeft: "auto", fontSize: 13, color: "#94A3B8" }}
+        >
+          Restart product tour
         </button>
       </div>
     </div>

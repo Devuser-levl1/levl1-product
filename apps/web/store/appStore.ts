@@ -16,6 +16,7 @@ export interface Position {
   approvals: { techLead: boolean; hr: boolean }
   interviewDuration?: number
   dynamicQuestionIntensity?: 'light' | 'standard' | 'deep'
+  voiceAccent?: string
 }
 
 export interface Candidate {

@@ -6,9 +6,10 @@ import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
   RefreshCw, Loader2, FileText, Upload, Clipboard,
   Mail, AlertCircle, CheckCircle2, Sparkles,
-  ChevronDown, ChevronUp, Edit3,
+  ChevronDown, ChevronUp, Edit3, Play,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -399,6 +400,10 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // Live Dynamic Questions
   const [dynamicIntensity, setDynamicIntensity] = useState<"light" | "standard" | "deep">("standard");
 
+  // Voice accent override for this position (null = use account default)
+  const [voiceAccent, setVoiceAccent] = useState<string | null>(null);
+  const [previewingVoice, setPreviewingVoice] = useState(false);
+
   // Derived
   const finalJD = jdTab === "generate" ? generatedJD : pastedJD;
 
@@ -618,6 +623,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       approvals: { techLead: true, hr: true },
       interviewDuration: Number(interviewDuration),
       dynamicQuestionIntensity: dynamicIntensity,
+      voiceAccent: voiceAccent ?? undefined,
     });
     setStep(7);
   };
@@ -766,6 +772,96 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 500 }}>(fixed)</span>
                 </div>
               </Field>
+
+              {/* ── Voice accent override ── */}
+              <div>
+                <FieldLabel
+                  label="Interviewer Voice"
+                  hint="Optional — overrides your account default for this position only"
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
+                  {/* Use account default option */}
+                  <label style={{
+                    display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                    padding: "9px 12px", borderRadius: 8,
+                    border: `1px solid ${voiceAccent === null ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`,
+                    background: voiceAccent === null ? "rgba(124,58,237,0.06)" : "#F8FAFC",
+                    transition: "all 0.12s",
+                  }}>
+                    <input
+                      type="radio" name="posVoice" checked={voiceAccent === null}
+                      onChange={() => setVoiceAccent(null)}
+                      style={{ accentColor: "#7C3AED", flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: 13, color: voiceAccent === null ? "#6D28D9" : "#475569", fontWeight: voiceAccent === null ? 600 : 400 }}>
+                      Use account default
+                    </span>
+                  </label>
+
+                  {VOICE_OPTIONS.map((v) => (
+                    <label key={v.key} style={{
+                      display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                      padding: "9px 12px", borderRadius: 8,
+                      border: `1px solid ${voiceAccent === v.key ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`,
+                      background: voiceAccent === v.key ? "rgba(124,58,237,0.06)" : "#F8FAFC",
+                      transition: "all 0.12s",
+                    }}>
+                      <input
+                        type="radio" name="posVoice" value={v.key}
+                        checked={voiceAccent === v.key}
+                        onChange={() => setVoiceAccent(v.key)}
+                        style={{ accentColor: "#7C3AED", flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: 16 }}>{v.flag}</span>
+                      <span style={{ fontSize: 13, color: voiceAccent === v.key ? "#6D28D9" : "#475569", fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>
+                        {v.accent}
+                      </span>
+                      <span style={{ fontSize: 11, color: "#94A3B8" }}>
+                        Interviewer: <strong style={{ color: "#7C3AED" }}>{v.interviewerName}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (previewingVoice) return;
+                          setPreviewingVoice(true);
+                          try {
+                            const res = await fetch("/api/interview/generate-speech", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                text: `Hi, I am ${v.interviewerName}, your AI interviewer for today. Let us get started.`,
+                                voiceAccent: v.key,
+                              }),
+                            });
+                            if (res.ok) {
+                              const buf = await res.arrayBuffer();
+                              const audio = new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" })));
+                              audio.play();
+                            }
+                          } catch {}
+                          setPreviewingVoice(false);
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 4,
+                          padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(124,58,237,0.20)",
+                          background: "rgba(124,58,237,0.07)", color: "#7C3AED",
+                          fontSize: 11, fontWeight: 600, cursor: previewingVoice ? "wait" : "pointer",
+                          fontFamily: "var(--font-sans)", flexShrink: 0,
+                        }}
+                      >
+                        <Play size={10} fill="#7C3AED" /> Preview
+                      </button>
+                    </label>
+                  ))}
+
+                  {(voiceAccent ?? "american") && (
+                    <div style={{ fontSize: 12, color: "#7C3AED", fontWeight: 500, padding: "4px 4px 0" }}>
+                      Your AI interviewer will introduce as: <strong>{getVoiceOption(voiceAccent).interviewerName}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           )}
 
