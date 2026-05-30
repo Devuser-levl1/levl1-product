@@ -308,7 +308,7 @@ export default function CandidatesPage() {
         )}
 
         {/* Kanban */}
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
+        <div className="candidates-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
           {COLUMNS.map((col) => {
             const cards = byColumn[col.key] ?? [];
             return (
@@ -350,6 +350,16 @@ export default function CandidatesPage() {
           })}
         </div>
       </div>
+    <style>{`
+      @media (max-width: 768px) {
+        /* Kanban board: horizontal scroll instead of fixed columns */
+        .candidates-kanban {
+          grid-template-columns: repeat(${COLUMNS.length}, 280px) !important;
+          overflow-x: auto !important;
+          padding-bottom: 16px;
+        }
+      }
+    `}</style>
     </>
   );
 }

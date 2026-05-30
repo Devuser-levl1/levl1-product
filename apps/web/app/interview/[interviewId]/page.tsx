@@ -1009,7 +1009,7 @@ export default function InterviewPage() {
         )}
 
         {/* ── AI + Question row ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, alignItems: 'start' }}>
+        <div className="interview-ai-question-row" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, alignItems: 'start' }}>
 
           {/* AI Interviewer Panel — premium visualizer */}
           <AIVisualizer
@@ -1175,7 +1175,7 @@ export default function InterviewPage() {
 
         {/* Code Editor panel */}
         {showCode && (
-          <div style={{ borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
+          <div className="interview-monaco-wrapper" style={{ borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
             <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center' }}>
               <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
               {(['javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
@@ -1201,7 +1201,7 @@ export default function InterviewPage() {
 
         {/* Whiteboard panel */}
         {showWhiteboard && (
-          <div style={{ maxHeight: 320, overflow: 'hidden' }}>
+          <div className="interview-whiteboard" style={{ maxHeight: 320, overflow: 'hidden' }}>
             <Whiteboard onExport={handleWhiteboardExport} />
           </div>
         )}
@@ -1306,6 +1306,29 @@ export default function InterviewPage() {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        /* ── Mobile: single-column interview room ── */
+        @media (max-width: 768px) {
+          .interview-ai-question-row {
+            grid-template-columns: 1fr !important;
+          }
+          .interview-whiteboard {
+            display: none !important;
+          }
+          .interview-monaco-wrapper {
+            display: none !important;
+          }
+          /* Larger mic button on mobile */
+          .interview-mic-btn {
+            width: 64px !important;
+            height: 64px !important;
+          }
+          /* Reduce page padding */
+          .interview-room-page {
+            padding: 8px 12px !important;
+            gap: 10px !important;
+          }
         }
       `}</style>
     </div>

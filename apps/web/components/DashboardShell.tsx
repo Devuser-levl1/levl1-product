@@ -12,6 +12,8 @@ import ReportsPage from "./reports/ReportsPage";
 import SettingsPage from "./settings/SettingsPage";
 import { ProductTour } from "./ui/ProductTour";
 import { FeedbackWidget } from "./ui/FeedbackWidget";
+import { BottomNav } from "./layout/BottomNav";
+import { InstallPrompt } from "./ui/InstallPrompt";
 
 const SIDEBAR_EXPANDED  = 240;
 const SIDEBAR_COLLAPSED = 64;
@@ -41,8 +43,13 @@ export default function DashboardShell() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
-      <Sidebar />
+      {/* Sidebar: hidden on mobile via CSS [data-sidebar] selector */}
+      <div data-sidebar>
+        <Sidebar />
+      </div>
+
       <main
+        data-main-content
         style={{
           flex: 1,
           marginLeft: ml,
@@ -52,6 +59,7 @@ export default function DashboardShell() {
           display: "flex",
           flexDirection: "column",
         }}
+        className="mobile-nav-pad"
       >
         <Header />
         <div style={{ flex: 1 }}>
@@ -62,6 +70,8 @@ export default function DashboardShell() {
       {/* Global overlays */}
       <ProductTour onOpenNewPosition={handleOpenNewPosition} />
       <FeedbackWidget />
+      <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }

@@ -125,6 +125,7 @@ export default function LoginPage() {
 
   return (
     <div
+      className="login-grid"
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
@@ -437,8 +438,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── RIGHT: Photo panel ── */}
+      {/* ── RIGHT: Photo panel (hidden on mobile) ── */}
       <div
+        className="login-right-panel"
         style={{
           position: "relative",
           overflow: "hidden",
@@ -552,6 +554,17 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .login-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .login-right-panel {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

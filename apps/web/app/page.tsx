@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { X } from "lucide-react";
+import { X, Menu } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────── */
 /*  CONTACT MODAL                                                           */
@@ -270,6 +270,7 @@ function scrollToId(id: string) {
 export default function LandingPage() {
   const [showModal, setShowModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -337,6 +338,7 @@ export default function LandingPage() {
         }}
       >
         <div
+          className="landing-header-inner"
           style={{
             maxWidth: 1200,
             margin: "0 auto",
@@ -358,13 +360,15 @@ export default function LandingPage() {
               color: "#0F172A",
               letterSpacing: "-0.02em",
               textDecoration: "none",
+              flexShrink: 0,
             }}
           >
             Levl<span style={{ color: "#7C3AED" }}>1</span>
           </Link>
 
-          {/* Center links */}
+          {/* Center links — hidden on mobile */}
           <nav
+            className="landing-nav-links"
             style={{
               display: "flex",
               alignItems: "center",
@@ -390,6 +394,7 @@ export default function LandingPage() {
                   fontFamily: "var(--font-sans)",
                   padding: 0,
                   transition: "color 0.15s",
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#4F46E5")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
@@ -399,8 +404,8 @@ export default function LandingPage() {
             ))}
           </nav>
 
-          {/* CTAs */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* CTAs — hidden on mobile */}
+          <div className="landing-nav-ctas" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
             <Link
               href="/login"
               style={{
@@ -413,6 +418,7 @@ export default function LandingPage() {
                 borderRadius: 9,
                 background: "#fff",
                 transition: "all 0.15s",
+                whiteSpace: "nowrap",
               }}
             >
               Sign in
@@ -431,13 +437,185 @@ export default function LandingPage() {
                 fontFamily: "var(--font-sans)",
                 boxShadow: "0 4px 14px rgba(79,70,229,0.28)",
                 transition: "all 0.15s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Book a Demo
+            </button>
+          </div>
+
+          {/* Hamburger — shown only on mobile */}
+          <button
+            className="landing-hamburger"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            style={{
+              display: "none",
+              width: 40,
+              height: 40,
+              alignItems: "center",
+              justifyContent: "center",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#4F46E5",
+              flexShrink: 0,
+              padding: 0,
+            }}
+          >
+            <Menu size={24} strokeWidth={2} />
+          </button>
+        </div>
+      </header>
+
+      {/* ── MOBILE MENU OVERLAY ────────────────────────────────────────── */}
+      {menuOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            animation: "slideDown 0.22s cubic-bezier(0.4,0,0.2,1)",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMenuOpen(false);
+          }}
+        >
+          {/* Mobile menu header */}
+          <div
+            style={{
+              height: 68,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 20px",
+              borderBottom: "1px solid #F1F5F9",
+              flexShrink: 0,
+            }}
+          >
+            <Link
+              href="/"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#0F172A",
+                letterSpacing: "-0.02em",
+                textDecoration: "none",
+              }}
+            >
+              Levl<span style={{ color: "#7C3AED" }}>1</span>
+            </Link>
+            <button
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
+              style={{
+                width: 40,
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#4F46E5",
+                padding: 0,
+              }}
+            >
+              <X size={24} strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Nav links */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {[
+              { label: "How it Works", id: "how-it-works" },
+              { label: "For Agencies", id: "agencies" },
+              { label: "For Enterprise", id: "enterprise" },
+              { label: "Pricing", id: "pricing" },
+            ].map((l) => (
+              <button
+                key={l.id}
+                onClick={() => { setMenuOpen(false); scrollToId(l.id); }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "100%",
+                  height: 56,
+                  padding: "0 20px",
+                  fontSize: 18,
+                  fontWeight: 500,
+                  color: "#1E293B",
+                  background: "none",
+                  border: "none",
+                  borderBottom: "1px solid #F1F5F9",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  textAlign: "left",
+                  transition: "color 0.15s, background 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#4F46E5"; e.currentTarget.style.background = "#F8FAFF"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#1E293B"; e.currentTarget.style.background = "none"; }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+
+          {/* CTA buttons at bottom */}
+          <div
+            style={{
+              padding: 20,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              borderTop: "1px solid #F1F5F9",
+              flexShrink: 0,
+            }}
+          >
+            <Link
+              href="/login"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: 52,
+                fontSize: 16,
+                fontWeight: 600,
+                color: "#4F46E5",
+                textDecoration: "none",
+                border: "1px solid #E2E8F0",
+                borderRadius: 10,
+                background: "#fff",
+              }}
+            >
+              Sign In
+            </Link>
+            <button
+              onClick={() => { setMenuOpen(false); setShowModal(true); }}
+              style={{
+                height: 52,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#fff",
+                background: "#4F46E5",
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                boxShadow: "0 4px 14px rgba(79,70,229,0.28)",
               }}
             >
               Book a Demo
             </button>
           </div>
         </div>
-      </header>
+      )}
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section
@@ -2202,6 +2380,41 @@ export default function LandingPage() {
           .how-arrow {
             display: none !important;
           }
+        }
+
+        /* ── Slide-down animation for mobile menu ─────────────────── */
+        @keyframes slideDown {
+          from { transform: translateY(-100%); opacity: 0; }
+          to   { transform: translateY(0);     opacity: 1; }
+        }
+
+        /* ── Mobile ≤ 768px ───────────────────────────────────────── */
+        @media (max-width: 768px) {
+          /* Nav: hide links + CTAs, show hamburger */
+          .landing-nav-links { display: none !important; }
+          .landing-nav-ctas  { display: none !important; }
+          .landing-hamburger { display: flex !important; }
+
+          /* Reduce header padding */
+          .landing-header-inner { padding: 0 16px !important; }
+
+          /* Hero */
+          .hero-grid { gap: 32px !important; }
+          .hero-grid > div:first-child h1 { font-size: 34px !important; }
+          .hero-grid > div:last-child { display: none !important; } /* hide illustration */
+
+          /* Sections */
+          section { padding: 48px 16px !important; }
+
+          /* Pricing cards: scroll horizontally */
+          .pricing-grid { overflow-x: auto; flex-wrap: nowrap !important; }
+
+          /* Footer */
+          .footer-grid { gap: 24px !important; }
+
+          /* General padding reduction */
+          [style*="padding: 80px"] { padding: 48px 16px !important; }
+          [style*="padding: 100px"] { padding: 48px 16px !important; }
         }
       `}</style>
     </div>

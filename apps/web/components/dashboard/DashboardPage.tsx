@@ -152,7 +152,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+      <div className="dash-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
         <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#7C3AED" onClick={() => setActiveSection("positions")} />
         <StatCard icon={Users}       label="Candidates"         value={totalCandidates}      sub={`${topCandidates.length} interviews completed`} accentColor="#10B981" onClick={() => setActiveSection("candidates")} />
         <StatCard icon={Video}       label="Upcoming"           value={upcomingInterviews.length} sub="Interviews scheduled"                      accentColor="#F59E0B" onClick={() => setActiveSection("interviews")} />
@@ -160,7 +160,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Middle row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="dash-mid-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
 
         {/* Upcoming Interviews */}
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -453,6 +453,15 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+
+    <style>{`
+      @media (max-width: 768px) {
+        /* 4-col stat grid → 2×2 */
+        .dash-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        /* Side-by-side cards → stacked */
+        .dash-mid-grid   { grid-template-columns: 1fr !important; }
+      }
+    `}</style>
     </>
   );
 }

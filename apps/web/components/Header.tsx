@@ -82,8 +82,8 @@ export default function Header() {
         boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
       }}
     >
-      {/* Search */}
-      <div style={{ flex: 1, maxWidth: 400 }}>
+      {/* Search — hidden on mobile to save space */}
+      <div className="header-search" style={{ flex: 1, maxWidth: 400 }}>
         <button
           onClick={() => toast("Search coming soon")}
           style={{
@@ -109,7 +109,7 @@ export default function Header() {
       </div>
 
       {/* Right side controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
 
         {/* Notifications bell */}
         <div ref={notifsRef} style={{ position: "relative" }}>
@@ -137,7 +137,7 @@ export default function Header() {
           </button>
 
           {showNotifs && (
-            <div style={{
+            <div className="header-notif-panel" style={{
               position: "absolute", top: "calc(100% + 8px)", right: 0,
               width: 340, background: "#fff",
               border: "1px solid #E2E8F0", borderRadius: 14,
@@ -200,11 +200,11 @@ export default function Header() {
             }}>
               AM
             </div>
-            <div style={{ textAlign: "left" }}>
+            <div className="header-user-text" style={{ textAlign: "left" }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", lineHeight: 1.2 }}>Abhijit M.</div>
               <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.2 }}>Admin</div>
             </div>
-            <ChevronDown size={13} color="#94A3B8" />
+            <ChevronDown className="header-user-chevron" size={13} color="#94A3B8" />
           </button>
 
           {showUser && (

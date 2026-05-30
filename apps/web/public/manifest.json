@@ -1,0 +1,40 @@
+{
+  "name": "Levl1 — AI Interview Platform",
+  "short_name": "Levl1",
+  "description": "Conduct AI-powered technical interviews at scale",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0F0F1A",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your interview dashboard"
+    },
+    {
+      "name": "Candidates",
+      "url": "/candidates",
+      "description": "Manage candidates"
+    }
+  ]
+}

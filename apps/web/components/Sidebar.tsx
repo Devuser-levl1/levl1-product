@@ -48,6 +48,7 @@ export default function Sidebar() {
 
   return (
     <motion.aside
+      className="desktop-only app-sidebar"
       animate={{ width: sidebarWidth }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       style={{
