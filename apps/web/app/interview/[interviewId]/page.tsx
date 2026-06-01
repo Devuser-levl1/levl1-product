@@ -466,17 +466,36 @@ export default function InterviewPage() {
 
     if (!isMountedRef.current) return
 
-    // Browser TTS fallback
+    // Browser TTS fallback — prefer Google US voice (Chrome) for best quality
     await new Promise<void>((resolve) => {
       if (typeof window === 'undefined' || !window.speechSynthesis) { resolve(); return }
       window.speechSynthesis.cancel()
-      const utt = new SpeechSynthesisUtterance(text)
-      utt.rate   = 0.92
-      utt.pitch  = 1.0
-      utt.volume = 1.0
-      utt.onend  = () => resolve()
-      utt.onerror = () => resolve()
-      window.speechSynthesis.speak(utt)
+
+      const speak = () => {
+        const voices = window.speechSynthesis.getVoices()
+        // Priority: Google en-US (Chrome) → any en-US → any voice
+        const preferred =
+          voices.find(v => v.name.includes('Google') && v.lang === 'en-US') ||
+          voices.find(v => v.lang === 'en-US') ||
+          voices[0]
+
+        const utt = new SpeechSynthesisUtterance(text)
+        if (preferred) utt.voice = preferred
+        utt.rate   = 0.92
+        utt.pitch  = 1.0
+        utt.volume = 1.0
+        utt.onend  = () => resolve()
+        utt.onerror = () => resolve()
+        window.speechSynthesis.speak(utt)
+      }
+
+      // Chrome loads voices asynchronously; other browsers return them immediately
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length > 0) {
+        speak()
+      } else {
+        window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true })
+      }
     })
   }, [setPhase, stopAllAudio])
 
