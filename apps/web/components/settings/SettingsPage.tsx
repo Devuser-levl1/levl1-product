@@ -81,6 +81,8 @@ export default function SettingsPage() {
   const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
   const [agencyEmail,   setAgencyEmail]   = useState("abma3005@gmail.com");
   const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
+  const [senderName,    setSenderName]    = useState('');
+  const [senderEmail,   setSenderEmail]   = useState('');
 
   const [notifEmail,      setNotifEmail]      = useState(true);
   const [notifSlack,      setNotifSlack]      = useState(false);
@@ -95,6 +97,20 @@ export default function SettingsPage() {
   const [voiceAccent,    setVoiceAccent]    = useState("american");
   const [previewLoading, setPreviewLoading] = useState<string | null>(null);
   const [savingVoice,    setSavingVoice]    = useState(false);
+
+  // Load agency settings on mount
+  useEffect(() => {
+    fetch("/api/agency/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return
+        if (data.name)        setAgencyName(data.name)
+        if (data.website)     setAgencyWebsite(data.website)
+        if (data.senderName)  setSenderName(data.senderName)
+        if (data.senderEmail) setSenderEmail(data.senderEmail)
+      })
+      .catch(() => {});
+  }, []);
 
   // Load current agency voice on mount
   useEffect(() => {
@@ -149,6 +165,24 @@ export default function SettingsPage() {
   };
 
   const selectedOption = getVoiceOption(voiceAccent);
+
+  async function handleSaveSettings() {
+    try {
+      const res = await fetch('/api/agency/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: agencyName, website: agencyWebsite, senderName, senderEmail }),
+      })
+      if (res.ok) {
+        toast.success('Settings saved')
+      } else {
+        const data = await res.json()
+        toast.error(data.error ?? 'Failed to save settings')
+      }
+    } catch {
+      toast.error('Network error — could not save settings')
+    }
+  }
 
   async function handleUpgrade(planId: string) {
     setBillingLoading(planId);
@@ -216,6 +250,14 @@ export default function SettingsPage() {
         <Field label="Website">
           <input className="input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
         </Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <Field label="Sender Name (for emails)">
+            <input className="input" placeholder="e.g. Talent Team" value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+          </Field>
+          <Field label="Sender Email (for emails)">
+            <input className="input" type="email" placeholder="e.g. talent@yourcompany.com" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
+          </Field>
+        </div>
       </Section>
 
       {/* Voice & Accent */}
@@ -471,7 +513,7 @@ export default function SettingsPage() {
 
       {/* Save */}
       <div style={{ display: "flex", gap: 12, paddingBottom: 40 }}>
-        <button className="btn-navy" onClick={() => toast.success("Settings saved successfully")}>
+        <button className="btn-navy" onClick={handleSaveSettings}>
           Save Changes
         </button>
         <button className="btn-ghost" onClick={() => toast("Changes discarded")}>

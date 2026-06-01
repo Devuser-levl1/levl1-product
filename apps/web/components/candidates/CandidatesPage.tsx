@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText } from "lucide-react";
+import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 import CandidateUploadFlow from "./CandidateUploadFlow";
 import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
@@ -42,6 +43,7 @@ function CandidateCard({
   const router = useRouter();
   const { positions, interviews, addInterview, updateCandidate } = useAppStore();
   const position = positions.find((p) => p.id === candidate.positionId);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const rec = candidate.recommendation ? REC_CFG[candidate.recommendation as keyof typeof REC_CFG] : null;
 
@@ -76,6 +78,52 @@ function CandidateCard({
     e.stopPropagation();
     const id = getInterviewId();
     window.open(`/interview/${id}/monitor`, "_blank");
+  }
+
+  async function handleGenerateReport(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (candidate.reportGenerated) {
+      router.push(`/report/${candidate.interviewId}`);
+      return;
+    }
+    setGeneratingReport(true);
+    try {
+      // Fetch interview data
+      const ivRes = await fetch(`/api/interviews/${candidate.interviewId}`);
+      const iv = ivRes.ok ? await ivRes.json() : null;
+
+      const res = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: candidate.interviewId,
+          candidateId: candidate.id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email ?? '',
+          positionTitle: position?.title ?? candidate.positionTitle ?? '',
+          company: position?.company ?? '',
+          interviewDate: iv?.completedAt ?? new Date().toISOString(),
+          duration: position?.interviewDuration ?? 30,
+          transcript: iv?.transcript ?? [],
+          questionResponses: iv?.questionResponses ?? [],
+          techStack: position?.techStack ?? [],
+          experienceLevel: position?.experienceLevel ?? '',
+          roleType: (position as unknown as Record<string, string>)?.roleType ?? '',
+        }),
+      });
+      if (res.ok) {
+        toast.success('Report generated!');
+        updateCandidate(candidate.id, { reportGenerated: true });
+        router.push(`/report/${candidate.interviewId}`);
+      } else {
+        const err = await res.json();
+        toast.error(err.error ?? 'Report generation failed');
+      }
+    } catch {
+      toast.error('Failed to generate report');
+    } finally {
+      setGeneratingReport(false);
+    }
   }
 
   return (
@@ -224,10 +272,8 @@ function CandidateCard({
       {isCompleted && candidate.interviewId && (
         <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/report/${candidate.interviewId}`);
-            }}
+            onClick={handleGenerateReport}
+            disabled={generatingReport}
             style={{
               width: "100%",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -240,11 +286,12 @@ function CandidateCard({
               borderRadius: 8,
               color: candidate.reportGenerated ? "#059669" : "#4F46E5",
               fontSize: 12, fontWeight: 700, padding: "8px 10px",
-              cursor: "pointer", whiteSpace: "nowrap",
+              cursor: generatingReport ? "wait" : "pointer", whiteSpace: "nowrap",
               transition: "all 0.15s",
+              opacity: generatingReport ? 0.7 : 1,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = candidate.reportGenerated
+              if (!generatingReport) e.currentTarget.style.background = candidate.reportGenerated
                 ? "rgba(16,185,129,0.15)"
                 : "rgba(79,70,229,0.12)";
             }}
@@ -254,8 +301,8 @@ function CandidateCard({
                 : "rgba(79,70,229,0.07)";
             }}
           >
-            <FileText size={11} />
-            {candidate.reportGenerated ? "View Report" : "Generate Report"}
+            {generatingReport ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <FileText size={11} />}
+            {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : "Generate Report"}
           </button>
         </div>
       )}

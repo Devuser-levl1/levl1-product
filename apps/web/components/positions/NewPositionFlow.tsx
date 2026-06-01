@@ -607,25 +607,84 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   };
 
   // ── Activation ────────────────────────────────────────────────────────
-  const activatePosition = () => {
-    const id = `p${Date.now()}`;
-    addPosition({
-      id,
-      title: positionTitle,
-      company,
-      department,
-      experienceLevel,
-      techStack: mustHaveTech,
-      status: "active",
-      interviewsScheduled: 0,
-      interviewsCompleted: 0,
-      createdAt: new Date().toISOString().split("T")[0],
-      approvals: { techLead: true, hr: true },
-      interviewDuration: Number(interviewDuration),
-      dynamicQuestionIntensity: dynamicIntensity,
-      voiceAccent: voiceAccent ?? undefined,
-    });
-    setStep(7);
+  const activatePosition = async () => {
+    if (!questions) return;
+    try {
+      // Create position in DB
+      const posRes = await fetch('/api/positions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: positionTitle,
+          company,
+          department,
+          experienceLevel,
+          roleType,
+          primaryDomain,
+          techStack: mustHaveTech,
+          goodToHave: niceToHaveTech,
+          domainContext,
+          workMode,
+          interviewDuration: Number(interviewDuration),
+          dynamicIntensity,
+          voiceAccent: voiceAccent ?? 'american',
+          jdText: finalJD,
+          techLeadApproved: techApproved === techTotal && techTotal > 0,
+          hrApproved: hrApproved === hrTotal && hrTotal > 0,
+          status: allApproved ? 'active' : 'pending_approval',
+        }),
+      });
+
+      if (!posRes.ok) {
+        const err = await posRes.json();
+        throw new Error(err.error ?? 'Failed to create position');
+      }
+
+      const position = await posRes.json();
+
+      // Save question set to DB
+      const qsRes = await fetch(`/api/positions/${position.id}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          technicalQuestions:  questions.technicalQuestions,
+          scenarioQuestions:   questions.scenarioQuestions,
+          behavioralQuestions: questions.behavioralQuestions,
+          eqQuestions:         questions.eqQuestions,
+          whiteboardQuestions: questions.whiteboardAssessment,
+          timeAllocation:      questions.timeAllocation,
+          techLeadApproved:    techApproved === techTotal && techTotal > 0,
+          hrApproved:          hrApproved === hrTotal && hrTotal > 0,
+        }),
+      });
+      if (!qsRes.ok) console.warn('[activatePosition] Question set save failed (non-fatal)');
+
+      // Add to local store
+      addPosition({
+        id: position.id,
+        title: positionTitle,
+        company,
+        department,
+        experienceLevel,
+        techStack: mustHaveTech,
+        status: allApproved ? 'active' : 'pending_approval',
+        interviewsScheduled: 0,
+        interviewsCompleted: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+        approvals: {
+          techLead: techApproved === techTotal && techTotal > 0,
+          hr: hrApproved === hrTotal && hrTotal > 0,
+        },
+        interviewDuration: Number(interviewDuration),
+        dynamicQuestionIntensity: dynamicIntensity,
+        voiceAccent: voiceAccent ?? undefined,
+      });
+
+      toast.success('Position created and saved to database!');
+      setStep(7);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to activate position');
+    }
   };
 
   // ── Totals for step 7 gate ─────────────────────────────────────────────

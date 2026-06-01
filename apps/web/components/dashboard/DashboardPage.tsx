@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
 import { Briefcase, Users, Video, TrendingUp, ArrowRight, Play, Monitor } from "lucide-react";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
@@ -90,8 +90,27 @@ export default function DashboardPage() {
   const { positions, candidates, interviews, setActiveSection } = useAppStore();
   const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
 
-  const activePositions  = positions.filter((p) => p.status === "active").length;
-  const totalCandidates  = candidates.length;
+  const [stats, setStats] = useState<{
+    activePositions?: number
+    totalPositions?: number
+    totalCandidates?: number
+    scheduledInterviews?: number
+    completedInterviews?: number
+    avgScore?: number
+    scoredCount?: number
+    topCandidates?: unknown[]
+    upcomingInterviews?: unknown[]
+  } | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setStats(data) })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false))
+  }, [])
+
   const upcomingInterviews = interviews.filter(
     (i) => i.status === "scheduled" || i.status === "in_progress"
   );
@@ -100,6 +119,16 @@ export default function DashboardPage() {
     scoredCandidates.length > 0
       ? Math.round(scoredCandidates.reduce((a, c) => a + (c.score ?? 0), 0) / scoredCandidates.length)
       : 0;
+
+  const activePositions    = stats?.activePositions  ?? positions.filter(p => p.status === 'active').length
+  const totalCandidates    = stats?.totalCandidates  ?? candidates.length
+  const scheduledCount     = stats?.scheduledInterviews ?? upcomingInterviews.length
+  const completedCount     = stats?.completedInterviews ?? 0
+  const displayAvgScore    = stats?.avgScore ?? avgScore
+  const displayScoredCount = stats?.scoredCount ?? scoredCandidates.length
+
+  void completedCount // used for future display
+  void statsLoading
 
   const topCandidates = [...candidates]
     .filter((c) => c.status === "completed" && c.score !== undefined)
@@ -153,10 +182,10 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div className="dash-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${positions.length} total positions`}         accentColor="#7C3AED" onClick={() => setActiveSection("positions")} />
+        <StatCard icon={Briefcase}   label="Active Positions"   value={activePositions}      sub={`${stats?.totalPositions ?? positions.length} total positions`}         accentColor="#7C3AED" onClick={() => setActiveSection("positions")} />
         <StatCard icon={Users}       label="Candidates"         value={totalCandidates}      sub={`${topCandidates.length} interviews completed`} accentColor="#10B981" onClick={() => setActiveSection("candidates")} />
-        <StatCard icon={Video}       label="Upcoming"           value={upcomingInterviews.length} sub="Interviews scheduled"                      accentColor="#F59E0B" onClick={() => setActiveSection("interviews")} />
-        <StatCard icon={TrendingUp}  label="Avg Score"          value={scoredCandidates.length > 0 ? avgScore : "—"} sub={`Across ${scoredCandidates.length} evaluations`} accentColor="#8B5CF6" onClick={() => setActiveSection("reports")} />
+        <StatCard icon={Video}       label="Upcoming"           value={scheduledCount} sub="Interviews scheduled"                      accentColor="#F59E0B" onClick={() => setActiveSection("interviews")} />
+        <StatCard icon={TrendingUp}  label="Avg Score"          value={displayScoredCount > 0 ? displayAvgScore : "—"} sub={`Across ${displayScoredCount} evaluations`} accentColor="#8B5CF6" onClick={() => setActiveSection("reports")} />
       </div>
 
       {/* Middle row */}

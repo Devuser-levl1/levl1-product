@@ -8,39 +8,20 @@ import toast from "react-hot-toast";
 import TrialBanner from "@/components/ui/TrialBanner";
 import UpgradeWallModal from "@/components/ui/UpgradeWallModal";
 
-const MOCK_NOTIFICATIONS = [
-  {
-    id: "n1",
-    title: "Interview completed",
-    body: "Divya Sharma completed her L1 interview — score: 91",
-    time: "2m ago",
-    unread: true,
-  },
-  {
-    id: "n2",
-    title: "New candidate uploaded",
-    body: "3 resumes added for Senior Data Engineer",
-    time: "14m ago",
-    unread: true,
-  },
-  {
-    id: "n3",
-    title: "Position approved",
-    body: "IT Risk & Compliance Manager approved by HR",
-    time: "1h ago",
-    unread: false,
-  },
-];
-
 export default function Header() {
   const router = useRouter();
   const { setActiveSection, agencyPlan, setAgencyPlan } = useAppStore();
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUser, setShowUser] = useState(false);
-  const [unread, setUnread] = useState(2);
   const [userName, setUserName] = useState('');
   const [userInitials, setUserInitials] = useState('');
+
+  const [notifications, setNotifications] = useState<Array<{
+    id: string; title: string; body: string; createdAt: string; isRead: boolean; link?: string
+  }>>([])
+
+  const unreadCount = notifications.filter(n => !n.isRead).length
 
   const notifsRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -76,6 +57,16 @@ export default function Header() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load real notifications
+  useEffect(() => {
+    fetch('/api/notifications')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) setNotifications(data)
+      })
+      .catch(() => {})
+  }, [])
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -101,8 +92,23 @@ export default function Header() {
 
   function handleOpenNotifs() {
     setShowNotifs(!showNotifs);
-    if (!showNotifs) setUnread(0);
     setShowUser(false);
+  }
+
+  async function handleMarkAllRead() {
+    await fetch('/api/notifications/read', { method: 'POST' }).catch(() => {})
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+    setShowNotifs(false)
+  }
+
+  function formatRelativeTime(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const minutes = Math.floor(diff / 60000)
+    if (minutes < 1) return 'just now'
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
   }
 
   return (
@@ -170,7 +176,7 @@ export default function Header() {
             onMouseLeave={(e) => { e.currentTarget.style.background = showNotifs ? "#EEF2FF" : "transparent"; }}
           >
             <Bell size={17} color={showNotifs ? "#4F46E5" : "#64748B"} />
-            {unread > 0 && (
+            {unreadCount > 0 && (
               <span style={{
                 position: "absolute", top: 6, right: 6,
                 width: 8, height: 8, borderRadius: "50%",
@@ -190,25 +196,30 @@ export default function Header() {
             }}>
               <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>Notifications</span>
-                <button onClick={() => setShowNotifs(false)} style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>Mark all read</button>
+                <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>Mark all read</button>
               </div>
-              {MOCK_NOTIFICATIONS.map((n) => (
+              {notifications.length === 0 ? (
+                <div style={{ padding: "24px 18px", textAlign: "center", fontSize: 13, color: "#94A3B8" }}>
+                  No notifications yet
+                </div>
+              ) : notifications.map((n) => (
                 <div key={n.id} style={{
                   padding: "12px 18px",
                   borderBottom: "1px solid #F8FAFC",
-                  background: n.unread ? "rgba(79,70,229,0.02)" : "#fff",
+                  background: !n.isRead ? "rgba(79,70,229,0.02)" : "#fff",
                   cursor: "pointer", transition: "background 0.15s",
                   display: "flex", gap: 12, alignItems: "flex-start",
                 }}
+                  onClick={() => { if (n.link) router.push(n.link) }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFF"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = n.unread ? "rgba(79,70,229,0.02)" : "#fff"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = !n.isRead ? "rgba(79,70,229,0.02)" : "#fff"; }}
                 >
-                  {n.unread && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4F46E5", marginTop: 6, flexShrink: 0 }} />}
-                  {!n.unread && <div style={{ width: 6, height: 6, marginTop: 6, flexShrink: 0 }} />}
+                  {!n.isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4F46E5", marginTop: 6, flexShrink: 0 }} />}
+                  {n.isRead && <div style={{ width: 6, height: 6, marginTop: 6, flexShrink: 0 }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", marginBottom: 2 }}>{n.title}</div>
                     <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{n.body}</div>
-                    <div style={{ fontSize: 11, color: "#CBD5E1", marginTop: 4 }}>{n.time}</div>
+                    <div style={{ fontSize: 11, color: "#CBD5E1", marginTop: 4 }}>{formatRelativeTime(n.createdAt)}</div>
                   </div>
                 </div>
               ))}

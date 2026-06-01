@@ -14,10 +14,13 @@ export function FeedbackWidget() {
   const [sending, setSending] = useState(false)
   const panelRef              = useRef<HTMLDivElement>(null)
 
-  // Hide on interview room and landing page
+  // Hide on interview room, candidate pages, and landing page
   const hide =
     pathname === '/' ||
-    pathname.startsWith('/interview/')
+    pathname.startsWith('/interview/') ||
+    pathname.startsWith('/candidate/') ||
+    pathname === '/login' ||
+    pathname === '/signup'
 
   // Close on outside click
   useEffect(() => {
@@ -64,9 +67,9 @@ export function FeedbackWidget() {
       ref={panelRef}
       style={{
         position: 'fixed',
-        bottom:   28,
+        bottom:   80,
         right:    28,
-        zIndex:   700,
+        zIndex:   40,
         display:  'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',

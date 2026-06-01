@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,10 +21,16 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const position = await prisma.position.create({ data: body })
+    // Get agencyId from session cookie
+    const session = getSessionFromRequest(req)
+    const agencyId = session?.agencyId
+
+    const position = await prisma.position.create({
+      data: { ...body, agencyId: agencyId ?? body.agencyId }
+    })
     return NextResponse.json(position, { status: 201 })
   } catch (err) {
     console.error('POST /api/positions error:', err)

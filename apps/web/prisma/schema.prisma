@@ -48,6 +48,7 @@ model Agency {
   positions     Position[]
   users         User[]
   subscriptions Subscription[]
+  notifications Notification[]
 }
 
 model User {
@@ -115,6 +116,7 @@ model Position {
   questionSet    QuestionSet?
   interviews     Interview[]
   positionReport PositionReport?
+  interviewSlots InterviewSlot[]
 }
 
 model QuestionSet {
@@ -240,4 +242,44 @@ model SupportTicket {
   userEmail    String
   status       String   @default("open")
   createdAt    DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model InterviewSlot {
+  id          String   @id @default(cuid())
+  positionId  String
+  position    Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int      @default(30)
+  isBooked    Boolean  @default(false)
+  candidateId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ScheduledEmail {
+  id          String    @id @default(cuid())
+  to          String
+  subject     String
+  type        String
+  scheduledAt DateTime
+  sentAt      DateTime?
+  candidateId String?
+  agencyId    String
+  status      String    @default("pending")
+  metadata    Json?
+  createdAt   DateTime  @default(now())
 }

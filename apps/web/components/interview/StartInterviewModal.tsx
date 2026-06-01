@@ -12,6 +12,13 @@ interface Props {
   onClose: () => void
 }
 
+interface PreflightResult {
+  positionApproved: { ok: boolean; reason?: string }
+  questionsReady: { ok: boolean; count: number; reason?: string }
+  candidateInvited: { ok: boolean; status: string; reason?: string }
+  elevenLabsConfigured: { ok: boolean; reason?: string }
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -37,20 +44,27 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
       .catch(() => setElevenLabsOk(false))
   }, [])
 
-  /* ── Resolve or create an interviewId ─────────────────────────── */
-  function resolveInterviewId(): string {
-    // 1. Already linked on candidate record
+  /* ── Preflight checks from DB ─────────────────────────────────── */
+  const [preflight, setPreflight] = useState<PreflightResult | null>(null)
+
+  useEffect(() => {
+    if (!candidate?.id || !candidate?.positionId) return
+    fetch(`/api/preflight?candidateId=${candidate.id}&positionId=${candidate.positionId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setPreflight(data) })
+      .catch(() => {})
+  }, [candidate?.id, candidate?.positionId])
+
+  /* ── Local fallback resolveInterviewId ─────────────────────────── */
+  function resolveInterviewIdLocal(): string {
     if (candidate.interviewId) return candidate.interviewId
 
-    // 2. Look for an existing Interview record for this candidate
     const existing = interviews.find((iv) => iv.candidateId === candidate.id)
     if (existing) {
-      // Cache it on the candidate so we don't re-search
       updateCandidate(candidate.id, { interviewId: existing.id })
       return existing.id
     }
 
-    // 3. Create a new one on the fly
     const newId = `iv-${Date.now()}`
     const newInterview: Interview = {
       id: newId,
@@ -70,7 +84,7 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
   }
 
   async function handleBegin() {
-    // Check usage allowance before starting
+    // Usage check
     try {
       const usageRes = await fetch('/api/usage', {
         method: 'POST',
@@ -79,47 +93,88 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
       })
       if (usageRes.ok) {
         const usage = await usageRes.json()
-        if (!usage.allowed) {
-          onClose()
-          setShowUpgradeWall(true)
-          return
-        }
+        if (!usage.allowed) { onClose(); setShowUpgradeWall(true); return }
       }
-    } catch { /* proceed anyway if check fails */ }
+    } catch { /* proceed anyway */ }
 
-    const id = resolveInterviewId()
+    // Create real Interview record in DB if needed
+    let interviewId: string
+
+    try {
+      // Try to find existing interview for this candidate
+      const existingRes = await fetch(`/api/interviews?candidateId=${candidate.id}`)
+      if (existingRes.ok) {
+        const existing = await existingRes.json()
+        if (Array.isArray(existing) && existing.length > 0) {
+          interviewId = existing[0].id
+        } else {
+          throw new Error('need to create')
+        }
+      } else {
+        throw new Error('need to create')
+      }
+    } catch {
+      // Create new Interview in DB
+      const createRes = await fetch('/api/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateId: candidate.id,
+          positionId: candidate.positionId,
+          status: 'scheduled',
+          duration: position?.interviewDuration ?? 30,
+        }),
+      })
+      if (createRes.ok) {
+        const created = await createRes.json()
+        interviewId = created.id
+      } else {
+        // Fallback to local store approach
+        interviewId = resolveInterviewIdLocal()
+      }
+    }
+
+    // Update candidate interviewId in store
+    updateCandidate(candidate.id, { interviewId })
+
     onClose()
-    router.push(`/interview/${id}`)
+    router.push(`/interview/${interviewId}`)
   }
 
   /* ── Pre-flight checks ────────────────────────────────────────── */
   type Check = { label: string; ok: boolean; sub?: string; loading?: boolean }
 
-  const positionApproved = !!(position?.approvals?.techLead && position?.approvals?.hr)
-  const candidateInvited = !!(candidate.invitedAt || candidate.status === 'scheduled')
-
-  const checks: Check[] = [
+  const checks: Check[] = preflight ? [
     {
-      label: positionApproved ? 'Position approved' : 'Position not fully approved',
-      ok: positionApproved,
+      label: preflight.positionApproved.ok ? 'Position approved' : (preflight.positionApproved.reason ?? 'Position not fully approved'),
+      ok: preflight.positionApproved.ok,
     },
     {
-      label: 'Questions ready (12 questions)',
-      ok: !!position,
+      label: preflight.questionsReady.ok
+        ? `Questions ready (${preflight.questionsReady.count} questions)`
+        : (preflight.questionsReady.reason ?? 'Questions not ready'),
+      ok: preflight.questionsReady.ok,
     },
     {
-      label: candidateInvited ? 'Candidate invited' : 'Candidate has not been invited',
-      ok: candidateInvited,
+      label: preflight.candidateInvited.ok ? 'Candidate invited' : (preflight.candidateInvited.reason ?? 'Candidate not invited'),
+      ok: preflight.candidateInvited.ok,
     },
     {
-      label:
-        elevenLabsOk === null
-          ? 'Checking ElevenLabs…'
-          : elevenLabsOk
-          ? 'ElevenLabs configured'
-          : 'ElevenLabs key not configured',
+      label: elevenLabsOk === null ? 'Checking ElevenLabs…'
+        : elevenLabsOk ? 'ElevenLabs configured'
+        : 'ElevenLabs key not configured',
       ok: !!elevenLabsOk,
       sub: elevenLabsOk ? undefined : elevenLabsOk === null ? undefined : 'Will use browser TTS as fallback',
+      loading: elevenLabsOk === null,
+    },
+  ] : [
+    // Loading state
+    { label: 'Checking position approval…', ok: false, loading: true },
+    { label: 'Checking question set…', ok: false, loading: true },
+    { label: 'Checking candidate status…', ok: false, loading: true },
+    {
+      label: elevenLabsOk === null ? 'Checking ElevenLabs…' : elevenLabsOk ? 'ElevenLabs configured' : 'ElevenLabs key not configured',
+      ok: !!elevenLabsOk,
       loading: elevenLabsOk === null,
     },
   ]

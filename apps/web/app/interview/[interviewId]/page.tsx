@@ -999,6 +999,13 @@ export default function InterviewPage() {
     })
     if (interview) updateInterview(interview.id, { status: 'completed', candidateJoined: true })
 
+    // Save completion to DB
+    fetch(`/api/interviews/${interviewId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString() }),
+    }).catch(() => {})
+
     try {
       localStorage.setItem(`ic_interview_${interviewId}_complete`, JSON.stringify({
         completedAt: new Date().toISOString(),
@@ -1044,6 +1051,13 @@ export default function InterviewPage() {
 
     updateInterview(interviewId, { status: 'in_progress', candidateJoined: true })
     setPhase('intro')
+
+    // Save startedAt to DB
+    fetch(`/api/interviews/${interviewId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'in_progress', startedAt: new Date().toISOString() }),
+    }).catch(() => {}) // fire and forget
 
     // 2 s pause — give candidate time to settle before Alex speaks
     await delay(2000)

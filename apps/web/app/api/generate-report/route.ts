@@ -149,6 +149,29 @@ export async function POST(req: NextRequest) {
           },
         })
         console.log('[generate-report] Saved to DB for candidateId:', resolvedCandidateId)
+
+        // Create notification for recruiter
+        try {
+          const candidateWithPos = await prisma.candidate.findUnique({
+            where: { id: resolvedCandidateId },
+            include: { position: { select: { agencyId: true } } },
+          })
+          const agencyId = candidateWithPos?.position?.agencyId
+          if (agencyId) {
+            await prisma.notification.create({
+              data: {
+                agencyId,
+                type: 'report_ready',
+                title: 'Report ready',
+                body: `Evaluation report for ${candidateName} is ready — score: ${report.overallScore}`,
+                link: `/report/${interviewId}`,
+                metadata: { candidateId: resolvedCandidateId, score: report.overallScore },
+              },
+            })
+          }
+        } catch (notifErr) {
+          console.warn('[generate-report] Notification creation failed (non-fatal):', notifErr)
+        }
       } catch (dbError: unknown) {
         const msg = dbError instanceof Error ? dbError.message : String(dbError)
         console.error('[generate-report] DB save failed (non-fatal):', msg)
