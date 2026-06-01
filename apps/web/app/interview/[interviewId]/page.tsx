@@ -31,22 +31,66 @@ function playChime(): void {
   } catch {}
 }
 
+/* ── Silence thresholds (seconds) ───────────────────────────────── */
+const SILENCE_THRESHOLDS = {
+  STILL_LISTENING: 5,   // text indicator only
+  GENTLE_PROMPT:   12,  // Alex speaks softly
+  OFFER_CHOICE:    20,  // Alex offers to move on or wait
+  AUTO_ADVANCE:    30,  // Alex auto-advances to next question
+} as const
+
+/* ── Keyword trigger lists (checked before calling Claude) ───────── */
+// Candidate asking about fit/suitability → redirect and continue
+const REDIRECT_TRIGGERS = [
+  'am i right for', 'am i a good fit', 'do i qualify',
+  'what do you think of me', 'how am i doing', 'am i doing well',
+  'am i the right', 'would i be a good', 'am i suitable',
+] as const
+
+// Candidate asking to repeat/clarify the question
+const REPEAT_TRIGGERS = [
+  'can you repeat', 'say that again', 'what was the question',
+  'could you repeat', 'pardon', 'sorry what', 'come again',
+  'what do you mean', "i don't understand", "i dont understand",
+] as const
+
+// Candidate doesn't know → rephrase once, then move on
+const DONT_KNOW_TRIGGERS = [
+  "i don't know", "i dont know", "no idea", "not sure about this",
+  "i have no idea", "i'm not sure", "im not sure",
+] as const
+
+// Candidate explicitly wants to skip
+const SKIP_TRIGGERS = [
+  'skip', 'pass', 'move on', 'next question', 'next please', 'skip this',
+] as const
+
+// Candidate asking about the company/role → defer to hiring team
+const COMPANY_QUESTION_TRIGGERS = [
+  'what does the company', 'tell me about the team',
+  'how many people', 'what is the culture', 'what are the benefits',
+  'what is the salary', 'what is the pay', 'working hours',
+  'tell me about the company', 'what are the perks',
+] as const
+
 /* ── Transition phrase pools ─────────────────────────────────────── */
 const TR_GOOD = [
-  'Thank you, that gives me a clear picture. Let me ask you about something different.',
-  'Understood. Moving on —',
-  'That is helpful context. Next —',
+  'Thank you, that is helpful context. Moving on —',
+  'Understood. Let me ask you about something different.',
+  'Thank you, that gives me a clear picture. Next —',
+  'Noted. Moving on.',
 ] as const
 
 const TR_BRIEF = [
-  'Got it. Let me try a different angle.',
-  'Noted. Let us move forward.',
-  'Thank you. I have one more area I would like to cover.',
+  'Got it. Let us move to the next one.',
+  'Understood. Moving forward.',
+  'Thank you. Let me ask you something else.',
+  'Noted. Let us keep going.',
 ] as const
 
 const TR_SECTION: Partial<Record<string, readonly string[]>> = {
   scenario: [
-    'Great, I would like to shift gears now and ask you a few scenario-based questions.',
+    'I would like to shift gears now and ask you a few scenario-based questions.',
     'Let us move to something a bit different — I will describe a situation and I would like your take on it.',
     'Now I would like to understand how you approach certain situations.',
   ],
@@ -116,6 +160,7 @@ interface LocalQuestion {
 }
 interface EvalResult {
   score: number
+  relevanceScore: number
   keyPointsCovered: string[]
   keyPointsMissed: string[]
   evaluatorNote: string
@@ -246,7 +291,10 @@ export default function InterviewPage() {
   const timerIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const capturedRef       = useRef(false)
   const hasSpokenRef      = useRef(false)
-  const rephraseCountRef  = useRef(0)
+  const rephraseCountRef      = useRef(0)
+  const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
+  const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
+  const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const transcriptBoxRef      = useRef<HTMLDivElement>(null)
   const codeTriggerShownRef   = useRef(false)
   const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -489,40 +537,33 @@ export default function InterviewPage() {
     setIsListening(true)
     setPhase('listening')
 
-    // ── Graduated cold-start silence hints ────────────────────
-    const t3 = setTimeout(() => {
+    // ── Graduated cold-start silence timers ───────────────────
+    // t5: show text indicator — no audio
+    const t5 = setTimeout(() => {
       if (!hasSpokenRef.current && !capturedRef.current)
         setListeningHint('● Still listening…')
-    }, 3000)
+    }, SILENCE_THRESHOLDS.STILL_LISTENING * 1000)
 
-    const t6 = setTimeout(() => {
-      if (!hasSpokenRef.current && !capturedRef.current)
-        setListeningHint('Take your time, I am here when you are ready.')
-    }, 6000)
-
+    // t12: gentle spoken nudge
     const t12 = setTimeout(async () => {
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
-      clearSilenceTimers()   // prevent t20 from also firing
+      clearSilenceTimers()   // prevent t20/t30 from also firing this invocation
       setListeningHint('')
       try { recognitionRef.current?.stop() } catch {}
       setIsListening(false)
 
-      const nudge = pick([
-        'Take all the time you need — there is no rush.',
-        'Would you like a moment to think that through?',
-        'Feel free to think out loud if that helps.',
-      ])
+      const nudge = "Take your time — I'm here whenever you're ready."
       addTranscript({ speaker: 'ai', text: nudge, type: 'transition' })
       await speakText(nudge)
 
-      // Re-read phase after async; cast to string to avoid TS narrowing from the guard above
       const phaseAfter12 = phaseRef.current as string
       if (phaseAfter12 !== 'completed' && phaseAfter12 !== 'closing') {
         await delay(1500)
         startListening()
       }
-    }, 12000)
+    }, SILENCE_THRESHOLDS.GENTLE_PROMPT * 1000)
 
+    // t20: offer choice — move on or more time
     const t20 = setTimeout(async () => {
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()
@@ -530,18 +571,39 @@ export default function InterviewPage() {
       try { recognitionRef.current?.stop() } catch {}
       setIsListening(false)
 
-      const prompt = 'Shall we come back to this one, or would you like to move on to the next question?'
+      const prompt = "Would you like a moment more, or shall we move on to the next question?"
       addTranscript({ speaker: 'ai', text: prompt, type: 'transition' })
       await speakText(prompt)
+      awaitingMoveOnChoiceRef.current = true  // next captureResponse handles the choice
 
       const phaseAfter20 = phaseRef.current as string
       if (phaseAfter20 !== 'completed' && phaseAfter20 !== 'closing') {
         await delay(1500)
         startListening()
       }
-    }, 20000)
+    }, SILENCE_THRESHOLDS.OFFER_CHOICE * 1000)
 
-    silenceTimersRef.current = [t3, t6, t12, t20]
+    // t30: auto-advance — gracefully move to next question
+    const t30 = setTimeout(async () => {
+      if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
+      clearSilenceTimers()
+      awaitingMoveOnChoiceRef.current = false
+      setListeningHint('')
+      try { recognitionRef.current?.stop() } catch {}
+      setIsListening(false)
+
+      const autoAdv = "Let's come back to that if time allows."
+      addTranscript({ speaker: 'ai', text: autoAdv, type: 'transition' })
+      await speakText(autoAdv)
+
+      const phaseAfter30 = phaseRef.current as string
+      if (phaseAfter30 !== 'completed' && phaseAfter30 !== 'closing') {
+        await delay(800)
+        await moveToQuestion(currentQIdxRef.current + 1)
+      }
+    }, SILENCE_THRESHOLDS.AUTO_ADVANCE * 1000)
+
+    silenceTimersRef.current = [t5, t12, t20, t30]
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [micFailed, setPhase, clearSilenceTimers])
 
@@ -576,11 +638,96 @@ export default function InterviewPage() {
     const q = questionsRef.current[currentQIdxRef.current]
     if (!q) return
 
-    const lower = responseText.toLowerCase()
+    const lower = responseText.toLowerCase().trim()
 
-    // ── Skip / move on ────────────────────────────────────────
-    const SKIP = ['skip', 'pass', 'move on', 'next question', 'next please']
-    if (SKIP.some(w => lower.includes(w))) {
+    // ── 0. Awaiting "more time or move on?" choice ───────────────────
+    if (awaitingMoveOnChoiceRef.current) {
+      awaitingMoveOnChoiceRef.current = false
+      const wantsMoveOn = ['move on', 'next', 'skip', 'yes', 'go ahead', 'continue'].some(w => lower.includes(w))
+      const wantsMore   = ['more time', 'wait', 'moment', 'no', 'not yet', 'hold on'].some(w => lower.includes(w))
+      if (wantsMoveOn) {
+        addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+        const ack = "Let's keep going."
+        addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+        await speakText(ack)
+        await delay(600)
+        await moveToQuestion(currentQIdxRef.current + 1)
+        return
+      }
+      if (wantsMore) {
+        const ack = 'Of course, take your time.'
+        addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+        await speakText(ack)
+        await delay(600)
+        startListening()
+        return
+      }
+      // Substantive answer — fall through to normal handling
+    }
+
+    // ── 1. Fit / qualification questions ────────────────────────────
+    if (REDIRECT_TRIGGERS.some(w => lower.includes(w))) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      const resp = "That's not something I can comment on during the interview — the team will be in touch after. Let's continue."
+      addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
+      await speakText(resp)
+      await delay(800)
+      await moveToQuestion(currentQIdxRef.current + 1)
+      return
+    }
+
+    // ── 2. Company / role questions ──────────────────────────────────
+    if (COMPANY_QUESTION_TRIGGERS.some(w => lower.includes(w))) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      const resp = "I don't have that detail handy — the hiring team will cover that with you. Shall we continue?"
+      addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
+      await speakText(resp)
+      await delay(800)
+      startListening()
+      return
+    }
+
+    // ── 3. Repeat / clarification request ───────────────────────────
+    if (REPEAT_TRIGGERS.some(w => lower.includes(w))) {
+      if (rephraseCountRef.current >= 1) {
+        const defer = 'Let me know when you are ready and we will continue.'
+        addTranscript({ speaker: 'ai', text: defer, type: 'transition' })
+        await speakText(defer)
+        await delay(1500)
+        startListening()
+        return
+      }
+      rephraseCountRef.current++
+      // Repeat verbatim — no paraphrase
+      addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
+      await speakText(q.question)
+      await delay(1500)
+      startListening()
+      return
+    }
+
+    // ── 4. I don't know ─────────────────────────────────────────────
+    if (DONT_KNOW_TRIGGERS.some(w => lower.includes(w))) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      if (rephraseCountRef.current >= 1) {
+        const ack = "That's completely fine, let's move on."
+        addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+        await speakText(ack)
+        await delay(800)
+        await moveToQuestion(currentQIdxRef.current + 1)
+      } else {
+        rephraseCountRef.current++
+        const rephrase = `No problem — let me ask it from a different angle. ${q.question}`
+        addTranscript({ speaker: 'ai', text: rephrase, questionId: q.id, type: 'preset' })
+        await speakText(rephrase)
+        await delay(1500)
+        startListening()
+      }
+      return
+    }
+
+    // ── 5. Skip / move on ────────────────────────────────────────────
+    if (SKIP_TRIGGERS.some(w => lower.includes(w))) {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
       const ack = 'Of course, let us move on.'
       addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
@@ -590,32 +737,23 @@ export default function InterviewPage() {
       return
     }
 
-    // ── Clarification request ─────────────────────────────────
-    const CLARIFY = ['can you repeat', 'repeat that', 'what do you mean', 'can you explain',
-      "i don't understand", "i dont understand", 'come again', 'pardon']
-    if (CLARIFY.some(w => lower.includes(w))) {
-      if (rephraseCountRef.current >= 1) {
-        const defer = 'Let me know when you are ready and I will move on.'
-        addTranscript({ speaker: 'ai', text: defer, type: 'transition' })
-        await speakText(defer)
-        await delay(1500)
-        startListening()
-        return
-      }
-      rephraseCountRef.current++
-      const rephrase = `Sure — let me put it another way. ${q.question}`
-      addTranscript({ speaker: 'ai', text: rephrase, questionId: q.id, type: 'preset' })
-      await speakText(rephrase)
+    addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+
+    // ── 6. Word count — very short answer ───────────────────────────
+    const wordCount = responseText.trim().split(/\s+/).filter(Boolean).length
+    if (wordCount < 8 && !shortAnswerAskedRef.current) {
+      shortAnswerAskedRef.current = true
+      const followUp = 'Could you walk me through a specific example of that?'
+      addTranscript({ speaker: 'ai', text: followUp, type: 'transition' })
+      await speakText(followUp)
       await delay(1500)
       startListening()
       return
     }
 
-    addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
-
-    // ── Evaluate ──────────────────────────────────────────────
+    // ── 7. Evaluate ──────────────────────────────────────────────────
     let ev: EvalResult = {
-      score: 5, keyPointsCovered: [], keyPointsMissed: [],
+      score: 5, relevanceScore: 5, keyPointsCovered: [], keyPointsMissed: [],
       evaluatorNote: '', shouldAskFollowUp: false, generateDynamic: false,
       suggestedTransition: '',
     }
@@ -639,7 +777,30 @@ export default function InterviewPage() {
       ev = await res.json()
     } catch {}
 
-    // ── Save response ─────────────────────────────────────────
+    // ── 8. Relevance / rambling check ────────────────────────────────
+    if ((ev.relevanceScore ?? 5) < 4) {
+      if (!redirectGivenRef.current) {
+        redirectGivenRef.current = true
+        // Rambling (>250 words off-topic) vs simply irrelevant — different phrasing
+        const redirect = wordCount > 250
+          ? `Thank you — I want to make sure we cover everything in our time together. Let me bring it back to ${q.techTag || SECTION_LABEL[q.section] || 'the topic'}.`
+          : `I may not have been clear — I was asking specifically about ${q.expectedKeyPoints[0] ?? q.techTag ?? 'the question'}. Take your time.`
+        addTranscript({ speaker: 'ai', text: redirect, type: 'transition' })
+        await speakText(redirect)
+        await delay(1500)
+        startListening()
+        return
+      }
+      // Already redirected once — accept and move on gracefully
+      const ack = "Understood, let's move forward."
+      addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+      await speakText(ack)
+      await delay(800)
+      await moveToQuestion(currentQIdxRef.current + 1)
+      return
+    }
+
+    // ── 9. Save response ─────────────────────────────────────────────
     const qr: QuestionResponse = {
       questionId:        q.id,
       questionText:      q.question,
@@ -661,7 +822,7 @@ export default function InterviewPage() {
     setRunningScore(avg)
     updateSessionScore(avg)
 
-    // ── Next action ───────────────────────────────────────────
+    // ── 10. Next action ──────────────────────────────────────────────
     const nextIdx = currentQIdxRef.current + 1
     const nextQ   = questionsRef.current[nextIdx]
     const isSectionChange = nextQ && nextQ.section !== q.section
@@ -672,8 +833,7 @@ export default function InterviewPage() {
       await delay(1500)
       startListening()
     } else {
-      // Speak response-quality transition if NOT a section change
-      // (section changes get their own preamble in moveToQuestion)
+      // Speak quality-based transition — section changes get their own preamble in moveToQuestion
       if (!isSectionChange) {
         const transText = (ev.score ?? 5) >= 6 ? pick(TR_GOOD) : pick(TR_BRIEF)
         addTranscript({ speaker: 'ai', text: transText, type: 'transition' })
@@ -693,7 +853,10 @@ export default function InterviewPage() {
     currentQIdxRef.current = idx
     setCurrentQIdx(idx)
     setPhase('questioning')
-    rephraseCountRef.current = 0  // reset per question
+    rephraseCountRef.current      = 0     // reset all per-question edge-case state
+    redirectGivenRef.current      = false
+    shortAnswerAskedRef.current   = false
+    awaitingMoveOnChoiceRef.current = false
 
     const q    = qs[idx]
     const prevQ = idx > 0 ? qs[idx - 1] : null
