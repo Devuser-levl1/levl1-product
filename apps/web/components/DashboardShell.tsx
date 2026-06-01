@@ -11,7 +11,11 @@ import CandidatesPage from "./candidates/CandidatesPage";
 import InterviewsPage from "./interviews/InterviewsPage";
 import ReportsPage from "./reports/ReportsPage";
 import SettingsPage from "./settings/SettingsPage";
-import { ProductTour } from "./ui/ProductTour";
+// Shepherd.js accesses document/window at import time — must be client-only
+const ProductTour = dynamic(
+  () => import("./ui/ProductTour").then((m) => ({ default: m.ProductTour })),
+  { ssr: false }
+);
 import { FeedbackWidget } from "./ui/FeedbackWidget";
 import { BottomNav } from "./layout/BottomNav";
 

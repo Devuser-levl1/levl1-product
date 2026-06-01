@@ -27,6 +27,9 @@ function getExcludedDomains(domain: string, roleType: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log('[generate-questions] Called with body keys:', Object.keys(body))
+    console.log('[generate-questions] ANTHROPIC_API_KEY present:', !!process.env.ANTHROPIC_API_KEY)
+
     const {
       positionTitle, company, experienceLevel, roleType,
       primaryDomain, mustHaveTech, niceToHaveTech, domainContext,
@@ -182,7 +185,7 @@ Output ONLY the JSON object. No other text.`;
 
     const message = await client.messages.create({
       model: "claude-opus-4-7",
-      max_tokens: 4000,
+      max_tokens: 8000,   // 14-question JSON ~3k tokens; thinking blocks need extra headroom
       thinking: { type: "adaptive" },
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
@@ -200,12 +203,25 @@ Output ONLY the JSON object. No other text.`;
       .replace(/\s*```$/i, "")
       .trim();
 
-    const questions = JSON.parse(jsonText);
+    let questions
+    try {
+      questions = JSON.parse(jsonText)
+    } catch (parseError: unknown) {
+      const msg = parseError instanceof Error ? parseError.message : String(parseError)
+      console.error('[generate-questions] JSON parse failed:', msg)
+      console.error('[generate-questions] Raw output (first 500 chars):', rawText.slice(0, 500))
+      return NextResponse.json(
+        { error: 'Question generation failed — invalid response format' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ questions });
 
-  } catch (err: unknown) {
-    console.error("generate-questions error:", err);
-    const message = err instanceof Error ? err.message : "Failed to generate questions";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.error('[generate-questions] Error:', err.message)
+    console.error('[generate-questions] Stack:', err.stack)
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
