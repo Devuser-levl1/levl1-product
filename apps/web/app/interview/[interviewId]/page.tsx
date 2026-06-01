@@ -250,6 +250,7 @@ export default function InterviewPage() {
     setActiveSession, updateSessionPhase, appendTranscriptEntry,
     upsertQuestionResponse, updateSessionScore, updateSessionCode,
     updateSessionWhiteboard, incrementTabSwitch, updateCandidate, updateInterview,
+    addReport,
   } = useAppStore()
 
   const interview = interviews.find(i => i.id === interviewId)
@@ -924,6 +925,46 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setPhase, addTranscript, speakText, startListening])
 
+  // ── Generate report (called fire-and-forget after interview ends) ──
+  const generateReport = useCallback(async () => {
+    if (!candidate || !position || !interview) return
+    try {
+      console.log('[interview] Generating report for', candidate.name)
+      const res = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId,
+          candidateId:   candidate.id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email,
+          positionTitle:  position.title,
+          company:        position.company,
+          interviewDate:  new Date().toISOString().slice(0, 10),
+          duration:       position.interviewDuration ?? 30,
+          transcript:     transcriptRef.current,
+          questionResponses: responsesRef.current,
+          resumeText:     '',
+          techStack:      position.techStack,
+          experienceLevel: position.experienceLevel,
+          roleType:       '',
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      addReport(interviewId, data)
+      updateCandidate(candidate.id, {
+        reportGenerated:    true,
+        reportGeneratedAt:  new Date().toISOString(),
+      })
+      console.log('[interview] Report generated successfully')
+    } catch (err) {
+      console.error('[interview] Report generation failed:', err)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidate, position, interview, interviewId, addReport, updateCandidate])
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const startClosing = useCallback(async () => {
     setPhase('closing')
@@ -937,6 +978,7 @@ export default function InterviewPage() {
     addTranscript({ speaker: 'ai', text: closing, type: 'closing' })
     await speakText(closing)
     finishInterview()
+    generateReport().catch(console.error)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, setPhase, addTranscript, speakText])
 

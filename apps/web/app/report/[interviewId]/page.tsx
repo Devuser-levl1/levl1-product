@@ -215,11 +215,34 @@ export default function ReportPage() {
 
   const { reports, candidates, updateCandidate, addReport } = useAppStore()
   const [generating, setGenerating] = useState(false)
+  const [loadingFromDb, setLoadingFromDb] = useState(false)
 
   const report = reports[interviewId]
   const candidate = candidates.find(c => c.interviewId === interviewId)
 
-  /* Auto-generate if not found in store (would normally be triggered post-interview) */
+  /* Fetch from DB when report is not in Zustand store */
+  useEffect(() => {
+    if (report || !interviewId) return
+    setLoadingFromDb(true)
+    fetch(`/api/reports/interview/${interviewId}`)
+      .then(res => {
+        if (!res.ok) return null
+        return res.json()
+      })
+      .then((data: (CandidateReport & { error?: string }) | null) => {
+        if (data && !data.error) {
+          addReport(interviewId, data as CandidateReport)
+          // Sync candidate store flag if found
+          const c = candidates.find(x => x.interviewId === interviewId)
+          if (c) updateCandidate(c.id, { reportGenerated: true })
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingFromDb(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewId])
+
+  /* Generate report — uses localStorage transcript/responses if available */
   async function generateReport() {
     if (!candidate) {
       toast.error('Candidate not found for this interview')
@@ -227,27 +250,41 @@ export default function ReportPage() {
     }
     setGenerating(true)
     try {
+      // Prefer saved interview data from localStorage
+      let savedTranscript: unknown[] = []
+      let savedResponses:  unknown[] = []
+      try {
+        const raw = localStorage.getItem(`ic_interview_${interviewId}_complete`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          savedTranscript = parsed.transcript ?? []
+          savedResponses  = parsed.responses  ?? []
+        }
+      } catch {}
+
       const res = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           interviewId,
+          candidateId:   candidate.id,
           candidateName: candidate.name,
           candidateEmail: candidate.email,
-          positionTitle: candidate.positionTitle,
-          company: 'FinEdge Technologies',
-          interviewDate: candidate.scheduledAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-          duration: 43,
-          transcript: [],
-          questionResponses: [],
-          resumeText: '',
-          techStack: candidate.topSkills ?? [],
+          positionTitle:  candidate.positionTitle,
+          company:        '',
+          interviewDate:  candidate.scheduledAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+          duration:       30,
+          transcript:     savedTranscript,
+          questionResponses: savedResponses,
+          resumeText:     '',
+          techStack:      candidate.topSkills ?? [],
           experienceLevel: '',
-          roleType: '',
+          roleType:       '',
         }),
       })
       if (!res.ok) throw new Error('Generation failed')
-      const data: CandidateReport = await res.json()
+      const data = await res.json() as CandidateReport & { error?: string }
+      if (data.error) throw new Error(data.error)
       addReport(interviewId, data)
       updateCandidate(candidate.id, { reportGenerated: true, reportGeneratedAt: new Date().toISOString() })
       toast.success('Report generated')
@@ -272,6 +309,20 @@ export default function ReportPage() {
       updateCandidate(candidate.id, { status: 'cancelled' })
       toast.success('Candidate marked as rejected')
     }
+  }
+
+  /* ── Loading from DB state ── */
+  if (loadingFromDb) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#FAFAFA', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', gap: 16,
+      }}>
+        <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 14, color: '#94A3B8', fontWeight: 500 }}>Loading report…</p>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
   }
 
   /* ── No report state ── */
@@ -310,6 +361,7 @@ export default function ReportPage() {
         >
           ← Go back
         </button>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }

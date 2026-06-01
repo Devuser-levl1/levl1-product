@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    console.log('[generate-report] Called with keys:', Object.keys(body))
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -12,6 +14,7 @@ export async function POST(req: NextRequest) {
 
     const {
       interviewId,
+      candidateId,
       candidateName,
       candidateEmail,
       positionTitle,
@@ -25,6 +28,10 @@ export async function POST(req: NextRequest) {
       experienceLevel = '',
       roleType = '',
     } = body
+
+    if (!interviewId) {
+      return NextResponse.json({ error: 'interviewId is required' }, { status: 400 })
+    }
 
     const client = new Anthropic({ apiKey })
 
@@ -100,11 +107,61 @@ export async function POST(req: NextRequest) {
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : '{}'
     const clean = raw.replace(/```json|```/g, '').trim()
-    const report = JSON.parse(clean)
+
+    let report
+    try {
+      report = JSON.parse(clean)
+    } catch (parseError: unknown) {
+      const msg = parseError instanceof Error ? parseError.message : String(parseError)
+      console.error('[generate-report] JSON parse failed:', msg)
+      console.error('[generate-report] Raw output (first 500 chars):', raw.slice(0, 500))
+      return NextResponse.json({ error: 'Report generation failed — invalid response format' }, { status: 500 })
+    }
+
+    // ── Persist to DB ─────────────────────────────────────────────────
+    const resolvedCandidateId: string | null = candidateId ?? null
+
+    if (resolvedCandidateId) {
+      const reportData = {
+        overallScore:           Math.round(report.overallScore ?? 0),
+        recommendation:         report.recommendation ?? 'maybe',
+        professionalSummary:    report.professionalSummary ?? '',
+        sectionScores:          report.sectionScores ?? {},
+        strengthAreas:          report.strengthAreas ?? [],
+        concernAreas:           report.concernAreas ?? [],
+        questionWiseEvaluation: report.questionWiseEvaluation ?? [],
+        transcriptHighlights:   report.transcriptHighlights ?? [],
+        hrNote:                 report.hrNote ?? '',
+        l2Recommendation:       report.l2Recommendation ?? '',
+      }
+      try {
+        await prisma.report.upsert({
+          where:  { candidateId: resolvedCandidateId },
+          update: reportData,
+          create: { ...reportData, candidateId: resolvedCandidateId },
+        })
+        await prisma.candidate.update({
+          where: { id: resolvedCandidateId },
+          data:  {
+            score:          Math.round(report.overallScore ?? 0),
+            recommendation: report.recommendation ?? 'maybe',
+            interviewedAt:  new Date(),
+          },
+        })
+        console.log('[generate-report] Saved to DB for candidateId:', resolvedCandidateId)
+      } catch (dbError: unknown) {
+        const msg = dbError instanceof Error ? dbError.message : String(dbError)
+        console.error('[generate-report] DB save failed (non-fatal):', msg)
+        // Non-fatal — still return the report to the client
+      }
+    } else {
+      console.warn('[generate-report] No candidateId provided — skipping DB save')
+    }
 
     return NextResponse.json({
       ...report,
       interviewId,
+      candidateId: resolvedCandidateId,
       candidateName,
       candidateEmail,
       positionTitle,
@@ -115,7 +172,9 @@ export async function POST(req: NextRequest) {
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Report generation failed'
-    console.error('generate-report error:', message)
+    const stack   = err instanceof Error ? err.stack   : undefined
+    console.error('[generate-report] Error:', message)
+    if (stack) console.error('[generate-report] Stack:', stack)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

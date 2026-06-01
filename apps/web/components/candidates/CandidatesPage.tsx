@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor } from "lucide-react";
+import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText } from "lucide-react";
 import CandidateUploadFlow from "./CandidateUploadFlow";
 import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
@@ -38,6 +39,7 @@ function CandidateCard({
   candidate: Candidate;
   onStartInterview: (c: Candidate) => void;
 }) {
+  const router = useRouter();
   const { positions, interviews, addInterview, updateCandidate } = useAppStore();
   const position = positions.find((p) => p.id === candidate.positionId);
   const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -45,6 +47,7 @@ function CandidateCard({
 
   const isScheduled    = candidate.status === "scheduled";
   const isInterviewing = candidate.status === "interviewing";
+  const isCompleted    = candidate.status === "completed";
   const showActions    = isScheduled || isInterviewing;
 
   /* Resolve or lazily create an interviewId for the Monitor button */
@@ -213,6 +216,46 @@ function CandidateCard({
           >
             <Monitor size={11} />
             Monitor
+          </button>
+        </div>
+      )}
+
+      {/* ── View / Generate Report (completed candidates) ── */}
+      {isCompleted && candidate.interviewId && (
+        <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/report/${candidate.interviewId}`);
+            }}
+            style={{
+              width: "100%",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              background: candidate.reportGenerated
+                ? "rgba(16,185,129,0.08)"
+                : "rgba(79,70,229,0.07)",
+              border: `1px solid ${candidate.reportGenerated
+                ? "rgba(16,185,129,0.25)"
+                : "rgba(79,70,229,0.20)"}`,
+              borderRadius: 8,
+              color: candidate.reportGenerated ? "#059669" : "#4F46E5",
+              fontSize: 12, fontWeight: 700, padding: "8px 10px",
+              cursor: "pointer", whiteSpace: "nowrap",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = candidate.reportGenerated
+                ? "rgba(16,185,129,0.15)"
+                : "rgba(79,70,229,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = candidate.reportGenerated
+                ? "rgba(16,185,129,0.08)"
+                : "rgba(79,70,229,0.07)";
+            }}
+          >
+            <FileText size={11} />
+            {candidate.reportGenerated ? "View Report" : "Generate Report"}
           </button>
         </div>
       )}
