@@ -8,6 +8,28 @@ const nextConfig = {
     serverComponentsExternalPackages: ['pdf-parse', 'mammoth', 'pdfjs-dist'],
   },
 
+  /* ── Subdomain rewrites ───────────────────────────────────────────
+   *  interview.levl1.app/:token  →  /candidate/interview/:token
+   *  interview.levl1.app/:token/complete  →  /candidate/interview/:token/complete
+   *
+   *  This lets candidates use a clean branded URL while the pages live in
+   *  the main app under /candidate/interview/[token].
+   * ─────────────────────────────────────────────────────────────── */
+  async rewrites() {
+    return [
+      {
+        source:      '/:token/complete',
+        destination: '/candidate/interview/:token/complete',
+        has: [{ type: 'host', value: 'interview.levl1.app' }],
+      },
+      {
+        source:      '/:token',
+        destination: '/candidate/interview/:token',
+        has: [{ type: 'host', value: 'interview.levl1.app' }],
+      },
+    ]
+  },
+
   /* ── Service Worker: no-cache so browser always fetches the latest ── */
   async headers() {
     return [
