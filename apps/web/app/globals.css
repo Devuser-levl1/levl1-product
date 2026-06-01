@@ -377,6 +377,11 @@ body {
   .bottom-nav { display: flex; }
 }
 
+/* ── Step label (hide text labels in stepper on narrow screens) ── */
+@media (max-width: 900px) {
+  .step-label { display: none !important; }
+}
+
 /* ─── Print styles (report pages) ─── */
 @media print {
   /* Hide interactive chrome */

@@ -681,7 +681,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   }}>
                     {done ? <Check size={12} /> : i + 1}
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: current ? 700 : 500, color: current ? "#4F46E5" : done ? "#10B981" : "#94A3B8", whiteSpace: "nowrap", display: window.innerWidth < 900 ? "none" : undefined }}>
+                  <span className="step-label" style={{ fontSize: 11, fontWeight: current ? 700 : 500, color: current ? "#4F46E5" : done ? "#10B981" : "#94A3B8", whiteSpace: "nowrap" }}>
                     {s.short}
                   </span>
                 </div>

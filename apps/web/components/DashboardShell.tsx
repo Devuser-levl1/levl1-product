@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useAppStore } from "@/store/appStore";
 import { useDataLoader } from "@/hooks/useDataLoader";
 import Sidebar from "./Sidebar";
@@ -13,7 +14,12 @@ import SettingsPage from "./settings/SettingsPage";
 import { ProductTour } from "./ui/ProductTour";
 import { FeedbackWidget } from "./ui/FeedbackWidget";
 import { BottomNav } from "./layout/BottomNav";
-import { InstallPrompt } from "./ui/InstallPrompt";
+
+// Loaded client-side only — uses window.matchMedia, localStorage, navigator
+const InstallPrompt = dynamic(
+  () => import("./ui/InstallPrompt").then((m) => ({ default: m.InstallPrompt })),
+  { ssr: false }
+);
 
 const SIDEBAR_EXPANDED  = 240;
 const SIDEBAR_COLLAPSED = 64;
