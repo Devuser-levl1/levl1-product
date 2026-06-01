@@ -130,6 +130,18 @@ model Interview {
   runningScore      Int?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+
+  token InterviewToken?
+}
+
+model InterviewToken {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
 }
 
 model Report {

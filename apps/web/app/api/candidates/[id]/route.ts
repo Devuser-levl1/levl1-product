@@ -21,12 +21,30 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   }
 }
 
+/* Allowlist of fields that callers are permitted to update on a Candidate */
+const ALLOWED_CANDIDATE_FIELDS = new Set([
+  'status', 'score', 'recommendation',
+  'invitedAt', 'scheduledAt', 'interviewedAt',
+  'schedulingLink', 'remindersSent',
+])
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const body = await req.json()
+
+    // Strip any keys not in the allowlist — prevents overwriting positionId,
+    // email, resumeText, relations, or any other protected fields.
+    const safeData: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(body)) {
+      if (ALLOWED_CANDIDATE_FIELDS.has(key)) safeData[key] = value
+    }
+    if (Object.keys(safeData).length === 0) {
+      return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 })
+    }
+
     const candidate = await prisma.candidate.update({
       where: { id: params.id },
-      data: body,
+      data:  safeData,
     })
     return NextResponse.json(candidate)
   } catch (err) {
