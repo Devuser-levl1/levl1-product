@@ -25,7 +25,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default function StartInterviewModal({ candidate, position, onClose }: Props) {
   const router = useRouter()
-  const { interviews, addInterview, updateCandidate } = useAppStore()
+  const { interviews, addInterview, updateCandidate, setShowUpgradeWall } = useAppStore()
 
   /* ── ElevenLabs status (fetched server-side so the key stays secret) ── */
   const [elevenLabsOk, setElevenLabsOk] = useState<boolean | null>(null)
@@ -69,7 +69,24 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
     return newId
   }
 
-  function handleBegin() {
+  async function handleBegin() {
+    // Check usage allowance before starting
+    try {
+      const usageRes = await fetch('/api/usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check' }),
+      })
+      if (usageRes.ok) {
+        const usage = await usageRes.json()
+        if (!usage.allowed) {
+          onClose()
+          setShowUpgradeWall(true)
+          return
+        }
+      }
+    } catch { /* proceed anyway if check fails */ }
+
     const id = resolveInterviewId()
     onClose()
     router.push(`/interview/${id}`)

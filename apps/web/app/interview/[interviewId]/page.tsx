@@ -979,6 +979,12 @@ export default function InterviewPage() {
     await speakText(closing)
     finishInterview()
     generateReport().catch(console.error)
+    // Increment usage counter (fire-and-forget)
+    fetch('/api/usage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'increment' }),
+    }).catch(() => { /* non-critical */ })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, setPhase, addTranscript, speakText])
 

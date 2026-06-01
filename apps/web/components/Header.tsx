@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Search, Bell, ChevronDown, Settings, LogOut, User } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import toast from "react-hot-toast";
+import TrialBanner from "@/components/ui/TrialBanner";
+import UpgradeWallModal from "@/components/ui/UpgradeWallModal";
 
 const MOCK_NOTIFICATIONS = [
   {
@@ -32,14 +34,47 @@ const MOCK_NOTIFICATIONS = [
 
 export default function Header() {
   const router = useRouter();
-  const { setActiveSection } = useAppStore();
+  const { setActiveSection, agencyPlan, setAgencyPlan } = useAppStore();
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUser, setShowUser] = useState(false);
   const [unread, setUnread] = useState(2);
+  const [userName, setUserName] = useState('');
+  const [userInitials, setUserInitials] = useState('');
 
   const notifsRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
+
+  // Load session / agency plan on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        const { user, agency } = data;
+        if (user) {
+          const parts = (user.name ?? '').split(' ');
+          setUserName(parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : ''));
+          setUserInitials(
+            (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? parts[0]?.[1] ?? '')
+          );
+        }
+        if (agency) {
+          setAgencyPlan({
+            agencyId: agency.id,
+            agencyName: agency.name,
+            plan: agency.plan,
+            interviewsUsed: agency.interviewsUsed,
+            interviewsLimit: agency.interviewsLimit,
+            trialExpiresAt: agency.trialExpiresAt,
+            trialDaysLeft: agency.trialDaysLeft ?? 0,
+            subscriptionStatus: agency.subscriptionStatus,
+          });
+        }
+      })
+      .catch(() => null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -55,9 +90,13 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function handleSignOut() {
+  async function handleSignOut() {
     setShowUser(false);
-    router.push("/");
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch { /* ignore */ }
+    setAgencyPlan(null);
+    router.push('/login');
   }
 
   function handleOpenNotifs() {
@@ -67,21 +106,26 @@ export default function Header() {
   }
 
   return (
+    <>
+      <UpgradeWallModal />
     <header
       style={{
-        height: 64,
         background: "#fff",
         borderBottom: "1px solid #E2E8F0",
-        display: "flex",
-        alignItems: "center",
         padding: "0 32px",
-        gap: 16,
         position: "sticky",
         top: 0,
         zIndex: 40,
         boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
       }}
     >
+      {/* Trial banner — only shown on trial plan */}
+      {agencyPlan?.plan === 'trial' && (
+        <div style={{ paddingTop: 10 }}>
+          <TrialBanner />
+        </div>
+      )}
+      <div style={{ height: 64, display: "flex", alignItems: "center", gap: 16 }}>
       {/* Search — hidden on mobile to save space */}
       <div className="header-search" style={{ flex: 1, maxWidth: 400 }}>
         <button
@@ -198,11 +242,11 @@ export default function Header() {
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0,
             }}>
-              AM
+              {userInitials || '?'}
             </div>
             <div className="header-user-text" style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", lineHeight: 1.2 }}>Abhijit M.</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.2 }}>Admin</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", lineHeight: 1.2 }}>{userName || 'User'}</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.2 }}>{agencyPlan?.plan === 'trial' ? 'Trial' : 'Admin'}</div>
             </div>
             <ChevronDown className="header-user-chevron" size={13} color="#94A3B8" />
           </button>
@@ -257,6 +301,8 @@ export default function Header() {
           )}
         </div>
       </div>
+      </div>
     </header>
+    </>
   );
 }

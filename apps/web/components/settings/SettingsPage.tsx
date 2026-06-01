@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Bell, Mic, Users, ChevronRight, Play, Loader2 } from "lucide-react";
+import { Settings, Bell, Mic, Users, ChevronRight, Play, Loader2, CreditCard, TrendingUp, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
+import { useAppStore } from "@/store/appStore";
 
 function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
   return (
@@ -74,6 +75,9 @@ const SELECT_STYLE: React.CSSProperties = {
 };
 
 export default function SettingsPage() {
+  const { agencyPlan, setShowUpgradeWall } = useAppStore();
+  const [billingLoading, setBillingLoading] = useState<string | null>(null);
+
   const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
   const [agencyEmail,   setAgencyEmail]   = useState("abma3005@gmail.com");
   const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
@@ -145,6 +149,46 @@ export default function SettingsPage() {
   };
 
   const selectedOption = getVoiceOption(voiceAccent);
+
+  async function handleUpgrade(planId: string) {
+    setBillingLoading(planId);
+    try {
+      const res = await fetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Could not create order'); setBillingLoading(null); return; }
+
+      const cf = (window as unknown as Record<string, unknown>).Cashfree;
+      if (cf && typeof cf === 'function') {
+        const cashfree = (cf as (opts: unknown) => { checkout: (opts: unknown) => void })({
+          mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+        });
+        cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
+      } else {
+        toast.error('Payment SDK not ready. Please refresh and try again.');
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setBillingLoading(null);
+    }
+  }
+
+  const BILLING_PLANS = [
+    {
+      id: 'starter', name: 'Starter', price: '₹15,000/mo', interviews: 50,
+      features: ['50 interviews/month', '5 active positions', 'AI question generation', 'Evaluation reports'],
+      color: '#4F46E5',
+    },
+    {
+      id: 'professional', name: 'Professional', price: '₹45,000/mo', interviews: 200,
+      features: ['200 interviews/month', 'Unlimited positions', 'White-label reports', 'Priority support'],
+      color: '#7C3AED', popular: true,
+    },
+  ];
 
   return (
     <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 760 }}>
@@ -317,6 +361,112 @@ export default function SettingsPage() {
         <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => toast("Invite team member — coming soon")}>
           + Invite Team Member
         </button>
+      </Section>
+
+      {/* Billing */}
+      <Section icon={CreditCard} title="Billing & Plan" description="Manage your subscription and usage">
+        {/* Current plan card */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(79,70,229,0.04) 0%, rgba(124,58,237,0.06) 100%)',
+          border: '1px solid rgba(79,70,229,0.15)',
+          borderRadius: 12,
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 4 }}>Current Plan</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#4F46E5', fontFamily: 'var(--font-display)', textTransform: 'capitalize' }}>
+              {agencyPlan?.plan ?? 'Trial'}
+            </div>
+            {agencyPlan?.plan === 'trial' && (
+              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+                {agencyPlan.interviewsUsed} / {agencyPlan.interviewsLimit} interviews used · {agencyPlan.trialDaysLeft} days remaining
+              </div>
+            )}
+          </div>
+          {/* Usage bar */}
+          {agencyPlan && (
+            <div style={{ flex: 1, minWidth: 120, maxWidth: 200 }}>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 6, fontWeight: 500 }}>
+                Usage: {agencyPlan.interviewsUsed} / {agencyPlan.interviewsLimit}
+              </div>
+              <div style={{ height: 6, borderRadius: 4, background: '#E2E8F0', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min((agencyPlan.interviewsUsed / agencyPlan.interviewsLimit) * 100, 100)}%`,
+                  background: agencyPlan.interviewsUsed >= agencyPlan.interviewsLimit ? '#EF4444' : '#4F46E5',
+                  borderRadius: 4,
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+            </div>
+          )}
+          {agencyPlan?.plan === 'trial' && (
+            <button
+              onClick={() => setShowUpgradeWall(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: '#4F46E5', color: '#fff', border: 'none',
+                borderRadius: 9, padding: '10px 18px', fontSize: 13,
+                fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
+              }}
+            >
+              <TrendingUp size={14} />
+              Upgrade Now
+            </button>
+          )}
+        </div>
+
+        {/* Plan comparison (only show when on trial or starter) */}
+        {agencyPlan && ['trial', 'starter'].includes(agencyPlan.plan) && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="billing-plan-grid">
+            {BILLING_PLANS.filter((p) => agencyPlan.plan === 'trial' || p.id === 'professional').map((plan) => (
+              <div
+                key={plan.id}
+                style={{
+                  border: plan.popular ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+                  borderRadius: 12, padding: '18px 16px',
+                  position: 'relative',
+                  background: plan.popular ? 'rgba(124,58,237,0.02)' : '#fff',
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, fontFamily: 'var(--font-display)', marginBottom: 2 }}>{plan.name}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#1E293B', marginBottom: 10 }}>{plan.price}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                  {plan.features.map((f) => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <CheckCircle2 size={13} color={plan.color} style={{ marginTop: 1, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.5 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleUpgrade(plan.id)}
+                  disabled={billingLoading === plan.id}
+                  style={{
+                    width: '100%',
+                    background: billingLoading === plan.id ? '#94A3B8' : plan.color,
+                    color: '#fff', border: 'none', borderRadius: 8,
+                    padding: '9px 14px', fontSize: 13, fontWeight: 700,
+                    cursor: billingLoading === plan.id ? 'not-allowed' : 'pointer',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
+                  {billingLoading === plan.id ? 'Processing…' : `Upgrade to ${plan.name}`}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontSize: 11, color: '#94A3B8' }}>
+          Secure payments via Cashfree · GST applicable · Cancel anytime
+        </p>
       </Section>
 
       {/* Save */}

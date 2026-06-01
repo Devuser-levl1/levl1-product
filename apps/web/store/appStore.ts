@@ -184,6 +184,18 @@ export interface InterviewSession {
   candidateTabSwitches: number
 }
 
+/* ── Agency plan (subscription / trial state) ───────────────────── */
+export interface AgencyPlan {
+  agencyId:        string
+  agencyName:      string
+  plan:            'trial' | 'starter' | 'professional' | 'enterprise' | 'expired'
+  interviewsUsed:  number
+  interviewsLimit: number
+  trialExpiresAt:  string | null   // ISO string
+  trialDaysLeft:   number
+  subscriptionStatus: string | null
+}
+
 /* ── Store interface ────────────────────────────────────────────── */
 
 interface AppStore {
@@ -211,6 +223,11 @@ interface AppStore {
   setShowNewPositionFlow: (v: boolean) => void
   showUploadFlow: boolean
   setShowUploadFlow: (v: boolean) => void
+  /* Agency plan */
+  agencyPlan: AgencyPlan | null
+  setAgencyPlan: (plan: AgencyPlan | null) => void
+  showUpgradeWall: boolean
+  setShowUpgradeWall: (v: boolean) => void
   /* Interview session */
   activeSession: InterviewSession | null
   setActiveSession: (session: InterviewSession | null) => void
@@ -626,6 +643,11 @@ export const useAppStore = create<AppStore>((set) => ({
   setShowNewPositionFlow: (v) => set({ showNewPositionFlow: v }),
   showUploadFlow: false,
   setShowUploadFlow: (v) => set({ showUploadFlow: v }),
+  /* Agency plan */
+  agencyPlan: null,
+  setAgencyPlan: (plan) => set({ agencyPlan: plan }),
+  showUpgradeWall: false,
+  setShowUpgradeWall: (v) => set({ showUpgradeWall: v }),
   /* Interview session */
   activeSession: null,
   setActiveSession: (session) => set({ activeSession: session }),

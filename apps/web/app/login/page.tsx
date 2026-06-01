@@ -3,75 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Zap, Eye, EyeOff, ArrowRight, X, Star } from "lucide-react";
+import { Zap, Eye, EyeOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
-
-function ContactModal({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitted(true);
-  }
-
-  return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 9999,
-        background: "rgba(15,10,46,0.55)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={{ background: "#fff", borderRadius: 18, width: 480, maxWidth: "calc(100vw - 32px)", boxShadow: "0 32px 80px rgba(79,70,229,0.18)", overflow: "hidden", border: "1px solid #E2E8F0" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5" }}>Request Access</div>
-            <div style={{ fontSize: 13, color: "#94A3B8", marginTop: 2 }}>We&apos;ll get back to you within 24 hours</div>
-          </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 7, display: "flex" }}>
-            <X size={17} />
-          </button>
-        </div>
-        <div style={{ padding: "24px" }}>
-          {submitted ? (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <Star size={24} color="#10B981" />
-              </div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>Thank you!</div>
-              <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6 }}>Thank you, we will be in touch.</div>
-              <button onClick={onClose} style={{ marginTop: 24, background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Close</button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Full Name</label>
-                <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Smith" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Email Address</label>
-                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@company.com" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", boxSizing: "border-box" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>Message</label>
-                <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell us about your use case…" rows={4} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
-              </div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button type="button" onClick={onClose} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, color: "#475569", fontSize: 13, fontWeight: 600, padding: "9px 18px", cursor: "pointer" }}>Cancel</button>
-                <button type="submit" style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 9, padding: "9px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Send Message</button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function GoogleIcon() {
   return (
@@ -103,7 +36,6 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,14 +45,28 @@ export default function LoginPage() {
     }
     setError("");
     setLoading(true);
-    // Simulate network delay then redirect
-    await new Promise((r) => setTimeout(r, 900));
-    router.push("/dashboard");
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Login failed. Please check your credentials.');
+        setLoading(false);
+        return;
+      }
+      toast.success('Welcome back!');
+      router.push('/dashboard');
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
   };
 
   const handleGoogle = () => {
-    setLoading(true);
-    setTimeout(() => router.push("/dashboard"), 700);
+    toast('Google sign-in coming soon');
   };
 
   return (
@@ -133,7 +79,6 @@ export default function LoginPage() {
         fontFamily: "var(--font-sans)",
       }}
     >
-      {showRequestModal && <ContactModal onClose={() => setShowRequestModal(false)} />}
       {/* ── LEFT: Form panel ── */}
       <div
         style={{
@@ -417,23 +362,16 @@ export default function LoginPage() {
             }}
           >
             Don&apos;t have an account?{" "}
-            <button
-              type="button"
-              onClick={() => setShowRequestModal(true)}
+            <Link
+              href="/signup"
               style={{
                 color: "#7C3AED",
                 textDecoration: "none",
                 fontWeight: 600,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-                fontSize: 13,
-                padding: 0,
               }}
             >
-              Request access
-            </button>
+              Start free trial
+            </Link>
           </p>
         </div>
       </div>

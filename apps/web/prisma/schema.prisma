@@ -12,24 +12,73 @@ model Agency {
   id          String   @id @default(cuid())
   name        String
   website     String?
-  plan        String   @default("agency")
   voiceAccent String   @default("american")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  positions Position[]
-  users     User[]
+  // plan: trial | starter | professional | enterprise | expired
+  plan              String    @default("trial")
+  trialStartedAt    DateTime  @default(now())
+  trialExpiresAt    DateTime?
+  trialInterviews   Int       @default(0)
+  trialLimit        Int       @default(5)
+
+  // Paid subscription
+  subscriptionId     String?
+  subscriptionStatus String?
+  currentPeriodEnd   DateTime?
+
+  // Usage
+  interviewsUsed  Int @default(0)
+  interviewsLimit Int @default(5)
+
+  // Billing
+  billingEmail       String?
+  cashfreeCustomerId String?
+
+  // Email / sender config
+  senderName           String?
+  senderEmail          String?
+  resendDomainVerified Boolean @default(false)
+
+  // White-label
+  logoUrl    String?
+  brandColor String? @default("#4F46E5")
+
+  positions     Position[]
+  users         User[]
+  subscriptions Subscription[]
 }
 
 model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  role     String @default("recruiter")
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id])
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  phone              String?
+  role               String    @default("recruiter")
+  agencyId           String
+  agency             Agency    @relation(fields: [agencyId], references: [id])
+  passwordHash       String?
+  emailVerified      Boolean   @default(false)
+  emailVerifyToken   String?
+  resetPasswordToken String?
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+}
 
-  createdAt DateTime @default(now())
+model Subscription {
+  id                 String    @id @default(cuid())
+  agencyId           String
+  agency             Agency    @relation(fields: [agencyId], references: [id])
+  plan               String
+  status             String
+  cashfreeSubId      String?
+  amount             Int
+  currency           String    @default("INR")
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelledAt        DateTime?
+  createdAt          DateTime  @default(now())
 }
 
 model Position {

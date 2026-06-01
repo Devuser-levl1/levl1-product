@@ -32,6 +32,8 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* Cashfree Payment SDK */}
+        <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />
       </head>
       <body>
         <ServiceWorkerRegistrar />
