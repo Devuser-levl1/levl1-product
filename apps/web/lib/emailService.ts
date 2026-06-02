@@ -1,10 +1,12 @@
 /**
  * Email service using Resend REST API (no SDK needed).
- * Set RESEND_API_KEY env var. Falls back to console log in dev if not set.
+ * Required env vars:
+ *   RESEND_API_KEY   — Resend API key
+ *   FROM_EMAIL       — verified sender address, e.g. "Levl1 <noreply@mail.levl1.io>"
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const DEFAULT_FROM = process.env.RESEND_FROM_EMAIL ?? 'Levl1 <noreply@levl1.app>'
+const DEFAULT_FROM = process.env.FROM_EMAIL ?? 'Levl1 <noreply@mail.levl1.io>'
 
 interface EmailOptions {
   to: string | string[]
@@ -14,6 +16,11 @@ interface EmailOptions {
 }
 
 export async function sendEmail(opts: EmailOptions): Promise<{ id?: string }> {
+  // Debug: log key env vars on every send attempt
+  console.log('[email] FROM_EMAIL:', process.env.FROM_EMAIL)
+  console.log('[email] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
+  console.log('[email] RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.slice(0, 8))
+
   if (!RESEND_API_KEY) {
     // Dev fallback — log to console, don't throw (so other DB writes still complete)
     console.log('[emailService] RESEND_API_KEY not set — logging email instead of sending')
