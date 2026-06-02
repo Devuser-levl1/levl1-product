@@ -4,9 +4,25 @@ import { sendEmail } from '@/lib/emailService'
 
 export const dynamic = 'force-dynamic'
 
+function parseJsonField(val: unknown): object[] {
+  if (!val) return []
+  if (Array.isArray(val)) return val as object[]
+  if (typeof val === 'string') { try { return JSON.parse(val) } catch { return [] } }
+  return []
+}
+
+function ensureIds(arr: object[]): object[] {
+  return arr.map((q, i) => ({
+    ...q,
+    id: (q as Record<string, unknown>).id ?? `q-${i}-${Date.now()}`,
+  }))
+}
+
 // GET — validate token and return position + questions
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   try {
+    console.log('[approve] token:', params.token)
+
     const approval = await prisma.approvalToken.findUnique({
       where:   { token: params.token },
       include: {
@@ -15,6 +31,10 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
         },
       },
     })
+
+    console.log('[approve] approval found:', !!approval)
+    console.log('[approve] position found:', !!approval?.position)
+    console.log('[approve] questionSet found:', !!approval?.position?.questionSet)
 
     if (!approval) return NextResponse.json({ error: 'Invalid approval link' }, { status: 404 })
     if (approval.status !== 'pending') {
@@ -27,9 +47,32 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     const pos = approval.position
     const qs  = pos.questionSet
 
-    // Return only questions relevant to this approver type
+    if (!qs) {
+      console.warn('[approve] questionSet is null for position:', pos.id)
+      return NextResponse.json({
+        id:            approval.id,
+        type:          approval.type,
+        positionTitle: pos.title,
+        company:       pos.company,
+        department:    pos.department,
+        experienceLevel: pos.experienceLevel,
+        techStack:     pos.techStack,
+        questions: { technical: [], scenario: [], whiteboard: [], behavioral: [], eq: [] },
+        questionSetId: null,
+        warning: 'No questions have been generated for this position yet.',
+      })
+    }
+
     const isTechLead = approval.type === 'tech_lead'
     const isHR       = approval.type === 'hr'
+
+    const technical  = parseJsonField(qs.technicalQuestions)
+    const scenario   = parseJsonField(qs.scenarioQuestions)
+    const whiteboard = parseJsonField(qs.whiteboardQuestions)
+    const behavioral = parseJsonField(qs.behavioralQuestions)
+    const eq         = parseJsonField(qs.eqQuestions)
+
+    console.log('[approve] question counts — tech:', technical.length, 'scenario:', scenario.length, 'whiteboard:', whiteboard.length, 'behavioral:', behavioral.length, 'eq:', eq.length)
 
     return NextResponse.json({
       id:            approval.id,
@@ -40,16 +83,17 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       experienceLevel: pos.experienceLevel,
       techStack:     pos.techStack,
       questions: {
-        technical:   isTechLead ? (qs?.technicalQuestions  ?? []) : [],
-        scenario:    isTechLead ? (qs?.scenarioQuestions   ?? []) : [],
-        whiteboard:  isTechLead ? (qs?.whiteboardQuestions ?? []) : [],
-        behavioral:  isHR       ? (qs?.behavioralQuestions ?? []) : [],
-        eq:          isHR       ? (qs?.eqQuestions         ?? []) : [],
+        technical:   isTechLead ? ensureIds(technical)  : [],
+        scenario:    isTechLead ? ensureIds(scenario)   : [],
+        whiteboard:  isTechLead ? ensureIds(whiteboard) : [],
+        behavioral:  isHR       ? ensureIds(behavioral) : [],
+        eq:          isHR       ? ensureIds(eq)         : [],
       },
-      questionSetId: qs?.id,
+      questionSetId: qs.id,
     })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to load approval'
+    console.error('[approve] GET error:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
@@ -58,7 +102,6 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
 export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
   try {
     const { decision, comments, updatedQuestions } = await req.json()
-    // decision: 'approved' | 'changes_requested'
 
     const approval = await prisma.approvalToken.findUnique({
       where:   { token: params.token },
@@ -72,21 +115,18 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     if (approval.status !== 'pending') return NextResponse.json({ error: 'Already submitted' }, { status: 400 })
     if (new Date() > approval.expiresAt) return NextResponse.json({ error: 'Link expired' }, { status: 410 })
 
-    // Update approval token
     await prisma.approvalToken.update({
       where: { id: approval.id },
       data:  { status: decision, comments: comments ?? null, approvedAt: new Date() },
     })
 
-    // If approved, update Position approved fields
     if (decision === 'approved') {
       const updateData: Record<string, boolean> = {}
       if (approval.type === 'tech_lead') updateData.techLeadApproved = true
-      if (approval.type === 'hr')        updateData.hrApproved        = true
+      if (approval.type === 'hr')        updateData.hrApproved = true
       await prisma.position.update({ where: { id: approval.positionId }, data: updateData })
     }
 
-    // Save any question edits back to the question set
     if (updatedQuestions && approval.position.questionSet) {
       const qsUpdate: Record<string, unknown> = {}
       if (updatedQuestions.technical)  qsUpdate.technicalQuestions  = updatedQuestions.technical
@@ -99,7 +139,6 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       }
     }
 
-    // Check if BOTH tech lead AND HR have approved → activate position
     const [techApproval, hrApproval] = await Promise.all([
       prisma.approvalToken.findFirst({ where: { positionId: approval.positionId, type: 'tech_lead', status: 'approved' } }),
       prisma.approvalToken.findFirst({ where: { positionId: approval.positionId, type: 'hr', status: 'approved' } }),
@@ -112,31 +151,26 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
 
     let positionActivated = false
     if (bothDone && decision === 'approved') {
-      await prisma.position.update({
-        where: { id: approval.positionId },
-        data:  { status: 'active' },
-      })
+      await prisma.position.update({ where: { id: approval.positionId }, data: { status: 'active' } })
       positionActivated = true
 
-      // Notify recruiter
       if (position.agency) {
         await prisma.notification.create({
           data: {
             agencyId: position.agency.id,
             type:     'position_activated',
             title:    'Position activated',
-            body:     `${position.title} is now live — both tech lead and HR have approved.`,
+            body:     `${position.title} is now live — all approvals received.`,
             link:     `/positions/${position.id}`,
           },
         }).catch(() => {})
 
-        // Email recruiter
-        if (process.env.RESEND_API_KEY) {
+        if (process.env.RESEND_API_KEY && position.agency.senderEmail) {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
           await sendEmail({
-            to:      position.agency.senderEmail ?? '',
+            to:      position.agency.senderEmail,
             subject: `✅ ${position.title} is now live on Levl1`,
-            html: `<p>Both approvers have approved the interview questions for <strong>${position.title}</strong>. The position is now active and ready for candidates.</p><a href="${appUrl}/positions/${position.id}">View Position</a>`,
+            html:    `<p>All approvers have approved the interview questions for <strong>${position.title}</strong>. The position is now active.</p><a href="${appUrl}/positions/${position.id}">View Position →</a>`,
           }).catch(() => {})
         }
       }
@@ -153,7 +187,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to submit approval'
-    console.error('[approve/[token]] POST error:', msg)
+    console.error('[approve] POST error:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

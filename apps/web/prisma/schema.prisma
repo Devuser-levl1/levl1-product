@@ -148,6 +148,7 @@ model Position {
   interviewDuration  Int       @default(30)
   status             String    @default("draft")
   jdText             String?   @db.Text
+  jdSource           String?   // pasted | generated | uploaded
   jdApprovedBy       String?
   jdApprovedAt       DateTime?
   techLeadApproved   Boolean   @default(false)
@@ -294,6 +295,17 @@ model PositionReport {
   questionHealthFlags  Json
   hiringRecommendation String   @db.Text
   generatedAt          DateTime @default(now())
+}
+
+model DeletionLog {
+  id         String   @id @default(cuid())
+  entityType String   // candidate | interview | position
+  entityId   String
+  entityName String
+  deletedBy  String
+  reason     String   @db.Text
+  agencyId   String
+  createdAt  DateTime @default(now())
 }
 
 model Feedback {

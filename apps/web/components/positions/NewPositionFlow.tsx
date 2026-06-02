@@ -301,9 +301,13 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [savedPositionId,   setSavedPositionId]   = useState<string | null>(null);
   const [emailApprovalSent, setEmailApprovalSent] = useState(false);
   const [sendingApproval,   setSendingApproval]   = useState(false);
+  const [activating,        setActivating]        = useState(false);
+  const [dupModal,          setDupModal]          = useState<{ existingId: string; message: string } | null>(null);
 
   // Derived
   const finalJD = jdTab === "generate" ? generatedJD : pastedJD;
+  // JD approval only needed when JD was AI-generated — pasted/uploaded means client already provided it
+  const requiresJDApproval = jdTab === "generate";
 
   // Rubric total
   const rubricTotal = scoringRubric.technical + scoringRubric.problemSolving + scoringRubric.behavioral + scoringRubric.eq;
@@ -312,9 +316,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const canContinue = () => {
     if (step === 0) return positionTitle.trim() !== "" && company.trim() !== "";
     if (step === 1) return finalJD.trim().length > 50;
-    if (step === 2) return true; // skills always passable
+    if (step === 2) return true;
     if (step === 3) return true;
-    if (step === 4) return jdApproved;
+    if (step === 4) return !requiresJDApproval || jdApproved; // auto-pass for pasted/uploaded JDs
     if (step === 5) return questions !== null;
     if (step === 6) {
       if (!questions) return false;
@@ -327,9 +331,16 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
   const next = () => {
     if (step === 5 && !questions) { generateQuestions(); return; }
+    // Skip JD Approval step entirely when not required
+    if (step === 3 && !requiresJDApproval) { setStep(5); return; }
+    if (step === 5 && !requiresJDApproval) { /* no back skip needed */ }
     if (canContinue()) setStep((s) => Math.min(s + 1, 7));
   };
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const back = () => {
+    // Skip JD Approval step on back when not required
+    if (step === 5 && !requiresJDApproval) { setStep(3); return; }
+    setStep((s) => Math.max(s - 1, 0));
+  };
 
   // ── Parse JD ──────────────────────────────────────────────────────────
   const parseJD = async () => {
@@ -541,7 +552,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   };
 
   const activatePosition = async () => {
-    if (!questions) return;
+    if (!questions || activating) return;
+    setActivating(true);
     try {
       const posRes = await fetch("/api/positions", {
         method: "POST",
@@ -560,6 +572,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           softSkillWeightage: weights,
         }),
       });
+      if (posRes.status === 409) {
+        const dup = await posRes.json();
+        setDupModal({ existingId: dup.existingId, message: dup.message });
+        return;
+      }
       if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
       const position = await posRes.json();
       await fetch(`/api/positions/${position.id}/questions`, {
@@ -587,12 +604,33 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       setStep(7);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to activate position");
+    } finally {
+      setActivating(false);
     }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#FAFAFA", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+      {/* Duplicate position modal */}
+      {dupModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(15,23,42,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 440, padding: "28px 32px", boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5", margin: "0 0 10px" }}>Position Already Exists</h3>
+            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, marginBottom: 24 }}>{dupModal.message}<br />Do you want to open the existing position or create a new one?</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" onClick={() => setDupModal(null)} style={{ flex: 1, padding: "11px 16px", borderRadius: 9, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+                Create New Anyway
+              </button>
+              <button type="button" onClick={() => { window.open(`/positions/${dupModal.existingId}`, "_blank"); setDupModal(null); onClose(); }}
+                style={{ flex: 1, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none", borderRadius: 9, padding: "11px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+                Open Existing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Top bar ── */}
       <div style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -1214,8 +1252,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               )}
 
               {allApproved && (
-                <button type="button" className="btn-navy" style={{ width: "100%", justifyContent: "center", fontSize: 14 }} onClick={activatePosition}>
-                  <Sparkles size={15} /> Activate Position
+                <button type="button" className="btn-navy" style={{ width: "100%", justifyContent: "center", fontSize: 14, opacity: activating ? 0.7 : 1 }} onClick={activatePosition} disabled={activating}>
+                  {activating ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={15} />}
+                  {activating ? "Saving…" : "Activate Position"}
                 </button>
               )}
             </>

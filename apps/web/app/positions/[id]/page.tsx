@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
   BarChart3, Plus, Mail, Download, Loader2, AlertCircle,
-  Tag, Zap, Target, Shield, Send,
+  Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -172,6 +173,22 @@ export default function PositionDetailPage() {
   const [tab, setTab]               = useState<TabKey>('overview')
   const [reportsLoading, setReportsLoading] = useState(false)
 
+  // Fix 5: upload modal with positionId pre-set
+  const [showUpload, setShowUpload] = useState(false)
+
+  // Fix 6: delete candidate modal
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteReason, setDeleteReason] = useState('')
+  const [deleting, setDeleting]         = useState(false)
+
+  // Fix 7: won/lost modal
+  const [statusModal, setStatusModal] = useState<'won' | 'lost' | null>(null)
+  const [wonCandidate, setWonCandidate] = useState('')
+  const [wonNotes, setWonNotes]         = useState('')
+  const [lostReason, setLostReason]     = useState('')
+  const [lostNotes, setLostNotes]       = useState('')
+  const [statusDropOpen, setStatusDropOpen] = useState(false)
+
   // Fetch position
   useEffect(() => {
     if (!id) return
@@ -237,8 +254,114 @@ export default function PositionDetailPage() {
   const candidates = position.candidates ?? []
   const completedCount = candidates.filter(c => c.status === 'completed').length
 
+  const handleDeleteCandidate = async () => {
+    if (!deleteTarget || !deleteReason.trim()) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/candidates/${deleteTarget.id}/delete`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: deleteReason }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
+      setPosition(p => p ? { ...p, candidates: (p.candidates ?? []).filter(c => c.id !== deleteTarget.id) } : p)
+      toast.success(`${deleteTarget.name} deleted`)
+      setDeleteTarget(null); setDeleteReason('')
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Delete failed') }
+    finally { setDeleting(false) }
+  }
+
+  const handleStatusChange = async (newStatus: 'won' | 'lost' | 'paused' | 'closed') => {
+    try {
+      const body: Record<string, unknown> = { status: newStatus }
+      if (newStatus === 'won')  { body.wonCandidateId = wonCandidate; body.wonNotes = wonNotes }
+      if (newStatus === 'lost') { body.lostReason = lostReason; body.lostNotes = lostNotes }
+      const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!res.ok) throw new Error('Failed to update')
+      setPosition(p => p ? { ...p, status: newStatus } : p)
+      setStatusModal(null); setStatusDropOpen(false)
+      toast.success(`Position marked as ${newStatus}`)
+    } catch { toast.error('Failed to update position status') }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'var(--font-sans)' }}>
+
+      {/* Fix 5: upload modal pre-set to this position */}
+      {showUpload && <CandidateUploadFlow onClose={() => setShowUpload(false)} presetPositionId={id} />}
+
+      {/* Fix 6: delete candidate confirmation */}
+      {deleteTarget && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#EF4444', margin: '0 0 8px' }}>Delete Candidate</h3>
+            <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 20 }}>
+              You are about to delete <strong>{deleteTarget.name}</strong>. This cannot be undone.
+            </p>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Reason for deletion (required)</label>
+            <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
+              placeholder="e.g. Candidate withdrew, duplicate entry…"
+              style={{ width: '100%', minHeight: 80, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setDeleteTarget(null); setDeleteReason('') }}
+                style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
+              <button onClick={handleDeleteCandidate} disabled={!deleteReason.trim() || deleting}
+                style={{ flex: 1, background: deleting || !deleteReason.trim() ? '#94A3B8' : '#EF4444', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: deleting || !deleteReason.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
+                {deleting ? 'Deleting…' : 'Delete Candidate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fix 7: won modal */}
+      {statusModal === 'won' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <Trophy size={22} color="#F59E0B" />
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#1E293B', margin: 0 }}>Mark Position as Won</h3>
+            </div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Which candidate was selected?</label>
+            <select value={wonCandidate} onChange={e => setWonCandidate(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', marginBottom: 16, background: '#F8FAFC' }}>
+              <option value="">— Select candidate —</option>
+              {candidates.filter(c => c.status === 'completed').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Notes (optional)</label>
+            <textarea value={wonNotes} onChange={e => setWonNotes(e.target.value)} placeholder="e.g. Client selected after L2 interview"
+              style={{ width: '100%', minHeight: 72, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setStatusModal(null)} style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
+              <button onClick={() => handleStatusChange('won')} style={{ flex: 1, background: '#F59E0B', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fix 7: lost modal */}
+      {statusModal === 'lost' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <X size={22} color="#EF4444" />
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#1E293B', margin: 0 }}>Mark Position as Lost</h3>
+            </div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 10 }}>Reason</label>
+            {['Client cancelled the requirement', 'Candidate accepted another offer', 'Budget freeze', 'Position put on hold', 'Other'].map(r => (
+              <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer', fontSize: 14, color: '#475569' }}>
+                <input type="radio" name="lost-reason" value={r} checked={lostReason === r} onChange={e => setLostReason(e.target.value)} style={{ accentColor: '#4F46E5' }} /> {r}
+              </label>
+            ))}
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6, marginTop: 10 }}>Notes (optional)</label>
+            <textarea value={lostNotes} onChange={e => setLostNotes(e.target.value)} placeholder="Additional context…"
+              style={{ width: '100%', minHeight: 72, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setStatusModal(null)} style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
+              <button onClick={() => handleStatusChange('lost')} disabled={!lostReason} style={{ flex: 1, background: !lostReason ? '#94A3B8' : '#EF4444', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: !lostReason ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Header bar ── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 32px', height: 60, display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 40, boxShadow: '0 1px 3px rgba(79,70,229,0.04)' }}>
@@ -266,12 +389,31 @@ export default function PositionDetailPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => toast('Edit coming soon')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 500, flexShrink: 0 }}
-        >
-          <Edit3 size={13} /> Edit
-        </button>
+        {/* Fix 7: status dropdown */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button onClick={() => setStatusDropOpen(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+            <Edit3 size={13} /> Actions <ChevronDown size={12} />
+          </button>
+          {statusDropOpen && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', minWidth: 200, zIndex: 50, overflow: 'hidden' }}
+              onMouseLeave={() => setStatusDropOpen(false)}>
+              {[
+                { label: 'Pause position',  action: () => handleStatusChange('paused'),  color: '#D97706' },
+                { label: '✓ Mark as Won',   action: () => { setStatusDropOpen(false); setStatusModal('won'); }, color: '#059669' },
+                { label: '✗ Mark as Lost',  action: () => { setStatusDropOpen(false); setStatusModal('lost'); }, color: '#EF4444' },
+                { label: 'Close position',  action: () => handleStatusChange('closed'),  color: '#64748B' },
+              ].map(item => (
+                <button key={item.label} onClick={item.action}
+                  style={{ width: '100%', display: 'block', textAlign: 'left', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: item.color, fontFamily: 'var(--font-sans)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFC')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Tab bar ── */}
@@ -561,7 +703,7 @@ export default function PositionDetailPage() {
               <p style={{ fontSize: 14, color: '#64748B' }}>{candidates.length} candidates</p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  onClick={() => router.push('/dashboard?section=candidates')}
+                  onClick={() => setShowUpload(true)}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
                 >
                   <Plus size={13} /> Upload Resumes
@@ -577,8 +719,8 @@ export default function PositionDetailPage() {
             ) : (
               <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px', padding: '10px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                  {['Candidate', 'Status', 'Score', 'Recommendation', 'Action'].map(h => (
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 150px', padding: '10px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                  {['Candidate', 'Status', 'Score', 'Recommendation', 'Actions'].map(h => (
                     <div key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
                   ))}
                 </div>
@@ -588,7 +730,7 @@ export default function PositionDetailPage() {
                   const belowThreshold = c.score !== undefined && c.score < threshold
                   return (
                     <div key={c.id} style={{
-                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 150px',
                       padding: '14px 20px', alignItems: 'center',
                       borderBottom: idx < candidates.length - 1 ? '1px solid #F1F5F9' : 'none',
                     }}>
@@ -619,14 +761,14 @@ export default function PositionDetailPage() {
                           <span style={{ fontSize: 11, color: '#94A3B8' }}>—</span>
                         )}
                       </div>
-                      <div>
+                      <div style={{ display: 'flex', gap: 6 }}>
                         {c.status === 'pending' && (
                           <button
                             onClick={async () => {
                               try {
                                 const res = await fetch('/api/send-invite', {
                                   method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ candidateId: c.id }),
+                                  body: JSON.stringify({ candidateId: c.id, candidateEmail: c.email }),
                                 })
                                 const d = await res.json()
                                 if (!res.ok) throw new Error(d.error)
@@ -647,6 +789,14 @@ export default function PositionDetailPage() {
                             <Download size={10} /> Report
                           </button>
                         )}
+                        {/* Fix 6: delete button */}
+                        <button
+                          onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                          title="Delete candidate"
+                          style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.04)', color: '#EF4444', cursor: 'pointer', fontSize: 11 }}
+                        >
+                          <Trash2 size={10} />
+                        </button>
                       </div>
                     </div>
                   )

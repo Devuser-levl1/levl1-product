@@ -80,10 +80,10 @@ const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: "pointer" };
 const COLS = "32px 1.8fr 1.3fr 0.75fr 0.9fr 1.1fr 68px 1.4fr 60px";
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-export default function CandidateUploadFlow({ onClose }: { onClose: () => void }) {
+export default function CandidateUploadFlow({ onClose, presetPositionId }: { onClose: () => void; presetPositionId?: string }) {
   const { positions, candidates, addCandidates } = useAppStore();
   const activePositions = positions.filter((p) => p.status === "active");
-  const defaultPositionId = activePositions[0]?.id ?? "";
+  const defaultPositionId = presetPositionId ?? activePositions[0]?.id ?? "";
 
   const [tab, setTab] = useState<UploadTab>("upload");
 
@@ -547,14 +547,16 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#4F46E5" }}>
                   Extraction Results — {extracted.length} candidate{extracted.length !== 1 ? "s" : ""}
                 </h3>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <select value={bulkPos} onChange={(e) => setBulkPos(e.target.value)} style={{ ...SELECT_STYLE, width: "auto", fontSize: 12, padding: "5px 10px" }}>
-                    {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                  </select>
-                  <button className="btn-ghost" style={{ fontSize: 12 }} onClick={applyBulkPos}>
-                    Assign Selected
-                  </button>
-                </div>
+                {!presetPositionId && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <select value={bulkPos} onChange={(e) => setBulkPos(e.target.value)} style={{ ...SELECT_STYLE, width: "auto", fontSize: 12, padding: "5px 10px" }}>
+                      {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                    </select>
+                    <button className="btn-ghost" style={{ fontSize: 12 }} onClick={applyBulkPos}>
+                      Assign Selected
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
@@ -664,18 +666,24 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
                         {/* Confidence */}
                         <div style={{ paddingTop: 4 }}><ConfidenceBadge level={e.extractionConfidence} /></div>
 
-                        {/* Position */}
+                        {/* Position — hidden when pre-set from position detail */}
                         <div>
-                          <select
-                            value={e.assignedPositionId}
-                            onChange={(ev) => updateField(e.tempId, "assignedPositionId", ev.target.value)}
-                            style={SELECT_STYLE}
-                          >
-                            {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title.length > 22 ? p.title.slice(0, 22) + "…" : p.title}</option>)}
-                            {activePositions.length === 0 && <option value="">No active positions</option>}
-                          </select>
-                          {pos?.status !== "active" && pos && (
-                            <div style={{ fontSize: 10, color: "#EF4444", marginTop: 3 }}>Position not active</div>
+                          {presetPositionId ? (
+                            <span style={{ fontSize: 12, color: "#4F46E5", fontWeight: 600 }}>{pos?.title ?? "—"}</span>
+                          ) : (
+                            <>
+                              <select
+                                value={e.assignedPositionId}
+                                onChange={(ev) => updateField(e.tempId, "assignedPositionId", ev.target.value)}
+                                style={SELECT_STYLE}
+                              >
+                                {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title.length > 22 ? p.title.slice(0, 22) + "…" : p.title}</option>)}
+                                {activePositions.length === 0 && <option value="">No active positions</option>}
+                              </select>
+                              {pos?.status !== "active" && pos && (
+                                <div style={{ fontSize: 10, color: "#EF4444", marginTop: 3 }}>Position not active</div>
+                              )}
+                            </>
                           )}
                         </div>
 
