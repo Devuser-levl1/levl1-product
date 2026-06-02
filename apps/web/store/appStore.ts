@@ -614,7 +614,7 @@ export const useAppStore = create<AppStore>((set) => ({
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   positions: MOCK_POSITIONS,
-  candidates: MOCK_CANDIDATES,
+  candidates: [],        // populated by useDataLoader from DB; never seed with mocks
   interviews: MOCK_INTERVIEWS,
   reports: MOCK_REPORTS,
   positionReports: MOCK_POSITION_REPORTS,

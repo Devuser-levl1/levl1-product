@@ -15,16 +15,32 @@ export async function POST(req: NextRequest) {
     if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
 
     // Debug logging
+    const candidateEmail: string | undefined = body.candidateEmail
     console.log('[send-invite] candidateId received:', candidateId)
+    console.log('[send-invite] candidateEmail received:', candidateEmail)
     console.log('[send-invite] agencyId from session:', session.agencyId)
 
     // Load candidate + position + agency from DB
-    const candidate = await prisma.candidate.findUnique({
+    // Primary: look up by DB id. Fallback: look up by email (handles stale store IDs)
+    let candidate = await prisma.candidate.findUnique({
       where: { id: candidateId },
       include: { position: true },
     })
-    console.log('[send-invite] candidate found:', !!candidate, candidate ? `email=${candidate.email}` : '(null)')
-    if (!candidate) return NextResponse.json({ error: 'Candidate not found', candidateId }, { status: 404 })
+    if (!candidate && candidateEmail) {
+      console.log('[send-invite] ID lookup missed — trying email fallback:', candidateEmail)
+      candidate = await prisma.candidate.findFirst({
+        where: { email: candidateEmail },
+        include: { position: true },
+        orderBy: { uploadedAt: 'desc' }, // most recently uploaded if duplicates
+      })
+    }
+    console.log('[send-invite] candidate found:', !!candidate, candidate ? `id=${candidate.id} email=${candidate.email}` : '(null)')
+    if (!candidate) {
+      return NextResponse.json(
+        { error: 'Candidate not found', candidateId, candidateEmail },
+        { status: 404 },
+      )
+    }
 
     const agency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
