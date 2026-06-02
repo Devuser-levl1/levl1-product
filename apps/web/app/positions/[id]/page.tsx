@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
   BarChart3, Plus, Mail, Download, Loader2, AlertCircle,
-  Tag, Zap, Target, Shield,
+  Tag, Zap, Target, Shield, Send,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -419,22 +419,61 @@ export default function PositionDetailPage() {
         {/* ─── QUESTIONS TAB ─── */}
         {tab === 'questions' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Approval status banner */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 20px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Approval Status</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {position.techLeadEmail && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {position.techLeadApproved
+                      ? <CheckCircle2 size={14} color="#10B981" />
+                      : <Clock size={14} color="#F59E0B" />}
+                    <span style={{ fontSize: 13, color: '#475569' }}>
+                      Tech Lead ({position.techLeadEmail}):
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: position.techLeadApproved ? '#059669' : '#D97706' }}>
+                      {position.techLeadApproved ? 'Approved' : 'Pending'}
+                    </span>
+                  </div>
+                )}
+                {position.hrEmail && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {position.hrApproved
+                      ? <CheckCircle2 size={14} color="#10B981" />
+                      : <Clock size={14} color="#F59E0B" />}
+                    <span style={{ fontSize: 13, color: '#475569' }}>
+                      HR ({position.hrEmail}):
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: position.hrApproved ? '#059669' : '#D97706' }}>
+                      {position.hrApproved ? 'Approved' : 'Pending'}
+                    </span>
+                  </div>
+                )}
+                {!position.techLeadEmail && !position.hrEmail && (
+                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>No approvers configured — edit the position to add Tech Lead and HR emails.</p>
+                )}
+              </div>
+              {(position.techLeadEmail || position.hrEmail) && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/positions/${id}/send-approvals`, { method: 'POST' })
+                      const d = await res.json()
+                      if (!res.ok) throw new Error(d.error)
+                      toast.success(d.emailsConfigured ? 'Approval emails sent!' : 'Approval tokens created (add RESEND_API_KEY to send emails)')
+                    } catch (err: unknown) {
+                      toast.error(err instanceof Error ? err.message : 'Failed to send approvals')
+                    }
+                  }}
+                  style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(79,70,229,0.25)', background: 'rgba(79,70,229,0.04)', color: '#4F46E5', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
+                >
+                  <Mail size={12} /> {(position.techLeadApproved && position.hrApproved) ? 'Resend Reminder' : 'Send for Approval'}
+                </button>
+              )}
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 14, color: '#64748B' }}>{allQuestions.length} questions in bank</p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => toast('Add question coming soon')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-                >
-                  <Plus size={13} /> Add Question
-                </button>
-                <button
-                  onClick={() => toast('Re-approval email sending coming soon')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)' }}
-                >
-                  <Mail size={13} /> Send for Re-approval
-                </button>
-              </div>
             </div>
 
             {allQuestions.length === 0 ? (
@@ -446,41 +485,68 @@ export default function PositionDetailPage() {
               (['Technical', 'Scenario', 'Behavioral', 'EQ', 'Whiteboard'] as const).map(type => {
                 const qs = allQuestions.filter((q) => (q as { _type: string })._type === type)
                 if (qs.length === 0) return null
+                const approvedCount = qs.filter(q => q.approvedByTech || q.approvedByHR).length
                 return (
                   <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{type}</span>
                       <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94A3B8', background: '#F1F5F9', padding: '1px 6px', borderRadius: 100 }}>{qs.length}</span>
+                      {approvedCount > 0 && (
+                        <span style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>{approvedCount} approved</span>
+                      )}
                     </div>
-                    {qs.map((q) => (
-                      <div
-                        key={q.id}
-                        style={{ background: '#fff', border: '1px solid #E2E8F0', borderLeft: '3px solid #CBD5E1', borderRadius: 10, padding: '14px 16px' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                          <p style={{ fontSize: 13, color: '#4F46E5', lineHeight: 1.55, margin: 0, flex: 1 }}>{q.question}</p>
-                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                            {q.difficulty && (
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>{q.difficulty}</span>
-                            )}
-                            {q.estimatedMinutes && (
-                              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94A3B8', background: '#F1F5F9', padding: '2px 7px', borderRadius: 100, border: '1px solid #E2E8F0' }}>{q.estimatedMinutes}m</span>
-                            )}
-                            <button
-                              onClick={() => toast('Edit question coming soon')}
-                              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
-                            >
-                              <Edit3 size={10} />
-                            </button>
+                    {qs.map((q) => {
+                      const isApproved = q.approvedByTech || q.approvedByHR
+                      const qType = type.toLowerCase()
+                      return (
+                        <div
+                          key={q.id}
+                          style={{ background: '#fff', border: `1px solid ${isApproved ? 'rgba(16,185,129,0.25)' : '#E2E8F0'}`, borderLeft: `3px solid ${isApproved ? '#10B981' : '#CBD5E1'}`, borderRadius: 10, padding: '14px 16px' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                            <p style={{ fontSize: 13, color: '#4F46E5', lineHeight: 1.55, margin: 0, flex: 1 }}>{q.question}</p>
+                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                              {q.difficulty && (
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>{q.difficulty}</span>
+                              )}
+                              {q.estimatedMinutes && (
+                                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94A3B8', background: '#F1F5F9', padding: '2px 7px', borderRadius: 100, border: '1px solid #E2E8F0' }}>{q.estimatedMinutes}m</span>
+                              )}
+                              {isApproved && <CheckCircle2 size={14} color="#10B981" />}
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await fetch(`/api/positions/${id}/questions/approve`, {
+                                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ questionId: q.id, questionType: qType, action: isApproved ? 'unapprove' : 'approve', approverType: 'tech' }),
+                                    })
+                                    setPosition(p => p ? {
+                                      ...p,
+                                      questionSet: p.questionSet ? {
+                                        ...p.questionSet,
+                                        [type === 'Technical' ? 'technicalQuestions' : type === 'Scenario' ? 'scenarioQuestions' : type === 'Behavioral' ? 'behavioralQuestions' : type === 'EQ' ? 'eqQuestions' : 'whiteboardQuestions']:
+                                          (p.questionSet[type === 'Technical' ? 'technicalQuestions' : type === 'Scenario' ? 'scenarioQuestions' : type === 'Behavioral' ? 'behavioralQuestions' : type === 'EQ' ? 'eqQuestions' : 'whiteboardQuestions'] ?? []).map(
+                                            (qq: QuestionItem) => qq.id === q.id ? { ...qq, approvedByTech: !isApproved } : qq
+                                          ),
+                                      } : undefined,
+                                    } : p)
+                                    toast.success(isApproved ? 'Approval removed' : 'Question approved')
+                                  } catch { toast.error('Failed to update') }
+                                }}
+                                style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid ${isApproved ? 'rgba(16,185,129,0.3)' : '#E2E8F0'}`, background: isApproved ? 'rgba(16,185,129,0.06)' : '#F8FAFC', color: isApproved ? '#059669' : '#64748B', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-sans)' }}
+                              >
+                                <Edit3 size={10} /> {isApproved ? 'Approved' : 'Approve'}
+                              </button>
+                            </div>
                           </div>
+                          {q.techTag && (
+                            <span style={{ display: 'inline-block', marginTop: 8, fontSize: 10, fontFamily: 'var(--font-mono)', color: '#6D28D9', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)', padding: '2px 8px', borderRadius: 4 }}>
+                              {q.techTag}
+                            </span>
+                          )}
                         </div>
-                        {q.techTag && (
-                          <span style={{ display: 'inline-block', marginTop: 8, fontSize: 10, fontFamily: 'var(--font-mono)', color: '#6D28D9', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)', padding: '2px 8px', borderRadius: 4 }}>
-                            {q.techTag}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )
               })
@@ -495,16 +561,10 @@ export default function PositionDetailPage() {
               <p style={{ fontSize: 14, color: '#64748B' }}>{candidates.length} candidates</p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  onClick={() => toast('Upload flow coming soon')}
+                  onClick={() => router.push('/dashboard?section=candidates')}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
                 >
                   <Plus size={13} /> Upload Resumes
-                </button>
-                <button
-                  onClick={() => toast('Bulk invite coming soon')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)' }}
-                >
-                  <Mail size={13} /> Bulk Invite
                 </button>
               </div>
             </div>
@@ -517,8 +577,8 @@ export default function PositionDetailPage() {
             ) : (
               <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                  {['Candidate', 'Status', 'Score', 'Recommendation'].map(h => (
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px', padding: '10px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                  {['Candidate', 'Status', 'Score', 'Recommendation', 'Action'].map(h => (
                     <div key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
                   ))}
                 </div>
@@ -528,7 +588,7 @@ export default function PositionDetailPage() {
                   const belowThreshold = c.score !== undefined && c.score < threshold
                   return (
                     <div key={c.id} style={{
-                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
                       padding: '14px 20px', alignItems: 'center',
                       borderBottom: idx < candidates.length - 1 ? '1px solid #F1F5F9' : 'none',
                     }}>
@@ -557,6 +617,35 @@ export default function PositionDetailPage() {
                           <span style={{ fontSize: 11, fontWeight: 700, color: rc.color }}>{rc.label}</span>
                         ) : (
                           <span style={{ fontSize: 11, color: '#94A3B8' }}>—</span>
+                        )}
+                      </div>
+                      <div>
+                        {c.status === 'pending' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/send-invite', {
+                                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ candidateId: c.id }),
+                                })
+                                const d = await res.json()
+                                if (!res.ok) throw new Error(d.error)
+                                toast.success(d.emailSent ? `Invite sent to ${c.name}` : 'Invite link created (no email API configured)')
+                                setPosition(p => p ? { ...p, candidates: (p.candidates ?? []).map(ca => ca.id === c.id ? { ...ca, status: 'invited' } : ca) } : p)
+                              } catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed') }
+                            }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(79,70,229,0.25)', background: 'rgba(79,70,229,0.05)', color: '#4F46E5', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
+                          >
+                            <Send size={10} /> Invite
+                          </button>
+                        )}
+                        {c.status === 'completed' && (
+                          <button
+                            onClick={() => router.push(`/reports/${id}`)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
+                          >
+                            <Download size={10} /> Report
+                          </button>
                         )}
                       </div>
                     </div>
@@ -597,7 +686,7 @@ export default function PositionDetailPage() {
                   return (
                     <div
                       key={c.id}
-                      onClick={() => toast(`Report for ${c.name} — opening from reports page`)}
+                      onClick={() => router.push(`/reports/${id}`)}
                       style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'background 0.12s' }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFF' }}
                       onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
@@ -622,9 +711,9 @@ export default function PositionDetailPage() {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/reports/${id}`) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#4F46E5', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#4F46E5', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', flexShrink: 0 }}
                       >
-                        <Download size={10} /> Report
+                        <Download size={10} /> View Report
                       </button>
                     </div>
                   )

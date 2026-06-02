@@ -118,12 +118,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Report generation failed — invalid response format' }, { status: 500 })
     }
 
+    // ── Apply rubric weights if position has a scoring rubric ─────────
+    let weightedScore = Math.round(report.overallScore ?? 0)
+    let l2Recommended = false
+
+    try {
+      // Fetch position rubric — find via candidateId or interviewId
+      let positionData: { scoringRubric: unknown; l2ScoreThreshold: number } | null = null
+      if (candidateId) {
+        const cand = await prisma.candidate.findUnique({
+          where: { id: candidateId },
+          include: { position: { select: { scoringRubric: true, l2ScoreThreshold: true } } },
+        })
+        positionData = cand?.position ?? null
+      }
+      if (!positionData && body.positionId) {
+        positionData = await prisma.position.findUnique({
+          where: { id: body.positionId },
+          select: { scoringRubric: true, l2ScoreThreshold: true },
+        })
+      }
+
+      if (positionData?.scoringRubric) {
+        const rubric = positionData.scoringRubric as { technical?: number; problemSolving?: number; behavioral?: number; eq?: number }
+        const ss = report.sectionScores ?? {}
+        const t  = (ss.technical?.score  ?? weightedScore) * ((rubric.technical     ?? 40) / 100)
+        const p  = (ss.scenario?.score   ?? weightedScore) * ((rubric.problemSolving ?? 30) / 100)
+        const b  = (ss.behavioral?.score ?? weightedScore) * ((rubric.behavioral     ?? 20) / 100)
+        const e  = (ss.eq?.score         ?? weightedScore) * ((rubric.eq             ?? 10) / 100)
+        weightedScore = Math.round(t + p + b + e)
+      }
+
+      const threshold = positionData?.l2ScoreThreshold ?? 75
+      l2Recommended = weightedScore >= threshold && ['yes', 'strong_yes'].includes(report.recommendation ?? '')
+    } catch (rubricErr) {
+      console.warn('[generate-report] Rubric weighting failed (non-fatal):', rubricErr)
+    }
+
     // ── Persist to DB ─────────────────────────────────────────────────
     const resolvedCandidateId: string | null = candidateId ?? null
 
     if (resolvedCandidateId) {
       const reportData = {
-        overallScore:           Math.round(report.overallScore ?? 0),
+        overallScore:           weightedScore,
         recommendation:         report.recommendation ?? 'maybe',
         professionalSummary:    report.professionalSummary ?? '',
         sectionScores:          report.sectionScores ?? {},
@@ -143,7 +180,7 @@ export async function POST(req: NextRequest) {
         await prisma.candidate.update({
           where: { id: resolvedCandidateId },
           data:  {
-            score:          Math.round(report.overallScore ?? 0),
+            score:          weightedScore,
             recommendation: report.recommendation ?? 'maybe',
             interviewedAt:  new Date(),
           },
@@ -183,6 +220,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...report,
+      overallScore: weightedScore,
+      l2Recommended,
       interviewId,
       candidateId: resolvedCandidateId,
       candidateName,

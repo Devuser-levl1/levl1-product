@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings, Bell, Mic, Users, ChevronRight, Play, Loader2, CreditCard, TrendingUp, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
@@ -74,9 +74,35 @@ const SELECT_STYLE: React.CSSProperties = {
   cursor: "pointer", outline: "none", width: "100%", fontWeight: 500,
 };
 
+interface TeamMemberRecord { id: string; name: string; email: string; role: string; status: string; inviteToken?: string | null }
+interface UserRecord { id: string; name: string; email: string; role: string; lastLoginAt?: string | null }
+
 export default function SettingsPage() {
   const { agencyPlan, setShowUpgradeWall } = useAppStore();
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
+
+  // Team members state
+  const [teamMembers,   setTeamMembers]   = useState<TeamMemberRecord[]>([]);
+  const [teamUsers,     setTeamUsers]     = useState<UserRecord[]>([]);
+  const [teamLoading,   setTeamLoading]   = useState(true);
+  const [inviteEmail,   setInviteEmail]   = useState('');
+  const [inviteRole,    setInviteRole]    = useState<'recruiter' | 'admin' | 'viewer'>('recruiter');
+  const [invitingNew,   setInvitingNew]   = useState(false);
+  const [showInviteRow, setShowInviteRow] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const loadTeam = useCallback(async () => {
+    setTeamLoading(true);
+    try {
+      const res = await fetch('/api/agency/team');
+      const d = await res.json();
+      if (d.members) setTeamMembers(d.members);
+      if (d.users)   setTeamUsers(d.users);
+    } catch { /* ignore */ }
+    finally { setTeamLoading(false); }
+  }, []);
+
+  useEffect(() => { loadTeam(); }, [loadTeam]);
 
   const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
   const [agencyEmail,   setAgencyEmail]   = useState("abma3005@gmail.com");
@@ -258,6 +284,18 @@ export default function SettingsPage() {
             <input className="input" type="email" placeholder="e.g. talent@yourcompany.com" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
           </Field>
         </div>
+        <button
+          onClick={async () => {
+            setSavingProfile(true);
+            await handleSaveSettings();
+            setSavingProfile(false);
+          }}
+          disabled={savingProfile}
+          className="btn-navy"
+          style={{ alignSelf: "flex-start", fontSize: 13 }}
+        >
+          {savingProfile ? "Saving…" : "Save Profile"}
+        </button>
       </Section>
 
       {/* Voice & Accent */}
@@ -377,32 +415,116 @@ export default function SettingsPage() {
 
       {/* Team Members */}
       <Section icon={Users} title="Team Members" description="Manage who has access to this dashboard">
-        {[
-          { name: "Abhijit Majumdar", email: "abma3005@gmail.com",       role: "Owner"    },
-          { name: "HR Manager",       email: "hr@levl1.ai",   role: "HR"       },
-          { name: "Tech Lead",        email: "tech@levl1.ai", role: "Reviewer" },
-        ].map((member) => (
-          <div key={member.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))", border: "1px solid rgba(124,58,237,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#6D28D9" }}>
-                {member.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{member.name}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{member.email}</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="badge badge-muted">{member.role}</span>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", padding: 4 }} onClick={() => toast(`Manage ${member.name}`)}>
-                <ChevronRight size={16} />
-              </button>
-            </div>
+        {teamLoading ? (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <Loader2 size={20} color="#7C3AED" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
           </div>
-        ))}
-        <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => toast("Invite team member — coming soon")}>
-          + Invite Team Member
-        </button>
+        ) : (
+          <>
+            {/* Active users */}
+            {teamUsers.map((u) => (
+              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))", border: "1px solid rgba(124,58,237,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#6D28D9" }}>
+                    {u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{u.name}</div>
+                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{u.email}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="badge badge-success" style={{ textTransform: "capitalize" }}>{u.role}</span>
+                  <span style={{ fontSize: 10, color: "#94A3B8" }}>Active</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Invited (pending) members */}
+            {teamMembers.filter(m => m.status === 'invited').map((m) => (
+              <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F1F5F9", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#94A3B8" }}>
+                    {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#64748B" }}>{m.name}</div>
+                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{m.email}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="badge badge-warning">Invited</span>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/agency/team', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
+                        if (res.ok) { toast.success('Invite resent'); }
+                        else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
+                      } catch { toast.error('Failed to resend'); }
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", cursor: "pointer", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-sans)" }}
+                  >
+                    <RefreshCw size={10} /> Resend
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/agency/team', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
+                        if (res.ok) { toast.success('Member removed'); loadTeam(); }
+                        else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
+                      } catch { toast.error('Failed to remove'); }
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)", color: "#EF4444", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-sans)" }}
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Invite new row */}
+            {showInviteRow && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 0" }}>
+                <input
+                  className="input" type="email" placeholder="colleague@company.com"
+                  value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                  style={{ flex: 2 }}
+                />
+                <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'recruiter' | 'admin' | 'viewer')}
+                  style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 13, fontFamily: "var(--font-sans)", background: "#F8FAFC", cursor: "pointer" }}>
+                  <option value="recruiter">Recruiter</option>
+                  <option value="admin">Admin</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+                <button
+                  disabled={invitingNew || !inviteEmail.trim()}
+                  onClick={async () => {
+                    if (!inviteEmail.trim()) return;
+                    setInvitingNew(true);
+                    try {
+                      const res = await fetch('/api/agency/invite-team', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ members: [{ name: inviteEmail.split('@')[0], email: inviteEmail, role: inviteRole }] }),
+                      });
+                      if (res.ok) { toast.success('Invite sent!'); setInviteEmail(''); setShowInviteRow(false); loadTeam(); }
+                      else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
+                    } catch { toast.error('Failed to send invite'); }
+                    finally { setInvitingNew(false); }
+                  }}
+                  className="btn-primary"
+                  style={{ fontSize: 13, whiteSpace: "nowrap" }}
+                >
+                  {invitingNew ? "Sending…" : "Send Invite"}
+                </button>
+                <button onClick={() => setShowInviteRow(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}>✕</button>
+              </div>
+            )}
+
+            <button className="btn-ghost" style={{ fontSize: 13, alignSelf: "flex-start" }} onClick={() => setShowInviteRow(true)}>
+              <Plus size={13} /> Invite Team Member
+            </button>
+          </>
+        )}
       </Section>
 
       {/* Billing */}
