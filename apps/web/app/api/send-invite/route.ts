@@ -5,6 +5,14 @@ import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
 
 export const dynamic = 'force-dynamic'
 
+/** Health-check: GET /api/send-invite → 200 { ok: true }
+ *  Use this to confirm the route is reachable before debugging POSTs.
+ *  curl https://levl1.io/api/send-invite  →  {"ok":true,"route":"send-invite"}
+ */
+export function GET() {
+  return NextResponse.json({ ok: true, route: 'send-invite', ts: new Date().toISOString() })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = getSessionFromRequest(req)
