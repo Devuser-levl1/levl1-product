@@ -104,6 +104,10 @@ model Position {
   hrApproved         Boolean   @default(false)
   techLeadEmail      String?
   hrEmail            String?
+  clientManagerEmail String?
+  l2ScoreThreshold   Int       @default(75)
+  rubricApproved     Boolean   @default(false)
+  scoringRubric      Json?
   dynamicIntensity   String    @default("standard")
   voiceAccent        String?
   softSkillWeightage Json?

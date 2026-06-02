@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useAppStore, Position } from "@/store/appStore";
-import { Plus, CheckCircle, Clock, Search } from "lucide-react";
+import { Plus, CheckCircle, Clock, Search, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import NewPositionFlow from "./NewPositionFlow";
-import toast from "react-hot-toast";
 import { Tooltip, HelpIcon } from "@/components/ui/Tooltip";
 
 type FilterTab = "all" | Position["status"];
@@ -51,6 +51,7 @@ export default function PositionsPage() {
   const { positions, showNewPositionFlow, setShowNewPositionFlow } = useAppStore();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [search, setSearch]       = useState("");
+  const router = useRouter();
 
   const filtered = positions.filter((p) => {
     const matchesTab    = activeTab === "all" || p.status === activeTab;
@@ -176,7 +177,7 @@ export default function PositionsPage() {
             background: "#F8FAFC",
           }}
         >
-          {["Position", "Company", "Department", "Tech Stack", "Status", "Progress"].map((h) => (
+          {["Position", "Company", "Department", "Tech Stack", "Status", "View"].map((h) => (
             <div key={h} style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {h}
             </div>
@@ -190,14 +191,12 @@ export default function PositionsPage() {
           </div>
         ) : (
           filtered.map((pos, idx) => {
-            const cfg   = STATUS_CFG[pos.status];
-            const total = pos.interviewsScheduled + pos.interviewsCompleted;
-            const pct   = total > 0 ? Math.round((pos.interviewsCompleted / total) * 100) : 0;
+            const cfg = STATUS_CFG[pos.status];
 
             return (
               <div
                 key={pos.id}
-                onClick={() => toast(`Position detail view coming soon for: ${pos.title}`)}
+                onClick={() => router.push(`/positions/${pos.id}`)}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "2fr 1.2fr 1.2fr 1fr 130px 70px",
@@ -207,7 +206,7 @@ export default function PositionsPage() {
                   cursor: "pointer",
                   alignItems: "center",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFAFA")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#F8FAFF")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {/* Position */}
@@ -284,20 +283,23 @@ export default function PositionsPage() {
                   </Tooltip>
                 </div>
 
-                {/* Progress */}
-                <div>
-                  {total > 0 ? (
-                    <div>
-                      <span className="font-mono" style={{ fontSize: 11, color: "#64748B" }}>
-                        {pos.interviewsCompleted}/{total}
-                      </span>
-                      <div style={{ width: 50, height: 3, borderRadius: 2, background: "#E2E8F0", overflow: "hidden", marginTop: 5 }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: "#7C3AED", borderRadius: 2 }} />
-                      </div>
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: "var(--font-mono)" }}>—</span>
-                  )}
+                {/* View button */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => router.push(`/positions/${pos.id}`)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "5px 10px", borderRadius: 7,
+                      border: "1px solid #E2E8F0", background: "#F8FAFC",
+                      color: "#4F46E5", fontSize: 11, fontWeight: 600,
+                      cursor: "pointer", fontFamily: "var(--font-sans)",
+                      transition: "all 0.12s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#EEF2FF"; e.currentTarget.style.borderColor = "#A5B4FC"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = "#E2E8F0"; }}
+                  >
+                    <ExternalLink size={10} /> View
+                  </button>
                 </div>
               </div>
             );
