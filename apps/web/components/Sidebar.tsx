@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Briefcase,
+  Building2,
   Users,
   Video,
   BarChart2,
@@ -29,6 +30,7 @@ interface NavItem {
 const NAV_MAIN: NavItem[] = [
   { section: "dashboard",  icon: LayoutDashboard, label: "Dashboard"  },
   { section: "positions",  icon: Briefcase,       label: "Positions"  },
+  { section: "clients",    icon: Building2,       label: "Clients"    },
   { section: "candidates", icon: Users,            label: "Candidates" },
   { section: "interviews", icon: Video,            label: "Interviews" },
   { section: "reports",    icon: BarChart2,        label: "Reports"    },

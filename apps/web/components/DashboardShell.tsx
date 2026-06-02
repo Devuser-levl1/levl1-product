@@ -7,6 +7,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import DashboardPage from "./dashboard/DashboardPage";
 import PositionsPage from "./positions/PositionsPage";
+import ClientsPage from "./clients/ClientsPage";
 import CandidatesPage from "./candidates/CandidatesPage";
 import InterviewsPage from "./interviews/InterviewsPage";
 import ReportsPage from "./reports/ReportsPage";
@@ -43,6 +44,7 @@ export default function DashboardShell() {
     switch (activeSection) {
       case "dashboard":  return <DashboardPage />;
       case "positions":  return <PositionsPage />;
+      case "clients":    return <ClientsPage />;
       case "candidates": return <CandidatesPage />;
       case "interviews": return <InterviewsPage />;
       case "reports":    return <ReportsPage />;

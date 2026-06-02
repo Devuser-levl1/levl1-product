@@ -298,6 +298,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [removedQuestionTexts, setRemovedQuestionTexts] = useState<string[]>([]);
   const [replacingIds,  setReplacingIds]  = useState<Record<string, boolean>>({});
   const [generatingMore,setGeneratingMore]= useState<Record<string, boolean>>({});
+  const [savedPositionId,   setSavedPositionId]   = useState<string | null>(null);
+  const [emailApprovalSent, setEmailApprovalSent] = useState(false);
+  const [sendingApproval,   setSendingApproval]   = useState(false);
 
   // Derived
   const finalJD = jdTab === "generate" ? generatedJD : pastedJD;
@@ -475,6 +478,68 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const allApproved  = techTotal > 0 && hrTotal > 0 && techApproved === techTotal && hrApproved === hrTotal;
 
   // ── Activate ─────────────────────────────────────────────────────────
+  const sendForApprovalViaEmail = async () => {
+    if (!questions || !techLeadEmail && !hrEmail) {
+      toast.error("Add a Tech Lead or HR email in Step 1 before sending for approval");
+      return;
+    }
+    setSendingApproval(true);
+    try {
+      // Create position in DB if not already saved
+      let posId = savedPositionId;
+      if (!posId) {
+        const posRes = await fetch("/api/positions", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: positionTitle, company, department, experienceLevel, roleType,
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech,
+            domainContext, workMode, interviewDuration: 30,
+            dynamicIntensity, voiceAccent: voiceAccent ?? "american",
+            jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
+            status: "pending_approval",
+            l2ScoreThreshold, rubricApproved, scoringRubric, softSkillWeightage: weights,
+          }),
+        });
+        if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
+        const pos = await posRes.json();
+        posId = pos.id;
+        setSavedPositionId(posId);
+        // Save question set
+        await fetch(`/api/positions/${posId}/questions`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            technicalQuestions: questions.technicalQuestions, scenarioQuestions: questions.scenarioQuestions,
+            behavioralQuestions: questions.behavioralQuestions, eqQuestions: questions.eqQuestions,
+            whiteboardQuestions: questions.whiteboardAssessment, timeAllocation: questions.timeAllocation,
+          }),
+        }).catch(() => console.warn("[sendForApproval] Question set save failed"));
+        addPosition({
+          id: pos.id, title: positionTitle, company, department,
+          experienceLevel, techStack: mustHaveTech, status: "pending_approval",
+          interviewsScheduled: 0, interviewsCompleted: 0,
+          createdAt: new Date().toISOString().split("T")[0],
+          approvals: { techLead: false, hr: false },
+          interviewDuration: 30, dynamicQuestionIntensity: dynamicIntensity,
+        });
+      }
+      // Send approval emails
+      const approvalRes = await fetch(`/api/positions/${posId}/send-approvals`, { method: "POST" });
+      const approvalData = await approvalRes.json();
+      if (!approvalRes.ok) throw new Error(approvalData.error ?? "Failed to send approvals");
+      setEmailApprovalSent(true);
+      const sent = approvalData.sent ?? [];
+      if (approvalData.emailsConfigured) {
+        toast.success(`Approval emails sent to ${sent.length > 0 ? sent.join(" & ") : "approvers"}`);
+      } else {
+        toast("Approval tokens created — add RESEND_API_KEY to send emails automatically", { icon: "⚠️" });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send approvals");
+    } finally {
+      setSendingApproval(false);
+    }
+  };
+
   const activatePosition = async () => {
     if (!questions) return;
     try {
@@ -1135,6 +1200,19 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   {techApproved < techTotal ? `Tech Lead: ${techTotal - techApproved} question${techTotal - techApproved !== 1 ? "s" : ""} pending` : `HR: ${hrTotal - hrApproved} question${hrTotal - hrApproved !== 1 ? "s" : ""} pending`}
                 </div>
               )}
+
+              {/* Send for external approval via email */}
+              {(techLeadEmail || hrEmail) && !emailApprovalSent && (
+                <button type="button" className="btn-ghost" style={{ width: "100%", justifyContent: "center", fontSize: 13, gap: 8 }} onClick={sendForApprovalViaEmail} disabled={sendingApproval}>
+                  {sendingApproval ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Sending…</> : <><Mail size={13} /> Send for Approval via Email</>}
+                </button>
+              )}
+              {emailApprovalSent && (
+                <div style={{ padding: "12px 16px", background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 10, fontSize: 13, color: "#059669", display: "flex", gap: 8, alignItems: "center" }}>
+                  <Check size={14} /> Approval emails sent — position saved as Pending Approval
+                </div>
+              )}
+
               {allApproved && (
                 <button type="button" className="btn-navy" style={{ width: "100%", justifyContent: "center", fontSize: 14 }} onClick={activatePosition}>
                   <Sparkles size={15} /> Activate Position

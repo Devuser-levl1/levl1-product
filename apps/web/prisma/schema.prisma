@@ -45,10 +45,60 @@ model Agency {
   logoUrl    String?
   brandColor String? @default("#4F46E5")
 
+  // Business / GST details
+  legalName      String?
+  gstNumber      String?
+  panNumber      String?
+  foundedYear    Int?
+  teamSize       String?
+  primaryService String?
+
+  // Registered address
+  registeredAddress String?
+  city              String?
+  state             String?
+  pinCode           String?
+
+  // Onboarding
+  onboardingComplete Boolean @default(false)
+  onboardingStep     Int     @default(1)
+
   positions     Position[]
   users         User[]
   subscriptions Subscription[]
   notifications Notification[]
+  teamMembers   TeamMember[]
+  clients       Client[]
+}
+
+model TeamMember {
+  id          String    @id @default(cuid())
+  agencyId    String
+  agency      Agency    @relation(fields: [agencyId], references: [id])
+  name        String
+  email       String
+  role        String    @default("recruiter") // admin | recruiter | viewer
+  status      String    @default("invited")   // invited | active
+  inviteToken String?   @unique
+  joinedAt    DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Client {
+  id           String     @id @default(cuid())
+  agencyId     String
+  agency       Agency     @relation(fields: [agencyId], references: [id])
+  name         String
+  industry     String?
+  website      String?
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  managerEmail String?
+  l2Threshold  Int        @default(75)
+  status       String     @default("active")
+  createdAt    DateTime   @default(now())
+  positions    Position[]
 }
 
 model User {
@@ -113,6 +163,8 @@ model Position {
   softSkillWeightage Json?
   agencyId           String?
   agency             Agency?   @relation(fields: [agencyId], references: [id])
+  clientId           String?
+  client             Client?   @relation(fields: [clientId], references: [id])
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -121,6 +173,22 @@ model Position {
   interviews     Interview[]
   positionReport PositionReport?
   interviewSlots InterviewSlot[]
+  approvalTokens ApprovalToken[]
+}
+
+model ApprovalToken {
+  id         String    @id @default(cuid())
+  token      String    @unique @default(uuid())
+  positionId String
+  position   Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  type       String    // tech_lead | hr | client_jd | client_rubric
+  email      String
+  name       String?
+  status     String    @default("pending") // pending | approved | changes_requested
+  comments   String?
+  approvedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
 }
 
 model QuestionSet {
