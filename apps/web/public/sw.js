@@ -46,12 +46,14 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
+  /* Always let API calls pass through untouched — never cache or intercept */
+  if (url.pathname.startsWith('/api/')) return
+
   /* Skip non-GET, cross-origin, and Next.js internals */
   if (
     request.method !== 'GET' ||
     url.origin !== self.location.origin ||
-    url.pathname.startsWith('/_next/') ||
-    url.pathname.startsWith('/api/')
+    url.pathname.startsWith('/_next/')
   ) {
     return
   }

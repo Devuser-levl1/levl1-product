@@ -3,20 +3,28 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const session = getSessionFromRequest(req)
     if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-    const { candidateId } = await req.json()
+    const body = await req.json()
+    const { candidateId } = body
     if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
+
+    // Debug logging
+    console.log('[send-invite] candidateId received:', candidateId)
+    console.log('[send-invite] agencyId from session:', session.agencyId)
 
     // Load candidate + position + agency from DB
     const candidate = await prisma.candidate.findUnique({
       where: { id: candidateId },
       include: { position: true },
     })
-    if (!candidate) return NextResponse.json({ error: 'Candidate not found' }, { status: 404 })
+    console.log('[send-invite] candidate found:', !!candidate, candidate ? `email=${candidate.email}` : '(null)')
+    if (!candidate) return NextResponse.json({ error: 'Candidate not found', candidateId }, { status: 404 })
 
     const agency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
@@ -51,8 +59,9 @@ export async function POST(req: NextRequest) {
     const interviewBaseUrl = process.env.NEXT_PUBLIC_INTERVIEW_BASE_URL ?? baseUrl
     const schedulingUrl = `${interviewBaseUrl}/candidate/interview/${token.token}`
 
-    // Send real email
+    // Send real email (re-read env at request time — avoids stale module-level snapshot)
     const emailConfigured = !!process.env.RESEND_API_KEY
+    console.log('[send-invite] RESEND_API_KEY present:', emailConfigured)
     if (emailConfigured) {
       await sendEmail({
         to: candidate.email,
