@@ -613,7 +613,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setActiveSection: (s) => set({ activeSection: s }),
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  positions: MOCK_POSITIONS,
+  positions: [],         // populated by useDataLoader from DB; never seed with mocks
   candidates: [],        // populated by useDataLoader from DB; never seed with mocks
   interviews: MOCK_INTERVIEWS,
   reports: MOCK_REPORTS,
