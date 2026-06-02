@@ -107,6 +107,7 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
   // Extraction results
   const [extracted, setExtracted] = useState<ExtractedCandidate[]>([]);
   const [bulkPos,   setBulkPos]   = useState(defaultPositionId);
+  const [saving,    setSaving]    = useState(false);
 
   // Navigation guard
   useEffect(() => {
@@ -287,8 +288,8 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
     setExtracted((prev) => prev.map((e) => e.selected ? { ...e, assignedPositionId: bulkPos } : e));
   };
 
-  // ── Confirm & add to pipeline ────────────────────────────────────────
-  const confirmAdd = () => {
+  // ── Confirm & add to pipeline — saves to DB then updates store ──────────
+  const confirmAdd = async () => {
     const toAdd = extracted.filter((e) => e.selected && !e.isDuplicate);
     if (toAdd.length === 0) { toast.error("No candidates selected"); return; }
 
@@ -298,29 +299,65 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
       return;
     }
 
-    const newCandidates: Candidate[] = toAdd.map((e) => {
-      const pos = positions.find((p) => p.id === e.assignedPositionId);
-      return {
-        id:                   `c-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        name:                 e.name ?? "Unknown",
-        email:                e.email!,
-        phone:                e.phone ?? undefined,
-        linkedIn:             e.linkedIn ?? undefined,
-        currentTitle:         e.currentTitle ?? undefined,
-        currentCompany:       e.currentCompany ?? undefined,
-        totalYearsExperience: e.totalYearsExperience ?? undefined,
-        topSkills:            e.topSkills,
-        educationSummary:     e.educationSummary ?? undefined,
-        positionId:           e.assignedPositionId,
-        positionTitle:        pos?.title ?? "Unknown Position",
-        status:               "pending",
-        uploadedAt:           new Date().toISOString().split("T")[0],
-      };
-    });
+    setSaving(true);
+    try {
+      // Build payload using Prisma field names exactly
+      const payload = toAdd.map((e) => ({
+        name:            e.name ?? "Unknown",
+        email:           e.email!,
+        ...(e.phone            ? { phone:            e.phone }            : {}),
+        ...(e.linkedIn         ? { linkedIn:          e.linkedIn }         : {}),
+        ...(e.currentTitle     ? { currentTitle:      e.currentTitle }     : {}),
+        ...(e.currentCompany   ? { currentCompany:    e.currentCompany }   : {}),
+        ...(e.totalYearsExperience != null ? { totalYears: e.totalYearsExperience } : {}),
+        topSkills:       e.topSkills,
+        ...(e.educationSummary ? { educationSummary:  e.educationSummary } : {}),
+        ...(e.rawText          ? { resumeText:         e.rawText }         : {}),
+        positionId:      e.assignedPositionId,
+        status:          "pending",
+      }));
 
-    addCandidates(newCandidates);
-    toast.success(`${newCandidates.length} candidate${newCandidates.length !== 1 ? "s" : ""} added to pipeline`);
-    onClose();
+      const body = payload.length === 1 ? payload[0] : payload;
+      const res  = await fetch("/api/candidates", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to save candidates");
+
+      // Normalise single-object vs array response
+      const saved = (Array.isArray(data) ? data : [data]) as Array<Record<string, unknown>>;
+
+      // Map DB rows (real cuids) → Zustand store shape
+      const newCandidates: Candidate[] = saved.map((c) => {
+        const pos = positions.find((p) => p.id === c.positionId);
+        return {
+          id:                   c.id                as string,
+          name:                 c.name              as string,
+          email:                c.email             as string,
+          phone:                (c.phone            as string | undefined) ?? undefined,
+          linkedIn:             (c.linkedIn         as string | undefined) ?? undefined,
+          currentTitle:         (c.currentTitle     as string | undefined) ?? undefined,
+          currentCompany:       (c.currentCompany   as string | undefined) ?? undefined,
+          totalYearsExperience: (c.totalYears       as number | undefined) ?? undefined,
+          topSkills:            (c.topSkills        as string[]) ?? [],
+          educationSummary:     (c.educationSummary as string | undefined) ?? undefined,
+          positionId:           c.positionId        as string,
+          positionTitle:        pos?.title ?? "Unknown Position",
+          status:               "pending",
+          uploadedAt:           (c.uploadedAt       as string) ?? new Date().toISOString(),
+        };
+      });
+
+      addCandidates(newCandidates);
+      toast.success(`${newCandidates.length} candidate${newCandidates.length !== 1 ? "s" : ""} saved`);
+      onClose();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save candidates");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const selectedCount = extracted.filter((e) => e.selected && !e.isDuplicate).length;
@@ -704,9 +741,9 @@ export default function CandidateUploadFlow({ onClose }: { onClose: () => void }
         <div style={{ background: "#fff", borderTop: "1px solid #E2E8F0", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           {hasResults && (
-            <button className="btn-primary" onClick={confirmAdd} disabled={selectedCount === 0}>
-              <ChevronRight size={15} />
-              Add {selectedCount} Candidate{selectedCount !== 1 ? "s" : ""} to Pipeline
+            <button className="btn-primary" onClick={confirmAdd} disabled={selectedCount === 0 || saving}>
+              {saving ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <ChevronRight size={15} />}
+              {saving ? "Saving…" : `Add ${selectedCount} Candidate${selectedCount !== 1 ? "s" : ""} to Pipeline`}
             </button>
           )}
         </div>
