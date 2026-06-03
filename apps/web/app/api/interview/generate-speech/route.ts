@@ -35,7 +35,13 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           text: text || '',
           model_id: 'eleven_turbo_v2_5',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          language_code: 'en', // Fix 4: force English, prevents gibberish
+          voice_settings: {
+            stability:        0.65, // higher = more consistent, less random
+            similarity_boost: 0.85,
+            style:            0.0,  // no style exaggeration
+            use_speaker_boost: true,
+          },
         }),
       }
     )

@@ -172,23 +172,12 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
-                <button
-                  type="button"
-                  onClick={() => toast("Password reset coming soon")}
-                  style={{
-                    fontSize: 12,
-                    color: "#7C3AED",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                    padding: 0,
-                  }}
+                <a
+                  href="/forgot-password"
+                  style={{ fontSize: 12, color: "#7C3AED", fontWeight: 500, textDecoration: "none" }}
                 >
                   Forgot password?
-                </button>
+                </a>
               </div>
               <div style={{ position: "relative" }}>
                 <input

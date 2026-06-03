@@ -112,8 +112,9 @@ model User {
   passwordHash       String?
   emailVerified      Boolean   @default(false)
   emailVerifyToken   String?
-  resetPasswordToken String?
-  lastLoginAt        DateTime?
+  resetPasswordToken  String?
+  resetPasswordExpiry DateTime?
+  lastLoginAt         DateTime?
   createdAt          DateTime  @default(now())
 }
 

@@ -335,8 +335,9 @@ export default function InterviewPage() {
   const [timeRemaining, setTimeRemaining]   = useState(0)
   const [, setQuestionResponses]     = useState<QuestionResponse[]>([])
   const [runningScore, setRunningScore] = useState(0)
-  const [showCode, setShowCode]      = useState(false)
+  const [showCode, setShowCode]           = useState(false)
   const [showWhiteboard, setShowWhiteboard] = useState(false)
+  const [waitingWhiteboard, setWaitingWhiteboard] = useState(false) // Fix 2
   const [codeContent, setCodeContent] = useState('')
   const [codeLanguage, setCodeLanguage] = useState('javascript')
   const [showEndConfirm, setShowEndConfirm] = useState(false)
@@ -482,19 +483,36 @@ export default function InterviewPage() {
 
   /* ── TTS ──────────────────────────────────────────────────── */
   const speakText = useCallback(async (text: string): Promise<void> => {
-    // Abort any currently playing audio before starting new
+    // Always cancel previous audio before starting new (Fix 4)
     stopAllAudio()
+
+    // Fix 4: Sanitize text — remove non-ASCII chars that cause gibberish
+    const cleanText = text
+      .replace(/[^\x20-\x7E\n]/g, ' ')  // strip non-printable / non-ASCII
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    if (!cleanText || cleanText.length < 2) {
+      console.warn('[speakText] Empty or invalid text, skipping')
+      return
+    }
+    console.log('[speakText] Speaking:', cleanText.slice(0, 80))
 
     if (!isMountedRef.current) return
     setPhase('speaking')
 
     if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
       try {
+        // Fix 4: 8-second timeout — fall through to browser TTS on timeout
+        const controller = new AbortController()
+        const timeout    = setTimeout(() => controller.abort(), 8000)
         const res = await fetch('/api/interview/generate-speech', {
-          method: 'POST',
+          signal:  controller.signal,
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
+          body: JSON.stringify({ text: cleanText, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
         })
+        clearTimeout(timeout)
         if (!isMountedRef.current) return
         const ct = res.headers.get('Content-Type') || ''
         if (ct.includes('audio/mpeg')) {
@@ -504,27 +522,20 @@ export default function InterviewPage() {
           await new Promise<void>((resolve) => {
             const audio = new Audio(url)
             audioRef.current = audio
-            audio.onended = () => {
-              URL.revokeObjectURL(url)
-              audioRef.current = null
-              resolve()
-            }
-            audio.onerror = () => {
-              URL.revokeObjectURL(url)
-              audioRef.current = null
-              resolve()
-            }
-            audio.play().catch(() => {
-              audioRef.current = null
-              resolve()
-            })
+            audio.onended = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve() }
+            audio.onerror = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve() }
+            audio.play().catch(() => { audioRef.current = null; resolve() })
           })
           return
         }
         const bodyText = await res.text().catch(() => '(unreadable)')
         console.warn('[speakText] Non-audio response:', bodyText)
       } catch (err) {
-        console.warn('[speakText] fetch threw:', err)
+        if ((err as Error).name === 'AbortError') {
+          console.warn('[speakText] ElevenLabs timeout — falling back to browser TTS')
+        } else {
+          console.warn('[speakText] fetch threw:', err)
+        }
       }
     }
 
@@ -711,6 +722,14 @@ export default function InterviewPage() {
 
   /* ── Core interview flow ───────────────────────────────────── */
 
+  // Fix 3: phrases that mean "no experience" — accept and move on immediately
+  const NO_EXPERIENCE_PHRASES = [
+    "don't have experience", "no experience", "haven't worked",
+    "not worked on", "never worked", "not familiar", "never used",
+    "haven't used", "haven't done", "never done", "not applicable",
+    "don't know that", "no knowledge", "haven't heard",
+  ]
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const captureResponse = useCallback(async (responseText: string) => {
     stopListening()
@@ -820,6 +839,23 @@ export default function InterviewPage() {
       return
     }
 
+    // ── 5b. Fix 3: No experience — accept immediately and move on ────
+    const isNoExperience = NO_EXPERIENCE_PHRASES.some(p => lower.includes(p))
+    if (isNoExperience) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      const ack = pick([
+        "Understood, let's move on.",
+        "Got it, no problem at all.",
+        "That's fine. Let me ask you something different.",
+        "Noted. Moving on.",
+      ] as const)
+      addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+      await speakText(ack)
+      await delay(800)
+      await moveToQuestion(currentQIdxRef.current + 1)
+      return
+    }
+
     addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
 
     // ── 6. Word count — very short answer ───────────────────────────
@@ -861,13 +897,16 @@ export default function InterviewPage() {
     } catch {}
 
     // ── 8. Relevance / rambling check ────────────────────────────────
-    if ((ev.relevanceScore ?? 5) < 4) {
+    // Fix 5: only redirect ONCE per question, and not for long/engaged answers (>20 words)
+    const answerIsLong  = wordCount > 20
+    const answerIsNegative = NO_EXPERIENCE_PHRASES.some(p => lower.includes(p))
+    const shouldRedirect = !answerIsLong && !answerIsNegative && (ev.relevanceScore ?? 5) < 4
+    if (shouldRedirect) {
       if (!redirectGivenRef.current) {
         redirectGivenRef.current = true
-        // Rambling (>250 words off-topic) vs simply irrelevant — different phrasing
         const redirect = wordCount > 250
           ? `Thank you — I want to make sure we cover everything in our time together. Let me bring it back to ${q.techTag || SECTION_LABEL[q.section] || 'the topic'}.`
-          : `I may not have been clear — I was asking specifically about ${q.expectedKeyPoints[0] ?? q.techTag ?? 'the question'}. Take your time.`
+          : `I may not have been clear — I was asking specifically about ${q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the question'}. Take your time.`
         addTranscript({ speaker: 'ai', text: redirect, type: 'transition' })
         await speakText(redirect)
         await delay(1500)
@@ -963,12 +1002,14 @@ export default function InterviewPage() {
     addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
     await speakText(q.question)
 
-    // Verbal cue for panels (fires once per panel type)
+    // Fix 2: Whiteboard section — pause until candidate clicks Done
     if (q.section === 'whiteboard' && prevQ?.section !== 'whiteboard') {
-      const cue = 'You can use the whiteboard below to sketch your thinking.'
+      const cue = 'Please use the whiteboard below to sketch your answer. Click Done when you are ready to explain.'
       addTranscript({ speaker: 'ai', text: cue, type: 'transition' })
       await speakText(cue)
-      await delay(400)
+      setWaitingWhiteboard(true)
+      // Don't start listening — wait for handleWhiteboardDone()
+      return
     } else if (isFirstCodeTrigger) {
       codeTriggerShownRef.current = true
       const cue = 'Feel free to use the code editor below to write or illustrate your answer.'
@@ -1084,11 +1125,60 @@ export default function InterviewPage() {
     await startClosing()
   }, [stopListening, startClosing])
 
+  // Fix 2: Whiteboard Done handler — resume AI flow after candidate submits diagram
+  const handleWhiteboardDone = useCallback(async () => {
+    setWaitingWhiteboard(false)
+    const transition = 'Thank you. I can see your diagram. Walk me through your thinking.'
+    addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
+    await speakText(transition)
+    await delay(800)
+    startListening()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addTranscript, speakText, startListening])
+
   /* ── Start interview ──────────────────────────────────────── */
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
 
-    const qs = buildQuestions(position)
+    // Fix 6: load questions from DB questionSet first; fall back to buildQuestions()
+    let qs: LocalQuestion[] = []
+    try {
+      const qsRes = await fetch(`/api/positions/${interview.positionId}/questions`)
+      if (qsRes.ok) {
+        const dbQs = await qsRes.json()
+        const toLocal = (arr: unknown[], section: LocalQuestion['section']): LocalQuestion[] =>
+          (Array.isArray(arr) ? arr : []).map((q: unknown, i: number) => {
+            const item = q as Record<string, unknown>
+            return {
+              id: String(item.id ?? `${section}-${i}`),
+              section,
+              question: String(item.question ?? ''),
+              expectedKeyPoints: Array.isArray(item.expectedKeyPoints) ? item.expectedKeyPoints as string[] : [],
+              techTag: String(item.techTag ?? ''),
+              estimatedMinutes: Number(item.estimatedMinutes ?? 3),
+              isPreset: true,
+              followUp: String(item.followUp ?? ''),
+            }
+          })
+        qs = [
+          ...toLocal(dbQs.technicalQuestions,  'technical'),
+          ...toLocal(dbQs.scenarioQuestions,   'scenario'),
+          ...toLocal(dbQs.whiteboardQuestions, 'whiteboard'),
+          ...toLocal(dbQs.behavioralQuestions, 'behavioral'),
+          ...toLocal(dbQs.eqQuestions,         'eq'),
+        ].filter(q => q.question.trim().length > 0)
+        console.log('[interview] Loaded', qs.length, 'questions from DB questionSet')
+        console.log('[interview] Breakdown — tech:', dbQs.technicalQuestions?.length, 'scenario:', dbQs.scenarioQuestions?.length, 'whiteboard:', dbQs.whiteboardQuestions?.length, 'behavioral:', dbQs.behavioralQuestions?.length, 'eq:', dbQs.eqQuestions?.length)
+      }
+    } catch (err) {
+      console.warn('[interview] Failed to load DB questions, using buildQuestions():', err)
+    }
+
+    if (qs.length < 3) {
+      console.warn('[interview] Low DB question count (' + qs.length + ') — falling back to buildQuestions()')
+      qs = buildQuestions(position)
+    }
+
     setQuestions(qs)
     questionsRef.current = qs
 
@@ -1524,7 +1614,7 @@ export default function InterviewPage() {
         {/* Whiteboard panel */}
         {showWhiteboard && (
           <div className="interview-whiteboard" style={{ maxHeight: 320, overflow: 'hidden' }}>
-            <Whiteboard onExport={handleWhiteboardExport} />
+            <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} />
           </div>
         )}
       </div>
