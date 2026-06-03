@@ -5,10 +5,6 @@ import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
 
 export const dynamic = 'force-dynamic'
 
-/** Health-check: GET /api/send-invite → 200 { ok: true }
- *  Use this to confirm the route is reachable before debugging POSTs.
- *  curl https://levl1.io/api/send-invite  →  {"ok":true,"route":"send-invite"}
- */
 export function GET() {
   return NextResponse.json({ ok: true, route: 'send-invite', ts: new Date().toISOString() })
 }
@@ -19,120 +15,109 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
     const body = await req.json()
-    const { candidateId } = body
+    const { candidateId, candidateEmail: bodyEmail } = body
     if (!candidateId) return NextResponse.json({ error: 'candidateId required' }, { status: 400 })
 
-    // Debug logging
-    const candidateEmail: string | undefined = body.candidateEmail
     console.log('[send-invite] candidateId received:', candidateId)
-    console.log('[send-invite] candidateEmail received:', candidateEmail)
+    console.log('[send-invite] candidateEmail received:', bodyEmail)
     console.log('[send-invite] agencyId from session:', session.agencyId)
 
-    // Load candidate + position + agency from DB
-    // Primary: look up by DB id. Fallback: look up by email (handles stale store IDs)
+    // Primary lookup by DB id; fallback by email
     let candidate = await prisma.candidate.findUnique({
       where: { id: candidateId },
       include: { position: true },
     })
-    if (!candidate && candidateEmail) {
-      console.log('[send-invite] ID lookup missed — trying email fallback:', candidateEmail)
+    if (!candidate && bodyEmail) {
+      console.log('[send-invite] ID lookup missed — trying email fallback:', bodyEmail)
       candidate = await prisma.candidate.findFirst({
-        where: { email: candidateEmail },
+        where: { email: bodyEmail },
         include: { position: true },
-        orderBy: { uploadedAt: 'desc' }, // most recently uploaded if duplicates
+        orderBy: { uploadedAt: 'desc' },
       })
     }
     console.log('[send-invite] candidate found:', !!candidate, candidate ? `id=${candidate.id} email=${candidate.email}` : '(null)')
     if (!candidate) {
-      return NextResponse.json(
-        { error: 'Candidate not found', candidateId, candidateEmail },
-        { status: 404 },
-      )
+      return NextResponse.json({ error: 'Candidate not found', candidateId, candidateEmail: bodyEmail }, { status: 404 })
     }
 
     const agency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
 
-    // Create or reuse interview token
-    let token = await prisma.interviewToken.findFirst({
-      where: { interview: { candidate: { id: candidateId } } },
-    })
-
-    if (!token) {
-      // Ensure an Interview record exists
-      let interview = await prisma.interview.findFirst({ where: { candidateId } })
-      if (!interview) {
-        interview = await prisma.interview.create({
-          data: {
-            candidateId,
-            positionId: candidate.positionId,
-            status: 'scheduled',
-            duration: candidate.position.interviewDuration,
-          },
-        })
-      }
-      // Create token (30-day expiry)
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 30)
-      token = await prisma.interviewToken.create({
-        data: { interviewId: interview.id, expiresAt },
+    // 1. Ensure an Interview record exists BEFORE sending the link
+    let interview = await prisma.interview.findFirst({ where: { candidateId: candidate.id } })
+    if (!interview) {
+      interview = await prisma.interview.create({
+        data: {
+          candidateId: candidate.id,
+          positionId:  candidate.positionId,
+          status:      'scheduled',
+          duration:    candidate.position.interviewDuration ?? 30,
+          agentOnline: false,
+          candidateJoined: false,
+        },
       })
+      console.log('[send-invite] Created interview record:', interview.id)
+    } else {
+      console.log('[send-invite] Reusing existing interview record:', interview.id)
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
-    const interviewBaseUrl = process.env.NEXT_PUBLIC_INTERVIEW_BASE_URL ?? baseUrl
-    const schedulingUrl = `${interviewBaseUrl}/candidate/interview/${token.token}`
+    // 2. Scheduling URL — candidate picks their slot here first
+    const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const schedulingUrl = `${appUrl}/schedule/${interview.id}`
+    // Direct join URL (used in confirmation email after scheduling)
+    const joinUrl       = `${appUrl}/interview/${interview.id}`
 
-    // Send real email (re-read env at request time — avoids stale module-level snapshot)
+    console.log('[send-invite] schedulingUrl:', schedulingUrl)
+    console.log('[send-invite] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
+
+    // 3. Send invite email with scheduling URL
     const emailConfigured = !!process.env.RESEND_API_KEY
-    console.log('[send-invite] RESEND_API_KEY present:', emailConfigured)
     if (emailConfigured) {
       await sendEmail({
-        to: candidate.email,
+        to:      candidate.email,
         subject: `Interview Invitation — ${candidate.position.title} at ${candidate.position.company}`,
-        html: inviteEmailHtml({
-          candidateName: candidate.name,
-          positionTitle: candidate.position.title,
-          company: candidate.position.company,
-          agencyName: agency.senderName ?? agency.name,
-          schedulingUrl,
-          duration: candidate.position.interviewDuration,
+        html:    inviteEmailHtml({
+          candidateName:  candidate.name,
+          positionTitle:  candidate.position.title,
+          company:        candidate.position.company,
+          agencyName:     agency.senderName ?? agency.name,
+          schedulingUrl,  // candidates pick their slot here
+          duration:       candidate.position.interviewDuration ?? 30,
         }),
         from: agency.senderEmail
           ? `${agency.senderName ?? agency.name} <${agency.senderEmail}>`
           : undefined,
       })
     } else {
-      console.log('[send-invite] RESEND_API_KEY not configured — skipping email send')
-      console.log('[send-invite] Would send to:', candidate.email, 'link:', schedulingUrl)
+      console.log('[send-invite] RESEND_API_KEY not configured — skipping email')
+      console.log('[send-invite] Would send to:', candidate.email)
+      console.log('[send-invite] Scheduling URL:', schedulingUrl)
     }
 
-    // Update candidate status in DB
+    // 4. Update candidate status
     await prisma.candidate.update({
-      where: { id: candidateId },
-      data: {
-        status: 'invited',
-        invitedAt: new Date(),
-      },
+      where: { id: candidate.id },
+      data:  { status: 'invited', invitedAt: new Date() },
     })
 
-    // Create notification for recruiter
     await prisma.notification.create({
       data: {
         agencyId: session.agencyId,
-        type: 'invite_sent',
-        title: 'Invite sent',
-        body: `Interview invite sent to ${candidate.name} for ${candidate.position.title}`,
-        link: `/dashboard`,
+        type:     'invite_sent',
+        title:    'Invite sent',
+        body:     `Interview invite sent to ${candidate.name} for ${candidate.position.title}`,
+        link:     `/positions/${candidate.positionId}`,
       },
-    }).catch(() => {}) // non-critical
+    }).catch(() => {})
 
     return NextResponse.json({
-      success: true,
+      success:     true,
+      interviewId: interview.id,
       schedulingUrl,
-      emailSent: emailConfigured,
-      sentAt: new Date().toISOString(),
-      warning: emailConfigured ? undefined : 'Email not sent — RESEND_API_KEY not configured. Link generated but email not delivered.',
+      joinUrl,
+      emailSent:   emailConfigured,
+      sentAt:      new Date().toISOString(),
+      warning:     emailConfigured ? undefined : 'Email not sent — RESEND_API_KEY not configured',
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to send invite'

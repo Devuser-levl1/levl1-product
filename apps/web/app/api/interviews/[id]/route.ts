@@ -8,8 +8,15 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const interview = await prisma.interview.findUnique({
       where: { id: params.id },
       include: {
-        candidate: true,
-        position: true,
+        candidate: {
+          select: { id: true, name: true, email: true, status: true, topSkills: true, uploadedAt: true, resumeText: true, currentTitle: true, currentCompany: true },
+        },
+        position: {
+          include: {
+            questionSet: true,
+            agency: { select: { id: true, name: true, logoUrl: true } },
+          },
+        },
       },
     })
     if (!interview) return NextResponse.json({ error: 'Not found' }, { status: 404 })

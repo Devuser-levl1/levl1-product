@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'lucide-react'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -253,9 +253,72 @@ export default function InterviewPage() {
     addReport,
   } = useAppStore()
 
+  // ── Try store first; fall back to DB load ──────────────────
   const interview = interviews.find(i => i.id === interviewId)
   const candidate = interview ? candidates.find(c => c.id === interview.candidateId) : null
   const position  = interview ? positions.find(p => p.id === interview.positionId) : null
+
+  const [dbLoading, setDbLoading] = useState(!interview)
+  const [dbError,   setDbError]   = useState('')
+
+  // When the store doesn't have the interview (recruiter opened a direct URL or
+  // candidate joined), load from DB and hydrate the store.
+  useEffect(() => {
+    if (interview && candidate && position) { setDbLoading(false); return }
+    if (!interviewId) { setDbLoading(false); return }
+
+    fetch(`/api/interviews/${interviewId}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data) => {
+        // Hydrate store so the rest of the component works normally
+        const { updateInterview, addInterview } = useAppStore.getState()
+        const iv = {
+          id:            data.id,
+          candidateId:   data.candidateId,
+          candidateName: data.candidate?.name  ?? '',
+          positionId:    data.positionId,
+          positionTitle: data.position?.title   ?? '',
+          scheduledAt:   data.scheduledAt ?? data.createdAt,
+          duration:      data.duration ?? 30,
+          status:        data.status,
+          agentOnline:   data.agentOnline ?? false,
+          candidateJoined: data.candidateJoined ?? false,
+          score:         data.runningScore ?? undefined,
+        }
+        const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
+        if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
+
+        // Hydrate candidate + position if missing
+        const { candidates: cs, positions: ps, addCandidates, setPositions } = useAppStore.getState()
+        if (data.candidate && !cs.find(c => c.id === data.candidateId)) {
+          addCandidates([{
+            id: data.candidateId, name: data.candidate.name, email: data.candidate.email,
+            positionId: data.positionId, positionTitle: data.position?.title ?? '',
+            status: data.candidate.status ?? 'scheduled', uploadedAt: data.candidate.uploadedAt ?? '',
+            topSkills: data.candidate.topSkills ?? [],
+            interviewId: data.id,
+          }])
+        }
+        if (data.position && !ps.find(p => p.id === data.positionId)) {
+          setPositions([...useAppStore.getState().positions, {
+            id: data.positionId, title: data.position.title, company: data.position.company,
+            department: data.position.department ?? '', experienceLevel: data.position.experienceLevel ?? '',
+            techStack: data.position.techStack ?? [], status: data.position.status ?? 'active',
+            interviewsScheduled: 0, interviewsCompleted: 0, createdAt: data.position.createdAt ?? '',
+            approvals: { techLead: data.position.techLeadApproved, hr: data.position.hrApproved },
+            interviewDuration: data.position.interviewDuration ?? 30,
+          }])
+        }
+        setDbLoading(false)
+      })
+      .catch((err) => {
+        console.error('[interview room] DB load failed:', err)
+        setDbError('Interview not found. Please check your link.')
+        setDbLoading(false)
+      })
+  // Only run on mount — subsequent store updates handle everything
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewId])
 
   /* ── State ────────────────────────────────────────────────── */
   const [phase, setPhaseState]       = useState<InterviewPhase>('waiting')
@@ -1141,13 +1204,28 @@ export default function InterviewPage() {
      RENDER
   ═══════════════════════════════════════════════════════════ */
 
-  if (!interview || !candidate || !position) {
+  if (dbLoading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-        <div style={{ textAlign: 'center', color: '#94A3B8' }}>
-          <AlertTriangle size={40} style={{ margin: '0 auto 12px' }} />
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Interview not found</div>
-          <div style={{ fontSize: 13, marginTop: 6 }}>Interview ID: {interviewId}</div>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <div style={{ fontSize: 14, color: '#94A3B8' }}>Loading your interview…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (dbError || !interview || !candidate || !position) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+        <div style={{ textAlign: 'center', maxWidth: 380, color: '#94A3B8' }}>
+          <AlertTriangle size={40} style={{ margin: '0 auto 12px', color: '#EF4444' }} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>
+            {dbError || 'Interview not found'}
+          </div>
+          <div style={{ fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
+            Please check your email for the correct interview link, or contact your recruiter.
+          </div>
         </div>
       </div>
     )
