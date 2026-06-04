@@ -1031,40 +1031,80 @@ export default function InterviewPage() {
 
   // ── Generate report (called fire-and-forget after interview ends) ──
   const generateReport = useCallback(async () => {
-    if (!candidate || !position || !interview) return
+    if (!candidate || !position || !interview) {
+      console.warn('[generateReport] Missing data — candidate:', !!candidate, 'position:', !!position, 'interview:', !!interview)
+      return
+    }
+
+    const payload = {
+      interviewId,
+      candidateId:      candidate.id,
+      candidateName:    candidate.name,
+      candidateEmail:   candidate.email ?? '',
+      positionTitle:    position.title,
+      company:          position.company,
+      interviewDate:    new Date().toISOString().slice(0, 10),
+      duration:         position.interviewDuration ?? 30,
+      transcript:       transcriptRef.current,
+      questionResponses: responsesRef.current,
+      resumeText:       '',
+      techStack:        position.techStack ?? [],
+      experienceLevel:  position.experienceLevel ?? '',
+      roleType:         '',
+    }
+
+    console.log('[generateReport] Starting — candidateId:', candidate.id, 'transcript lines:', transcriptRef.current.length, 'responses:', responsesRef.current.length)
+
+    // Also save to localStorage so the report page can retry if needed
     try {
-      console.log('[interview] Generating report for', candidate.name)
-      const res = await fetch('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          interviewId,
-          candidateId:   candidate.id,
-          candidateName: candidate.name,
-          candidateEmail: candidate.email,
-          positionTitle:  position.title,
-          company:        position.company,
-          interviewDate:  new Date().toISOString().slice(0, 10),
-          duration:       position.interviewDuration ?? 30,
-          transcript:     transcriptRef.current,
-          questionResponses: responsesRef.current,
-          resumeText:     '',
-          techStack:      position.techStack,
-          experienceLevel: position.experienceLevel,
-          roleType:       '',
-        }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      addReport(interviewId, data)
-      updateCandidate(candidate.id, {
-        reportGenerated:    true,
-        reportGeneratedAt:  new Date().toISOString(),
-      })
-      console.log('[interview] Report generated successfully')
-    } catch (err) {
-      console.error('[interview] Report generation failed:', err)
+      localStorage.setItem(`ic_interview_${interviewId}_complete`, JSON.stringify({
+        completedAt:       new Date().toISOString(),
+        transcript:        transcriptRef.current,
+        responses:         responsesRef.current,
+        candidateId:       candidate.id,
+        candidateName:     candidate.name,
+        candidateEmail:    candidate.email ?? '',
+        positionTitle:     position.title,
+        company:           position.company,
+        techStack:         position.techStack ?? [],
+        experienceLevel:   position.experienceLevel ?? '',
+        interviewDuration: position.interviewDuration ?? 30,
+      }))
+    } catch { /* non-critical */ }
+
+    const attempt = async (): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/generate-report', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        })
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '(unreadable)')
+          console.error('[generateReport] HTTP', res.status, errBody)
+          return false
+        }
+        const data = await res.json()
+        if (data.error) { console.error('[generateReport] API error:', data.error); return false }
+        addReport(interviewId, data)
+        updateCandidate(candidate.id, { reportGenerated: true, reportGeneratedAt: new Date().toISOString() })
+        console.log('[generateReport] ✓ Report saved — score:', data.overallScore, 'recommendation:', data.recommendation)
+        return true
+      } catch (err) {
+        console.error('[generateReport] fetch error:', err)
+        return false
+      }
+    }
+
+    const ok = await attempt()
+    if (!ok) {
+      // Retry once after 10 seconds
+      console.log('[generateReport] Retrying in 10 s…')
+      await delay(10000)
+      const ok2 = await attempt()
+      if (!ok2) {
+        console.error('[generateReport] Both attempts failed — user can regenerate from the report page')
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, position, interview, interviewId, addReport, updateCandidate])
@@ -1093,6 +1133,10 @@ export default function InterviewPage() {
   }, [candidate, setPhase, addTranscript, speakText])
 
   const finishInterview = useCallback(() => {
+    console.log('[interview] Status changed to completed')
+    console.log('[interview] Transcript entries:', transcriptRef.current.length)
+    console.log('[interview] Question responses:', responsesRef.current.length)
+    console.log('[interview] Triggering report generation...')
     setPhase('completed')
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
     stopListening()

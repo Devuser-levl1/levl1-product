@@ -5,7 +5,11 @@ import { prisma } from '@/lib/prisma'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    console.log('[generate-report] Called with keys:', Object.keys(body))
+    console.log('[generate-report] Called')
+    console.log('[generate-report] candidateId:', body.candidateId)
+    console.log('[generate-report] transcript length:', body.transcript?.length)
+    console.log('[generate-report] responses length:', body.questionResponses?.length)
+    console.log('[generate-report] ANTHROPIC_API_KEY present:', !!process.env.ANTHROPIC_API_KEY)
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -31,6 +35,73 @@ export async function POST(req: NextRequest) {
 
     if (!interviewId) {
       return NextResponse.json({ error: 'interviewId is required' }, { status: 400 })
+    }
+
+    const hasTranscript = Array.isArray(transcript) && transcript.length > 0
+    const hasResponses = Array.isArray(questionResponses) && questionResponses.length > 0
+
+    // ── Fallback: candidate completed but nothing was captured ────────
+    if (!hasTranscript && !hasResponses) {
+      console.warn('[generate-report] No transcript or responses — generating minimal report')
+
+      const minimalReport = {
+        overallScore: 0,
+        recommendation: 'maybe' as const,
+        professionalSummary:
+          `The interview for ${candidateName || 'this candidate'} was marked complete, but no transcript or ` +
+          `question responses were captured. This may indicate an audio/microphone issue or an early exit. ` +
+          `No evaluation could be performed — a manual re-interview or review is recommended.`,
+        sectionScores: {
+          technical:  { score: 0, outOf: 100 },
+          scenario:   { score: 0, outOf: 100 },
+          behavioral: { score: 0, outOf: 100 },
+          eq:         { score: 0, outOf: 100 },
+          whiteboard: { score: 0, outOf: 100 },
+        },
+        strengthAreas: [],
+        concernAreas: ['No transcript or question responses were captured during the interview.'],
+        questionWiseEvaluation: [],
+        transcriptHighlights: [],
+        hrNote: 'Transcript was not captured for this interview. Recommend re-interviewing the candidate.',
+        l2Recommendation: '',
+      }
+
+      const resolvedCandidateId: string | null = candidateId ?? null
+      let savedReportId: string | null = null
+      if (resolvedCandidateId) {
+        try {
+          const saved = await prisma.report.upsert({
+            where:  { candidateId: resolvedCandidateId },
+            update: minimalReport,
+            create: { ...minimalReport, candidateId: resolvedCandidateId },
+          })
+          savedReportId = saved.id
+          await prisma.candidate.update({
+            where: { id: resolvedCandidateId },
+            data:  { score: 0, recommendation: 'maybe', interviewedAt: new Date() },
+          })
+          console.log('[generate-report] Saved report ID:', savedReportId)
+        } catch (dbError: unknown) {
+          const msg = dbError instanceof Error ? dbError.message : String(dbError)
+          console.error('[generate-report] Minimal report DB save failed (non-fatal):', msg)
+        }
+      }
+
+      return NextResponse.json({
+        ...minimalReport,
+        l2Recommended: false,
+        minimal: true,
+        reportId: savedReportId,
+        interviewId,
+        candidateId: resolvedCandidateId,
+        candidateName,
+        candidateEmail,
+        positionTitle,
+        company,
+        interviewDate,
+        duration,
+        generatedAt: new Date().toISOString(),
+      })
     }
 
     const client = new Anthropic({ apiKey })
@@ -106,6 +177,7 @@ export async function POST(req: NextRequest) {
     })
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : '{}'
+    console.log('[generate-report] Claude raw response:', raw.slice(0, 300))
     const clean = raw.replace(/```json|```/g, '').trim()
 
     let report
@@ -172,11 +244,12 @@ export async function POST(req: NextRequest) {
         l2Recommendation:       report.l2Recommendation ?? '',
       }
       try {
-        await prisma.report.upsert({
+        const savedReport = await prisma.report.upsert({
           where:  { candidateId: resolvedCandidateId },
           update: reportData,
           create: { ...reportData, candidateId: resolvedCandidateId },
         })
+        console.log('[generate-report] Saved report ID:', savedReport.id)
         await prisma.candidate.update({
           where: { id: resolvedCandidateId },
           data:  {

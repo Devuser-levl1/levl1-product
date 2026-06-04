@@ -18,6 +18,7 @@ async function clearSeedData() {
     'positionReport',
     'position',
     'subscription',
+    'teamMember',
     'user',
     'agency',
   ]

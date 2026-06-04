@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAppStore, Position, Candidate } from "@/store/appStore";
+import { useAppStore, Position, Candidate, CandidateReport } from "@/store/appStore";
 import {
   BarChart2, Sparkles, Loader2, ChevronRight, Clock,
   FileText, Zap,
@@ -234,8 +234,87 @@ function PositionCard({
 /* ─── Main component ─────────────────────────────────────────────── */
 export default function ReportsPage() {
   const router = useRouter();
-  const { positions, candidates, reports, positionReports, addPositionReport } = useAppStore();
+  const { positions, candidates, reports, positionReports, addPositionReport, addReport, updateCandidate } = useAppStore();
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [reportGenId, setReportGenId] = useState<string | null>(null);
+
+  /* Load existing reports from DB — the page only shows reports that exist in the DB */
+  useEffect(() => {
+    fetch("/api/reports")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        data.forEach((rep: Record<string, any>) => {
+          const key = rep.candidate?.interview?.id || rep.candidateId;
+          const mapped: CandidateReport = {
+            interviewId: key,
+            candidateId: rep.candidateId,
+            positionId: rep.candidate?.position?.id || "",
+            generatedAt: rep.generatedAt,
+            overallScore: rep.overallScore,
+            recommendation: rep.recommendation,
+            professionalSummary: rep.professionalSummary,
+            sectionScores: rep.sectionScores,
+            strengthAreas: rep.strengthAreas || [],
+            concernAreas: rep.concernAreas || [],
+            questionWiseEvaluation: rep.questionWiseEvaluation || [],
+            transcriptHighlights: rep.transcriptHighlights || [],
+            hrNote: rep.hrNote || "",
+            l2Recommendation: rep.l2Recommendation || "",
+            candidateName: rep.candidate?.name || "",
+            candidateEmail: rep.candidate?.email || "",
+            positionTitle: rep.candidate?.position?.title || "",
+            company: rep.candidate?.position?.company || "",
+            interviewDate: rep.generatedAt,
+            duration: 30,
+          };
+          addReport(key, mapped);
+        });
+      })
+      .catch((err) => console.warn("Failed to load reports from DB:", err));
+  }, [addReport]);
+
+  /* Manually trigger report generation for a completed candidate with no report */
+  async function generateReportManually(candidate: Candidate) {
+    const pos = positions.find((p) => p.id === candidate.positionId);
+    setReportGenId(candidate.id);
+    try {
+      const res = await fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          interviewId: candidate.interviewId || candidate.id,
+          candidateId: candidate.id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email ?? "",
+          positionTitle: pos?.title ?? candidate.positionTitle ?? "",
+          company: pos?.company ?? "",
+          interviewDate: new Date().toISOString().slice(0, 10),
+          duration: pos?.interviewDuration ?? 30,
+          transcript: [],
+          questionResponses: [],
+          techStack: pos?.techStack ?? [],
+          experienceLevel: pos?.experienceLevel ?? "",
+        }),
+      });
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const key = candidate.interviewId || candidate.id;
+      addReport(key, { ...data, interviewId: key });
+      updateCandidate(candidate.id, { reportGenerated: true, reportGeneratedAt: new Date().toISOString() });
+      toast.success("Report generated");
+    } catch {
+      toast.error("Could not generate report — check API key / logs");
+    } finally {
+      setReportGenId(null);
+    }
+  }
+
+  /* Completed candidates that have no report in the DB yet */
+  const needsReport = candidates.filter(
+    (c) => c.status === "completed" && !(c.interviewId && reports[c.interviewId]) && !c.reportGenerated
+  );
 
   /* Positions that have at least 1 completed interview */
   const activePositions = positions.filter(
@@ -345,6 +424,46 @@ export default function ReportsPage() {
           </div>
         )}
       </div>
+
+      {/* ── Completed interviews missing a report ── */}
+      {needsReport.length > 0 && (
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#334155", margin: 0 }}>
+              Awaiting Report
+            </h2>
+            <span style={{ fontSize: 12, color: "#94A3B8" }}>{needsReport.length} completed without a report</span>
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 4px rgba(79,70,229,0.05)" }}>
+            {needsReport.map((c, idx) => (
+              <div key={c.id} style={{
+                display: "flex", alignItems: "center", gap: 14, padding: "14px 24px",
+                borderBottom: idx < needsReport.length - 1 ? "1px solid #F1F5F9" : "none",
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{c.name}</div>
+                  <div style={{ fontSize: 12, color: "#94A3B8" }}>{c.positionTitle}</div>
+                </div>
+                <button
+                  onClick={() => generateReportManually(c)}
+                  disabled={reportGenId === c.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
+                    padding: "7px 14px", borderRadius: 8, cursor: reportGenId === c.id ? "default" : "pointer",
+                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none",
+                    opacity: reportGenId === c.id ? 0.6 : 1,
+                  }}
+                >
+                  {reportGenId === c.id
+                    ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                    : <Sparkles size={12} />}
+                  {reportGenId === c.id ? "Generating…" : "Generate Report"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Recent individual reports ── */}
       <div>
