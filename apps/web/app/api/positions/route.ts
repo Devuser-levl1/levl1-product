@@ -48,12 +48,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const position = await prisma.position.create({
-      data: { ...body, agencyId: agencyId ?? body.agencyId },
-    })
+    // Whitelist scalar columns so a stray field in the request body can't
+    // crash the create with an unknown-argument Prisma error.
+    const ALLOWED = new Set([
+      'title', 'company', 'department', 'roleType', 'experienceLevel',
+      'primaryDomain', 'techStack', 'goodToHave', 'domainContext', 'companyStage',
+      'workMode', 'interviewDuration', 'status', 'jdText', 'jdSource',
+      'jdApprovedBy', 'jdApprovedAt', 'techLeadApproved', 'hrApproved',
+      'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
+      'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
+      'softSkillWeightage', 'clientId',
+    ])
+    const data: Record<string, unknown> = { agencyId: agencyId ?? body.agencyId }
+    for (const [k, v] of Object.entries(body)) {
+      if (ALLOWED.has(k)) data[k] = v
+    }
+
+    const position = await prisma.position.create({ data: data as never })
     return NextResponse.json(position, { status: 201 })
-  } catch (err) {
-    console.error('POST /api/positions error:', err)
-    return NextResponse.json({ error: 'Failed to create position' }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[positions] Failed:', message)
+    console.error('[positions] Full error:', error)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

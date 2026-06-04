@@ -12,8 +12,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const position = await prisma.position.findUnique({ where: { id: params.id } })
     if (!position) return NextResponse.json({ error: 'Position not found' }, { status: 404 })
+
+    console.log('[jd-approval] clientManagerEmail:', position.clientManagerEmail)
+    console.log('[jd-approval] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
+    console.log('[jd-approval] FROM_EMAIL:', process.env.FROM_EMAIL)
+
     if (!position.clientManagerEmail) {
-      return NextResponse.json({ error: 'No client manager email configured for this position' }, { status: 400 })
+      console.warn('[jd-approval] Missing clientManagerEmail — cannot send JD for approval')
+      return NextResponse.json({ error: 'Client manager email is required to send JD for approval' }, { status: 400 })
     }
     if (!position.jdText) {
       return NextResponse.json({ error: 'No JD text found for this position' }, { status: 400 })

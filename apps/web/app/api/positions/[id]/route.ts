@@ -49,8 +49,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data:  safe,
     })
     return NextResponse.json(position)
-  } catch (err) {
-    console.error('PATCH /api/positions/[id] error:', err)
-    return NextResponse.json({ error: 'Failed to update position' }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[positions] Failed:', message)
+    console.error('[positions] Full error:', error)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
