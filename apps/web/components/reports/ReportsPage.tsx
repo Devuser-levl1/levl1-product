@@ -3,6 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, Position, Candidate, CandidateReport } from "@/store/appStore";
+
+/* Shape of a report row returned by GET /api/reports */
+type DbReport = Omit<
+  CandidateReport,
+  "interviewId" | "positionId" | "candidateName" | "candidateEmail" | "positionTitle" | "company" | "interviewDate" | "duration"
+> & {
+  candidate?: {
+    name?: string;
+    email?: string;
+    interview?: { id?: string } | null;
+    position?: { id?: string; title?: string; company?: string } | null;
+  } | null;
+};
 import {
   BarChart2, Sparkles, Loader2, ChevronRight, Clock,
   FileText, Zap,
@@ -244,7 +257,7 @@ export default function ReportsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!Array.isArray(data)) return;
-        data.forEach((rep: Record<string, any>) => {
+        data.forEach((rep: DbReport) => {
           const key = rep.candidate?.interview?.id || rep.candidateId;
           const mapped: CandidateReport = {
             interviewId: key,
