@@ -39,6 +39,7 @@ model Agency {
   // Email / sender config
   senderName           String?
   senderEmail          String?
+  resendDomainId       String?
   resendDomainVerified Boolean @default(false)
 
   // White-label

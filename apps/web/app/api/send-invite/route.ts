@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
+import { sendEmail, inviteEmailHtml, agencyFromAddress } from '@/lib/emailService'
 import { sendWhatsAppInvite } from '@/lib/whatsappService'
 import { generateAvailableSlots, formatSlotLabel } from '@/lib/slots'
 
@@ -86,9 +86,7 @@ export async function POST(req: NextRequest) {
           schedulingUrl,  // candidates pick their slot here
           duration:       candidate.position.interviewDuration ?? 30,
         }),
-        from: agency.senderEmail
-          ? `${agency.senderName ?? agency.name} <${agency.senderEmail}>`
-          : undefined,
+        from: agencyFromAddress(agency),
       })
     } else {
       console.log('[send-invite] RESEND_API_KEY not configured — skipping email')

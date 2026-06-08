@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { sendEmail } from '@/lib/emailService'
+import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (process.env.RESEND_API_KEY) {
       await sendEmail({
         to:      position.clientManagerEmail,
-        from:    agency?.senderEmail ? `${agency.senderName ?? agency.name} via Levl1 <${agency.senderEmail}>` : undefined,
+        from:    agency ? agencyFromAddress(agency) : undefined,
         subject: `JD Review Required — ${position.title}`,
         html: `<!DOCTYPE html>
 <html>

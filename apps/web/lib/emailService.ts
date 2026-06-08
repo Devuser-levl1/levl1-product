@@ -8,6 +8,23 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const DEFAULT_FROM = process.env.FROM_EMAIL ?? 'Levl1 <noreply@mail.levl1.io>'
 
+/**
+ * Resolve the correct `from` address for an agency. Only use the agency's own
+ * sender once its domain is verified in Resend — otherwise Resend rejects the
+ * send. Falls back to the shared Levl1 sender.
+ */
+export function agencyFromAddress(agency: {
+  name: string
+  senderName?: string | null
+  senderEmail?: string | null
+  resendDomainVerified?: boolean | null
+}): string {
+  if (agency.resendDomainVerified && agency.senderEmail && agency.senderName) {
+    return `${agency.senderName} <${agency.senderEmail}>`
+  }
+  return `${agency.name} via Levl1 <${DEFAULT_FROM.replace(/^.*<|>$/g, '') || 'noreply@mail.levl1.io'}>`
+}
+
 interface EmailOptions {
   to: string | string[]
   subject: string

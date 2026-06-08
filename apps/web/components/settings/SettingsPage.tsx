@@ -109,6 +109,10 @@ export default function SettingsPage() {
   const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
   const [senderName,    setSenderName]    = useState('');
   const [senderEmail,   setSenderEmail]   = useState('');
+  const [domainVerified, setDomainVerified] = useState(false);
+  const [domainRecords,  setDomainRecords]  = useState<{ type: string; name: string; value: string }[]>([]);
+  const [domainBusy,     setDomainBusy]     = useState<'verify' | 'check' | null>(null);
+  const [domainMsg,      setDomainMsg]      = useState('');
 
   const [notifEmail,      setNotifEmail]      = useState(true);
   const [notifSlack,      setNotifSlack]      = useState(false);
@@ -134,6 +138,7 @@ export default function SettingsPage() {
         if (data.website)     setAgencyWebsite(data.website)
         if (data.senderName)  setSenderName(data.senderName)
         if (data.senderEmail) setSenderEmail(data.senderEmail)
+        if (data.resendDomainVerified) setDomainVerified(true)
       })
       .catch(() => {});
   }, []);
@@ -191,6 +196,47 @@ export default function SettingsPage() {
   };
 
   const selectedOption = getVoiceOption(voiceAccent);
+
+  async function verifyDomain() {
+    if (!senderEmail.includes('@') || !senderName) {
+      toast.error('Enter a sender name and email first');
+      return;
+    }
+    setDomainBusy('verify'); setDomainMsg('');
+    try {
+      const res = await fetch('/api/agency/email/verify-domain', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senderEmail, senderName }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Could not start verification'); return; }
+      setDomainRecords(Array.isArray(data.records) ? data.records : []);
+      setDomainMsg('Add the DNS records below in your domain provider, then click “Check Verification”.');
+    } catch {
+      toast.error('Verification request failed');
+    } finally {
+      setDomainBusy(null);
+    }
+  }
+
+  async function checkDomain() {
+    setDomainBusy('check'); setDomainMsg('');
+    try {
+      const data = await fetch('/api/agency/email/check-verification').then((r) => r.json());
+      if (data.verified) {
+        setDomainVerified(true);
+        setDomainRecords([]);
+        toast.success('Domain verified! Emails will now send from your address.');
+      } else {
+        if (Array.isArray(data.records) && data.records.length) setDomainRecords(data.records);
+        setDomainMsg(`Not verified yet (status: ${data.status ?? 'pending'}). DNS can take up to a few hours to propagate.`);
+      }
+    } catch {
+      toast.error('Could not check verification');
+    } finally {
+      setDomainBusy(null);
+    }
+  }
 
   async function handleSaveSettings() {
     try {
@@ -356,6 +402,64 @@ export default function SettingsPage() {
         >
           {savingProfile ? "Saving…" : "Save Profile"}
         </button>
+      </Section>
+
+      {/* Email Configuration */}
+      <Section icon={Bell} title="Email Configuration" description="Send interview emails from your own verified domain">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
+            padding: "4px 10px", borderRadius: 100,
+            background: domainVerified ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.12)",
+            color: domainVerified ? "#059669" : "#64748B",
+          }}>
+            {domainVerified ? <CheckCircle2 size={13} /> : null}
+            {domainVerified ? `Verified — sending from ${senderEmail}` : "Not verified"}
+          </span>
+        </div>
+        {!domainVerified && (
+          <div style={{ fontSize: 12, color: "#94A3B8" }}>
+            Emails currently send from <strong>noreply@mail.levl1.io</strong>. Verify your domain to send from {senderEmail || "your address"}.
+          </div>
+        )}
+
+        {!domainVerified && (
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={verifyDomain} disabled={domainBusy === 'verify'} className="btn-navy" style={{ fontSize: 13 }}>
+              {domainBusy === 'verify' ? "Starting…" : "Verify My Domain →"}
+            </button>
+            {domainRecords.length > 0 && (
+              <button onClick={checkDomain} disabled={domainBusy === 'check'} className="btn-ghost" style={{ fontSize: 13 }}>
+                {domainBusy === 'check' ? "Checking…" : "I've added the records — Check Verification"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {domainMsg && <div style={{ fontSize: 12, color: "#475569" }}>{domainMsg}</div>}
+
+        {domainRecords.length > 0 && (
+          <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC" }}>
+                  {["Type", "Hostname", "Value"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "#64748B", fontWeight: 700 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {domainRecords.map((r, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid #F1F5F9" }}>
+                    <td style={{ padding: "8px 12px", color: "#334155", fontWeight: 600 }}>{r.type}</td>
+                    <td style={{ padding: "8px 12px", color: "#475569", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.name}</td>
+                    <td style={{ padding: "8px 12px", color: "#475569", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Section>
 
       {/* Voice & Accent */}

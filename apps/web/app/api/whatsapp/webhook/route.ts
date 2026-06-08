@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendWhatsAppConfirmation } from '@/lib/whatsappService'
-import { sendEmail } from '@/lib/emailService'
+import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 import { formatSlotLabel } from '@/lib/slots'
 
 export const dynamic = 'force-dynamic'
@@ -107,9 +107,7 @@ export async function POST(req: NextRequest) {
       await sendEmail({
         to: candidate.email,
         subject: `Interview Confirmed — ${candidate.position.title}`,
-        from: agency?.senderEmail
-          ? `${agency.senderName ?? agency.name} <${agency.senderEmail}>`
-          : undefined,
+        from: agency ? agencyFromAddress(agency) : undefined,
         html: `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#1E293B">
 <h2>Interview Confirmed ✅</h2>
 <p>Hi ${candidate.name}, your interview for <strong>${candidate.position.title}</strong> at

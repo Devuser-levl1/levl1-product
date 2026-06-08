@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendEmail } from '@/lib/emailService'
+import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,9 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
       await sendEmail({
         to:      interview.candidate.email,
         subject: `Interview Confirmed — ${interview.position.title} on ${scheduledAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}`,
-        from:    agency?.senderEmail
-          ? `${agency.senderName ?? agency.name} <${agency.senderEmail}>`
-          : undefined,
+        from:    agency ? agencyFromAddress(agency) : undefined,
         html: confirmationEmailHtml({
           candidateName: interview.candidate.name,
           positionTitle: interview.position.title,
