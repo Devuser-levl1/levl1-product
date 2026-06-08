@@ -109,6 +109,9 @@ export default function SettingsPage() {
   const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
   const [senderName,    setSenderName]    = useState('');
   const [senderEmail,   setSenderEmail]   = useState('');
+  const [logoUrl,        setLogoUrl]        = useState('');
+  const [brandColor,     setBrandColor]     = useState('#4F46E5');
+  const [uploadingLogo,  setUploadingLogo]  = useState(false);
   const [domainVerified, setDomainVerified] = useState(false);
   const [domainRecords,  setDomainRecords]  = useState<{ type: string; name: string; value: string }[]>([]);
   const [domainBusy,     setDomainBusy]     = useState<'verify' | 'check' | null>(null);
@@ -139,6 +142,8 @@ export default function SettingsPage() {
         if (data.senderName)  setSenderName(data.senderName)
         if (data.senderEmail) setSenderEmail(data.senderEmail)
         if (data.resendDomainVerified) setDomainVerified(true)
+        if (data.logoUrl)    setLogoUrl(data.logoUrl)
+        if (data.brandColor) setBrandColor(data.brandColor)
       })
       .catch(() => {});
   }, []);
@@ -196,6 +201,33 @@ export default function SettingsPage() {
   };
 
   const selectedOption = getVoiceOption(voiceAccent);
+
+  async function uploadLogo(file: File) {
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('logo', file);
+      const res = await fetch('/api/agency/upload-logo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Upload failed'); return; }
+      setLogoUrl(data.logoUrl);
+      toast.success('Logo uploaded');
+    } catch {
+      toast.error('Upload failed');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function saveBrandColor(color: string) {
+    setBrandColor(color);
+    try {
+      await fetch('/api/agency/settings', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandColor: color }),
+      });
+    } catch { /* non-critical */ }
+  }
 
   async function verifyDomain() {
     if (!senderEmail.includes('@') || !senderName) {
@@ -460,6 +492,34 @@ export default function SettingsPage() {
             </table>
           </div>
         )}
+      </Section>
+
+      {/* Branding (white-label reports & candidate portal) */}
+      <Section icon={CheckCircle2} title="Branding" description="Your logo and colour appear on reports and the candidate portal">
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ width: 80, height: 80, borderRadius: 12, border: "1px solid #E2E8F0", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            {logoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={logoUrl} alt="Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              : <span style={{ fontSize: 11, color: "#94A3B8" }}>No logo</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label className="btn-ghost" style={{ fontSize: 13, cursor: "pointer", display: "inline-block" }}>
+              {uploadingLogo ? "Uploading…" : "Upload Logo"}
+              <input
+                type="file" accept="image/*" hidden
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }}
+              />
+            </label>
+            <span style={{ fontSize: 11, color: "#94A3B8" }}>PNG/SVG, under 512KB. Shown on candidate reports.</span>
+          </div>
+        </div>
+        <Field label="Brand Colour">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <input type="color" value={brandColor} onChange={(e) => saveBrandColor(e.target.value)} style={{ width: 44, height: 36, border: "1px solid #E2E8F0", borderRadius: 8, cursor: "pointer", background: "none" }} />
+            <span style={{ fontSize: 13, color: "#475569", fontFamily: "var(--font-mono)" }}>{brandColor}</span>
+          </div>
+        </Field>
       </Section>
 
       {/* Voice & Accent */}

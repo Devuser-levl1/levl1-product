@@ -14,10 +14,11 @@ export async function GET(
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
       include: {
+        verification: true,
         candidate: {
           include: {
             report:   true,
-            position: true,
+            position: { include: { agency: { select: { name: true, logoUrl: true, brandColor: true } } } },
           },
         },
       },
@@ -34,6 +35,8 @@ export async function GET(
 
     const r = candidate.report
     const p = candidate.position
+    const agency = p?.agency
+    const v = interview.verification
 
     return NextResponse.json({
       // Report fields
@@ -58,6 +61,22 @@ export async function GET(
                         .toISOString().slice(0, 10),
       duration:       p?.interviewDuration ?? 30,
       generatedAt:    r.generatedAt.toISOString(),
+      // White-label branding
+      agencyName:     agency?.name ?? null,
+      agencyLogoUrl:  agency?.logoUrl ?? null,
+      brandColor:     agency?.brandColor ?? '#4F46E5',
+      // Identity & integrity
+      verification: v ? {
+        emailVerified:   !!v.otpVerifiedAt,
+        nameConfirmed:   v.nameConfirmed,
+        photoCaptured:   !!v.photoCapturedAt,
+        photoUrl:        v.photoUrl,
+        tabSwitchCount:  v.tabSwitchCount,
+        faceMissingMs:   v.faceMissingMs,
+        multipleFaces:   v.multipleFaces,
+        integrityScore:  v.integrityScore,
+        integrityFlags:  v.integrityFlags ?? [],
+      } : null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch report'

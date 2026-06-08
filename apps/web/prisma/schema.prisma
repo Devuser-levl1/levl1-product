@@ -257,7 +257,28 @@ model Interview {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  token InterviewToken?
+  token        InterviewToken?
+  verification InterviewVerification?
+}
+
+model InterviewVerification {
+  id              String    @id @default(cuid())
+  interviewId     String    @unique
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  otpCode         String?
+  otpExpiresAt    DateTime?
+  otpVerifiedAt   DateTime?
+  photoUrl        String?   @db.Text
+  photoCapturedAt DateTime?
+  nameConfirmed   String?
+  nameConfirmedAt DateTime?
+  tabSwitchCount  Int       @default(0)
+  faceMissingMs   Int       @default(0)
+  multipleFaces   Boolean   @default(false)
+  integrityScore  Int       @default(100)
+  integrityFlags  Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model InterviewToken {

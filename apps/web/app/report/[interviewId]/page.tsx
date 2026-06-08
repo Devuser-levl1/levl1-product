@@ -369,6 +369,25 @@ export default function ReportPage() {
   const rec = REC_CFG[report.recommendation]
   const sectionEntries = Object.entries(report.sectionScores) as [keyof typeof report.sectionScores, { score: number; outOf: number }][]
 
+  // White-label + integrity fields ride along on the fetched report payload.
+  const wl = report as unknown as {
+    agencyName?: string | null
+    agencyLogoUrl?: string | null
+    brandColor?: string | null
+    verification?: {
+      emailVerified: boolean
+      nameConfirmed: string | null
+      photoCaptured: boolean
+      tabSwitchCount: number
+      faceMissingMs: number
+      multipleFaces: boolean
+      integrityScore: number
+      integrityFlags: { type: string; detail: string; at: string }[]
+    } | null
+  }
+  const brandColor = wl.brandColor || '#4F46E5'
+  const v = wl.verification
+
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: 'var(--font-sans)' }}>
 
@@ -425,6 +444,24 @@ export default function ReportPage() {
 
       {/* ── Body ── */}
       <main style={{ maxWidth: 880, margin: '0 auto', padding: '36px 24px 80px' }}>
+
+        {/* ════ WHITE-LABEL AGENCY HEADER ════ */}
+        {(wl.agencyName || wl.agencyLogoUrl) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `2px solid ${brandColor}` }}>
+            {wl.agencyLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={wl.agencyLogoUrl} alt={wl.agencyName ?? 'Agency'} height={40} style={{ objectFit: 'contain', maxWidth: 180 }} />
+            ) : (
+              <div style={{ width: 40, height: 40, borderRadius: 9, background: brandColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                {(wl.agencyName ?? 'A').charAt(0)}
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{wl.agencyName}</div>
+              <div style={{ fontSize: 12, color: '#94A3B8' }}>Candidate Evaluation Report</div>
+            </div>
+          </div>
+        )}
 
         {/* ════ HEADER CARD ════ */}
         <section style={{
@@ -596,6 +633,49 @@ export default function ReportPage() {
           </p>
         </section>
 
+        {/* ════ IDENTITY & INTEGRITY ════ */}
+        {v && (
+          <section style={{
+            background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16,
+            padding: '28px 36px', marginBottom: 24,
+            boxShadow: '0 1px 4px rgba(79,70,229,0.06)',
+          }}>
+            <SectionTitle icon={<UserCheck size={15} />} label="Identity & Integrity" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '12px 0 18px' }}>
+              <IntegrityCheck ok={v.emailVerified} label="Email verified (OTP)" />
+              <IntegrityCheck ok={!!v.nameConfirmed} label={v.nameConfirmed ? `Name confirmed: ${v.nameConfirmed}` : 'Name not confirmed'} />
+              <IntegrityCheck ok={v.photoCaptured} label="Photo captured" />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+              <span style={{ fontSize: 13, color: '#64748B' }}>Integrity Score</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: scoreColor(v.integrityScore) }}>
+                {v.integrityScore}<span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>/100</span>
+              </span>
+            </div>
+
+            {(v.tabSwitchCount > 0 || v.faceMissingMs > 0 || v.multipleFaces) && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {v.tabSwitchCount > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#D97706' }}>
+                    <AlertTriangle size={14} /> {v.tabSwitchCount} tab switch{v.tabSwitchCount !== 1 ? 'es' : ''} detected
+                  </div>
+                )}
+                {v.faceMissingMs > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#D97706' }}>
+                    <AlertTriangle size={14} /> Face not visible for ~{Math.round(v.faceMissingMs / 1000)}s total
+                  </div>
+                )}
+                {v.multipleFaces && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#DC2626' }}>
+                    <AlertTriangle size={14} /> Multiple faces detected during the interview
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* ════ L2 RECOMMENDATION ════ */}
         <section style={{
           background: 'linear-gradient(135deg, rgba(79,70,229,0.04) 0%, rgba(124,58,237,0.06) 100%)',
@@ -680,6 +760,15 @@ export default function ReportPage() {
 }
 
 /* ─── Section title helper ──────────────────────────────────────── */
+function IntegrityCheck({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: ok ? '#334155' : '#94A3B8' }}>
+      {ok ? <CheckCircle2 size={15} color="#10B981" /> : <XCircle size={15} color="#CBD5E1" />}
+      {label}
+    </div>
+  )
+}
+
 function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
