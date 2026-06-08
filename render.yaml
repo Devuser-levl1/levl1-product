@@ -29,5 +29,8 @@ services:
       # Optional: protect /api/cron/send-reminders
       - key: CRON_SECRET
         sync: false
+      # Internal admin CRM (/admin). Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: ADMIN_SECRET_TOKEN
+        sync: false
       - key: NODE_ENV
         value: production
