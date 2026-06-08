@@ -78,7 +78,7 @@ interface TeamMemberRecord { id: string; name: string; email: string; role: stri
 interface UserRecord { id: string; name: string; email: string; role: string; lastLoginAt?: string | null }
 
 export default function SettingsPage() {
-  const { agencyPlan, setShowUpgradeWall } = useAppStore();
+  const { agencyPlan, setShowUpgradeWall, setAgencyPlan } = useAppStore();
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
 
   // Team members state
@@ -210,6 +210,59 @@ export default function SettingsPage() {
     }
   }
 
+  // Re-fetch the agency plan from the DB and update the global store so the
+  // trial banner / usage bar reflect the new plan immediately after upgrade.
+  const refreshAgencyPlan = useCallback(async () => {
+    try {
+      const data = await fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null));
+      const agency = data?.agency;
+      if (agency) {
+        setAgencyPlan({
+          agencyId: agency.id,
+          agencyName: agency.name,
+          plan: agency.plan,
+          interviewsUsed: agency.interviewsUsed,
+          interviewsLimit: agency.interviewsLimit,
+          trialExpiresAt: agency.trialExpiresAt,
+          trialDaysLeft: agency.trialDaysLeft ?? 0,
+          subscriptionStatus: agency.subscriptionStatus,
+        });
+      }
+    } catch { /* non-critical */ }
+  }, [setAgencyPlan]);
+
+  // Verify a completed payment and refresh the plan.
+  const verifyPayment = useCallback(async (orderId: string, planId: string | null) => {
+    try {
+      const data = await fetch(
+        `/api/payments/verify/${orderId}${planId ? `?plan=${planId}` : ''}`,
+      ).then((r) => r.json());
+      if (data.success) {
+        toast.success(`Successfully upgraded to ${planId ?? 'your new'} plan!`);
+        await refreshAgencyPlan();
+      } else {
+        toast.error('Payment not confirmed yet. If you were charged, contact hello@levl1.io');
+      }
+    } catch {
+      toast.error('Could not verify payment. Contact hello@levl1.io if you were charged.');
+    }
+  }, [refreshAgencyPlan]);
+
+  // On return from Cashfree hosted checkout: /settings?order_id=...&plan=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    const planId = params.get('plan');
+    if (orderId) {
+      verifyPayment(orderId, planId);
+      // Strip the payment params from the URL so a refresh doesn't re-verify.
+      params.delete('order_id');
+      params.delete('plan');
+      const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+      window.history.replaceState({}, '', clean);
+    }
+  }, [verifyPayment]);
+
   async function handleUpgrade(planId: string) {
     setBillingLoading(planId);
     try {
@@ -223,10 +276,17 @@ export default function SettingsPage() {
 
       const cf = (window as unknown as Record<string, unknown>).Cashfree;
       if (cf && typeof cf === 'function') {
-        const cashfree = (cf as (opts: unknown) => { checkout: (opts: unknown) => void })({
+        const cashfree = (cf as (opts: unknown) => { checkout: (opts: unknown) => Promise<{ error?: unknown }> })({
           mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
         });
-        cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
+        // _modal keeps the user on this page; the returned promise resolves
+        // when the modal closes, after which we verify server-side.
+        const result = await cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
+        if (result?.error) {
+          toast.error('Payment was cancelled or failed.');
+        } else if (data.orderId) {
+          await verifyPayment(data.orderId, planId);
+        }
       } else {
         toast.error('Payment SDK not ready. Please refresh and try again.');
       }
