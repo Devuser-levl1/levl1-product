@@ -9,6 +9,7 @@ export interface CandidatePortalData {
   interviewId: string
   status: string
   scheduledAt: string | null
+  consentGiven: boolean
   duration: number
   candidateFirstName: string
   candidateName: string
@@ -51,6 +52,7 @@ export async function loadCandidateInterview(interviewId: string): Promise<Porta
       interviewId: interview.id,
       status: interview.status,
       scheduledAt: interview.scheduledAt ? interview.scheduledAt.toISOString() : null,
+      consentGiven: interview.consentGiven,
       duration: interview.duration ?? 30,
       candidateFirstName: interview.candidate.name.split(' ')[0] || interview.candidate.name,
       candidateName: interview.candidate.name,

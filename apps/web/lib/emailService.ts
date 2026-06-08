@@ -94,14 +94,23 @@ export function inviteEmailHtml(opts: {
       Hi ${opts.candidateName},<br><br>
       Congratulations — you have been shortlisted for the <strong>${opts.positionTitle}</strong> role at <strong>${opts.company}</strong>.
     </p>
-    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">Interview Details</div>
       <div style="font-size:14px;color:#475569"><strong>Format:</strong> AI-powered voice interview</div>
       <div style="font-size:14px;color:#475569;margin-top:6px"><strong>Duration:</strong> approximately ${opts.duration} minutes</div>
       <div style="font-size:14px;color:#475569;margin-top:6px"><strong>Tech needed:</strong> laptop or desktop with microphone</div>
     </div>
+    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:16px 20px;margin-bottom:24px">
+      <div style="font-size:12px;font-weight:700;color:#B45309;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Please note before you continue</div>
+      <div style="font-size:13px;color:#92400E;line-height:1.6">
+        This is an <strong>L1 technical interview conducted by an AI interviewer</strong> (not a human).
+        It takes approximately ${opts.duration} minutes, covers <strong>technical and behavioral</strong> questions,
+        and your responses will be <strong>recorded and evaluated</strong>. You will be asked to acknowledge and
+        consent to this on the scheduling page before choosing a time.
+      </div>
+    </div>
     <a href="${opts.schedulingUrl}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(79,70,229,0.25)">
-      Select Your Interview Slot &rarr;
+      Review Consent &amp; Select Your Slot &rarr;
     </a>
     <p style="font-size:12px;color:#94A3B8;margin-top:20px;line-height:1.6">
       This interview is conducted by ${opts.agencyName} using the Levl1 AI Interview Platform.

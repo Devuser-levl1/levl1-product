@@ -81,13 +81,13 @@ export async function sendWhatsAppInvite({
 
 You've been invited to interview for *${positionTitle}* at *${company}* by ${agencyName}.
 
-Please choose your preferred interview slot by replying with the number:
+⚠️ *Please note:* This is an L1 technical interview conducted by an *AI interviewer* (not a human). It takes about 30 minutes, covers *technical and behavioral* questions, and your responses will be *recorded and evaluated*.
 
-${slotsList}
+You'll be asked to confirm your consent on the scheduling page before picking a time. Open it here: ${schedulingUrl}
 
-Or pick a different time here: ${schedulingUrl}
+You can also reply with a number to request a slot:
 
-The interview is 30 minutes via AI voice. You'll receive a join link once confirmed.`
+${slotsList}`
 
   await send(candidatePhone, message, 'Invite')
 }

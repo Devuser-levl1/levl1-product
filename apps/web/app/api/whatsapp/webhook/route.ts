@@ -13,6 +13,14 @@ function twiml() {
   })
 }
 
+/** TwiML reply that sends a message back to the candidate. */
+function twimlMessage(text: string) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escaped}</Message></Response>`, {
+    headers: { 'Content-Type': 'text/xml' },
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Twilio posts form-encoded data
@@ -53,6 +61,16 @@ export async function POST(req: NextRequest) {
     if (!candidate.interview) {
       console.warn('[whatsapp/webhook] Candidate has no interview record:', candidate.id)
       return twiml()
+    }
+
+    // Consent gate — a slot cannot be booked until the candidate has consented
+    // to the AI interview on the scheduling page.
+    if (!candidate.interview.consentGiven) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+      console.log('[whatsapp/webhook] Consent not given — blocking booking for', candidate.id)
+      return twimlMessage(
+        `Before we can confirm a time, please open your scheduling link and tap “I understand and consent”: ${appUrl}/schedule/${candidate.interview.id}`,
+      )
     }
 
     // Resolve the exact slot that was offered (persisted at invite time)

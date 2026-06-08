@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, CalendarCheck, CheckCircle2 } from 'lucide-react'
+import { Loader2, CalendarCheck, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { generateAvailableSlots } from '@/lib/slots'
 import type { CandidatePortalData } from '@/lib/candidatePortal'
 
@@ -12,6 +12,8 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
   const [selected, setSelected] = useState<string | null>(null)
   const [booking, setBooking] = useState(false)
   const [done, setDone] = useState(false)
+  const [consented, setConsented] = useState(data.consentGiven)
+  const [consenting, setConsenting] = useState(false)
 
   // Group up to 30 upcoming slots by IST date
   const grouped = useMemo(() => {
@@ -49,6 +51,18 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     }
   }
 
+  async function giveConsent() {
+    setConsenting(true)
+    try {
+      const res = await fetch(`/api/schedule/${data.interviewId}/consent`, { method: 'POST' })
+      if (!res.ok) throw new Error('failed')
+      setConsented(true)
+    } catch {
+      setConsenting(false)
+      alert('Could not record your consent. Please try again or contact your recruiter.')
+    }
+  }
+
   if (done) {
     return (
       <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
@@ -59,6 +73,50 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
             A confirmation email is on its way. Redirecting you to the interview page…
           </p>
         </div>
+      </Shell>
+    )
+  }
+
+  // ── Consent gate — slot picker is hidden until the candidate consents ──
+  if (!consented) {
+    return (
+      <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <ShieldCheck size={18} color={brand} />
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0 }}>Before you schedule</h1>
+        </div>
+        <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 16px' }}>
+          Please read and acknowledge the following about your interview for{' '}
+          <strong>{data.positionTitle}</strong> at <strong>{data.company}</strong>.
+        </p>
+        <ul style={{ margin: '0 0 20px', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            'This is an L1 technical interview conducted by an AI interviewer (not a human).',
+            `It takes approximately ${data.duration} minutes.`,
+            'It covers technical and behavioral questions.',
+            'Your responses will be recorded and evaluated.',
+          ].map((line, i) => (
+            <li key={i} style={{ display: 'flex', gap: 10, fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
+              <CheckCircle2 size={16} color={brand} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={giveConsent}
+          disabled={consenting}
+          style={{
+            width: '100%', padding: '14px 20px', borderRadius: 12, border: 'none',
+            fontSize: 15, fontWeight: 800, color: '#fff', cursor: consenting ? 'default' : 'pointer',
+            background: brand, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          {consenting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <ShieldCheck size={16} />}
+          {consenting ? 'Recording…' : 'I understand and consent'}
+        </button>
+        <p style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 12 }}>
+          You must consent before choosing an interview time.
+        </p>
       </Shell>
     )
   }

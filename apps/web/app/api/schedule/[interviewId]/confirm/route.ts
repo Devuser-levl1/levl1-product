@@ -25,6 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
     if (interview.status === 'completed') {
       return NextResponse.json({ error: 'This interview has already been completed' }, { status: 409 })
     }
+    if (!interview.consentGiven) {
+      return NextResponse.json({ error: 'Consent is required before scheduling' }, { status: 403 })
+    }
 
     // Update interview + candidate
     await prisma.interview.update({

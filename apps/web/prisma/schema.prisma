@@ -254,6 +254,8 @@ model Interview {
   codeEditorContent String?   @db.Text
   whiteboardUrl     String?
   runningScore      Int?
+  consentGiven      Boolean   @default(false)
+  consentGivenAt    DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
