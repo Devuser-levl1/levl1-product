@@ -46,13 +46,13 @@ export async function POST(req: NextRequest) {
 
     await prisma.agency.update({
       where: { id: session.agencyId },
-      data: {
-        senderEmail,
-        senderName,
-        ...(domainId ? { resendDomainId: domainId } : {}),
-        resendDomainVerified: false,
-      },
+      data: { senderEmail, senderName, resendDomainVerified: false },
     })
+    // Write the new column via raw SQL so this never depends on a freshly
+    // generated Prisma client (the DB column exists regardless).
+    if (domainId) {
+      await prisma.$executeRaw`UPDATE "Agency" SET "resendDomainId" = ${domainId} WHERE "id" = ${session.agencyId}`
+    }
 
     return NextResponse.json({ domain, domainId: domainId ?? null, records })
   } catch (err: unknown) {

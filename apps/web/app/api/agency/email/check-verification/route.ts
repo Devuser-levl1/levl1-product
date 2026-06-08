@@ -18,28 +18,30 @@ export async function GET(req: NextRequest) {
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
 
-    const agency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
-    if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
-    if (!agency.resendDomainId) {
+    // Read the new column via raw SQL so this never depends on a freshly
+    // generated Prisma client (the DB column exists regardless).
+    const rows = await prisma.$queryRaw<{ resendDomainId: string | null; resendDomainVerified: boolean }[]>`
+      SELECT "resendDomainId", "resendDomainVerified" FROM "Agency" WHERE "id" = ${session.agencyId} LIMIT 1
+    `
+    const row = rows[0]
+    if (!row) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
+    if (!row.resendDomainId) {
       return NextResponse.json({ verified: false, status: 'not_started', records: [] })
     }
 
     const auth = { Authorization: `Bearer ${apiKey}` }
 
     // Trigger a fresh DNS check (best-effort), then read the current state.
-    await fetch(`${RESEND_API}/domains/${agency.resendDomainId}/verify`, {
+    await fetch(`${RESEND_API}/domains/${row.resendDomainId}/verify`, {
       method: 'POST', headers: auth,
     }).catch(() => {})
 
-    const res = await fetch(`${RESEND_API}/domains/${agency.resendDomainId}`, { headers: auth })
+    const res = await fetch(`${RESEND_API}/domains/${row.resendDomainId}`, { headers: auth })
     const data = await res.json().catch(() => ({}))
 
     const verified = data?.status === 'verified'
-    if (verified && !agency.resendDomainVerified) {
-      await prisma.agency.update({
-        where: { id: session.agencyId },
-        data: { resendDomainVerified: true },
-      })
+    if (verified && !row.resendDomainVerified) {
+      await prisma.$executeRaw`UPDATE "Agency" SET "resendDomainVerified" = true WHERE "id" = ${session.agencyId}`
     }
 
     return NextResponse.json({

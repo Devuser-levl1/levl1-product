@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const agency = await prisma.agency.findUnique({
       where: { id: session.agencyId },
-      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true, voiceAccent: true, resendDomainId: true, resendDomainVerified: true },
+      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true, voiceAccent: true, resendDomainVerified: true },
     })
     return NextResponse.json(agency ?? {})
   } catch {
