@@ -22,18 +22,27 @@ const nextConfig = {
    *  the main app under /candidate/interview/[token].
    * ─────────────────────────────────────────────────────────────── */
   async rewrites() {
-    return [
-      {
-        source:      '/:token/complete',
-        destination: '/candidate/interview/:token/complete',
-        has: [{ type: 'host', value: 'interview.levl1.app' }],
-      },
-      {
-        source:      '/:token',
-        destination: '/candidate/interview/:token',
-        has: [{ type: 'host', value: 'interview.levl1.app' }],
-      },
-    ]
+    return {
+      beforeFiles: [
+        // interview.levl1.io — candidate portal. Everything maps under /candidate/*.
+        {
+          source:      '/:path*',
+          destination: '/candidate/:path*',
+          has: [{ type: 'host', value: 'interview.levl1.io' }],
+        },
+        // Legacy interview.levl1.app token links (kept for backwards compatibility).
+        {
+          source:      '/:token/complete',
+          destination: '/candidate/interview/:token/complete',
+          has: [{ type: 'host', value: 'interview.levl1.app' }],
+        },
+        {
+          source:      '/:token',
+          destination: '/candidate/interview/:token',
+          has: [{ type: 'host', value: 'interview.levl1.app' }],
+        },
+      ],
+    }
   },
 
   /* ── Service Worker: no-cache so browser always fetches the latest ── */
