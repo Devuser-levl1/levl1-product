@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText, Loader2 } from "lucide-react";
+import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText, Loader2, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import CandidateUploadFlow from "./CandidateUploadFlow";
 import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
@@ -183,6 +183,21 @@ function CandidateCard({
         <Mail size={10} />
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{candidate.email}</span>
       </div>
+
+      {/* No-phone warning — WhatsApp invites/reminders require a phone number */}
+      {!candidate.phone && (
+        <div
+          title="Add a phone number to enable WhatsApp invites and reminders. Email invites still send."
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 4, alignSelf: "flex-start",
+            fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 100,
+            background: "rgba(245,158,11,0.10)", color: "#B45309",
+            border: "1px solid rgba(245,158,11,0.30)",
+          }}
+        >
+          <AlertTriangle size={9} /> No phone — WhatsApp unavailable
+        </div>
+      )}
 
       {/* Skills */}
       {candidate.topSkills && candidate.topSkills.length > 0 && (

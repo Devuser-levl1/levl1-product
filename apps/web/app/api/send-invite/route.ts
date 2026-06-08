@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
+import { sendWhatsAppInvite } from '@/lib/whatsappService'
+import { generateAvailableSlots, formatSlotLabel } from '@/lib/slots'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,6 +94,48 @@ export async function POST(req: NextRequest) {
       console.log('[send-invite] RESEND_API_KEY not configured — skipping email')
       console.log('[send-invite] Would send to:', candidate.email)
       console.log('[send-invite] Scheduling URL:', schedulingUrl)
+    }
+
+    // 3b. WhatsApp invite with slot options (non-blocking)
+    if (candidate.phone) {
+      const slotDates  = generateAvailableSlots(5)
+      const duration   = candidate.position.interviewDuration ?? 30
+
+      // Persist the offered slots so the WhatsApp reply webhook can resolve
+      // the exact instant the candidate picks (numbers 1–5).
+      try {
+        await prisma.interviewSlot.deleteMany({
+          where: { candidateId: candidate.id, isBooked: false },
+        })
+        await prisma.interviewSlot.createMany({
+          data: slotDates.map((start) => ({
+            positionId:  candidate!.positionId,
+            candidateId: candidate!.id,
+            startTime:   start,
+            endTime:     new Date(start.getTime() + duration * 60 * 1000),
+            duration,
+          })),
+        })
+      } catch (slotErr) {
+        console.error('[send-invite] Failed to persist offered slots:', slotErr)
+      }
+
+      const availableSlots = slotDates.map((d) => ({
+        label: formatSlotLabel(d),
+        value: d.toISOString(),
+      }))
+
+      sendWhatsAppInvite({
+        candidateName:  candidate.name,
+        candidatePhone: candidate.phone,
+        positionTitle:  candidate.position.title,
+        company:        candidate.position.company,
+        agencyName:     agency.senderName ?? agency.name,
+        availableSlots,
+        schedulingUrl,
+      }).catch((e) => console.error('[send-invite] WhatsApp failed:', e instanceof Error ? e.message : e))
+    } else {
+      console.log('[send-invite] Candidate has no phone — WhatsApp invite skipped')
     }
 
     // 4. Update candidate status
