@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
+import { sendEmail } from '@/lib/emailService'
 
 export async function POST(req: NextRequest) {
   try {
@@ -281,6 +282,43 @@ export async function POST(req: NextRequest) {
           }
         } catch (notifErr) {
           console.warn('[generate-report] Notification creation failed (non-fatal):', notifErr)
+        }
+
+        // Send report-ready email to the recruiter (first user of the agency)
+        try {
+          const cand = await prisma.candidate.findUnique({
+            where: { id: resolvedCandidateId },
+            include: { position: { select: { agencyId: true, title: true, company: true } } },
+          })
+          const agencyId = cand?.position?.agencyId
+          const recruiter = agencyId
+            ? await prisma.user.findFirst({ where: { agencyId }, orderBy: { createdAt: 'asc' } })
+            : null
+
+          if (recruiter && process.env.RESEND_API_KEY) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+            await sendEmail({
+              to: recruiter.email,
+              subject: `Report Ready — ${candidateName} for ${cand?.position?.title ?? positionTitle}`,
+              html: `
+                <p>Hi ${recruiter.name},</p>
+                <p>The evaluation report for <strong>${candidateName}</strong> is ready.</p>
+                <p><strong>Position:</strong> ${cand?.position?.title ?? positionTitle} at ${cand?.position?.company ?? company}<br/>
+                <strong>Score:</strong> ${weightedScore}/100<br/>
+                <strong>Recommendation:</strong> ${report.recommendation ?? 'maybe'}</p>
+                <a href="${appUrl}/report/${interviewId}"
+                   style="background:#4F46E5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px;">
+                  View Full Report →
+                </a>
+                <p style="color:#94A3B8;font-size:12px;margin-top:24px;">Levl1 AI Interview Platform</p>
+              `,
+            })
+            console.log('[generate-report] Report-ready email sent to:', recruiter.email)
+          }
+        } catch (emailError: unknown) {
+          const msg = emailError instanceof Error ? emailError.message : String(emailError)
+          console.error('[generate-report] Report-ready email failed:', msg)
+          // Don't fail the whole report if email fails
         }
       } catch (dbError: unknown) {
         const msg = dbError instanceof Error ? dbError.message : String(dbError)
