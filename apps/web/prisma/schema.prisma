@@ -496,6 +496,10 @@ model HireCandidate {
   name             String
   email            String
   phone            String?
+  currentTitle     String?
+  currentCompany   String?
+  linkedinUrl      String?
+  totalYears       Int?
   resumeUrl        String?
   resumeText       String?    @db.Text
   skills           Json?      // string[]
