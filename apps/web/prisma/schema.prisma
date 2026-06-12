@@ -392,3 +392,241 @@ model ScheduledEmail {
   metadata    Json?
   createdAt   DateTime  @default(now())
 }
+
+// ── HIRE PRODUCT MODELS ──────────────────────────────────────────────
+// All Hire models are prefixed with Hire to avoid collision with Interviews models
+
+model HireTenant {
+  id          String         @id @default(cuid())
+  name        String
+  type        HireTenantType
+  plan        HirePlan       @default(STARTER)
+  domain      String?        @unique
+  logoUrl     String?
+
+  // Trial
+  trialEndsAt DateTime?
+  trialActive Boolean        @default(true)
+
+  // Cashfree billing
+  cashfreeCustomerId   String?
+  cashfreeSubId        String?
+  subscriptionStatus   String?
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  users       HireUser[]
+  jobs        HireJob[]
+  candidates  HireCandidate[]
+  clients     HireClient[]
+  deals       HireDeal[]
+  campaigns   HireCampaign[]
+}
+
+enum HireTenantType {
+  AGENCY
+  CORPORATE
+}
+
+enum HirePlan {
+  STARTER
+  GROWTH
+  SCALE
+  ENTERPRISE
+}
+
+model HireUser {
+  id           String     @id @default(cuid())
+  tenantId     String
+  tenant       HireTenant @relation(fields: [tenantId], references: [id])
+  email        String
+  name         String
+  passwordHash String?
+  role         HireRole   @default(RECRUITER)
+  avatarUrl    String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+enum HireRole {
+  ADMIN
+  RECRUITER
+  VIEWER
+}
+
+model HireJob {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant    @relation(fields: [tenantId], references: [id])
+  title       String
+  description String        @db.Text
+  department  String?
+  location    String?
+  salaryMin   Int?
+  salaryMax   Int?
+  stages      Json          // string[] — custom pipeline stages per job
+  status      HireJobStatus @default(ACTIVE)
+  applySlug   String        @unique @default(cuid())
+  clientId    String?
+  client      HireClient?   @relation(fields: [clientId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  candidates  HireCandidate[]
+
+  @@index([tenantId])
+}
+
+enum HireJobStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+model HireCandidate {
+  id               String     @id @default(cuid())
+  tenantId         String
+  tenant           HireTenant @relation(fields: [tenantId], references: [id])
+  jobId            String?
+  job              HireJob?   @relation(fields: [jobId], references: [id])
+  name             String
+  email            String
+  phone            String?
+  resumeUrl        String?
+  resumeText       String?    @db.Text
+  skills           Json?      // string[]
+  currentStage     String     @default("Sourced")
+  aiScore          Int?       // 0-100
+  aiSummary        String?    @db.Text
+  aiRecommendation String?    // strong_yes | yes | maybe | no
+  interviewScore   Int?       // synced from Interviews product
+  source           String?    // LinkedIn, Naukri, Referral, Direct
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  activities     HireCandidateActivity[]
+  interviews     HireInterviewLink[]
+  hireInterviews HireInterview[]
+
+  @@index([tenantId])
+  @@index([tenantId, jobId])
+}
+
+model HireCandidateActivity {
+  id          String        @id @default(cuid())
+  candidateId String
+  candidate   HireCandidate @relation(fields: [candidateId], references: [id])
+  type        String        // stage_change | note | email_sent | interview_scheduled | ai_scored
+  note        String?       @db.Text
+  fromStage   String?
+  toStage     String?
+  userId      String?
+  createdAt   DateTime      @default(now())
+}
+
+model HireClient {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    HireTenant @relation(fields: [tenantId], references: [id])
+  name      String
+  industry  String?
+  website   String?
+  logoUrl   String?
+  createdAt DateTime   @default(now())
+
+  contacts  HireContact[]
+  deals     HireDeal[]
+  jobs      HireJob[]
+
+  @@index([tenantId])
+}
+
+model HireContact {
+  id              String     @id @default(cuid())
+  clientId        String
+  client          HireClient @relation(fields: [clientId], references: [id])
+  name            String
+  email           String?
+  phone           String?
+  role            String?
+  linkedinUrl     String?
+  lastContactedAt DateTime?
+  createdAt       DateTime   @default(now())
+}
+
+model HireDeal {
+  id          String     @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant @relation(fields: [tenantId], references: [id])
+  clientId    String
+  client      HireClient @relation(fields: [clientId], references: [id])
+  title       String
+  value       Float
+  stage       String     @default("Discovery")
+  probability Int        @default(10)
+  closedAt    DateTime?
+  notes       String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([tenantId])
+}
+
+model HireInterview {
+  id           String              @id @default(cuid())
+  candidateId  String
+  candidate    HireCandidate       @relation(fields: [candidateId], references: [id])
+  scheduledAt  DateTime
+  durationMins Int                 @default(45)
+  interviewers Json                // string[] — user IDs or names
+  type         String              @default("Technical")
+  status       HireInterviewStatus @default(SCHEDULED)
+  meetLink     String?
+  scorecard    Json?
+  createdAt    DateTime            @default(now())
+}
+
+enum HireInterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// Integration join — links Hire candidate to Levl1 Interviews session
+model HireInterviewLink {
+  id                 String        @id @default(cuid())
+  hireCandidateId    String
+  hireCandidate      HireCandidate @relation(fields: [hireCandidateId], references: [id])
+  interviewSessionId String        // FK to Interview table in Interviews schema
+  scorecard          Json?
+  syncedAt           DateTime?
+  createdAt          DateTime      @default(now())
+}
+
+model HireCampaign {
+  id          String               @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant           @relation(fields: [tenantId], references: [id])
+  name        String
+  subject     String
+  body        String               @db.Text
+  status      HireCampaignStatus   @default(DRAFT)
+  sentCount   Int                  @default(0)
+  openCount   Int                  @default(0)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([tenantId])
+}
+
+enum HireCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
