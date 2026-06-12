@@ -560,6 +560,20 @@ model HireContact {
   linkedinUrl     String?
   lastContactedAt DateTime?
   createdAt       DateTime   @default(now())
+
+  activities      HireContactActivity[]
+}
+
+model HireContactActivity {
+  id        String      @id @default(cuid())
+  contactId String
+  contact   HireContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  type      String      // call | email | meeting | note
+  note      String?     @db.Text
+  userId    String?
+  createdAt DateTime    @default(now())
+
+  @@index([contactId])
 }
 
 model HireDeal {

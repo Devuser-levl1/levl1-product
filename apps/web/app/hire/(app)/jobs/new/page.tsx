@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { StagesEditor } from '@/components/hire/stages-editor'
 
@@ -13,7 +13,15 @@ export default function NewJobPage() {
   const [stages, setStages] = useState<string[]>(DEFAULT_STAGES)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([])
+  const [clientId, setClientId] = useState('')
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  useEffect(() => {
+    fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))).catch(() => {})
+    const pre = new URLSearchParams(window.location.search).get('clientId')
+    if (pre) setClientId(pre)
+  }, [])
 
   async function save() {
     if (!form.title.trim() || !form.description.trim()) { setError('Title and description are required'); return }
@@ -26,6 +34,7 @@ export default function NewJobPage() {
           description: form.description,
           salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
           salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
+          clientId: clientId || null,
           stages,
         }),
       })
@@ -50,6 +59,13 @@ export default function NewJobPage() {
               <option>Bengaluru</option><option>Remote</option><option>Hybrid</option><option>Mumbai</option><option>Delhi NCR</option><option>Hyderabad</option><option>Pune</option>
             </select>
           </div>
+        </div>
+        <div>
+          <label style={label}>Client (optional)</label>
+          <select style={inp} value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <option value="">No client</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
         <div>
           <label style={label}>Job Description</label>
