@@ -1,0 +1,161 @@
+'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { StagesEditor } from '@/components/hire/stages-editor'
+
+interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
+interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[] }
+
+const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
+const TABS = ['Overview', 'Candidates', 'Pipeline', 'Settings'] as const
+const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 24, color: '#475569', fontSize: 14 }
+const ghostBtn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }
+
+export default function JobDetailPage() {
+  const params = useParams(); const router = useRouter()
+  const id = String(params?.id ?? '')
+  const [job, setJob] = useState<Job | null>(null)
+  const [tab, setTab] = useState<typeof TABS[number]>('Overview')
+
+  const load = useCallback(() => {
+    fetch(`/api/hire/jobs/${id}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setJob(d) }).catch(() => {})
+  }, [id])
+  useEffect(() => { load() }, [load])
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('tab') === 'settings') setTab('Settings') }, [])
+
+  if (!job) return <div style={{ color: '#94A3B8' }}>Loading…</div>
+  const applyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/hire/apply/${job.applySlug}`
+
+  return (
+    <div style={{ maxWidth: 860 }}>
+      <button onClick={() => router.push('/hire/jobs')} style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8 }}>← All jobs</button>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>{job.title}</h1>
+      <div style={{ fontSize: 13, color: '#64748B', marginBottom: 18 }}>{[job.client?.name, job.department, job.location].filter(Boolean).join(' · ') || '—'}</div>
+
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E2E8F0', marginBottom: 20 }}>
+        {TABS.map((t) => (
+          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#4F46E5' : 'transparent'), color: tab === t ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{t}</button>
+        ))}
+      </div>
+
+      {tab === 'Overview' && <Overview job={job} />}
+      {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
+      {tab === 'Pipeline' && <div style={card}>Kanban pipeline coming in Sprint 4.</div>}
+      {tab === 'Settings' && <Settings job={job} reload={load} onDeleted={() => router.push('/hire/jobs')} />}
+    </div>
+  )
+}
+
+function Overview({ job }: { job: Job }) {
+  const perStage = job.stages.map((s) => ({ stage: s, count: job.candidates.filter((c) => c.currentStage === s).length }))
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={card}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Description</div>
+        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{job.description}</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+        <Info label="Salary" value={job.salaryMin || job.salaryMax ? `${job.salaryMin ? lakh(job.salaryMin) : '–'} – ${job.salaryMax ? lakh(job.salaryMax) : '–'}` : '—'} />
+        <Info label="Location" value={job.location ?? '—'} />
+        <Info label="Client" value={job.client?.name ?? '—'} />
+      </div>
+      <div style={card}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Pipeline · {job.candidates.length} candidates</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {perStage.map((p) => (
+            <span key={p.stage} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'rgba(79,70,229,0.07)', border: '1px solid rgba(79,70,229,0.2)', borderRadius: 100, padding: '5px 12px' }}>{p.stage} · {p.count}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+function Info({ label, value }: { label: string; value: string }) {
+  return <div style={card}><div style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
+}
+
+function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; reload: () => void }) {
+  const [showAdd, setShowAdd] = useState(false)
+  const [form, setForm] = useState({ name: '', email: '', phone: '', resumeText: '' })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  async function add() {
+    if (!form.name || !form.email) return
+    setSaving(true)
+    await fetch('/api/hire/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, jobId: job.id }) })
+    setSaving(false); setShowAdd(false); setForm({ name: '', email: '', phone: '', resumeText: '' }); reload()
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#94A3B8' }}>Public apply link: <a href={applyUrl} style={{ color: '#4F46E5' }}>{applyUrl}</a></div>
+      </div>
+      {job.stages.map((stage) => {
+        const list = job.candidates.filter((c) => c.currentStage === stage)
+        if (list.length === 0) return null
+        return (
+          <div key={stage} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>{stage} ({list.length})</div>
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12 }}>
+              {list.map((c, i) => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: i < list.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#0F172A', fontSize: 14 }}>{c.name}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>{c.email}</div></div>
+                  {typeof c.aiScore === 'number' ? <span style={{ fontFamily: 'monospace', fontWeight: 800, color: c.aiScore >= 70 ? '#10B981' : c.aiScore >= 55 ? '#F59E0B' : '#EF4444' }}>{c.aiScore}</span> : <span style={{ fontSize: 12, color: '#CBD5E1' }}>scoring…</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+      {job.candidates.length === 0 && <div style={card}>No candidates yet. Share the public apply link or add one manually.</div>}
+
+      {showAdd && (
+        <div onClick={() => setShowAdd(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, padding: 24, width: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Add Candidate</div>
+            {(['name', 'email', 'phone'] as const).map((k) => <input key={k} placeholder={k[0].toUpperCase() + k.slice(1)} value={form[k]} onChange={(e) => set(k, e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14 }} />)}
+            <textarea placeholder="Resume text (optional)" value={form.resumeText} onChange={(e) => set('resumeText', e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, minHeight: 80 }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={add} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; onDeleted: () => void }) {
+  const [title, setTitle] = useState(job.title)
+  const [description, setDescription] = useState(job.description)
+  const [stages, setStages] = useState<string[]>(job.stages)
+  const [msg, setMsg] = useState('')
+
+  async function save() {
+    const res = await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, stages }) })
+    const d = await res.json()
+    setMsg(res.ok ? 'Saved.' : (d.error ?? 'Save failed')); if (res.ok) reload()
+  }
+  async function setStatus(status: string) { await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); reload() }
+  async function del() { if (!confirm('Delete this job permanently? Candidates will be detached.')) return; await fetch(`/api/hire/jobs/${job.id}`, { method: 'DELETE' }); onDeleted() }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, ...card }}>
+      <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Title</div><input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box' }} /></div>
+      <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Description</div><textarea value={description} onChange={(e) => setDescription(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box', minHeight: 120 }} /></div>
+      <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Pipeline Stages</div><StagesEditor stages={stages} onChange={setStages} /></div>
+      {msg && <div style={{ fontSize: 13, color: msg === 'Saved.' ? '#10B981' : '#DC2626' }}>{msg}</div>}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button onClick={save} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save changes</button>
+        {job.status !== 'PAUSED' && <button onClick={() => setStatus('PAUSED')} style={ghostBtn}>Pause</button>}
+        {job.status === 'PAUSED' && <button onClick={() => setStatus('ACTIVE')} style={ghostBtn}>Resume</button>}
+        {job.status !== 'CLOSED' && <button onClick={() => setStatus('CLOSED')} style={ghostBtn}>Close</button>}
+        <button onClick={del} style={{ ...ghostBtn, color: '#DC2626', borderColor: '#FECACA', marginLeft: 'auto' }}>Delete job</button>
+      </div>
+    </div>
+  )
+}

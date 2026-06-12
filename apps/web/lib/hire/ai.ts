@@ -1,30 +1,52 @@
-// AI helpers for the Hire product. Implemented in Sprint 1 (queued via pg-boss).
-import { RESUME_PARSE_PROMPT, CANDIDATE_SCORE_PROMPT } from './prompts'
-
-export interface ParsedResume {
-  name: string
-  email: string
-  phone?: string
-  skills: string[]
-  summary: string
-}
+import Anthropic from '@anthropic-ai/sdk'
 
 export interface CandidateScore {
   score: number
+  topSkills: string[]
+  missingSkills: string[]
+  summary: string
   recommendation: 'strong_yes' | 'yes' | 'maybe' | 'no'
-  rationale: string
+  redFlags: string[]
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function parseResume(_resumeText: string): Promise<ParsedResume> {
-  // Sprint 1: call Claude with RESUME_PARSE_PROMPT.
-  void RESUME_PARSE_PROMPT
-  throw new Error('parseResume not implemented yet')
+export async function scoreCandidate(
+  resumeText: string,
+  jobDescription: string,
+  jobTitle: string,
+): Promise<CandidateScore> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+  const prompt = `You are an expert recruiter evaluating a candidate for a role.
+
+Job Title: ${jobTitle}
+
+Job Description:
+${jobDescription.slice(0, 2000)}
+
+Candidate Resume:
+${resumeText.slice(0, 2000)}
+
+Evaluate this candidate and return ONLY valid JSON in this exact format:
+{
+  "score": <number 0-100>,
+  "topSkills": ["skill1", "skill2", "skill3"],
+  "missingSkills": ["skill1", "skill2"],
+  "summary": "<2-3 sentence summary of fit>",
+  "recommendation": "<strong_yes|yes|maybe|no>",
+  "redFlags": ["<any concerns, or empty array>"]
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function scoreCandidate(_resumeText: string, _jobDescription: string): Promise<CandidateScore> {
-  // Sprint 1: call Claude with CANDIDATE_SCORE_PROMPT.
-  void CANDIDATE_SCORE_PROMPT
-  throw new Error('scoreCandidate not implemented yet')
+Score guide: 85+ = strong yes, 70-84 = yes, 55-69 = maybe, below 55 = no.
+Base score ONLY on what is explicitly in the resume. Do not infer.`
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 800,
+    temperature: 0.1,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const raw = response.content[0].type === 'text' ? response.content[0].text : ''
+  const clean = raw.replace(/```json|```/g, '').trim()
+  return JSON.parse(clean) as CandidateScore
 }
