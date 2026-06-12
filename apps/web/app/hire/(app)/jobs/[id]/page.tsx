@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StagesEditor } from '@/components/hire/stages-editor'
+import { KanbanBoard, KanbanCandidate, KanbanStage } from '@/components/hire/pipeline/KanbanBoard'
+import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[] }
@@ -40,7 +42,7 @@ export default function JobDetailPage() {
 
       {tab === 'Overview' && <Overview job={job} />}
       {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
-      {tab === 'Pipeline' && <div style={card}>Kanban pipeline coming in Sprint 4.</div>}
+      {tab === 'Pipeline' && <PipelineTab jobId={job.id} />}
       {tab === 'Settings' && <Settings job={job} reload={load} onDeleted={() => router.push('/hire/jobs')} />}
     </div>
   )
@@ -156,6 +158,34 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
         {job.status !== 'CLOSED' && <button onClick={() => setStatus('CLOSED')} style={ghostBtn}>Close</button>}
         <button onClick={del} style={{ ...ghostBtn, color: '#DC2626', borderColor: '#FECACA', marginLeft: 'auto' }}>Delete job</button>
       </div>
+    </div>
+  )
+}
+
+function PipelineTab({ jobId }: { jobId: string }) {
+  const [pipeline, setPipeline] = useState<{ id: string; title: string; stages: KanbanStage[] } | null>(null)
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    fetch(`/api/hire/pipeline?jobId=${jobId}`).then((r) => (r.ok ? r.json() : [])).then((d) => setPipeline(Array.isArray(d) ? (d[0] ?? null) : null)).catch(() => {})
+  }, [jobId])
+  useEffect(() => { load() }, [load])
+
+  const onMove = useCallback(async (candidateId: string, toStage: string) => {
+    setPipeline((prev) => {
+      if (!prev) return prev
+      const moving = prev.stages.flatMap((s) => s.candidates).find((c) => c.id === candidateId)
+      if (!moving) return prev
+      return { ...prev, stages: prev.stages.map((stage) => ({ ...stage, candidates: stage.name === toStage ? [...stage.candidates.filter((c) => c.id !== candidateId), { ...moving, currentStage: toStage }] : stage.candidates.filter((c) => c.id !== candidateId) })) }
+    })
+    await fetch('/api/hire/pipeline/move', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId, toStage }) }).catch(() => {})
+  }, [])
+
+  if (!pipeline) return <div style={card}>This job has no active pipeline (it may be paused or closed).</div>
+  return (
+    <div>
+      <KanbanBoard stages={pipeline.stages} jobId={pipeline.id} onMove={onMove} onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
+      {selectedCandidateId && <CandidateSlideOver candidateId={selectedCandidateId} onClose={() => setSelectedCandidateId(null)} onChanged={load} />}
     </div>
   )
 }
