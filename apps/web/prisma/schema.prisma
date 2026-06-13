@@ -669,3 +669,11 @@ enum HireCampaignStatus {
   SCHEDULED
   SENT
 }
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  product   String   // upword
+  name      String?
+  email     String
+  createdAt DateTime @default(now())
+}
