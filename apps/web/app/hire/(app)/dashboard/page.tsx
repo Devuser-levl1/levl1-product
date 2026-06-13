@@ -6,14 +6,53 @@ interface Dash { pipeline: { openTotal: number; openCount: number; byStage: Reco
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 
+interface Ana { summary: { totalCandidates: number; avgAiScore: number | null }; funnel: { name: string; count: number }[] }
+
 export default function HireDashboard() {
   const router = useRouter()
   const [d, setD] = useState<Dash | null>(null)
+  const [week, setWeek] = useState<Ana | null>(null)
+  const [pipe, setPipe] = useState<Ana | null>(null)
   useEffect(() => { fetch('/api/hire/dashboard').then((r) => (r.ok ? r.json() : null)).then(setD).catch(() => {}) }, [])
+  useEffect(() => {
+    const from7 = new Date(Date.now() - 7 * 86400000).toISOString()
+    const to = new Date().toISOString()
+    fetch(`/api/hire/analytics?from=${from7}&to=${to}`).then((r) => (r.ok ? r.json() : null)).then(setWeek).catch(() => {})
+    fetch(`/api/hire/analytics?from=${new Date(Date.now() - 365 * 86400000).toISOString()}&to=${to}`).then((r) => (r.ok ? r.json() : null)).then(setPipe).catch(() => {})
+  }, [])
 
   return (
     <div style={{ maxWidth: 820 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 18px' }}>Dashboard</h1>
+
+      {/* Analytics mini-widgets */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pipeline health</div>
+            <button onClick={() => router.push('/hire/analytics')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>Analytics →</button>
+          </div>
+          {!pipe || pipe.summary.totalCandidates === 0 ? <div style={{ fontSize: 13, color: '#CBD5E1' }}>No candidates yet.</div> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {pipe.funnel.map((f, i) => { const max = Math.max(...pipe.funnel.map((x) => x.count), 1); return (
+                <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: '#64748B', width: 72 }}>{f.name}</span>
+                  <div style={{ flex: 1, height: 8, borderRadius: 4, background: '#F1F5F9', overflow: 'hidden' }}><div style={{ width: `${(f.count / max) * 100}%`, height: '100%', background: `hsl(${250 - i * 24} 80% 60%)` }} /></div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#334155', width: 24, textAlign: 'right' }}>{f.count}</span>
+                </div>
+              ) })}
+            </div>
+          )}
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>This week</div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week ? week.summary.totalCandidates : '—'}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>candidates added</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week?.summary.avgAiScore ?? '—'}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>avg AI score</div></div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={card}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Open Pipeline</div>
