@@ -605,6 +605,8 @@ model HireInterview {
   status       HireInterviewStatus @default(SCHEDULED)
   meetLink     String?
   scorecard    Json?
+  notes        String?             @db.Text
+  remindersSent Json?              // { "24hr": true, "1hr": false }
   createdAt    DateTime            @default(now())
 }
 

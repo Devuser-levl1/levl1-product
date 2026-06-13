@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface Dash { pipeline: { openTotal: number; openCount: number; byStage: Record<string, number>; wonMtd: number }; recent: { kind: string; text: string; at: string }[] }
+interface Dash { pipeline: { openTotal: number; openCount: number; byStage: Record<string, number>; wonMtd: number }; recent: { kind: string; text: string; at: string }[]; upcoming: { id: string; candidateName: string; jobTitle: string | null; type: string; at: string }[] }
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 
@@ -31,6 +31,22 @@ export default function HireDashboard() {
           <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Won (this month)</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#10B981' }}>{d ? inr(d.pipeline.wonMtd) : '—'}</div>
         </div>
+      </div>
+
+      <div style={{ ...card, marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Upcoming Interviews</div>
+          <button onClick={() => router.push('/hire/interviews')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
+        </div>
+        {!d || d.upcoming.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No upcoming interviews.</div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {d.upcoming.map((u) => (
+              <div key={u.id} style={{ fontSize: 13, color: '#475569' }}>
+                <span style={{ fontWeight: 700, color: '#0F172A' }}>{new Date(u.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</span> · {u.candidateName} · {u.type}{u.jobTitle ? ` · ${u.jobTitle}` : ''}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ ...card, marginTop: 16 }}>

@@ -8,7 +8,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const [deals, recentContacts, recentDeals, recentCandidates] = await Promise.all([
+  const [deals, recentContacts, recentDeals, recentCandidates, upcomingInterviews] = await Promise.all([
     prisma.hireDeal.findMany({ where: { tenantId: ctx.tenantId }, select: { value: true, stage: true, closedAt: true } }),
     prisma.hireContactActivity.findMany({
       where: { contact: { client: { tenantId: ctx.tenantId } } },
@@ -17,6 +17,11 @@ export const GET = withHireAuth(async (_req, ctx) => {
     }),
     prisma.hireDeal.findMany({ where: { tenantId: ctx.tenantId }, include: { client: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 5 }),
     prisma.hireCandidate.findMany({ where: { tenantId: ctx.tenantId }, include: { job: { select: { title: true } } }, orderBy: { createdAt: 'desc' }, take: 5 }),
+    prisma.hireInterview.findMany({
+      where: { status: 'SCHEDULED', scheduledAt: { gte: now }, candidate: { tenantId: ctx.tenantId } },
+      include: { candidate: { select: { name: true, job: { select: { title: true } } } } },
+      orderBy: { scheduledAt: 'asc' }, take: 5,
+    }),
   ])
 
   const open = deals.filter((d) => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost')
@@ -31,5 +36,9 @@ export const GET = withHireAuth(async (_req, ctx) => {
     ...recentCandidates.map((c) => ({ kind: 'candidate', text: `New candidate: ${c.name}${c.job ? ` for ${c.job.title}` : ''}`, at: c.createdAt })),
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 8)
 
-  return NextResponse.json({ pipeline: { openTotal, openCount: open.length, byStage, wonMtd }, recent })
+  const upcoming = upcomingInterviews.map((i) => ({
+    id: i.id, candidateName: i.candidate.name, jobTitle: i.candidate.job?.title ?? null, type: i.type, at: i.scheduledAt,
+  }))
+
+  return NextResponse.json({ pipeline: { openTotal, openCount: open.length, byStage, wonMtd }, recent, upcoming })
 })

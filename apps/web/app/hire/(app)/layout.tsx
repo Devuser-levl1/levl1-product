@@ -13,6 +13,7 @@ const NAV = [
   { label: 'Jobs', href: '/hire/jobs' },
   { label: 'Candidates', href: '/hire/candidates' },
   { label: 'Pipeline', href: '/hire/pipeline' },
+  { label: 'Interviews', href: '/hire/interviews' },
   { label: 'CRM', href: '/hire/crm' },
   { label: 'Analytics', href: '/hire/analytics' },
   { label: 'Settings', href: '/hire/settings' },

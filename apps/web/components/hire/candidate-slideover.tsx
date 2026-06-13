@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
 interface Candidate {
@@ -15,6 +16,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [c, setC] = useState<Candidate | null>(null)
   const [note, setNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
 
   const load = useCallback(() => {
     fetch(`/api/hire/candidates/${candidateId}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setC(d) }).catch(() => {})
@@ -69,7 +71,8 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                   {stages.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               ) : <div style={{ fontSize: 13, color: '#334155' }}>Stage: {c.currentStage}</div>}
-              <button onClick={() => alert('L1 Interview integration arrives in a later sprint.')} style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #4F46E5', background: '#fff', color: '#4F46E5', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Trigger L1 Interview via Levl1</button>
+              <button onClick={() => setShowSchedule(true)} style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Schedule Interview</button>
+              <button onClick={() => alert('L1 Interview integration arrives in a later sprint.')} style={{ marginTop: 8, width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #4F46E5', background: '#fff', color: '#4F46E5', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Trigger L1 Interview via Levl1</button>
             </Sec>
 
             <Sec title="Contact">
@@ -101,6 +104,15 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
           </div>
         )}
       </div>
+      {showSchedule && c && (
+        <ScheduleInterviewModal
+          candidateId={c.id}
+          candidateName={c.name}
+          jobTitle={c.job?.title}
+          onClose={() => setShowSchedule(false)}
+          onScheduled={() => { setShowSchedule(false); load(); onChanged() }}
+        />
+      )}
     </div>
   )
 }
