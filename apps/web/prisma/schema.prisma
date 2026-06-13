@@ -412,6 +412,7 @@ model HireTenant {
   cashfreeCustomerId   String?
   cashfreeSubId        String?
   subscriptionStatus   String?
+  linkedAgencyId       String?
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -470,6 +471,9 @@ model HireJob {
   salaryMax   Int?
   stages      Json          // string[] — custom pipeline stages per job
   status      HireJobStatus @default(ACTIVE)
+  aiAutoAdvance        Boolean @default(false)
+  aiAutoAdvanceThreshold Int   @default(75)
+  aiAutoAdvanceStage   String?
   applySlug   String        @unique @default(cuid())
   clientId    String?
   client      HireClient?   @relation(fields: [clientId], references: [id])
@@ -622,10 +626,25 @@ model HireInterviewLink {
   id                 String        @id @default(cuid())
   hireCandidateId    String
   hireCandidate      HireCandidate @relation(fields: [hireCandidateId], references: [id])
-  interviewSessionId String        // FK to Interview table in Interviews schema
-  scorecard          Json?
+  interviewSessionId String        // FK to Interview.id in the Interviews product
+  positionId         String?       // Interviews Position.id used for this interview
+  status             String        @default("pending") // pending | scheduled | in_progress | completed | failed
+  scorecard          Json?         // synced summary from the Interviews Report
+  overallScore       Int?          // denormalized for quick display in Hire
+  recommendation     String?       // strong_yes | yes | maybe | no
+  reportUrl          String?       // link to the full white-label report
   syncedAt           DateTime?
   createdAt          DateTime      @default(now())
+
+  @@index([hireCandidateId])
+  @@index([interviewSessionId])
+}
+
+model HireJobPositionMap {
+  id         String   @id @default(cuid())
+  hireJobId  String   @unique
+  positionId String
+  createdAt  DateTime @default(now())
 }
 
 model HireCampaign {

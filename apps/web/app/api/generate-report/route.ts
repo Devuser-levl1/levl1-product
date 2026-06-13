@@ -320,6 +320,55 @@ export async function POST(req: NextRequest) {
           console.error('[generate-report] Report-ready email failed:', msg)
           // Don't fail the whole report if email fails
         }
+
+        // ── Sync back to Levl1 Hire if this interview originated there ──
+        try {
+          const link = await prisma.hireInterviewLink.findFirst({ where: { interviewSessionId: interviewId } })
+          if (link) {
+            const reportAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
+            await prisma.hireInterviewLink.update({
+              where: { id: link.id },
+              data: {
+                status: 'completed',
+                overallScore: weightedScore,
+                recommendation: report.recommendation ?? 'maybe',
+                reportUrl: `${reportAppUrl}/report/${interviewId}`,
+                scorecard: {
+                  overallScore: weightedScore,
+                  recommendation: report.recommendation ?? 'maybe',
+                  sectionScores: report.sectionScores ?? {},
+                  l2Recommended,
+                  summary: report.professionalSummary ?? '',
+                },
+                syncedAt: new Date(),
+              },
+            })
+            await prisma.hireCandidate.update({ where: { id: link.hireCandidateId }, data: { interviewScore: weightedScore } })
+            await prisma.hireCandidateActivity.create({
+              data: { candidateId: link.hireCandidateId, type: 'ai_scored', note: `Levl1 AI interview completed — ${weightedScore}/100, ${report.recommendation ?? 'maybe'}` },
+            })
+            console.log('[generate-report] Synced result to Hire link:', link.id)
+
+            // Optional auto-advance on strong result
+            try {
+              const cand = await prisma.hireCandidate.findUnique({ where: { id: link.hireCandidateId }, include: { job: true } })
+              const job = cand?.job
+              if (cand && job?.aiAutoAdvance && job.aiAutoAdvanceStage && weightedScore >= (job.aiAutoAdvanceThreshold ?? 75) && cand.currentStage !== job.aiAutoAdvanceStage) {
+                const stages = Array.isArray(job.stages) ? (job.stages as string[]) : []
+                if (stages.includes(job.aiAutoAdvanceStage)) {
+                  await prisma.hireCandidate.update({ where: { id: cand.id }, data: { currentStage: job.aiAutoAdvanceStage } })
+                  await prisma.hireCandidateActivity.create({
+                    data: { candidateId: cand.id, type: 'stage_change', fromStage: cand.currentStage, toStage: job.aiAutoAdvanceStage, note: `Auto-advanced (AI interview ${weightedScore} ≥ ${job.aiAutoAdvanceThreshold})` },
+                  })
+                }
+              }
+            } catch (advErr) {
+              console.error('[generate-report] auto-advance failed (non-fatal):', advErr)
+            }
+          }
+        } catch (syncErr) {
+          console.error('[generate-report] Hire sync failed (non-fatal):', syncErr)
+        }
       } catch (dbError: unknown) {
         const msg = dbError instanceof Error ? dbError.message : String(dbError)
         console.error('[generate-report] DB save failed (non-fatal):', msg)

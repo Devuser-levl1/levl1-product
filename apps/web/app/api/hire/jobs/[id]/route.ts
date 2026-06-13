@@ -31,6 +31,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if ('salaryMax' in body) data.salaryMax = body.salaryMax != null ? Number(body.salaryMax) : null
   if ('clientId' in body) data.clientId = body.clientId || null
   if (['ACTIVE', 'PAUSED', 'CLOSED'].includes(body.status)) data.status = body.status
+  if (typeof body.aiAutoAdvance === 'boolean') data.aiAutoAdvance = body.aiAutoAdvance
+  if (body.aiAutoAdvanceThreshold != null) data.aiAutoAdvanceThreshold = Number(body.aiAutoAdvanceThreshold)
+  if ('aiAutoAdvanceStage' in body) data.aiAutoAdvanceStage = body.aiAutoAdvanceStage || null
 
   if (Array.isArray(body.stages)) {
     if (body.stages.length < 2) {

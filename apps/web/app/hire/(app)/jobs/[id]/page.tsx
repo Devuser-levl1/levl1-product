@@ -136,9 +136,13 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
   const [description, setDescription] = useState(job.description)
   const [stages, setStages] = useState<string[]>(job.stages)
   const [msg, setMsg] = useState('')
+  const j = job as unknown as { aiAutoAdvance?: boolean; aiAutoAdvanceThreshold?: number; aiAutoAdvanceStage?: string | null }
+  const [autoAdv, setAutoAdv] = useState(!!j.aiAutoAdvance)
+  const [autoThresh, setAutoThresh] = useState(j.aiAutoAdvanceThreshold ?? 75)
+  const [autoStage, setAutoStage] = useState(j.aiAutoAdvanceStage ?? '')
 
   async function save() {
-    const res = await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, stages }) })
+    const res = await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, stages, aiAutoAdvance: autoAdv, aiAutoAdvanceThreshold: autoThresh, aiAutoAdvanceStage: autoStage || null }) })
     const d = await res.json()
     setMsg(res.ok ? 'Saved.' : (d.error ?? 'Save failed')); if (res.ok) reload()
   }
@@ -150,6 +154,21 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Title</div><input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box' }} /></div>
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Description</div><textarea value={description} onChange={(e) => setDescription(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box', minHeight: 120 }} /></div>
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Pipeline Stages</div><StagesEditor stages={stages} onChange={setStages} /></div>
+      <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 14 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', cursor: 'pointer' }}>
+          <input type="checkbox" checked={autoAdv} onChange={(e) => setAutoAdv(e.target.checked)} />
+          Auto-advance candidates when their Levl1 AI interview scores above
+          <input type="number" value={autoThresh} onChange={(e) => setAutoThresh(Number(e.target.value))} style={{ width: 60, padding: '4px 8px', borderRadius: 6, border: '1px solid #E2E8F0' }} disabled={!autoAdv} />
+        </label>
+        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: '#475569' }}>Move to stage:</span>
+          <select value={autoStage} onChange={(e) => setAutoStage(e.target.value)} disabled={!autoAdv} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 13 }}>
+            <option value="">Select stage…</option>
+            {stages.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>Off by default — you stay in control. Applies after an AI interview report syncs back.</div>
+      </div>
       {msg && <div style={{ fontSize: 13, color: msg === 'Saved.' ? '#10B981' : '#DC2626' }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={save} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save changes</button>

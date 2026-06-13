@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 
-interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null }
+interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; interviewScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null }
 interface Job { id: string; title: string; stages?: string[] }
 
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
@@ -75,6 +75,7 @@ export default function CandidatesPage() {
             <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setSelected(c.id)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}</span>
+                {c.interviewScore != null && <span title="Levl1 AI interview score" style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", background: "rgba(124,58,237,0.10)", borderRadius: 100, padding: "2px 8px" }}>🎤 {c.interviewScore}</span>}
                 {c.source && <span style={{ fontSize: 10, fontWeight: 700, color: '#64748B', background: '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>{c.source}</span>}
               </div>
               <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[c.currentTitle, c.currentCompany].filter(Boolean).join(' · ') || c.email}</div>

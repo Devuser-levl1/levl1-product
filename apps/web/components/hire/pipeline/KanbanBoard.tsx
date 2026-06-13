@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 export interface KanbanCandidate {
   id: string; name: string; email: string; currentStage: string
-  aiScore: number | null; aiRecommendation: string | null; source: string | null; createdAt: string
+  aiScore: number | null; aiRecommendation: string | null; interviewScore: number | null; source: string | null; createdAt: string
 }
 export interface KanbanStage { name: string; candidates: KanbanCandidate[] }
 interface KanbanBoardProps {
@@ -36,6 +36,7 @@ function CandidateCard({ candidate, onClick }: { candidate: KanbanCandidate; onC
       </div>
       <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{candidate.email}</div>
       <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+        {candidate.interviewScore != null && <span title="Levl1 AI interview score" style={{ fontSize: 10, fontWeight: 700, background: 'rgba(124,58,237,0.10)', color: '#7C3AED', padding: '2px 6px', borderRadius: 4 }}>🎤 {candidate.interviewScore}</span>}
         {candidate.source && <span style={{ fontSize: 10, background: '#F1F5F9', color: '#64748B', padding: '2px 6px', borderRadius: 4 }}>{candidate.source}</span>}
         {candidate.aiRecommendation && <span style={{ fontSize: 10, background: REC_BG[candidate.aiRecommendation] ?? '#F1F5F9', color: REC_FG[candidate.aiRecommendation] ?? '#64748B', padding: '2px 6px', borderRadius: 4, textTransform: 'capitalize' }}>{candidate.aiRecommendation.replace('_', ' ')}</span>}
       </div>

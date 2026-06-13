@@ -14,7 +14,7 @@ export const GET = withHireAuth(async (req, ctx) => {
         orderBy: [{ aiScore: 'desc' }, { createdAt: 'asc' }],
         select: {
           id: true, name: true, email: true, phone: true, currentStage: true,
-          aiScore: true, aiRecommendation: true, aiSummary: true, source: true, createdAt: true,
+          aiScore: true, aiRecommendation: true, aiSummary: true, interviewScore: true, source: true, createdAt: true,
         },
       },
     },
