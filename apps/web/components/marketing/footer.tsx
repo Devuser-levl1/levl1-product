@@ -3,7 +3,7 @@ import { T } from './tokens'
 
 export function MarketingFooter() {
   const col = (title: string, links: [string, string][]) => (
-    <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>{title}</div><div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>{links.map(([l, h]) => <Link key={l} href={h} style={{ fontSize: 13.5, color: '#C7CCEA', textDecoration: 'none' }}>{l}</Link>)}</div></div>
+    <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>{title}</div><div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>{links.map(([l, h]) => <Link key={l} href={h} className="mk-footlink" style={{ fontSize: 13.5, color: "#C7CCEA", textDecoration: "none" }}>{l}</Link>)}</div></div>
   )
   return (
     <footer style={{ background: T.ink, color: '#C7CCEA' }}>

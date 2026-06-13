@@ -469,3 +469,7 @@ body {
 .mk-feat { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
 @media (max-width: 860px) { .mk-desk { display: none !important; } .mk-mob { display: block; } .mk-section { padding: 64px 0; } .mk-grid-2,.mk-grid-3,.mk-feat { grid-template-columns: 1fr !important; gap: 24px !important; } .mk-foot { grid-template-columns: 1fr 1fr !important; } }
 @media (prefers-reduced-motion: reduce) { .mk-blob { animation: none !important; } }
+.mk-navlink { transition: background .18s ease, color .18s ease; }
+.mk-navlink:hover { background: rgba(15,16,32,0.06); color: #0B1020 !important; }
+.mk-footlink { transition: color .18s ease; }
+.mk-footlink:hover { color: #fff !important; }

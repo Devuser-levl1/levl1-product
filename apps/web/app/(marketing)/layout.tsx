@@ -18,6 +18,10 @@ const CSS = `
 .mk-blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.55; animation: mkdrift 18s ease-in-out infinite; }
 @keyframes mkdrift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.1); } 66% { transform: translate(-30px,20px) scale(0.95); } }
 .mk-btn:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 16px 40px rgba(109,40,217,0.4) !important; }
+.mk-navlink { transition: background .18s ease, color .18s ease; }
+.mk-navlink:hover { background: rgba(15,16,32,0.06); color: #0B1020 !important; }
+.mk-footlink { transition: color .18s ease; }
+.mk-footlink:hover { color: #fff !important; }
 .mk-btn:active { transform: translateY(0) scale(0.98); }
 .mk-card { transition: transform .25s ease, box-shadow .25s ease; }
 .mk-card:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -25px rgba(30,27,75,0.35); }
