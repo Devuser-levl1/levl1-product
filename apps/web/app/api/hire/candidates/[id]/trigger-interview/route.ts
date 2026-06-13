@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { ensureInterviewPosition, ensureInterviewsCandidate, triggerInterviewsInvite } from '@/lib/hire/interviews-bridge'
+import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,9 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!candidate.job) return NextResponse.json({ error: 'Candidate must be attached to a job' }, { status: 400 })
   if (!candidate.email) return NextResponse.json({ error: 'Candidate email required' }, { status: 400 })
+
+  const allow = await checkAllowance(ctx.tenantId, 'interview')
+  if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
 
   const positionId = await ensureInterviewPosition(candidate.job.id, ctx.tenantId)
   const position = await prisma.position.findUnique({ where: { id: positionId }, include: { questionSet: true } })
@@ -34,6 +38,7 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
   await prisma.hireCandidateActivity.create({
     data: { candidateId: candidate.id, type: 'interview_scheduled', note: 'Levl1 AI interview triggered — invite sent to candidate', userId: ctx.userId },
   })
+  await incrementUsage(ctx.tenantId, 'interview')
 
   return NextResponse.json({ success: true, linkId: link.id, interviewId: interview.id })
 })

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +47,9 @@ export const POST = withHireAuth(async (req, ctx) => {
     return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
   }
 
+  const allow = await checkAllowance(ctx.tenantId, 'candidate')
+  if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
+
   const candidate = await prisma.hireCandidate.create({
     data: {
       tenantId: ctx.tenantId,
@@ -70,6 +74,7 @@ export const POST = withHireAuth(async (req, ctx) => {
   await prisma.hireCandidateActivity.create({
     data: { candidateId: candidate.id, type: 'note', note: `Candidate added via ${body.source || 'manual entry'}`, userId: ctx.userId },
   })
+  await incrementUsage(ctx.tenantId, 'candidate')
 
   return NextResponse.json(candidate, { status: 201 })
 })

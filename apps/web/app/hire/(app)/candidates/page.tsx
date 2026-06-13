@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
+import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 
 interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; interviewScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null }
 interface Job { id: string; title: string; stages?: string[] }
@@ -20,6 +21,7 @@ export default function CandidatesPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [wall, setWall] = useState<string | null>(null)
   const [menu, setMenu] = useState<string | null>(null)
   const [deleteFor, setDeleteFor] = useState<Cand | null>(null)
 
@@ -101,8 +103,9 @@ export default function CandidatesPage() {
       </div>
 
       {selected && <CandidateSlideOver candidateId={selected} onClose={() => setSelected(null)} onChanged={load} />}
-      {showAdd && <AddModal jobs={jobs} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+      {showAdd && <AddModal jobs={jobs} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} onLimit={(m) => { setShowAdd(false); setWall(m) }} />}
       {showImport && <ImportModal jobs={jobs} onClose={() => setShowImport(false)} onDone={() => { load() }} />}
+      {wall && <HireUpgradeWall message={wall} onClose={() => setWall(null)} />}
       {deleteFor && <DeleteModal candidate={deleteFor} onCancel={() => setDeleteFor(null)} onConfirm={del} />}
     </div>
   )
@@ -115,7 +118,7 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
   return <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 16 }}><div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, padding: 24, width: 440, maxHeight: '90vh', overflowY: 'auto' }}>{children}</div></div>
 }
 
-function AddModal({ jobs, onClose, onSaved }: { jobs: Job[]; onClose: () => void; onSaved: () => void }) {
+function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: () => void; onSaved: () => void; onLimit: (msg: string) => void }) {
   const [f, setF] = useState({ name: '', email: '', phone: '', currentRole: '', jobId: '', stage: 'Sourced', source: 'LinkedIn', resumeText: '' })
   const [saving, setSaving] = useState(false); const [err, setErr] = useState('')
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }))
@@ -124,7 +127,10 @@ function AddModal({ jobs, onClose, onSaved }: { jobs: Job[]; onClose: () => void
     setSaving(true)
     const res = await fetch('/api/hire/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, jobId: f.jobId || null }) })
     setSaving(false)
-    if (res.ok) onSaved(); else setErr((await res.json()).error ?? 'Failed')
+    if (res.ok) { onSaved(); return }
+    const d = await res.json()
+    if (res.status === 402) { onLimit(d.message ?? 'Upgrade to add more candidates.'); return }
+    setErr(d.error ?? 'Failed')
   }
   return <Overlay onClose={onClose}>
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>Add Candidate</div>

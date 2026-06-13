@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { signPurposeToken } from '@/lib/hire/auth'
 import { sendHireEmail } from '@/lib/hire/email'
 import { inviteTeamMemberEmail } from '@/emails/hire/invite-team-member'
+import { checkAllowance } from '@/lib/hire/usage'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,9 @@ export const POST = withHireAuth(async (req, ctx) => {
 
   const existing = await prisma.hireUser.findFirst({ where: { tenantId: ctx.tenantId, email } })
   if (existing) return NextResponse.json({ error: 'A member with that email already exists' }, { status: 409 })
+
+  const allow = await checkAllowance(ctx.tenantId, 'seat')
+  if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
 
   const user = await prisma.hireUser.create({ data: { tenantId: ctx.tenantId, name, email, role } })
 

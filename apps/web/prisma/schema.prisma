@@ -413,6 +413,10 @@ model HireTenant {
   cashfreeSubId        String?
   subscriptionStatus   String?
   linkedAgencyId       String?
+  usageCandidatesThisMonth Int      @default(0)
+  usageInterviewsThisMonth Int      @default(0)
+  usageResetAt             DateTime?
+  currentPeriodEnd         DateTime?
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -676,4 +680,16 @@ model WaitlistSignup {
   name      String?
   email     String
   createdAt DateTime @default(now())
+}
+
+model HireBillingEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  orderId   String   @unique
+  planId    String
+  amount    Int      // paise
+  status    String   // success | failed
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
 }

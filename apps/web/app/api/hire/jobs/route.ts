@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { checkAllowance } from '@/lib/hire/usage'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,9 @@ export const POST = withHireAuth(async (req, ctx) => {
     return NextResponse.json({ error: 'Title and description are required' }, { status: 400 })
   }
   const stages = Array.isArray(body.stages) && body.stages.length >= 2 ? body.stages : DEFAULT_STAGES
+
+  const allow = await checkAllowance(ctx.tenantId, 'job')
+  if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
 
   const job = await prisma.hireJob.create({
     data: {

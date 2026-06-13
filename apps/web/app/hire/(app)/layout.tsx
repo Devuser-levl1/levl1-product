@@ -97,21 +97,30 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
   )
 }
 
+interface BillingStatus { trialActive: boolean; trialDaysLeft: number | null; subscriptionStatus: string | null; usage: { interviews: number }; limits: { aiInterviewsPerMonth: number } }
 function TrialBanner({ tenant }: { tenant: Me['tenant'] }) {
-  if (tenant.plan && tenant.plan !== 'STARTER') {
-    // On a paid plan beyond trial — no banner needed for MVP.
-  }
-  if (!tenant.trialActive || !tenant.trialEndsAt) return <div />
+  const [bs, setBs] = useState<BillingStatus | null>(null)
+  useEffect(() => { fetch('/api/hire/billing/status').then((r) => (r.ok ? r.json() : null)).then(setBs).catch(() => {}) }, [])
 
-  const days = Math.max(0, Math.ceil((new Date(tenant.trialEndsAt).getTime() - Date.now()) / 86400000))
-  const color = days < 2 ? '#DC2626' : days < 5 ? '#D97706' : '#4F46E5'
-  const bg = days < 2 ? 'rgba(220,38,38,0.08)' : days < 5 ? 'rgba(245,158,11,0.10)' : 'rgba(79,70,229,0.08)'
+  if (!bs) {
+    if (!tenant.trialActive) return <div />
+  } else if (!bs.trialActive) {
+    // On a paid plan — show a soft past_due note if needed, else nothing.
+    if (bs.subscriptionStatus === 'past_due') {
+      return <div style={{ fontSize: 13, fontWeight: 600, color: '#D97706', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 100, padding: '6px 14px' }}>Payment past due · <a href="/hire/settings/billing" style={{ color: '#D97706', textDecoration: 'underline' }}>Update billing</a></div>
+    }
+    return <div />
+  }
+
+  const days = bs?.trialDaysLeft ?? (tenant.trialEndsAt ? Math.max(0, Math.ceil((new Date(tenant.trialEndsAt).getTime() - Date.now()) / 86400000)) : 0)
+  const atLimit = bs ? bs.usage.interviews >= bs.limits.aiInterviewsPerMonth : false
+  const color = atLimit || days <= 2 ? '#DC2626' : days <= 5 ? '#D97706' : '#059669'
+  const bg = atLimit || days <= 2 ? 'rgba(220,38,38,0.08)' : days <= 5 ? 'rgba(245,158,11,0.10)' : 'rgba(16,185,129,0.10)'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600, color, background: bg, border: `1px solid ${color}33`, borderRadius: 100, padding: '6px 14px' }}>
-      <span>Trial: {days} day{days !== 1 ? 's' : ''} remaining</span>
-      <span style={{ color: '#94A3B8', fontWeight: 500 }}>·</span>
-      <a href="/hire/settings" style={{ color, textDecoration: 'underline' }}>Upgrade to continue after trial</a>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color, background: bg, border: `1px solid ${color}33`, borderRadius: 100, padding: '6px 14px' }}>
+      <span>Trial: {days} day{days !== 1 ? 's' : ''} left{bs ? ` · ${bs.usage.interviews} of ${bs.limits.aiInterviewsPerMonth} AI interviews used` : ''}</span>
+      <a href="/hire/settings/billing" style={{ color, textDecoration: 'underline' }}>Upgrade now</a>
     </div>
   )
 }

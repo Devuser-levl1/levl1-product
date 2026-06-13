@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import Anthropic from '@anthropic-ai/sdk'
+import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,9 @@ export const POST = withHireAuth(async (req, ctx) => {
   const results = { created: 0, failed: 0, errors: [] as string[] }
 
   for (const raw of rawCandidates) {
+    // Stop importing once the monthly candidate limit is hit (data is never deleted).
+    const allow = await checkAllowance(ctx.tenantId, 'candidate')
+    if (!allow.allowed) { results.errors.push(allow.message ?? 'Plan limit reached'); break }
     try {
       let data: RawCandidate = raw
       if (importType === 'resumes' && raw.resumeText) {
@@ -56,6 +60,7 @@ export const POST = withHireAuth(async (req, ctx) => {
       await prisma.hireCandidateActivity.create({
         data: { candidateId: candidate.id, type: 'note', note: 'Added via bulk import', userId: ctx.userId },
       })
+      await incrementUsage(ctx.tenantId, 'candidate')
 
       if (data.resumeText && jobId) {
         const { enqueue } = await import('@/lib/hire/jobs/queue')

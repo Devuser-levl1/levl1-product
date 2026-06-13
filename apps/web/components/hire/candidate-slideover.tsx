@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
+import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
 interface InterviewLink {
@@ -24,6 +25,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [triggering, setTriggering] = useState(false)
   const [setupInfo, setSetupInfo] = useState<{ positionId: string; jobId: string } | null>(null)
   const [settingUp, setSettingUp] = useState(false)
+  const [wall, setWall] = useState<string | null>(null)
 
   const load = useCallback(() => {
     fetch(`/api/hire/candidates/${candidateId}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setC(d) }).catch(() => {})
@@ -47,6 +49,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
       const res = await fetch(`/api/hire/candidates/${candidateId}/trigger-interview`, { method: 'POST' })
       const data = await res.json()
       if (res.status === 409 && data.error === 'question_set_not_ready') { setSetupInfo({ positionId: data.positionId, jobId: data.jobId }); return }
+      if (res.status === 402) { setWall(data.message ?? 'Upgrade to run more AI interviews.'); return }
       if (!res.ok) { alert(data.error ?? 'Could not trigger interview'); return }
       load(); onChanged()
     } finally { setTriggering(false) }
@@ -166,6 +169,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
           </div>
         )}
       </div>
+      {wall && <HireUpgradeWall message={wall} onClose={() => setWall(null)} />}
       {showSchedule && c && (
         <ScheduleInterviewModal
           candidateId={c.id}
