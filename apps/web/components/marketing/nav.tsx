@@ -1,67 +1,51 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { T } from './ui'
 
-const PRODUCTS = [
-  { href: '/hire', name: 'Levl1 Hire', desc: 'AI-powered ATS + CRM' },
-  { href: '/interviews', name: 'Levl1 Interviews', desc: 'Autonomous AI voice L1' },
-  { href: '/upword', name: 'Upword', desc: 'AI soft-skills coach · Soon' },
-]
+const LINKS = [['Platform', '/'], ['Hire', '/hire'], ['Interviews', '/interviews'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
 
 export function MarketingNav() {
-  const [openProducts, setOpenProducts] = useState(false)
-  const [mobile, setMobile] = useState(false)
+  const [solid, setSolid] = useState(false)
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > 40)
+    onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #E2E8F0' }}>
-      <div className="mkt-container" style={{ display: 'flex', alignItems: 'center', gap: 20, height: 60 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <span style={{ width: 26, height: 26, borderRadius: 7, background: 'linear-gradient(135deg,#4F46E5,#7C3AED)', display: 'inline-block' }} />
-          <span style={{ fontWeight: 800, fontSize: 18, color: '#0F172A' }}>Levl1</span>
+    <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, transition: 'all .3s ease', background: solid ? 'rgba(255,255,255,0.8)' : 'transparent', backdropFilter: solid ? 'blur(16px)' : 'none', borderBottom: solid ? '1px solid rgba(15,16,32,0.08)' : '1px solid transparent' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 24px', height: solid ? 60 : 72, display: 'flex', alignItems: 'center', gap: 20, transition: 'height .3s ease' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+          <span style={{ width: 26, height: 26, borderRadius: 8, background: `linear-gradient(135deg, ${T.purple}, ${T.blue})`, transform: 'rotate(45deg)' }} />
+          <span style={{ fontWeight: 800, fontSize: 19, color: T.ink, letterSpacing: '-0.01em' }}>Levl1</span>
         </Link>
-
-        {/* Desktop links */}
-        <nav className="mkt-desktop" style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
-          <div style={{ position: 'relative' }} onMouseEnter={() => setOpenProducts(true)} onMouseLeave={() => setOpenProducts(false)}>
-            <button style={navLink}>Products ▾</button>
-            {openProducts && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,0.10)', padding: 8, width: 280 }}>
-                {PRODUCTS.map((p) => (
-                  <Link key={p.href} href={p.href} style={{ display: 'block', padding: '10px 12px', borderRadius: 8, textDecoration: 'none' }}>
-                    <div style={{ fontWeight: 700, color: '#0F172A', fontSize: 14 }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: '#64748B' }}>{p.desc}</div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-          <Link href="/roadmap" style={navLink}>Roadmap</Link>
-          <Link href="/pricing" style={navLink}>Pricing</Link>
+        <nav className="mk-desk" style={{ display: 'flex', gap: 4, marginLeft: 14 }}>
+          {LINKS.map(([l, h]) => <Link key={h} href={h} style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>{l}</Link>)}
         </nav>
-
-        <div style={{ marginLeft: 'auto' }} className="mkt-desktop">
-          <Link href="/login" style={{ ...navLink, marginRight: 6 }}>Sign in</Link>
-          <Link href="/hire/signup" style={ctaBtn}>Start free</Link>
+        <div className="mk-desk" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link href="/login" style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', textDecoration: 'none' }}>Sign in</Link>
+          <Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '9px 18px', borderRadius: 10, textDecoration: 'none', boxShadow: '0 8px 22px rgba(109,40,217,0.3)' }}>Book a demo</Link>
         </div>
-
-        {/* Mobile hamburger */}
-        <button className="mkt-mobile" onClick={() => setMobile(!mobile)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#0F172A' }} aria-label="Menu">☰</button>
+        <button className="mk-mob" onClick={() => setOpen(true)} aria-label="Menu" style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: T.ink }}>☰</button>
       </div>
 
-      {/* Mobile menu */}
-      {mobile && (
-        <div className="mkt-mobile" style={{ borderTop: '1px solid #E2E8F0', background: '#fff', padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {PRODUCTS.map((p) => <Link key={p.href} href={p.href} onClick={() => setMobile(false)} style={mobileLink}>{p.name}</Link>)}
-          <Link href="/roadmap" onClick={() => setMobile(false)} style={mobileLink}>Roadmap</Link>
-          <Link href="/pricing" onClick={() => setMobile(false)} style={mobileLink}>Pricing</Link>
-          <Link href="/login" onClick={() => setMobile(false)} style={mobileLink}>Sign in</Link>
-          <Link href="/hire/signup" onClick={() => setMobile(false)} style={{ ...ctaBtn, textAlign: 'center', marginTop: 6 }}>Start free</Link>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: T.ink, zIndex: 200, padding: 24, display: 'flex', flexDirection: 'column' }}>
+            <button onClick={() => setOpen(false)} aria-label="Close" style={{ alignSelf: 'flex-end', background: 'none', border: 'none', fontSize: 26, color: '#fff', cursor: 'pointer' }}>×</button>
+            <motion.nav initial="h" animate="s" variants={{ s: { transition: { staggerChildren: 0.06 } } }} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
+              {[...LINKS, ['Sign in', '/login'], ['Book a demo', '/contact']].map(([l, h]) => (
+                <motion.div key={h} variants={{ h: { opacity: 0, x: -20 }, s: { opacity: 1, x: 0 } }}>
+                  <Link href={h} onClick={() => setOpen(false)} style={{ fontSize: 26, fontWeight: 700, color: '#fff', textDecoration: 'none', padding: '10px 0', display: 'block' }}>{l}</Link>
+                </motion.div>
+              ))}
+            </motion.nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
-
-const navLink: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: '#334155', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', borderRadius: 8 }
-const mobileLink: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: '#334155', textDecoration: 'none', padding: '10px 8px' }
-const ctaBtn: React.CSSProperties = { fontSize: 14, fontWeight: 700, color: '#fff', background: '#4F46E5', borderRadius: 8, padding: '9px 16px', textDecoration: 'none', display: 'inline-block' }

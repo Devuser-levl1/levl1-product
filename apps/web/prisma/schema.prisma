@@ -718,3 +718,14 @@ model HireBillingEvent {
 
   @@index([tenantId])
 }
+
+model DemoRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  role      String?
+  teamSize  String?
+  message   String?  @db.Text
+  createdAt DateTime @default(now())
+}
