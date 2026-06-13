@@ -14,11 +14,20 @@ function isActive(pathname: string, href: string) {
 export function MarketingNav() {
   const [solid, setSolid] = useState(false)
   const [open, setOpen] = useState(false)
+  const [hireSession, setHireSession] = useState(false)
   const pathname = usePathname()
+  // On any /hire marketing context, auth paths are product-specific.
+  const onHire = pathname === '/hire' || pathname.startsWith('/hire/')
+  const signInHref = onHire ? '/hire/login' : '/login'
+
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 40)
     onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  useEffect(() => {
+    // Detect a Hire session so we can OFFER "Go to dashboard" (never force it).
+    fetch('/api/hire/auth/me').then((r) => setHireSession(r.ok)).catch(() => {})
   }, [])
 
   // Clicking a link to the page you're already on scrolls to top (not a no-op).
@@ -40,8 +49,9 @@ export function MarketingNav() {
           })}
         </nav>
         <div className="mk-desk" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link href="/login" className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>Sign in</Link>
-          <Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '9px 18px', borderRadius: 10, textDecoration: 'none', boxShadow: '0 8px 22px rgba(109,40,217,0.3)' }}>Book a demo</Link>
+          {hireSession && <Link href="/hire/dashboard" className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 600, color: T.purple, textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>Go to dashboard →</Link>}
+          <Link href={signInHref} className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>Sign in</Link>
+          <Link href={onHire ? '/hire/signup' : '/contact'} style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '9px 18px', borderRadius: 10, textDecoration: 'none', boxShadow: '0 8px 22px rgba(109,40,217,0.3)' }}>{onHire ? 'Start free' : 'Book a demo'}</Link>
         </div>
         <button className="mk-mob" onClick={() => setOpen(true)} aria-label="Menu" style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: T.ink }}>☰</button>
       </div>
@@ -51,7 +61,12 @@ export function MarketingNav() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: T.ink, zIndex: 200, padding: 24, display: 'flex', flexDirection: 'column' }}>
             <button onClick={() => setOpen(false)} aria-label="Close" style={{ alignSelf: 'flex-end', background: 'none', border: 'none', fontSize: 26, color: '#fff', cursor: 'pointer' }}>×</button>
             <motion.nav initial="h" animate="s" variants={{ s: { transition: { staggerChildren: 0.06 } } }} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
-              {([...LINKS, ['Sign in', '/login'], ['Book a demo', '/contact']] as [string, string][]).map(([l, h]) => {
+              {([
+                ...LINKS,
+                ...(hireSession ? [['Go to dashboard →', '/hire/dashboard'] as [string, string]] : []),
+                ['Sign in', signInHref],
+                onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
+              ] as [string, string][]).map(([l, h]) => {
                 const active = isActive(pathname, h)
                 return (
                   <motion.div key={h} variants={{ h: { opacity: 0, x: -20 }, s: { opacity: 1, x: 0 } }}>
