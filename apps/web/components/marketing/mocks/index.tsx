@@ -154,3 +154,41 @@ export function ApplyFormMock() {
     </Chrome>
   )
 }
+
+export function CandidateProfileMock() {
+  return (
+    <Chrome title="Levl1 Hire — Candidate">
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 99, background: `linear-gradient(135deg,${T.violet},${T.blue})`, color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>AM</div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Aarav Mehta</div><div style={{ fontSize: 11, color: '#94A3B8' }}>Backend Engineer · 6 yrs</div></div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: scoreColor(84) }}>84<span style={{ fontSize: 9, color: '#94A3B8' }}> résumé</span></div>
+        </div>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>Skills matched</div>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>{['Node.js', 'PostgreSQL', 'AWS', 'Go'].map((s) => <span key={s} style={{ fontSize: 10, color: T.violet, background: 'rgba(124,58,237,0.1)', borderRadius: 5, padding: '2px 7px' }}>{s}</span>)}<span style={{ fontSize: 10, color: '#94A3B8', background: '#F1F5F9', borderRadius: 5, padding: '2px 7px' }}>Missing: Kafka</span></div>
+        <div style={{ fontSize: 11.5, color: '#475569', background: '#F7F8FD', borderRadius: 8, padding: '8px 10px', marginBottom: 10, lineHeight: 1.5 }}>Strong backend depth with cloud-native experience; light on streaming systems.</div>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>Activity</div>
+        {[['Imported via LinkedIn', '2d'], ['AI scored 84 / 100', '2d'], ['Moved to Screening', '1d']].map(([a, t]) => <div key={a} style={{ display: 'flex', fontSize: 11, color: '#64748B', padding: '3px 0' }}><span style={{ flex: 1 }}>• {a}</span><span style={{ color: '#CBD5E1' }}>{t}</span></div>)}
+      </div>
+    </Chrome>
+  )
+}
+
+export function IntegrationCardMock() {
+  return (
+    <Chrome title="Levl1 Hire — Pipeline card">
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Priya Nair</div>
+        <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Staff Engineer · Interview stage</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.violet, background: 'rgba(124,58,237,0.1)', borderRadius: 6, padding: '4px 10px' }}>Résumé score · 84</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.indigo, background: 'rgba(79,70,229,0.1)', borderRadius: 6, padding: '4px 10px' }}>AI interview · 87 · Strong Yes</span>
+        </div>
+        <div style={{ fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, background: '#F7F8FD', borderRadius: 8, padding: '8px 10px' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: 'rgba(16,185,129,0.12)', borderRadius: 5, padding: '1px 6px' }}>optional</span>
+          Triggered from this card · the score flows back when you connect the products.
+        </div>
+      </div>
+    </Chrome>
+  )
+}
