@@ -114,6 +114,69 @@ export default function Home() {
         ))}
       </Container></section>
 
+      {/* BETTER TOGETHER */}
+      <section className="mk-section" style={{ background: T.mist }}><Container>
+        <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}>
+          <Eyebrow>Better together</Eyebrow>
+          <h2 className="mk-h2">Two products. One unfair advantage when combined.</h2>
+          <p style={{ fontSize: 16, color: T.slate, maxWidth: 700, margin: '14px auto 0', lineHeight: 1.6 }}>Use Levl1 Hire to run your pipeline. Use Levl1 Interviews to evaluate at scale. Connect them, and every candidate flows from sourced to scored to shortlisted — automatically.</p>
+        </div></Reveal>
+
+        {/* 1 + 1 = 3 flow */}
+        <Reveal>
+          <div className="bt-flow" style={{ display: 'flex', alignItems: 'stretch', gap: 12, justifyContent: 'center' }}>
+            <div className="bt-panel mk-card" style={{ flex: 1, background: '#fff', border: '1px solid #E7E9F5', borderRadius: 18, padding: 20, borderTop: `4px solid ${T.violet}` }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.08em' }}>LEVL1 HIRE</div>
+              <p style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55, margin: '8px 0 14px' }}>Source, track, and manage candidates in an AI-powered ATS + CRM.</p>
+              <KanbanMock />
+            </div>
+            <Sign reduce={reduce}>+</Sign>
+            <div className="bt-panel mk-card" style={{ flex: 1, background: '#fff', border: '1px solid #E7E9F5', borderRadius: 18, padding: 20, borderTop: `4px solid ${T.indigo}` }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: T.indigo, letterSpacing: '0.08em' }}>LEVL1 INTERVIEWS</div>
+              <p style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55, margin: '8px 0 14px' }}>Auto-screen candidates with autonomous AI voice interviews.</p>
+              <ScorecardMock />
+            </div>
+            <Sign reduce={reduce}>=</Sign>
+            <div className="bt-panel bt-combined" style={{ flex: 1.25, borderRadius: 18, padding: 24, color: '#fff', position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${T.violet}, ${T.indigo})`, boxShadow: `0 30px 60px -20px ${T.indigo}80` }}>
+              <div className="mk-blob" style={{ width: 220, height: 220, background: '#fff', opacity: 0.16, top: -60, right: -50 }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', opacity: 0.85 }}>HIRE + INTERVIEWS</div>
+                <div style={{ fontSize: 22, fontWeight: 800, margin: '8px 0 10px', lineHeight: 1.2 }}>One seamless hiring engine</div>
+                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.92)' }}>Trigger an interview from any pipeline card. Scores sync back instantly. Shortlist with evidence — without leaving Hire.</p>
+                <div style={{ marginTop: 16 }}><IntegrationCardMock /></div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* combined-value points */}
+        <Stagger gap={0.1}><div className="mk-grid-3" style={{ marginTop: 40 }}>
+          {[
+            ['Trigger & sync', 'Start an AI interview from a candidate card; the score and report flow straight back into the pipeline.'],
+            ['One source of truth', 'Résumé scores and interview scores live on the same candidate record.'],
+            ['Auto-advance', 'Let strong interview results move candidates forward automatically — you stay in control.'],
+          ].map(([t, b]) => (
+            <StaggerItem key={t}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 22, height: '100%' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: `linear-gradient(135deg, ${T.violet}, ${T.indigo})`, marginBottom: 12 }} />
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{t}</div>
+              <div style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55 }}>{b}</div>
+            </div></StaggerItem>
+          ))}
+        </div></Stagger>
+
+        {/* flexibility callout */}
+        <Reveal><div style={{ marginTop: 32, background: '#fff', border: '1px dashed #C9CEE8', borderRadius: 14, padding: '18px 22px', fontSize: 14.5, color: T.slate, lineHeight: 1.6, textAlign: 'center' }}>
+          <strong style={{ color: T.ink }}>Already have an ATS?</strong> Levl1 Interviews works standalone and integrates with your existing stack. <strong style={{ color: T.ink }}>Just need a pipeline?</strong> Levl1 Hire stands on its own. <strong style={{ color: T.ink }}>Want the full engine?</strong> Use both.
+        </div></Reveal>
+
+        {/* CTA row */}
+        <Reveal><div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 28 }}>
+          <Button href="/hire" variant="ghost">Explore Hire</Button>
+          <Button href="/interviews" variant="ghost">Explore Interviews</Button>
+          <Button href="/contact">See them together — book a demo</Button>
+        </div></Reveal>
+      </Container></section>
+
       {/* ENTERPRISE STRIP */}
       <section style={{ background: T.ink, padding: '72px 0' }}><Container style={{ textAlign: 'center' }}>
         <Reveal><h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 800, color: '#fff', marginBottom: 8 }}>Built for scale and security.</h2>
@@ -129,6 +192,14 @@ export default function Home() {
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26, flexWrap: 'wrap' }}><Button href="/contact" variant="light">Book a demo</Button><Link href="/pricing" style={{ fontSize: 15, fontWeight: 600, color: '#fff', padding: '13px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.4)', textDecoration: 'none' }}>View pricing</Link></div></Reveal>
         </Container>
       </section>
+    </div>
+  )
+}
+
+function Sign({ children, reduce }: { children: React.ReactNode; reduce: boolean | null }) {
+  return (
+    <div className="bt-sign" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: '0 2px' }}>
+      <motion.span animate={reduce ? {} : { scale: [1, 1.22, 1], opacity: [0.65, 1, 0.65] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }} style={{ fontSize: 30, fontWeight: 800, color: '#8B5CF6', display: 'inline-block' }}>{children}</motion.span>
     </div>
   )
 }
