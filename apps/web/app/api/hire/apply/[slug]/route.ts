@@ -7,6 +7,16 @@ import { applicationReceivedCandidateEmail, newApplicationRecruiterEmail } from 
 
 export const dynamic = 'force-dynamic'
 
+// Basic per-IP throttle for public submissions (in-memory, single instance).
+const applyHits = new Map<string, number[]>()
+function rateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (applyHits.get(ip) ?? []).filter((t) => now - t < 60_000)
+  recent.push(now)
+  applyHits.set(ip, recent)
+  return recent.length > 5 // max 5 applications / minute / IP
+}
+
 // Public — fetch the job for the apply page.
 export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
   const job = await prisma.hireJob.findUnique({
@@ -31,6 +41,9 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
 // Public — submit an application.
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+    if (rateLimited(ip)) return NextResponse.json({ error: 'Too many applications — please try again in a minute.' }, { status: 429 })
+
     const job = await prisma.hireJob.findUnique({ where: { applySlug: params.slug }, include: { tenant: true } })
     if (!job || job.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'This job is not accepting applications' }, { status: 404 })

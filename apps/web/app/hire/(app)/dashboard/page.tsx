@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface Dash { pipeline: { openTotal: number; openCount: number; byStage: Record<string, number>; wonMtd: number }; recent: { kind: string; text: string; at: string }[]; upcoming: { id: string; candidateName: string; jobTitle: string | null; type: string; at: string }[] }
+interface Dash { pipeline: { openTotal: number; openCount: number; byStage: Record<string, number>; wonMtd: number }; recent: { kind: string; text: string; at: string }[]; upcoming: { id: string; candidateName: string; jobTitle: string | null; type: string; at: string }[]; gettingStarted?: { job: boolean; candidate: boolean; interview: boolean; teammate: boolean } }
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 
@@ -24,6 +24,18 @@ export default function HireDashboard() {
   return (
     <div style={{ maxWidth: 820 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 18px' }}>Dashboard</h1>
+
+      {d?.gettingStarted && !(d.gettingStarted.job && d.gettingStarted.candidate && d.gettingStarted.interview && d.gettingStarted.teammate) && (
+        <div style={{ ...card, marginBottom: 16, borderLeft: '3px solid #4F46E5' }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>Getting started</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+            {([['job', 'Create your first job', '/hire/jobs/new'], ['candidate', 'Add your first candidate', '/hire/candidates'], ['interview', 'Run your first AI interview', '/hire/candidates'], ['teammate', 'Invite a teammate', '/hire/settings']] as const).map(([k, label, href]) => {
+              const done = d.gettingStarted![k]
+              return <a key={k} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, textDecoration: 'none', color: done ? '#94A3B8' : '#334155' }}><span style={{ color: done ? '#10B981' : '#CBD5E1' }}>{done ? '✓' : '○'}</span>{label}</a>
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Analytics mini-widgets */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>

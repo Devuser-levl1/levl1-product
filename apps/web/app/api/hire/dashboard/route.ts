@@ -40,5 +40,14 @@ export const GET = withHireAuth(async (_req, ctx) => {
     id: i.id, candidateName: i.candidate.name, jobTitle: i.candidate.job?.title ?? null, type: i.type, at: i.scheduledAt,
   }))
 
-  return NextResponse.json({ pipeline: { openTotal, openCount: open.length, byStage, wonMtd }, recent, upcoming })
+  // Getting-started checklist — computed live from real data.
+  const [jobCount, candCount, linkCount, userCount] = await Promise.all([
+    prisma.hireJob.count({ where: { tenantId: ctx.tenantId } }),
+    prisma.hireCandidate.count({ where: { tenantId: ctx.tenantId } }),
+    prisma.hireInterviewLink.count({ where: { hireCandidate: { tenantId: ctx.tenantId } } }),
+    prisma.hireUser.count({ where: { tenantId: ctx.tenantId } }),
+  ])
+  const gettingStarted = { job: jobCount > 0, candidate: candCount > 0, interview: linkCount > 0, teammate: userCount > 1 }
+
+  return NextResponse.json({ pipeline: { openTotal, openCount: open.length, byStage, wonMtd }, recent, upcoming, gettingStarted })
 })

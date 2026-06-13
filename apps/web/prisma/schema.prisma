@@ -417,6 +417,7 @@ model HireTenant {
   usageInterviewsThisMonth Int      @default(0)
   usageResetAt             DateTime?
   currentPeriodEnd         DateTime?
+  gettingStarted           Json?
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -478,6 +479,9 @@ model HireJob {
   aiAutoAdvance        Boolean @default(false)
   aiAutoAdvanceThreshold Int   @default(75)
   aiAutoAdvanceStage   String?
+  autoEmailStage       String?
+  autoEmailSubject     String?
+  autoEmailBody        String?  @db.Text
   applySlug   String        @unique @default(cuid())
   clientId    String?
   client      HireClient?   @relation(fields: [clientId], references: [id])
@@ -517,6 +521,7 @@ model HireCandidate {
   aiRecommendation String?    // strong_yes | yes | maybe | no
   interviewScore   Int?       // synced from Interviews product
   source           String?    // LinkedIn, Naukri, Referral, Direct
+  emailOptOut      Boolean    @default(false)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -567,6 +572,7 @@ model HireContact {
   role            String?
   linkedinUrl     String?
   lastContactedAt DateTime?
+  emailOptOut     Boolean    @default(false)
   createdAt       DateTime   @default(now())
 
   activities      HireContactActivity[]
@@ -661,11 +667,30 @@ model HireCampaign {
   status      HireCampaignStatus   @default(DRAFT)
   sentCount   Int                  @default(0)
   openCount   Int                  @default(0)
+  failedCount Int                  @default(0)
+  recipientCount Int               @default(0)
+  audienceType   String            @default("candidates") // candidates | contacts
+  audienceFilter Json?             // { stage?, jobId?, source?, clientId? }
   scheduledAt DateTime?
   sentAt      DateTime?
   createdAt   DateTime             @default(now())
 
+  recipients  HireCampaignRecipient[]
+
   @@index([tenantId])
+}
+
+model HireCampaignRecipient {
+  id         String       @id @default(cuid())
+  campaignId String
+  campaign   HireCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email      String
+  name       String?
+  status     String       @default("pending") // pending | sent | failed | opened
+  sentAt     DateTime?
+  openedAt   DateTime?
+
+  @@index([campaignId])
 }
 
 enum HireCampaignStatus {

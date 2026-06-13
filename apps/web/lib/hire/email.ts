@@ -60,8 +60,8 @@ export async function scheduleInterviewReminders(interviewId: string, scheduledA
     const queue = await getReminderQueue()
     const t24 = new Date(scheduledAt.getTime() - 24 * 60 * 60 * 1000)
     const t1 = new Date(scheduledAt.getTime() - 60 * 60 * 1000)
-    if (t24 > new Date()) await queue.send('hire:interview-reminder', { interviewId, kind: '24hr' }, { startAfter: t24 })
-    if (t1 > new Date()) await queue.send('hire:interview-reminder', { interviewId, kind: '1hr' }, { startAfter: t1 })
+    if (t24 > new Date()) await queue.send('hire-interview-reminder', { interviewId, kind: '24hr' }, { startAfter: t24 })
+    if (t1 > new Date()) await queue.send('hire-interview-reminder', { interviewId, kind: '1hr' }, { startAfter: t1 })
   } catch (e) {
     console.error('[hire/email] scheduleInterviewReminders failed:', e)
   }

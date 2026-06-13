@@ -34,6 +34,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if (typeof body.aiAutoAdvance === 'boolean') data.aiAutoAdvance = body.aiAutoAdvance
   if (body.aiAutoAdvanceThreshold != null) data.aiAutoAdvanceThreshold = Number(body.aiAutoAdvanceThreshold)
   if ('aiAutoAdvanceStage' in body) data.aiAutoAdvanceStage = body.aiAutoAdvanceStage || null
+  if ('autoEmailStage' in body) data.autoEmailStage = body.autoEmailStage || null
+  if ('autoEmailSubject' in body) data.autoEmailSubject = body.autoEmailSubject || null
+  if ('autoEmailBody' in body) data.autoEmailBody = body.autoEmailBody || null
 
   if (Array.isArray(body.stages)) {
     if (body.stages.length < 2) {

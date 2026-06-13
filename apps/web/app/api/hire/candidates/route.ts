@@ -68,7 +68,7 @@ export const POST = withHireAuth(async (req, ctx) => {
 
   if (body.resumeText && body.jobId) {
     const { enqueue } = await import('@/lib/hire/jobs/queue')
-    await enqueue('hire:score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/candidates] enqueue failed:', e))
+    await enqueue('hire-score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/candidates] enqueue failed:', e))
   }
 
   await prisma.hireCandidateActivity.create({

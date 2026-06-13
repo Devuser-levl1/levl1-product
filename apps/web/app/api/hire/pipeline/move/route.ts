@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { maybeAutoEmail } from '@/lib/hire/auto-email'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,7 @@ export const PATCH = withHireAuth(async (req, ctx) => {
   await prisma.hireCandidateActivity.create({
     data: { candidateId, type: 'stage_change', fromStage, toStage, userId: ctx.userId, note: `Moved from ${fromStage} to ${toStage}` },
   })
+  await maybeAutoEmail(candidateId, toStage)
 
   return NextResponse.json({ success: true, fromStage, toStage })
 })

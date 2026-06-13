@@ -2,17 +2,17 @@ import { prisma } from '@/lib/prisma'
 import { scoreCandidate } from '@/lib/hire/ai'
 import type { Prisma } from '@prisma/client'
 
-export const JOB_NAME = 'hire:score-candidate'
+export const JOB_NAME = 'hire-score-candidate'
 
 export async function scoreCandidateHandler(data: { candidateId: string }) {
-  console.log('[hire:score-candidate] Processing candidate:', data.candidateId)
+  console.log('[hire-score-candidate] Processing candidate:', data.candidateId)
 
   const candidate = await prisma.hireCandidate.findUnique({
     where: { id: data.candidateId },
     include: { job: true },
   })
   if (!candidate || !candidate.resumeText || !candidate.job) {
-    console.warn('[hire:score-candidate] Missing data, skipping')
+    console.warn('[hire-score-candidate] Missing data, skipping')
     return
   }
 
@@ -36,5 +36,5 @@ export async function scoreCandidateHandler(data: { candidateId: string }) {
     },
   })
 
-  console.log('[hire:score-candidate] Scored candidate:', data.candidateId, 'Score:', result.score)
+  console.log('[hire-score-candidate] Scored candidate:', data.candidateId, 'Score:', result.score)
 }

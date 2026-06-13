@@ -83,6 +83,12 @@ export function withHireAuth(
     for (const [k, v] of Object.entries(context.params ?? {})) {
       flat[k] = Array.isArray(v) ? v[0] : v
     }
-    return handler(req, hireCtx, flat)
+    try {
+      return await handler(req, hireCtx, flat)
+    } catch (err) {
+      // Never leak stack traces to clients; log server-side for debugging.
+      console.error('[hire] route error:', err instanceof Error ? err.message : err)
+      return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    }
   }
 }
