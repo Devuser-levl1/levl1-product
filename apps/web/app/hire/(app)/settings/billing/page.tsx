@@ -62,7 +62,6 @@ export default function BillingPage() {
         </div>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 10 }}>Usage this month</div>
         <Row label="Candidates" used={s.usage.candidates} limit={s.limits.candidatesPerMonth} />
-        <Row label="AI interviews" used={s.usage.interviews} limit={s.limits.aiInterviewsPerMonth} />
         <Row label="Active jobs" used={s.usage.activeJobs} limit={s.limits.activeJobs} />
         <Row label="Recruiter seats" used={s.usage.seats} limit={s.limits.recruiters} />
       </div>

@@ -14,9 +14,19 @@ const TTL = 60 * 1000
 
 export const GET = withHireAuth(async (req, ctx) => {
   const sp = new URL(req.url).searchParams
-  const from = sp.get('from') ? new Date(sp.get('from')!) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-  const to = sp.get('to') ? new Date(sp.get('to')!) : new Date()
+  // Guard against malformed/invalid date params (NaN dates → Prisma errors → 500
+  // → the client keeps retrying). Fall back to a sane 90-day window.
+  const parseDate = (v: string | null, fallback: Date) => {
+    if (!v) return fallback
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? fallback : d
+  }
+  const from = parseDate(sp.get('from'), new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+  const to = parseDate(sp.get('to'), new Date())
   const jobId = sp.get('jobId') || undefined
+
+  try {
+  console.log('[api/hire/analytics] tenant=%s from=%s to=%s job=%s', ctx.tenantId, from.toISOString(), to.toISOString(), jobId ?? 'all')
 
   const key = `${ctx.tenantId}|${from.toISOString()}|${to.toISOString()}|${jobId ?? 'all'}`
   const hit = cache.get(key)
@@ -61,6 +71,11 @@ export const GET = withHireAuth(async (req, ctx) => {
     teamSize: users.length,
   }
 
+  console.log('[api/hire/analytics] ok tenant=%s candidates=%d', ctx.tenantId, totalCandidates)
   cache.set(key, { ts: Date.now(), data })
   return NextResponse.json(data)
+  } catch (err) {
+    console.error('[api/hire/analytics] failed tenant=%s:', ctx.tenantId, err)
+    return NextResponse.json({ error: 'Failed to load analytics' }, { status: 500 })
+  }
 })

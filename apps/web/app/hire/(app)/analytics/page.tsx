@@ -23,18 +23,48 @@ export default function AnalyticsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [days, setDays] = useState(90)
   const [jobId, setJobId] = useState('')
-  const [loading, setLoading] = useState(true)
+  // Single status machine — avoids flip/flicker between multiple booleans.
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [errMsg, setErrMsg] = useState('')
+  // The window used for the LAST successful load (drives the CSV filename).
+  // NOTE: we must NOT compute from/to during render — Date.now() changes every
+  // render, which would give `load` a new identity each render and re-fire the
+  // effect forever (the flicker loop). We compute them inside load() instead.
+  const [range, setRange] = useState(() => {
+    const to = new Date().toISOString()
+    const from = new Date(Date.now() - 90 * 86400000).toISOString()
+    return { from, to }
+  })
 
-  const from = new Date(Date.now() - days * 86400000).toISOString()
-  const to = new Date().toISOString()
-
+  // Stable deps: only `days` and `jobId`. No render-derived timestamps here.
   const load = useCallback(() => {
-    setLoading(true)
+    setStatus('loading')
+    const to = new Date().toISOString()
+    const from = new Date(Date.now() - days * 86400000).toISOString()
+    setRange({ from, to })
     const qs = new URLSearchParams({ from, to, ...(jobId ? { jobId } : {}) })
-    fetch(`/api/hire/analytics?${qs}`).then((r) => (r.ok ? r.json() : null)).then((d) => { setData(d); setLoading(false) }).catch(() => setLoading(false))
-  }, [from, to, jobId])
+    console.log('[hire/analytics] fetching', qs.toString())
+    fetch(`/api/hire/analytics?${qs}`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status} ${await r.text().catch(() => '')}`.trim())
+        return r.json()
+      })
+      .then((d) => {
+        console.log('[hire/analytics] loaded', d?.summary)
+        setData(d)
+        setStatus('ready')
+      })
+      .catch((e) => {
+        console.error('[hire/analytics] load failed:', e)
+        setErrMsg(String(e?.message ?? e))
+        setStatus('error')
+      })
+  }, [days, jobId])
   useEffect(() => { load() }, [load])
-  useEffect(() => { fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setJobs(d)).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setJobs(d)).catch((e) => console.error('[hire/analytics] jobs load failed:', e)) }, [])
+
+  const from = range.from
+  const to = range.to
 
   function exportCsv() {
     if (!data) return
@@ -76,8 +106,20 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {loading && <div style={{ color: '#94A3B8' }}>Loading…</div>}
-      {!loading && data && data.summary.totalCandidates === 0 && (
+      {/* Show the spinner only on the FIRST load (no data yet). On refetch we
+          keep the existing content visible so the page never flickers. */}
+      {status === 'loading' && !data && <div style={{ color: '#94A3B8' }}>Loading…</div>}
+
+      {status === 'error' && (
+        <div style={{ ...card, textAlign: 'center', padding: '48px 24px' }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#B91C1C' }}>Couldn&apos;t load analytics</div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>{errMsg || 'Something went wrong.'}</div>
+          <button onClick={load} style={{ marginTop: 16, padding: '8px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Retry</button>
+        </div>
+      )}
+
+      {status !== 'error' && data && data.summary.totalCandidates === 0 && (
         <div style={{ ...card, textAlign: 'center', padding: '60px 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📊</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#475569' }}>Not enough data yet</div>
@@ -85,7 +127,7 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {!loading && data && data.summary.totalCandidates > 0 && (
+      {status !== 'error' && data && data.summary.totalCandidates > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Row 1 — KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12 }}>
