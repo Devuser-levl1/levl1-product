@@ -18,7 +18,10 @@ export function MarketingFooter() {
           {col('Legal', [['Privacy', '/privacy'], ['Terms', '/terms'], ['Cookies', '/cookies']])}
           <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Get started</div><Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', display: 'inline-block' }}>Book a demo</Link></div>
         </div>
-        <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12.5, color: '#7C83A8' }}>hello@levl1.io · © 2026 Levl1. All rights reserved.</div>
+        <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 12.5, color: '#7C83A8' }}>
+          <span>hello@levl1.io · © 2026 Levl1. All rights reserved.</span>
+          <span style={{ marginLeft: 'auto', color: '#A9B0D6' }}><span style={{ color: T.sky }}>◆</span> Proudly built in India · Serving teams worldwide</span>
+        </div>
       </div>
     </footer>
   )

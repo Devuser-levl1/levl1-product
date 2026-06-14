@@ -27,6 +27,11 @@ export default function Security() {
         <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Subprocessors</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{SUBPROCESSORS.map(([n, p]) => <div key={n} style={{ display: 'flex', gap: 12, fontSize: 14 }}><span style={{ fontWeight: 700, width: 120 }}>{n}</span><span style={{ color: T.slate }}>{p}</span></div>)}</div>
       </div></Reveal>
+
+      <Reveal><div style={{ marginTop: 40, textAlign: 'center', maxWidth: 620, marginInline: 'auto' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, marginBottom: 8 }}><span style={{ color: T.sky }}>◆</span> Built in India, engineered for the world</div>
+        <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.7 }}>Levl1 is built by a team that sweats the details — fast, reliable software held to a global standard. We started in one of the world&apos;s largest talent markets and built for every team beyond it. The same platform that scales for a high-volume agency is the one trusted by enterprise hiring teams worldwide.</p>
+      </div></Reveal>
     </Container></section>
   )
 }

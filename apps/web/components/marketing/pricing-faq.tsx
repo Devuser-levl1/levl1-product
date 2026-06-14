@@ -1,14 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { T } from './ui'
+import { T } from './tokens'
 
 const FAQ: [string, string][] = [
-  ['How does billing work?', 'Hire plans are billed monthly via Cashfree in INR, or in USD for international customers. Interviews can be pay-per-interview or a monthly plan. Cancel anytime.'],
-  ['Is there a free trial?', '14 days free on Hire, plus 5 free AI interviews to evaluate Levl1 Interviews. No card required to start.'],
-  ['Do you support enterprise?', 'Yes — the Enterprise tier adds SSO/SAML, dedicated infrastructure, SLAs, volume pricing and data residency. Talk to sales.'],
-  ['Which currencies do you support?', 'USD and INR today, with GST-compliant invoicing for Indian customers. More currencies are on the roadmap.'],
-  ['How is candidate data secured?', 'Data is isolated per tenant, encrypted in transit and at rest, and never shared across customers. Candidates are informed and consent is captured.'],
-  ['Can I switch plans later?', 'Anytime, up or down. Changes apply from your next billing cycle; limits update immediately.'],
+  ['How does billing work, and which currencies?', 'Plans are billed monthly. India is billed in INR with GST-compliant invoices; everywhere else in USD. Your region is detected automatically and you can switch the currency toggle anytime.'],
+  ['How does the free trial work?', '14 days free on Hire — full features, no card required. You also get 5 free AI interviews to evaluate Levl1 Interviews. Pick a plan whenever you’re ready; nothing auto-charges.'],
+  ['Why flat-rate instead of per-seat?', 'Per-seat pricing punishes you for growing your team. Levl1 is flat per tier — add your whole team for one predictable price, with generous limits and clear upgrade paths. No surprise invoices as you scale.'],
+  ['Can I use one product without the other?', 'Yes. Levl1 Hire and Levl1 Interviews are standalone products — each delivers full value alone. Connect them when you want an interview to trigger from a pipeline card and the score to flow back. Integration is optional.'],
+  ['Do you support enterprise & data residency?', 'The Enterprise tier adds SSO/SAML, dedicated infrastructure, SLAs, volume pricing and data residency options. Talk to sales for a tailored setup.'],
+  ['Can I switch plans later?', 'Anytime, up or down. Changes apply from your next billing cycle; usage limits update immediately.'],
+  ['How is candidate data secured?', 'Data is isolated per tenant, encrypted in transit and at rest, and never shared across customers. Candidates are informed and consent is captured. See our Security page for details.'],
 ]
 
 export function PricingFAQ() {
