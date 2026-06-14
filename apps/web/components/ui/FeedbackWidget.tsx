@@ -19,7 +19,8 @@ export function FeedbackWidget() {
     pathname === '/' ||
     pathname.startsWith('/interview/') ||
     pathname.startsWith('/candidate/') ||
-    pathname === '/login' ||
+    pathname === '/interviews/login' ||
+    pathname === '/hire/login' ||
     pathname === '/signup'
 
   // Close on outside click

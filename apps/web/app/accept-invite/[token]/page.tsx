@@ -61,7 +61,7 @@ export default function AcceptInvitePage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Something went wrong'); return }
       setDone(true)
-      setTimeout(() => router.push('/login'), 2500)
+      setTimeout(() => router.push('/interviews/login'), 2500)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {

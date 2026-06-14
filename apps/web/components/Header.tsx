@@ -87,7 +87,7 @@ export default function Header() {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch { /* ignore */ }
     setAgencyPlan(null);
-    router.push('/login');
+    router.push('/interviews/login');
   }
 
   function handleOpenNotifs() {

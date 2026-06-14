@@ -284,6 +284,24 @@ export default function LoginPage() {
               Start free trial
             </Link>
           </p>
+
+          {/* Cross-product link */}
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: 12.5,
+              color: "#94A3B8",
+              marginTop: 14,
+            }}
+          >
+            Looking for Levl1 Hire?{" "}
+            <Link
+              href="/hire/login"
+              style={{ color: "#7C3AED", textDecoration: "none", fontWeight: 600 }}
+            >
+              Sign in here →
+            </Link>
+          </p>
         </div>
       </div>
 

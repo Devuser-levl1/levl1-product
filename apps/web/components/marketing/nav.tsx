@@ -11,20 +11,28 @@ function isActive(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
 }
 
+const SIGN_IN_OPTIONS: [string, string][] = [['Levl1 Hire', '/hire/login'], ['Levl1 Interviews', '/interviews/login']]
+
 export function MarketingNav() {
   const [solid, setSolid] = useState(false)
   const [open, setOpen] = useState(false)
+  const [signInOpen, setSignInOpen] = useState(false)
   const [hireSession, setHireSession] = useState(false)
   const pathname = usePathname()
-  // On any /hire marketing context, auth paths are product-specific.
+  // On any /hire marketing context, the primary CTA is product-specific.
   const onHire = pathname === '/hire' || pathname.startsWith('/hire/')
-  const signInHref = onHire ? '/hire/login' : '/login'
 
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 40)
     onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  useEffect(() => {
+    if (!signInOpen) return
+    const close = () => setSignInOpen(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [signInOpen])
   useEffect(() => {
     // Detect a Hire session so we can OFFER "Go to dashboard" (never force it).
     fetch('/api/hire/auth/me').then((r) => setHireSession(r.ok)).catch(() => {})
@@ -50,7 +58,18 @@ export function MarketingNav() {
         </nav>
         <div className="mk-desk" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
           {hireSession && <Link href="/hire/dashboard" className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 600, color: T.purple, textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>Go to dashboard →</Link>}
-          <Link href={signInHref} className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', textDecoration: 'none', padding: '8px 12px', borderRadius: 8 }}>Sign in</Link>
+          <div style={{ position: 'relative' }}>
+            <button onClick={(e) => { e.stopPropagation(); setSignInOpen((v) => !v) }} aria-haspopup="menu" aria-expanded={signInOpen} className="mk-navlink" style={{ fontSize: 14.5, fontWeight: 500, color: '#334155', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit' }}>Sign in ▾</button>
+            <AnimatePresence>
+              {signInOpen && (
+                <motion.div role="menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.14 }} style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 200, background: '#fff', border: '1px solid rgba(15,16,32,0.10)', borderRadius: 12, boxShadow: '0 16px 40px -12px rgba(15,16,32,0.22)', padding: 6, zIndex: 120 }}>
+                  {SIGN_IN_OPTIONS.map(([label, href]) => (
+                    <Link key={href} href={href} role="menuitem" className="mk-navlink" style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#1E293B', textDecoration: 'none', padding: '10px 12px', borderRadius: 8 }}>{label}</Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <Link href={onHire ? '/hire/signup' : '/contact'} style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '9px 18px', borderRadius: 10, textDecoration: 'none', boxShadow: '0 8px 22px rgba(109,40,217,0.3)' }}>{onHire ? 'Start free' : 'Book a demo'}</Link>
         </div>
         <button className="mk-mob" onClick={() => setOpen(true)} aria-label="Menu" style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: T.ink }}>☰</button>
@@ -64,7 +83,8 @@ export function MarketingNav() {
               {([
                 ...LINKS,
                 ...(hireSession ? [['Go to dashboard →', '/hire/dashboard'] as [string, string]] : []),
-                ['Sign in', signInHref],
+                ['Sign in · Levl1 Hire', '/hire/login'],
+                ['Sign in · Levl1 Interviews', '/interviews/login'],
                 onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
               ] as [string, string][]).map(([l, h]) => {
                 const active = isActive(pathname, h)

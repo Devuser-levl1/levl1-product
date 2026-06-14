@@ -45,6 +45,17 @@ const nextConfig = {
     }
   },
 
+  /* ── Permanent (308) redirects ──────────────────────────────────
+   *  The Interviews login moved /login → /interviews/login. A real
+   *  routing-layer 308 (with a Location header) keeps existing bookmarks,
+   *  links, and password-reset / OAuth callbacks working.
+   * ─────────────────────────────────────────────────────────────── */
+  async redirects() {
+    return [
+      { source: '/login', destination: '/interviews/login', permanent: true },
+    ]
+  },
+
   /* ── Service Worker: no-cache so browser always fetches the latest ── */
   async headers() {
     return [
