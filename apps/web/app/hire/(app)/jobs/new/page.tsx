@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { StagesEditor } from '@/components/hire/stages-editor'
+import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
 
 const DEFAULT_STAGES = ['Sourced', 'Screening', 'Interview', 'Technical Round', 'HR Round', 'Offer', 'Hired']
 const inp: React.CSSProperties = { padding: '11px 13px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box', background: '#fff' }
@@ -15,7 +16,31 @@ export default function NewJobPage() {
   const [error, setError] = useState('')
   const [clients, setClients] = useState<{ id: string; name: string }[]>([])
   const [clientId, setClientId] = useState('')
+  const [jdMode, setJdMode] = useState<'paste' | 'upload'>('paste')
+  const [jdParsing, setJdParsing] = useState(false)
+  const [jdNote, setJdNote] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  async function handleJdFile(file: File) {
+    setJdParsing(true); setError(''); setJdNote('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/hire/jobs/parse-jd', { method: 'POST', body: fd })
+      const d = await res.json()
+      if (!res.ok) { setError(d.error ?? 'Could not parse JD file'); return }
+      // Populate the JD field; auto-fill title (if empty) and surface skills.
+      setForm((f) => ({ ...f, description: d.text, title: f.title || d.parsed?.title || '' }))
+      const skills: string[] = d.parsed?.requiredSkills ?? []
+      setJdNote(`Loaded ${d.text.length.toLocaleString()} chars${skills.length ? ` · skills: ${skills.slice(0, 6).join(', ')}` : ''}`)
+    } catch {
+      setError('Something went wrong reading the file')
+    } finally {
+      setJdParsing(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))).catch(() => {})
@@ -69,6 +94,19 @@ export default function NewJobPage() {
         </div>
         <div>
           <label style={label}>Job Description</label>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            {(['paste', 'upload'] as const).map((m) => (
+              <button key={m} type="button" onClick={() => setJdMode(m)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (jdMode === m ? '#4F46E5' : '#E2E8F0'), background: jdMode === m ? 'rgba(79,70,229,0.08)' : '#fff', color: jdMode === m ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{m === 'paste' ? 'Paste JD' : 'Upload JD (PDF/Word)'}</button>
+            ))}
+          </div>
+          {jdMode === 'upload' && (
+            <div style={{ marginBottom: 10 }}>
+              <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={jdParsing} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleJdFile(f) }} style={{ fontSize: 13 }} />
+              {jdParsing && <span style={{ fontSize: 13, color: '#64748B', marginLeft: 8 }}>Reading & parsing…</span>}
+              {jdNote && !jdParsing && <div style={{ fontSize: 12, color: '#059669', marginTop: 6 }}>✓ {jdNote}</div>}
+              <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB. Text fills the box below; edit as needed.</div>
+            </div>
+          )}
           <textarea style={{ ...inp, minHeight: 160, resize: 'vertical' }} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Paste the JD here…" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { KanbanBoard, KanbanCandidate, KanbanStage } from '@/components/hire/pipeline/KanbanBoard'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
+import { BulkResumeUpload } from '@/components/hire/bulk-resume-upload'
 
 interface JobPipeline { id: string; title: string; stages: KanbanStage[]; totalCandidates: number }
 
@@ -9,6 +10,7 @@ export default function PipelinePage() {
   const [jobs, setJobs] = useState<JobPipeline[]>([])
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+  const [showBulk, setShowBulk] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
@@ -66,9 +68,12 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0 }}>Pipeline</h1>
-        <p style={{ fontSize: 13, color: '#94A3B8', margin: '4px 0 0' }}>Drag candidates across stages to update their progress</p>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0 }}>Pipeline</h1>
+          <p style={{ fontSize: 13, color: '#94A3B8', margin: '4px 0 0' }}>Drag candidates across stages to update their progress</p>
+        </div>
+        <button onClick={() => setShowBulk(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>⬆ Bulk upload resumes</button>
       </div>
 
       {jobs.length > 1 && (
@@ -85,6 +90,10 @@ export default function PipelinePage() {
 
       {selectedCandidateId && (
         <CandidateSlideOver candidateId={selectedCandidateId} onClose={() => setSelectedCandidateId(null)} onChanged={load} />
+      )}
+
+      {showBulk && (
+        <BulkResumeUpload jobId={selectedJobId} jobTitle={selectedJob?.title} onClose={() => setShowBulk(false)} onDone={load} />
       )}
     </div>
   )
