@@ -8,6 +8,7 @@
 // mammoth and pdf-parse are CommonJS — ESM `import` resolves to `.default`
 // which is undefined at runtime, causing silent 500s. Use require().
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODEL } from '@/lib/ai/model'
 
 const mammoth = require('mammoth') as {
   extractRawText: (input: { buffer: Buffer }) => Promise<{ value: string; messages: unknown[] }>
@@ -21,7 +22,7 @@ const { PDFParse } = require('pdf-parse') as {
 // '@/lib/shared/file-constants' to avoid pulling pdf-parse/mammoth into the bundle.
 export { MAX_FILE_SIZE, ACCEPTED_EXTENSIONS, FILE_ACCEPT_ATTR, isSupportedFile, validateUpload } from '@/lib/shared/file-constants'
 
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = CLAUDE_MODEL
 
 // ── 1. Raw text extraction (pdf-parse + mammoth) ──────────────────────────
 export async function extractTextFromFile(
@@ -123,11 +124,13 @@ export async function extractCandidateFromResume(
         content:
           `Below is resume text extracted from a ${isWordDoc ? 'Word' : 'PDF/text'} document. ` +
           `Parse it carefully even if formatting is imperfect. ` +
-          `Look for email patterns (x@x.x), phone numbers (+91 or 10 digit Indian mobile), ` +
-          `name (usually at the top), skills (in a skills section or throughout experience).\n\n` +
+          `The candidate's FULL NAME is almost always the very first line / largest heading at the TOP ` +
+          `of the resume (before the contact details) — extract it even if the email is missing. ` +
+          `Also look for email patterns (x@x.x), phone numbers (+91 or 10 digit Indian mobile), ` +
+          `skills (in a skills section or throughout experience).\n\n` +
           `Return ONLY this JSON, no markdown, no explanation:\n` +
           `{\n` +
-          `  "name": "full name or null",\n` +
+          `  "name": "the candidate's full name from the top of the resume, or null",\n` +
           `  "email": "email address or null",\n` +
           `  "phone": "phone number or null",\n` +
           `  "linkedIn": "linkedin url or null",\n` +

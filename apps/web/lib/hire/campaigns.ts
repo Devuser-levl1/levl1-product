@@ -23,11 +23,13 @@ export async function resolveAudience(tenantId: string, audienceType: string, fi
       ...(filter.jobId ? { jobId: filter.jobId } : {}),
       ...(filter.stage ? { currentStage: filter.stage } : {}),
       ...(filter.source ? { source: filter.source } : {}),
-      email: { not: '' },
+      email: { not: null },
     },
     select: { name: true, email: true, job: { select: { title: true, client: { select: { name: true } } } } },
   })
-  return candidates.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email, job: c.job?.title, company: c.job?.client?.name }))
+  return candidates
+    .filter((c): c is typeof c & { email: string } => !!c.email)
+    .map((c) => ({ name: c.name, email: c.email, job: c.job?.title, company: c.job?.client?.name }))
 }
 
 export function personalize(text: string, r: Recipient): string {

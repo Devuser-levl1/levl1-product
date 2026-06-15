@@ -32,7 +32,7 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
   const outcome = await runEnrichment({
     id: candidate.id,
     name: candidate.name,
-    email: candidate.email,
+    email: candidate.email ?? '',
     phone: candidate.phone,
     currentTitle: candidate.currentTitle,
     currentCompany: candidate.currentCompany,

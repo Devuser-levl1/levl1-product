@@ -25,6 +25,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
     })
   }
 
+  // Attaching a previously-jobless candidate to a job → trigger JD scoring.
+  const attachingToJob = body.jobId !== undefined && body.jobId && body.jobId !== existing.jobId
+
   const candidate = await prisma.hireCandidate.update({
     where: { id: existing.id },
     data: {
@@ -36,8 +39,16 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
       linkedinUrl: body.linkedinUrl ?? existing.linkedinUrl,
       currentStage: body.currentStage ?? existing.currentStage,
       source: body.source ?? existing.source,
+      ...(body.jobId !== undefined ? { jobId: body.jobId || null } : {}),
     },
   })
+
+  // Score now that there's a JD to score against (deferred from a jobless import).
+  if (attachingToJob && candidate.resumeText) {
+    const { enqueue } = await import('@/lib/hire/jobs/queue')
+    await enqueue('hire-score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/candidates] enqueue on attach failed:', e))
+  }
+
   return NextResponse.json(candidate)
 })
 

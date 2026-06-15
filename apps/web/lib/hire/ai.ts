@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODEL } from '@/lib/ai/model'
 
 export interface CandidateScore {
   score: number
@@ -40,7 +41,7 @@ Score guide: 85+ = strong yes, 70-84 = yes, 55-69 = maybe, below 55 = no.
 Base score ONLY on what is explicitly in the resume. Do not infer.`
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: CLAUDE_MODEL,
     max_tokens: 800,
     temperature: 0.1,
     messages: [{ role: 'user', content: prompt }],

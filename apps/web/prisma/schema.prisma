@@ -673,7 +673,7 @@ model HireCandidate {
   jobId            String?
   job              HireJob?   @relation(fields: [jobId], references: [id])
   name             String
-  email            String
+  email            String?    // may be null — a sourced candidate may not have an email yet
   phone            String?
   currentTitle     String?
   currentCompany   String?

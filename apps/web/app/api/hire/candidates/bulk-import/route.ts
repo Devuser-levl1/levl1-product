@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 import {
   extractTextFromFile, extractCandidateFromResume, validateUpload,
@@ -15,6 +16,9 @@ interface RawCandidate {
   currentTitle?: string | null
   currentCompany?: string | null
   currentRole?: string | null
+  linkedIn?: string | null
+  totalYears?: number | null
+  topSkills?: string[]
   resumeText?: string | null
 }
 
@@ -56,8 +60,9 @@ export const POST = withHireAuth(async (req, ctx) => {
     rawCandidates = Array.isArray(body.candidates) ? body.candidates : []
   }
 
-  const results = { created: 0, failed: 0, errors: [] as string[] }
+  const results = { created: 0, failed: 0, needsReview: 0, errors: [] as string[] }
 
+  let index = 0
   for (const raw of rawCandidates) {
     // Stop importing once the monthly candidate limit is hit (data is never deleted).
     const allow = await checkAllowance(ctx.tenantId, 'candidate')
@@ -65,29 +70,46 @@ export const POST = withHireAuth(async (req, ctx) => {
     try {
       let data: RawCandidate = raw
       if (importType === 'resumes') {
-        if (!raw.resumeText) { results.failed++; results.errors.push(`${raw.name || 'File'}: could not read or empty`); continue }
-        const extracted = await extractCandidateFromResume(raw.resumeText)
+        // ONLY a truly empty / unreadable file fails — a parsed name with no
+        // email is still a valid sourced candidate.
+        if (!raw.resumeText) { results.failed++; results.errors.push(`${raw.name || 'File'}: empty or unreadable file`); continue }
+        const extracted = await extractCandidateFromResume(raw.resumeText, raw.name || 'resume')
         data = { ...extracted, resumeText: raw.resumeText }
+        if (index === 0) {
+          console.log('[hire/bulk] first candidate diagnostics — resumeTextLen=%d parsed=%j',
+            raw.resumeText.length,
+            { name: extracted.name, email: extracted.email, phone: extracted.phone, title: extracted.currentTitle, company: extracted.currentCompany, years: extracted.totalYears, skills: extracted.topSkills })
+        }
+      }
+      index++
+
+      const name = (data.name || '').trim()
+      const email = (data.email || '').toLowerCase().trim() || null
+      // Need at least a name OR an email to have a meaningful record.
+      if (!name && !email) { results.failed++; results.errors.push(`${raw.name || 'Row'}: no name or email could be read`); continue }
+
+      // Dedupe only when there's an email to match on.
+      if (email) {
+        const exists = await prisma.hireCandidate.findFirst({
+          where: { tenantId: ctx.tenantId, email, jobId: jobId || null },
+          select: { id: true },
+        })
+        if (exists) { results.failed++; results.errors.push(`${email}: duplicate (already exists)`); continue }
       }
 
-      const email = (data.email || '').toLowerCase().trim()
-      if (!email) { results.failed++; results.errors.push(`${raw.name || 'Row'}: no email found`); continue }
-
-      const exists = await prisma.hireCandidate.findFirst({
-        where: { tenantId: ctx.tenantId, email, jobId: jobId || null },
-        select: { id: true },
-      })
-      if (exists) { results.failed++; results.errors.push(`${email}: duplicate (already exists)`); continue }
-
+      const skills = Array.isArray(data.topSkills) && data.topSkills.length ? (data.topSkills as Prisma.InputJsonValue) : undefined
       const candidate = await prisma.hireCandidate.create({
         data: {
           tenantId: ctx.tenantId,
           jobId: jobId || null,
-          name: data.name || 'Unknown',
-          email,
+          name: name || 'Unknown',
+          email,                                        // may be null — sourced candidate without an email yet
           phone: data.phone || null,
           currentTitle: data.currentTitle || data.currentRole || null,
           currentCompany: data.currentCompany || null,
+          linkedinUrl: data.linkedIn || null,
+          totalYears: typeof data.totalYears === 'number' ? data.totalYears : null,
+          ...(skills !== undefined ? { skills } : {}),  // persisted parsed skills
           resumeText: data.resumeText || null,
           source: 'Bulk Import',
           currentStage: 'Sourced',
@@ -97,8 +119,18 @@ export const POST = withHireAuth(async (req, ctx) => {
       await prisma.hireCandidateActivity.create({
         data: { candidateId: candidate.id, type: 'note', note: 'Added via bulk import', userId: ctx.userId },
       })
+      // Flag candidates that came in without an email for follow-up.
+      if (!email) {
+        results.needsReview++
+        await prisma.hireCandidateActivity.create({
+          data: { candidateId: candidate.id, type: 'note', note: 'Needs review — email not detected, please add', userId: ctx.userId },
+        })
+      }
       await incrementUsage(ctx.tenantId, 'candidate')
 
+      // Score against the JD only when imported WITH a job. Without a job the
+      // parsed skills/title/years above already populate the candidate; scoring
+      // is triggered later when they're attached to a job (PATCH route).
       if (data.resumeText && jobId) {
         const { enqueue } = await import('@/lib/hire/jobs/queue')
         await enqueue('hire-score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/bulk] enqueue failed:', e))
@@ -111,6 +143,6 @@ export const POST = withHireAuth(async (req, ctx) => {
     }
   }
 
-  console.log('[hire/bulk] done created=%d failed=%d', results.created, results.failed)
+  console.log('[hire/bulk] done created=%d failed=%d needsReview=%d', results.created, results.failed, results.needsReview)
   return NextResponse.json(results)
 })

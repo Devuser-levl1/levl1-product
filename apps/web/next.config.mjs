@@ -12,6 +12,9 @@ const nextConfig = {
     // Without this, webpack breaks their internal require() calls and
     // file-system access, turning runtime errors into silent 500s.
     serverComponentsExternalPackages: ['pdf-parse', 'mammoth', 'pdfjs-dist', 'pg-boss'],
+    // Run instrumentation.ts on server boot so the pg-boss workers register at
+    // startup (not only lazily on the first enqueue).
+    instrumentationHook: true,
   },
 
   /* ── Subdomain rewrites ───────────────────────────────────────────

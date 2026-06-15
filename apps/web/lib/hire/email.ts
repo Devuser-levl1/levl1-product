@@ -7,7 +7,7 @@ export async function sendHireEmail(opts: { to: string; subject: string; html: s
 }
 
 interface InterviewLike { id: string; scheduledAt: Date; durationMins: number; type: string; meetLink: string | null; interviewers: unknown }
-interface CandidateLike { id: string; name: string; email: string; aiScore: number | null; aiSummary: string | null; job: { title: string } | null }
+interface CandidateLike { id: string; name: string; email: string | null; aiScore: number | null; aiSummary: string | null; job: { title: string } | null }
 
 function fmtIST(d: Date): string {
   return d.toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) + ' IST'
