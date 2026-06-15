@@ -25,6 +25,8 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
   const [ready, setReady] = useState(false)
+  // Levl1 SSO entitlements (Phase 4) — gates the Interviews launcher.
+  const [entInterviews, setEntInterviews] = useState<boolean | null>(null)
 
   // Auth guard — redirect to login when there is no valid Hire JWT.
   useEffect(() => {
@@ -40,6 +42,14 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
       })
       .catch(() => router.replace('/hire/login'))
   }, [router])
+
+  // Read cross-product entitlements to decide launcher vs upsell.
+  useEffect(() => {
+    fetch('/api/levl/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setEntInterviews(!!d?.entitlements?.interviews))
+      .catch(() => setEntInterviews(false))
+  }, [])
 
   async function logout() {
     await fetch('/api/hire/auth/logout', { method: 'POST' }).catch(() => {})
@@ -90,6 +100,18 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
         <header style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 24px', borderBottom: '1px solid #E2E8F0', background: '#fff' }}>
           <TrialBanner tenant={me!.tenant} />
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {entInterviews === true && (
+              <a href="/dashboard" target="_blank" rel="noopener" title="Open Levl1 Interviews — you're already signed in"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(109,40,217,0.22)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>
+                <span style={{ color: '#7C3AED' }}>◆</span> Levl1 Screen <span style={{ fontSize: 11 }}>↗</span>
+              </a>
+            )}
+            {entInterviews === false && (
+              <a href="/contact" title="Add Levl1 Interviews to your account"
+                style={{ fontSize: 12.5, fontWeight: 600, color: '#64748B', textDecoration: 'none', border: '1px dashed #CBD5E1', borderRadius: 8, padding: '6px 12px' }}>
+                + Add Levl1 Screen
+              </a>
+            )}
             <span style={{ fontSize: 13, color: '#475569' }}>{me!.user.name}</span>
             <button onClick={logout} style={{ fontSize: 13, color: '#64748B', background: 'none', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
               Log out

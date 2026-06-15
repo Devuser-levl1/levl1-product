@@ -14,6 +14,7 @@ export default function Header() {
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUser, setShowUser] = useState(false);
+  const [entHire, setEntHire] = useState(false);
   const [userName, setUserName] = useState('');
   const [userInitials, setUserInitials] = useState('');
 
@@ -64,6 +65,14 @@ export default function Header() {
       .then(data => {
         if (Array.isArray(data)) setNotifications(data)
       })
+      .catch(() => {})
+  }, [])
+
+  // Cross-product entitlement (Phase 4) — gates the reciprocal Hire launcher.
+  useEffect(() => {
+    fetch('/api/levl/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setEntHire(!!d?.entitlements?.hire))
       .catch(() => {})
   }, [])
 
@@ -160,6 +169,14 @@ export default function Header() {
 
       {/* Right side controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+
+        {/* Levl1 SSO — reciprocal launcher to Hire when entitled to both (Phase 5) */}
+        {entHire && (
+          <a href="/hire/dashboard" target="_blank" rel="noopener" title="Open Levl1 Hire — you're already signed in"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#4F46E5", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.22)", borderRadius: 8, padding: "6px 12px", textDecoration: "none" }}>
+            <span style={{ color: "#4F46E5" }}>◆</span> Levl1 Hire <span style={{ fontSize: 11 }}>↗</span>
+          </a>
+        )}
 
         {/* Notifications bell */}
         <div ref={notifsRef} style={{ position: "relative" }}>
