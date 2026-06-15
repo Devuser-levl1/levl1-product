@@ -9,7 +9,7 @@ interface Cand { id: string; name: string; email: string; currentTitle: string |
 interface Job { id: string; title: string; stages?: string[] }
 
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
-function scoreColor(s: number | null) { if (s == null) return '#CBD5E1'; return s >= 80 ? '#10B981' : s >= 60 ? '#F59E0B' : '#EF4444' }
+function scoreColor(s: number | null) { if (s == null) return '#64748B'; return s >= 80 ? '#10B981' : s >= 60 ? '#F59E0B' : '#EF4444' }
 
 export default function CandidatesPage() {
   const [cands, setCands] = useState<Cand[]>([])
@@ -58,7 +58,7 @@ export default function CandidatesPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Candidates</h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button onClick={() => setShowImport(true)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>⬆ Import</button>
-          <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>
+          <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>
         </div>
       </div>
 
@@ -69,10 +69,10 @@ export default function CandidatesPage() {
         <select value={band} onChange={(e) => setBand(e.target.value)} style={inp}><option value="">All scores</option><option value="80">80+</option><option value="60">60–79</option><option value="lt60">&lt;60</option><option value="none">Not scored</option></select>
       </div>
 
-      <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 10 }}>{shown.length} of {total} candidate{total !== 1 ? 's' : ''}</div>
+      <div style={{ fontSize: 13, color: '#475569', marginBottom: 10 }}>{shown.length} of {total} candidate{total !== 1 ? 's' : ''}</div>
 
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14 }}>
-        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>No candidates found.</div>}
+        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No candidates found.</div>}
         {shown.map((c, i) => (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: i < shown.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
             <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setSelected(c.id)}>
@@ -82,11 +82,11 @@ export default function CandidatesPage() {
                 {c.source && <span style={{ fontSize: 10, fontWeight: 700, color: '#64748B', background: '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>{c.source}</span>}
               </div>
               <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[c.currentTitle, c.currentCompany].filter(Boolean).join(' · ') || c.email}</div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>{c.job?.title ?? 'No job'} · {c.currentStage} · {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>{c.job?.title ?? 'No job'} · {c.currentStage} · {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
             </div>
             <div style={{ textAlign: 'center', minWidth: 48 }}>
               <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 18, color: scoreColor(c.aiScore) }}>{c.aiScore ?? '—'}</div>
-              <div style={{ fontSize: 9, color: '#CBD5E1' }}>score</div>
+              <div style={{ fontSize: 9, color: '#64748B' }}>score</div>
             </div>
             <button onClick={() => setSelected(c.id)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>View</button>
             <div style={{ position: 'relative' }}>
@@ -164,12 +164,12 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
   }
   return <Overlay onClose={onClose}>
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>Add Candidate</div>
-    <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+    <div style={{ background: '#F8FAFC', border: '1px dashed #64748B', borderRadius: 10, padding: 12, marginBottom: 12 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Upload a resume to auto-fill</div>
       <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={parsing} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleResume(file) }} style={{ fontSize: 13 }} />
       {parsing && <div style={{ fontSize: 12, color: '#64748B', marginTop: 6 }}>Reading & extracting…</div>}
       {parsedNote && !parsing && <div style={{ fontSize: 12, color: '#059669', marginTop: 6 }}>{parsedNote}</div>}
-      <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB.</div>
+      <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB.</div>
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <input style={inp} placeholder="Full name" value={f.name} onChange={(e) => set('name', e.target.value)} />
@@ -182,7 +182,7 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
       {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add Candidate'}</button>
+        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add Candidate'}</button>
       </div>
     </div>
   </Overlay>
@@ -267,14 +267,14 @@ function ImportModal({ jobs, onClose, onDone, initialTab = 'csv' }: { jobs: Job[
   return <Overlay onClose={onClose}>
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>Import Candidates</div>
     <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-      {(['files', 'csv', 'resumes'] as const).map((t) => <button key={t} onClick={() => { setTab(t); setResult(null); setProgress(null) }} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (tab === t ? '#4F46E5' : '#E2E8F0'), background: tab === t ? 'rgba(79,70,229,0.08)' : '#fff', color: tab === t ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{t === 'files' ? 'Upload Resumes' : t === 'csv' ? 'CSV Import' : 'Resume Paste'}</button>)}
+      {(['files', 'csv', 'resumes'] as const).map((t) => <button key={t} onClick={() => { setTab(t); setResult(null); setProgress(null) }} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (tab === t ? '#6D28D9' : '#E2E8F0'), background: tab === t ? 'rgba(109,40,217,0.08)' : '#fff', color: tab === t ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>{t === 'files' ? 'Upload Resumes' : t === 'csv' ? 'CSV Import' : 'Resume Paste'}</button>)}
     </div>
 
     {result ? (
       <div>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#10B981', marginBottom: 6 }}>✓ {result.created} added · ✗ {result.failed} failed</div>
-        {result.errors.length > 0 && <ul style={{ fontSize: 12, color: '#94A3B8', maxHeight: 120, overflowY: 'auto', paddingLeft: 18 }}>{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-        <button onClick={onClose} style={{ marginTop: 12, width: '100%', padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Done</button>
+        {result.errors.length > 0 && <ul style={{ fontSize: 12, color: '#475569', maxHeight: 120, overflowY: 'auto', paddingLeft: 18 }}>{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+        <button onClick={onClose} style={{ marginTop: 12, width: '100%', padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Done</button>
       </div>
     ) : tab === 'files' ? (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -282,22 +282,22 @@ function ImportModal({ jobs, onClose, onDone, initialTab = 'csv' }: { jobs: Job[
         <select style={inp} value={jobId} onChange={(e) => setJobId(e.target.value)}><option value="">No job (no scoring)</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
         <input type="file" multiple accept={FILE_ACCEPT_ATTR} disabled={busy} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} style={{ fontSize: 13 }} />
         {files.length > 0 && <div style={{ fontSize: 12, color: '#475569' }}>{files.length} file{files.length !== 1 ? 's' : ''} selected</div>}
-        {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
-        <button onClick={uploadFiles} disabled={busy || files.length === 0} style={{ padding: 11, borderRadius: 8, border: 'none', background: files.length === 0 ? '#CBD5E1' : '#4F46E5', color: '#fff', fontWeight: 700, cursor: busy || files.length === 0 ? 'default' : 'pointer' }}>{busy ? 'Uploading…' : `Upload & Parse ${files.length || ''} resume${files.length !== 1 ? 's' : ''}`}</button>
+        {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#6D28D9' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
+        <button onClick={uploadFiles} disabled={busy || files.length === 0} style={{ padding: 11, borderRadius: 8, border: 'none', background: files.length === 0 ? '#64748B' : '#6D28D9', color: '#fff', fontWeight: 700, cursor: busy || files.length === 0 ? 'default' : 'pointer' }}>{busy ? 'Uploading…' : `Upload & Parse ${files.length || ''} resume${files.length !== 1 ? 's' : ''}`}</button>
       </div>
     ) : tab === 'csv' ? (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, color: '#64748B' }}>Expected columns: <code>name, email, phone, currentRole</code></div>
         <select style={inp} value={jobId} onChange={(e) => setJobId(e.target.value)}><option value="">No job</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
         <textarea style={{ ...inp, minHeight: 140, fontFamily: 'monospace' }} placeholder={'name,email,phone,currentRole\nAsha R,asha@x.com,99999,BI Lead'} value={csv} onChange={(e) => setCsv(e.target.value)} />
-        <button onClick={importCsv} disabled={busy} style={{ padding: 11, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{busy ? 'Importing…' : 'Import All'}</button>
+        <button onClick={importCsv} disabled={busy} style={{ padding: 11, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{busy ? 'Importing…' : 'Import All'}</button>
       </div>
     ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, color: '#64748B' }}>Paste multiple resumes separated by a line with <code>---</code>. AI extracts name/email.</div>
         <select style={inp} value={jobId} onChange={(e) => setJobId(e.target.value)}><option value="">No job (no scoring)</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
         <textarea style={{ ...inp, minHeight: 160 }} placeholder={'Resume 1 text…\n---\nResume 2 text…'} value={resumes} onChange={(e) => setResumes(e.target.value)} />
-        <button onClick={importResumes} disabled={busy} style={{ padding: 11, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{busy ? 'Extracting…' : 'Extract & Import'}</button>
+        <button onClick={importResumes} disabled={busy} style={{ padding: 11, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{busy ? 'Extracting…' : 'Extract & Import'}</button>
       </div>
     )}
   </Overlay>

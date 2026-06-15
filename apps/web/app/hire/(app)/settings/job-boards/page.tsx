@@ -13,7 +13,7 @@ interface BoardRow {
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 const ghost: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }
-const btn: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }
+const btn: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }
 
 export default function JobBoardsSettings() {
   const [boards, setBoards] = useState<BoardRow[]>([])
@@ -41,15 +41,15 @@ export default function JobBoardsSettings() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A' }}>{b.label}</span>
                 <span style={{ fontSize: 10.5, fontWeight: 700, color: '#64748B', background: '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>{b.mode === 'api' ? 'API' : 'Assisted'}</span>
-                {b.tier === 'B' && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#94A3B8' }}>Tier B</span>}
+                {b.tier === 'B' && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#475569' }}>Tier B</span>}
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
                 {b.comingSoon ? 'Coming soon' : b.connected ? (b.hasCredentials ? 'Connected · credentials stored' : 'Connected') : 'Not connected'}
               </div>
             </div>
 
             {b.comingSoon ? (
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94A3B8', background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 100, padding: '4px 12px' }}>Coming soon</span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px dashed #64748B', borderRadius: 100, padding: '4px 12px' }}>Coming soon</span>
             ) : b.connected ? (
               <>
                 <button style={ghost} onClick={() => setCredFor(credFor === b.board ? null : b.board)}>API creds</button>
@@ -81,7 +81,7 @@ function CredForm({ board, onSave, onCancel }: { board: string; onSave: (creds: 
           <button style={btn} disabled={!apiKey} onClick={() => onSave({ apiKey, apiSecret })}>Save credentials</button>
           <button style={ghost} onClick={onCancel}>Cancel</button>
         </div>
-        <div style={{ fontSize: 11, color: '#94A3B8' }}>Stored with AES-256-GCM. Live API posting for this board activates once our connector for it ships.</div>
+        <div style={{ fontSize: 11, color: '#475569' }}>Stored with AES-256-GCM. Live API posting for this board activates once our connector for it ships.</div>
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { AuthShell } from '@/components/hire/auth-shell'
 
 const inp: React.CSSProperties = { padding: '12px 14px', borderRadius: 8, border: '1px solid #334155', background: '#0B1120', color: '#fff', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' }
-const btn: React.CSSProperties = { padding: '12px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
+const btn: React.CSSProperties = { padding: '12px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }
 
 export default function HireOnboarding() {
   const router = useRouter()

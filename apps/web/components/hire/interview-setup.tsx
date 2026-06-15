@@ -19,7 +19,7 @@ const SECTIONS: { key: Section; label: string; hint: string }[] = [
 ]
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22 }
-const btn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
+const btn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
 const ghost: React.CSSProperties = { padding: '8px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }
 
 export function InterviewSetup({ jobId, jobTitle, onGoToCandidates }: { jobId: string; jobTitle: string; onGoToCandidates?: () => void }) {
@@ -75,13 +75,13 @@ export function InterviewSetup({ jobId, jobTitle, onGoToCandidates }: { jobId: s
     } finally { setBusy('') }
   }
 
-  if (!s) return <div style={{ color: '#94A3B8' }}>Loading…</div>
+  if (!s) return <div style={{ color: '#475569' }}>Loading…</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', margin: 0 }}>AI Interview Setup — {jobTitle}</h2>
-        <p style={{ fontSize: 12.5, color: '#94A3B8', margin: '4px 0 0' }}>The job description is already on file — no need to re-upload. Review and approve the questions below.</p>
+        <p style={{ fontSize: 12.5, color: '#475569', margin: '4px 0 0' }}>The job description is already on file — no need to re-upload. Review and approve the questions below.</p>
       </div>
 
       {/* STATE: not set up */}
@@ -110,10 +110,10 @@ export function InterviewSetup({ jobId, jobTitle, onGoToCandidates }: { jobId: s
           {SECTIONS.map(({ key, label, hint }) => (
             <div key={key} style={card}>
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>{label} <span style={{ fontWeight: 500, color: '#94A3B8' }}>· {hint}</span></div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>{label} <span style={{ fontWeight: 500, color: '#475569' }}>· {hint}</span></div>
                 <button onClick={() => add(key)} style={{ ...ghost, marginLeft: 'auto' }}>+ Add</button>
               </div>
-              {qs[key].length === 0 ? <div style={{ fontSize: 12.5, color: '#CBD5E1' }}>No questions in this section.</div> : (
+              {qs[key].length === 0 ? <div style={{ fontSize: 12.5, color: '#64748B' }}>No questions in this section.</div> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {qs[key].map((q, i) => (
                     <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -126,14 +126,14 @@ export function InterviewSetup({ jobId, jobTitle, onGoToCandidates }: { jobId: s
             </div>
           ))}
 
-          <div style={{ fontSize: 11, color: '#94A3B8' }}>Dynamic follow-ups are handled live by the AI interviewer during the session.</div>
+          <div style={{ fontSize: 11, color: '#475569' }}>Dynamic follow-ups are handled live by the AI interviewer during the session.</div>
 
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Approvals</div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span style={{ fontSize: 11.5, color: '#94A3B8' }}>Mode:</span>
-                {(['single', 'dual'] as const).map((m) => <button key={m} onClick={() => setMode(m)} style={{ ...ghost, padding: '5px 10px', borderColor: s.approvalMode === m ? '#4F46E5' : '#E2E8F0', color: s.approvalMode === m ? '#4F46E5' : '#64748B' }}>{m === 'single' ? 'Single approver' : 'Tech lead + HR'}</button>)}
+                <span style={{ fontSize: 11.5, color: '#475569' }}>Mode:</span>
+                {(['single', 'dual'] as const).map((m) => <button key={m} onClick={() => setMode(m)} style={{ ...ghost, padding: '5px 10px', borderColor: s.approvalMode === m ? '#6D28D9' : '#E2E8F0', color: s.approvalMode === m ? '#6D28D9' : '#64748B' }}>{m === 'single' ? 'Single approver' : 'Tech lead + HR'}</button>)}
               </div>
             </div>
 

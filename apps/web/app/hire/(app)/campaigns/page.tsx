@@ -27,9 +27,9 @@ export default function CampaignsPage() {
     <div style={{ maxWidth: 820 }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Campaigns</h1>
-        <button onClick={() => setEditing(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ New Campaign</button>
+        <button onClick={() => setEditing(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ New Campaign</button>
       </div>
-      {list.length === 0 && <div style={{ ...card, textAlign: 'center', color: '#94A3B8', padding: 40 }}>No campaigns yet. Create one to reactivate your talent pool.</div>}
+      {list.length === 0 && <div style={{ ...card, textAlign: 'center', color: '#475569', padding: 40 }}>No campaigns yet. Create one to reactivate your talent pool.</div>}
       {drafts.length > 0 && <Section title={`Draft (${drafts.length})`} items={drafts} reload={load} />}
       {sent.length > 0 && <Section title={`Sent (${sent.length})`} items={sent} reload={load} />}
     </div>
@@ -46,19 +46,19 @@ function Section({ title, items, reload }: { title: string; items: Campaign[]; r
   }
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>{title}</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>{title}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {items.map((c) => (
           <div key={c.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}</div>
               <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{c.subject || '(no subject)'} · {c.audienceType}</div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>
                 {c.status === 'SENT' ? `Sent ${c.sentAt ? new Date(c.sentAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''} · ${c.sentCount} sent · Opened ${c.openCount} (${c.sentCount ? Math.round((c.openCount / c.sentCount) * 100) : 0}%)` : 'Draft'}
               </div>
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, color: c.status === 'SENT' ? '#10B981' : '#64748B', background: c.status === 'SENT' ? 'rgba(16,185,129,0.1)' : '#F1F5F9', borderRadius: 100, padding: '3px 10px' }}>{c.status}</span>
-            {c.status !== 'SENT' && <button onClick={() => send(c.id)} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Send</button>}
+            {c.status !== 'SENT' && <button onClick={() => send(c.id)} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Send</button>}
             {c.status !== 'SENT' && <button onClick={() => del(c.id)} style={{ ...inp, width: 'auto', color: '#DC2626', cursor: 'pointer' }}>Delete</button>}
           </div>
         ))}
@@ -102,15 +102,15 @@ function Editor({ jobs, onClose, onDone }: { jobs: Job[]; onClose: () => void; o
           </div>
         )}
         <div>
-          <button onClick={doPreview} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Preview audience</button>
+          <button onClick={doPreview} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Preview audience</button>
           {preview && <span style={{ marginLeft: 12, fontSize: 13, color: '#334155' }}>→ {preview.count} recipients{preview.sample.length ? ` (e.g. ${preview.sample.map((s) => s.name).join(', ')})` : ''}</span>}
         </div>
         <Field label="Subject"><input style={inp} value={f.subject} onChange={(e) => set('subject', e.target.value)} /></Field>
         <Field label="Body — tokens: {{name}} {{job}} {{company}} · unsubscribe auto-appended"><textarea style={{ ...inp, minHeight: 160 }} value={f.body} onChange={(e) => set('body', e.target.value)} /></Field>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={saveDraft} style={{ ...inp, width: 'auto', fontWeight: 600, cursor: 'pointer' }}>Save Draft</button>
-          <button onClick={sendTest} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Send test to me</button>
-          <button onClick={sendNow} style={{ marginLeft: 'auto', padding: '10px 18px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Send now</button>
+          <button onClick={sendTest} style={{ ...inp, width: 'auto', fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Send test to me</button>
+          <button onClick={sendNow} style={{ marginLeft: 'auto', padding: '10px 18px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Send now</button>
         </div>
       </div>
     </div>

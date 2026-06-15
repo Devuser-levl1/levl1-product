@@ -35,7 +35,7 @@ export default function CrmPage() {
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E2E8F0', marginBottom: 18 }}>
         {(['clients', 'deals'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#4F46E5' : 'transparent'), color: tab === t ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>
+          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#6D28D9' : 'transparent'), color: tab === t ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>
             {t === 'clients' ? `Clients (${clients.length})` : 'Deals'}
           </button>
         ))}
@@ -49,7 +49,7 @@ export default function CrmPage() {
   )
 }
 
-const primary: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
+const primary: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
 
 function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void }) {
   const router = useRouter()
@@ -71,7 +71,7 @@ function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void
         <select value={industry} onChange={(e) => setIndustry(e.target.value)} style={inp}><option value="">All industries</option>{INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}</select>
       </div>
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14 }}>
-        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>No clients yet.</div>}
+        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No clients yet.</div>}
         {shown.map((c, i) => {
           const pipeline = c.deals.reduce((s, d) => s + d.value, 0)
           return (
@@ -79,7 +79,7 @@ function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}</div>
                 <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{c.industry ?? '—'}</div>
-                <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>{c._count.contacts} contacts · {c.jobs.length} active jobs · {c.deals.length} open deals{pipeline > 0 ? ` · Pipeline ${inr(pipeline)}` : ''}</div>
+                <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{c._count.contacts} contacts · {c.jobs.length} active jobs · {c.deals.length} open deals{pipeline > 0 ? ` · Pipeline ${inr(pipeline)}` : ''}</div>
               </div>
               <button onClick={() => router.push(`/hire/crm/clients/${c.id}`)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>View</button>
               <button onClick={() => router.push(`/hire/jobs/new?clientId=${c.id}`)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>+ Add Job</button>
@@ -110,7 +110,7 @@ function DealsTab({ grouped, reload }: { grouped: Grouped[]; reload: () => void 
   return (
     <div>
       <div style={{ display: 'flex', gap: 24, marginBottom: 16, padding: '10px 14px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10 }}>
-        <div style={{ fontSize: 13, color: '#475569' }}>Open Pipeline: <strong style={{ color: '#4F46E5' }}>{inr(openTotal)}</strong></div>
+        <div style={{ fontSize: 13, color: '#475569' }}>Open Pipeline: <strong style={{ color: '#6D28D9' }}>{inr(openTotal)}</strong></div>
         <div style={{ fontSize: 13, color: '#475569' }}>Won: <strong style={{ color: '#10B981' }}>{inr(wonTotal)}</strong></div>
       </div>
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
@@ -125,11 +125,11 @@ function DealsTab({ grouped, reload }: { grouped: Grouped[]; reload: () => void 
 function DealColumn({ group }: { group: Grouped }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.stage })
   return (
-    <div ref={setNodeRef} style={{ width: 220, flexShrink: 0, background: isOver ? '#F1F5F9' : '#F8FAFC', border: isOver ? '1px dashed #4F46E5' : '1px solid #E2E8F0', borderRadius: 10, padding: '12px 10px', minHeight: 200 }}>
+    <div ref={setNodeRef} style={{ width: 220, flexShrink: 0, background: isOver ? '#F1F5F9' : '#F8FAFC', border: isOver ? '1px dashed #6D28D9' : '1px solid #E2E8F0', borderRadius: 10, padding: '12px 10px', minHeight: 200 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{group.stage}</div>
-      <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 10 }}>{inr(group.totalValue)}</div>
+      <div style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>{inr(group.totalValue)}</div>
       {group.deals.map((d) => <DealCard key={d.id} deal={d} />)}
-      {group.deals.length === 0 && <div style={{ fontSize: 12, color: '#CBD5E1', textAlign: 'center', paddingTop: 20 }}>—</div>}
+      {group.deals.length === 0 && <div style={{ fontSize: 12, color: '#64748B', textAlign: 'center', paddingTop: 20 }}>—</div>}
     </div>
   )
 }
@@ -141,8 +141,8 @@ function DealCard({ deal }: { deal: Deal }) {
       <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{deal.client.name}</div>
       <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{deal.title}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#4F46E5' }}>{inr(deal.value)}</span>
-        <span style={{ fontSize: 11, color: '#94A3B8' }}>{deal.probability}%</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#6D28D9' }}>{inr(deal.value)}</span>
+        <span style={{ fontSize: 11, color: '#475569' }}>{deal.probability}%</span>
       </div>
     </div>
   )
@@ -168,14 +168,14 @@ function AddClientModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
       <input style={inp} placeholder="Company name" value={f.name} onChange={(e) => set('name', e.target.value)} />
       <select style={inp} value={f.industry} onChange={(e) => set('industry', e.target.value)}><option value="">Select industry</option>{INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}</select>
       <input style={inp} placeholder="Website" value={f.website} onChange={(e) => set('website', e.target.value)} />
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', marginTop: 6 }}>Primary contact (optional)</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginTop: 6 }}>Primary contact (optional)</div>
       <input style={inp} placeholder="Contact name" value={f.contactName} onChange={(e) => set('contactName', e.target.value)} />
       <input style={inp} placeholder="Contact email" value={f.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} />
       <input style={inp} placeholder="Contact role" value={f.contactRole} onChange={(e) => set('contactRole', e.target.value)} />
       {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save Client'}</button>
+        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save Client'}</button>
       </div>
     </div>
   </Overlay>
@@ -198,12 +198,12 @@ function AddDealModal({ clients, onClose, onSaved }: { clients: Client[]; onClos
       <select style={inp} value={f.clientId} onChange={(e) => set('clientId', e.target.value)}><option value="">Select client</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
       <input style={inp} type="number" placeholder="Value (₹)" value={f.value} onChange={(e) => set('value', e.target.value)} />
       <select style={inp} value={f.stage} onChange={(e) => setF((p) => ({ ...p, stage: e.target.value, probability: STAGE_PROBABILITY[e.target.value] }))}>{DEAL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-      <div style={{ fontSize: 12, color: '#94A3B8' }}>Probability: {f.probability}%</div>
+      <div style={{ fontSize: 12, color: '#475569' }}>Probability: {f.probability}%</div>
       <textarea style={{ ...inp, minHeight: 70 }} placeholder="Notes" value={f.notes} onChange={(e) => set('notes', e.target.value)} />
       {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Creating…' : 'Create Deal'}</button>
+        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Creating…' : 'Create Deal'}</button>
       </div>
     </div>
   </Overlay>

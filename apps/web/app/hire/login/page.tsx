@@ -119,7 +119,7 @@ export default function HireLoginPage() {
           <p
             style={{
               fontSize: 14,
-              color: "#94A3B8",
+              color: "#475569",
               marginBottom: 36,
               lineHeight: 1.5,
             }}
@@ -200,7 +200,7 @@ export default function HireLoginPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#94A3B8",
+                    color: "#475569",
                     display: "flex",
                     padding: 0,
                   }}
@@ -231,7 +231,7 @@ export default function HireLoginPage() {
               type="submit"
               disabled={loading}
               style={{
-                background: loading ? "#94A3B8" : "#7C3AED",
+                background: loading ? "#475569" : "#7C3AED",
                 color: "#fff",
                 border: "none",
                 borderRadius: 9,
@@ -268,7 +268,7 @@ export default function HireLoginPage() {
             style={{
               textAlign: "center",
               fontSize: 13,
-              color: "#94A3B8",
+              color: "#475569",
               marginTop: 28,
             }}
           >
@@ -290,7 +290,7 @@ export default function HireLoginPage() {
             style={{
               textAlign: "center",
               fontSize: 12.5,
-              color: "#94A3B8",
+              color: "#475569",
               marginTop: 14,
             }}
           >

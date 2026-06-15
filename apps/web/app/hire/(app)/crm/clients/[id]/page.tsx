@@ -25,7 +25,7 @@ export default function ClientDetailPage() {
 
   const load = useCallback(() => { fetch(`/api/hire/crm/clients/${id}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setClient(d) }).catch(() => {}) }, [id])
   useEffect(() => { load() }, [load])
-  if (!client) return <div style={{ color: '#94A3B8' }}>Loading…</div>
+  if (!client) return <div style={{ color: '#475569' }}>Loading…</div>
 
   const allActivity = client.contacts.flatMap((c) => c.activities.map((a) => ({ ...a, contactName: c.name }))).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -36,14 +36,14 @@ export default function ClientDetailPage() {
       <div style={{ fontSize: 13, color: '#64748B', marginBottom: 18 }}>{[client.industry, client.website].filter(Boolean).join(' · ') || '—'}</div>
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E2E8F0', marginBottom: 18 }}>
-        {TABS.map((t) => <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#4F46E5' : 'transparent'), color: tab === t ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{t}</button>)}
+        {TABS.map((t) => <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#6D28D9' : 'transparent'), color: tab === t ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>{t}</button>)}
       </div>
 
       {tab === 'Overview' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#334155' }}>Key Contacts ({client.contacts.length})</div>
-            <button onClick={() => setAddContact(true)} style={{ marginLeft: 'auto', ...inp, fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>+ Add Contact</button>
+            <button onClick={() => setAddContact(true)} style={{ marginLeft: 'auto', ...inp, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>+ Add Contact</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {client.contacts.length === 0 && <div style={card}>No contacts yet.</div>}
@@ -51,9 +51,9 @@ export default function ClientDetailPage() {
               <div key={c.id} style={card}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}{c.role ? ` · ${c.role}` : ''}</div>
                 <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[c.email, c.phone].filter(Boolean).join(' · ') || '—'}</div>
-                {c.linkedinUrl && <div style={{ fontSize: 12, marginTop: 2 }}><a href={c.linkedinUrl} style={{ color: '#4F46E5' }}>{c.linkedinUrl}</a></div>}
-                <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Last contact: {c.lastContactedAt ? new Date(c.lastContactedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'never'}</div>
-                <div style={{ marginTop: 8 }}><button onClick={() => setLogFor(c)} style={{ ...inp, fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Log Contact</button></div>
+                {c.linkedinUrl && <div style={{ fontSize: 12, marginTop: 2 }}><a href={c.linkedinUrl} style={{ color: '#6D28D9' }}>{c.linkedinUrl}</a></div>}
+                <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Last contact: {c.lastContactedAt ? new Date(c.lastContactedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'never'}</div>
+                <div style={{ marginTop: 8 }}><button onClick={() => setLogFor(c)} style={{ ...inp, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Log Contact</button></div>
               </div>
             ))}
           </div>
@@ -62,12 +62,12 @@ export default function ClientDetailPage() {
 
       {tab === 'Jobs' && (
         <div>
-          <button onClick={() => router.push(`/hire/jobs/new?clientId=${client.id}`)} style={{ ...inp, fontWeight: 600, color: '#4F46E5', cursor: 'pointer', marginBottom: 12 }}>+ New Job for this client</button>
+          <button onClick={() => router.push(`/hire/jobs/new?clientId=${client.id}`)} style={{ ...inp, fontWeight: 600, color: '#6D28D9', cursor: 'pointer', marginBottom: 12 }}>+ New Job for this client</button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {client.jobs.length === 0 && <div style={card}>No jobs linked to this client.</div>}
             {client.jobs.map((j) => (
               <div key={j.id} onClick={() => router.push(`/hire/jobs/${j.id}`)} style={{ ...card, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 700, color: '#0F172A' }}>{j.title}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>{j._count.candidates} candidates</div></div>
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 700, color: '#0F172A' }}>{j.title}</div><div style={{ fontSize: 12, color: '#475569' }}>{j._count.candidates} candidates</div></div>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B' }}>{j.status}</span>
               </div>
             ))}
@@ -77,13 +77,13 @@ export default function ClientDetailPage() {
 
       {tab === 'Deals' && (
         <div>
-          <button onClick={() => setAddDeal(true)} style={{ ...inp, fontWeight: 600, color: '#4F46E5', cursor: 'pointer', marginBottom: 12 }}>+ New Deal</button>
+          <button onClick={() => setAddDeal(true)} style={{ ...inp, fontWeight: 600, color: '#6D28D9', cursor: 'pointer', marginBottom: 12 }}>+ New Deal</button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {client.deals.length === 0 && <div style={card}>No deals yet.</div>}
             {client.deals.map((d) => (
               <div key={d.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 700, color: '#0F172A' }}>{d.title}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>{d.stage} · {d.probability}%</div></div>
-                <span style={{ fontWeight: 800, color: '#4F46E5' }}>{inr(d.value)}</span>
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 700, color: '#0F172A' }}>{d.title}</div><div style={{ fontSize: 12, color: '#475569' }}>{d.stage} · {d.probability}%</div></div>
+                <span style={{ fontWeight: 800, color: '#6D28D9' }}>{inr(d.value)}</span>
               </div>
             ))}
           </div>
@@ -92,10 +92,10 @@ export default function ClientDetailPage() {
 
       {tab === 'Activity' && (
         <div style={card}>
-          {allActivity.length === 0 && <div style={{ color: '#94A3B8', fontSize: 13 }}>No activity logged yet.</div>}
+          {allActivity.length === 0 && <div style={{ color: '#475569', fontSize: 13 }}>No activity logged yet.</div>}
           {allActivity.map((a) => (
             <div key={a.id} style={{ fontSize: 13, color: '#475569', padding: '6px 0', borderBottom: '1px solid #F1F5F9' }}>
-              <span style={{ color: '#94A3B8' }}>{new Date(a.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} — </span>
+              <span style={{ color: '#475569' }}>{new Date(a.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} — </span>
               <strong>{a.contactName}</strong> · {a.type}{a.note ? `: ${a.note}` : ''}
             </div>
           ))}
@@ -115,7 +115,7 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 const modalBtns = (onClose: () => void, save: () => void, saving: boolean, label: string) => (
   <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
     <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-    <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : label}</button>
+    <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : label}</button>
   </div>
 )
 

@@ -23,7 +23,7 @@ export default function HireSignup() {
     } catch { setError('Something went wrong'); setLoading(false) }
   }
 
-  return <AuthShell title="Start your free trial" footer={<>Already have an account? <Link href="/hire/login" style={{ color: '#818CF8' }}>Sign in</Link></>}>
+  return <AuthShell title="Start your free trial" footer={<>Already have an account? <Link href="/hire/login" style={{ color: '#A78BFA' }}>Sign in</Link></>}>
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <input placeholder="Agency / company name" value={form.tenantName} onChange={(e) => set('tenantName', e.target.value)} style={inp} />
       <select value={form.tenantType} onChange={(e) => set('tenantType', e.target.value)} style={inp}>
@@ -34,7 +34,7 @@ export default function HireSignup() {
       <input placeholder="Work email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} style={inp} />
       <input placeholder="Password (8+ characters)" type="password" value={form.password} onChange={(e) => set('password', e.target.value)} style={inp} />
       {error && <div style={{ color: '#F87171', fontSize: 13 }}>{error}</div>}
-      <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 14, cursor: loading ? 'default' : 'pointer' }}>{loading ? 'Please wait…' : 'Create account'}</button>
+      <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 14, cursor: loading ? 'default' : 'pointer' }}>{loading ? 'Please wait…' : 'Create account'}</button>
     </form>
   </AuthShell>
 }

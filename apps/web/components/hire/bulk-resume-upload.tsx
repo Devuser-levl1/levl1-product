@@ -49,17 +49,17 @@ export function BulkResumeUpload({ jobId, jobTitle, onClose, onDone }: {
         {result ? (
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#10B981', marginBottom: 6 }}>✓ {result.created} added · ✗ {result.failed} failed</div>
-            {result.errors.length > 0 && <ul style={{ fontSize: 12, color: '#94A3B8', maxHeight: 120, overflowY: 'auto', paddingLeft: 18 }}>{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-            <button onClick={onClose} style={{ marginTop: 12, width: '100%', padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Done</button>
+            {result.errors.length > 0 && <ul style={{ fontSize: 12, color: '#475569', maxHeight: 120, overflowY: 'auto', paddingLeft: 18 }}>{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+            <button onClick={onClose} style={{ marginTop: 12, width: '100%', padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Done</button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input type="file" multiple accept={FILE_ACCEPT_ATTR} disabled={busy} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} style={{ fontSize: 13 }} />
             {files.length > 0 && <div style={{ fontSize: 12, color: '#475569' }}>{files.length} file{files.length !== 1 ? 's' : ''} selected</div>}
-            {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
+            {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#6D28D9' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={run} disabled={busy || files.length === 0} style={{ ...inp, flex: 1, border: 'none', background: files.length === 0 ? '#CBD5E1' : '#4F46E5', color: '#fff', fontWeight: 700, cursor: busy || files.length === 0 ? 'default' : 'pointer', padding: 10 }}>{busy ? 'Uploading…' : 'Upload & Parse'}</button>
+              <button onClick={run} disabled={busy || files.length === 0} style={{ ...inp, flex: 1, border: 'none', background: files.length === 0 ? '#64748B' : '#6D28D9', color: '#fff', fontWeight: 700, cursor: busy || files.length === 0 ? 'default' : 'pointer', padding: 10 }}>{busy ? 'Uploading…' : 'Upload & Parse'}</button>
             </div>
           </div>
         )}

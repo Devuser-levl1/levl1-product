@@ -56,13 +56,13 @@ export default function PipelinePage() {
 
   const selectedJob = jobs.find((j) => j.id === selectedJobId)
 
-  if (loading) return <div style={{ color: '#94A3B8' }}>Loading pipeline…</div>
+  if (loading) return <div style={{ color: '#475569' }}>Loading pipeline…</div>
   if (jobs.length === 0) return (
-    <div style={{ padding: 32, textAlign: 'center', color: '#94A3B8' }}>
+    <div style={{ padding: 32, textAlign: 'center', color: '#475569' }}>
       <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
       <div style={{ fontSize: 16, fontWeight: 600, color: '#475569' }}>No active jobs</div>
       <div style={{ fontSize: 13, marginTop: 4 }}>Create a job to start managing your pipeline</div>
-      <a href="/hire/jobs/new" style={{ display: 'inline-block', marginTop: 16, background: '#4F46E5', color: 'white', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>Create First Job →</a>
+      <a href="/hire/jobs/new" style={{ display: 'inline-block', marginTop: 16, background: '#6D28D9', color: 'white', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>Create First Job →</a>
     </div>
   )
 
@@ -71,7 +71,7 @@ export default function PipelinePage() {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0 }}>Pipeline</h1>
-          <p style={{ fontSize: 13, color: '#94A3B8', margin: '4px 0 0' }}>Drag candidates across stages to update their progress</p>
+          <p style={{ fontSize: 13, color: '#475569', margin: '4px 0 0' }}>Drag candidates across stages to update their progress</p>
         </div>
         <button onClick={() => setShowBulk(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>⬆ Bulk upload resumes</button>
       </div>
@@ -79,7 +79,7 @@ export default function PipelinePage() {
       {jobs.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 12, flexWrap: 'wrap' }}>
           {jobs.map((job) => (
-            <button key={job.id} onClick={() => setSelectedJobId(job.id)} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: selectedJobId === job.id ? '#4F46E5' : '#F1F5F9', color: selectedJobId === job.id ? 'white' : '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{job.title} ({job.totalCandidates})</button>
+            <button key={job.id} onClick={() => setSelectedJobId(job.id)} style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: selectedJobId === job.id ? '#6D28D9' : '#F1F5F9', color: selectedJobId === job.id ? 'white' : '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{job.title} ({job.totalCandidates})</button>
           ))}
         </div>
       )}

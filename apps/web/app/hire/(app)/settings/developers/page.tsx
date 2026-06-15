@@ -9,7 +9,7 @@ interface Delivery { id: string; event: string; status: string; attempts: number
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22, marginBottom: 20 }
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
-const btn: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
+const btn: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
 const ghost: React.CSSProperties = { ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }
 
 export default function DevelopersPage() {
@@ -45,7 +45,7 @@ function McpCard() {
         <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>Connect to AI (MCP)</div>
         <span style={{ fontSize: 10.5, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.1)', borderRadius: 100, padding: '2px 8px' }}>New</span>
       </div>
-      <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 14 }}>Chat with your live Hire data from Claude Desktop, ChatGPT or any MCP client — &ldquo;which candidates for the Backend role scored above 80?&rdquo;. Read-only and scoped to your API key&apos;s account.</div>
+      <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 14 }}>Chat with your live Hire data from Claude Desktop, ChatGPT or any MCP client — &ldquo;which candidates for the Backend role scored above 80?&rdquo;. Read-only and scoped to your API key&apos;s account.</div>
 
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4 }}>MCP server URL</div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
@@ -56,7 +56,7 @@ function McpCard() {
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Claude Desktop config (claude_desktop_config.json)</div>
       <pre style={{ background: '#0F172A', color: '#E2E8F0', borderRadius: 8, padding: 14, fontSize: 11.5, overflowX: 'auto', margin: 0 }}>{config}</pre>
       <button style={{ ...ghost, marginTop: 8 }} onClick={() => copy(config, 'cfg')}>{copied === 'cfg' ? 'Copied' : 'Copy config'}</button>
-      <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 10 }}>Replace <code>YOUR_API_KEY</code> with a key above. Tools: list_jobs, search_candidates, get_candidate, get_interview_report, pipeline_summary, recent_activity. Read-only — the AI can view but never change your data.</div>
+      <div style={{ fontSize: 11, color: '#475569', marginTop: 10 }}>Replace <code>YOUR_API_KEY</code> with a key above. Tools: list_jobs, search_candidates, get_candidate, get_interview_report, pipeline_summary, recent_activity. Read-only — the AI can view but never change your data.</div>
     </div>
   )
 }
@@ -87,7 +87,7 @@ function ApiKeys() {
   return (
     <div style={card}>
       <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>API keys</div>
-      <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 16 }}>Pass as <code>Authorization: Bearer &lt;key&gt;</code> or <code>x-api-key</code>. The raw key is shown only once.</div>
+      <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 16 }}>Pass as <code>Authorization: Bearer &lt;key&gt;</code> or <code>x-api-key</code>. The raw key is shown only once.</div>
 
       {rawKey && (
         <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 10, padding: 14, marginBottom: 16 }}>
@@ -105,13 +105,13 @@ function ApiKeys() {
         <button style={btn} onClick={create} disabled={creating}>{creating ? 'Generating…' : '+ Generate API key'}</button>
       </div>
 
-      {keys.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No API keys yet.</div> : (
+      {keys.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No API keys yet.</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {keys.map((k) => (
             <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10, opacity: k.revokedAt ? 0.55 : 1 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{k.name} <code style={{ fontSize: 12, color: '#64748B' }}>{k.prefix}…</code></div>
-                <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{k.revokedAt ? 'Revoked' : k.lastUsedAt ? `Last used ${new Date(k.lastUsedAt).toLocaleString('en-IN')}` : 'Never used'}</div>
+                <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{k.revokedAt ? 'Revoked' : k.lastUsedAt ? `Last used ${new Date(k.lastUsedAt).toLocaleString('en-IN')}` : 'Never used'}</div>
               </div>
               {!k.revokedAt && <button style={{ ...ghost, color: '#DC2626' }} onClick={() => revoke(k.id)}>Revoke</button>}
             </div>
@@ -152,9 +152,9 @@ function Webhooks() {
   return (
     <div style={card}>
       <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Webhook endpoints</div>
-      <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 16 }}>We POST signed JSON with header <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> (HMAC of the raw body using the endpoint secret).</div>
+      <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 16 }}>We POST signed JSON with header <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> (HMAC of the raw body using the endpoint secret).</div>
 
-      <div style={{ border: '1px dashed #CBD5E1', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+      <div style={{ border: '1px dashed #64748B', borderRadius: 10, padding: 14, marginBottom: 16 }}>
         <input style={{ ...inp, width: '100%', boxSizing: 'border-box', marginBottom: 10 }} placeholder="https://your-ats.example.com/levl1/webhook" value={url} onChange={(e) => setUrl(e.target.value)} />
         <div style={{ display: 'flex', gap: 14, marginBottom: 10, flexWrap: 'wrap' }}>
           {EVENTS.map((ev) => (
@@ -168,7 +168,7 @@ function Webhooks() {
         <button style={btn} onClick={add} disabled={adding || !url}>{adding ? 'Adding…' : '+ Add endpoint'}</button>
       </div>
 
-      {endpoints.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No webhook endpoints yet.</div> : (
+      {endpoints.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No webhook endpoints yet.</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {endpoints.map((ep) => <EndpointRow key={ep.id} ep={ep} onToggle={() => toggle(ep)} onRemove={() => remove(ep.id)} />)}
         </div>
@@ -199,9 +199,9 @@ function EndpointRow({ ep, onToggle, onRemove }: { ep: Endpoint; onToggle: () =>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>
-          <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{ep.events.map((e) => <code key={e} style={{ marginRight: 8 }}>{e}</code>)}</div>
+          <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{ep.events.map((e) => <code key={e} style={{ marginRight: 8 }}>{e}</code>)}</div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'rgba(5,150,105,0.1)' : '#F1F5F9', color: ep.active ? '#059669' : '#94A3B8' }}>{ep.active ? 'Active' : 'Paused'}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'rgba(5,150,105,0.1)' : '#F1F5F9', color: ep.active ? '#059669' : '#475569' }}>{ep.active ? 'Active' : 'Paused'}</span>
         <button style={ghost} onClick={onToggle}>{ep.active ? 'Pause' : 'Resume'}</button>
         <button style={ghost} onClick={loadDeliveries}>{deliveries ? 'Hide' : 'Deliveries'}</button>
         <button style={{ ...ghost, color: '#DC2626' }} onClick={onRemove}>Delete</button>
@@ -209,18 +209,18 @@ function EndpointRow({ ep, onToggle, onRemove }: { ep: Endpoint; onToggle: () =>
 
       <div style={{ marginTop: 8, fontSize: 12, color: '#64748B' }}>
         Secret: <code>{showSecret ? ep.secret : '••••••••••••'}</code>{' '}
-        <button onClick={() => setShowSecret((s) => !s)} style={{ background: 'none', border: 'none', color: '#4F46E5', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>{showSecret ? 'Hide' : 'Reveal'}</button>
+        <button onClick={() => setShowSecret((s) => !s)} style={{ background: 'none', border: 'none', color: '#6D28D9', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>{showSecret ? 'Hide' : 'Reveal'}</button>
       </div>
 
       {deliveries && (
         <div style={{ marginTop: 10, borderTop: '1px solid #F1F5F9', paddingTop: 10 }}>
-          {deliveries.length === 0 ? <div style={{ fontSize: 12.5, color: '#94A3B8' }}>No deliveries yet.</div> : deliveries.map((d) => (
+          {deliveries.length === 0 ? <div style={{ fontSize: 12.5, color: '#475569' }}>No deliveries yet.</div> : deliveries.map((d) => (
             <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, padding: '5px 0' }}>
               <span style={{ color: statusColor(d.status), fontWeight: 700, width: 64 }}>{d.status}</span>
               <code style={{ flex: 1 }}>{d.event}</code>
-              <span style={{ color: '#94A3B8' }}>{d.attempts} attempt{d.attempts !== 1 ? 's' : ''}</span>
-              <span style={{ color: '#CBD5E1' }}>{new Date(d.createdAt).toLocaleTimeString('en-IN')}</span>
-              {d.status !== 'success' && <button onClick={() => retry(d.id)} style={{ background: 'none', border: 'none', color: '#4F46E5', cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+              <span style={{ color: '#475569' }}>{d.attempts} attempt{d.attempts !== 1 ? 's' : ''}</span>
+              <span style={{ color: '#64748B' }}>{new Date(d.createdAt).toLocaleTimeString('en-IN')}</span>
+              {d.status !== 'success' && <button onClick={() => retry(d.id)} style={{ background: 'none', border: 'none', color: '#6D28D9', cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
             </div>
           ))}
         </div>

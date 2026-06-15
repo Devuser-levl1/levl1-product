@@ -40,20 +40,20 @@ export function StagesEditor({ stages, onChange }: { stages: string[]; onChange:
             </div>
             <input value={s} onChange={(e) => rename(i, e.target.value)} style={{ flex: 1, padding: '7px 10px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 13 }} />
             {locked
-              ? <span style={{ fontSize: 11, color: '#94A3B8', width: 64, textAlign: 'right' }}>{i === 0 ? 'first' : 'last'}</span>
+              ? <span style={{ fontSize: 11, color: '#475569', width: 64, textAlign: 'right' }}>{i === 0 ? 'first' : 'last'}</span>
               : <button type="button" onClick={() => remove(i)} style={{ width: 64, fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer' }}>remove</button>}
           </div>
         )
       })}
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input value={adding} onChange={(e) => setAdding(e.target.value)} placeholder="New stage name" style={{ flex: 1, padding: '7px 10px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 13 }} />
-        <button type="button" onClick={add} style={{ fontSize: 13, fontWeight: 600, padding: '7px 14px', borderRadius: 6, border: '1px solid #4F46E5', color: '#4F46E5', background: '#fff', cursor: 'pointer' }}>+ Add Stage</button>
+        <button type="button" onClick={add} style={{ fontSize: 13, fontWeight: 600, padding: '7px 14px', borderRadius: 6, border: '1px solid #6D28D9', color: '#6D28D9', background: '#fff', cursor: 'pointer' }}>+ Add Stage</button>
       </div>
-      <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 8 }}>First and last stages cannot be removed. New stages are added before the final stage.</div>
+      <div style={{ fontSize: 11, color: '#475569', marginTop: 8 }}>First and last stages cannot be removed. New stages are added before the final stage.</div>
     </div>
   )
 }
 
 function arrowStyle(disabled: boolean): React.CSSProperties {
-  return { fontSize: 8, lineHeight: 1, padding: '1px 3px', border: 'none', background: 'none', color: disabled ? '#CBD5E1' : '#64748B', cursor: disabled ? 'default' : 'pointer' }
+  return { fontSize: 8, lineHeight: 1, padding: '1px 3px', border: 'none', background: 'none', color: disabled ? '#64748B' : '#64748B', cursor: disabled ? 'default' : 'pointer' }
 }

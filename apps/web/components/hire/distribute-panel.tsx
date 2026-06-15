@@ -13,7 +13,7 @@ interface BoardRow {
 interface PostResult { board: string; postingId?: string; status: string; externalUrl?: string; error?: string; payload?: string }
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
-const btn: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
+const btn: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
 const ghost: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }
 
 function statusPill(status: string) {
@@ -21,7 +21,7 @@ function statusPill(status: string) {
     posted: ['Posted ✓', '#059669', 'rgba(5,150,105,0.1)'],
     manual_pending: ['Manual pending', '#D97706', 'rgba(245,158,11,0.12)'],
     failed: ['Failed', '#DC2626', 'rgba(220,38,38,0.08)'],
-    expired: ['Expired', '#94A3B8', '#F1F5F9'],
+    expired: ['Expired', '#475569', '#F1F5F9'],
     pending: ['Pending', '#64748B', '#F1F5F9'],
   }
   const [label, color, bg] = map[status] ?? [status, '#64748B', '#F1F5F9']
@@ -71,7 +71,7 @@ export function DistributePanel({ jobId }: { jobId: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={card}>
         <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Distribute to job boards</div>
-        <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 14 }}>Select connected boards and post. API-mode boards post live; assisted boards give you a ready-to-paste payload + deep link.</div>
+        <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 14 }}>Select connected boards and post. API-mode boards post live; assisted boards give you a ready-to-paste payload + deep link.</div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {connectable.map((b) => (
@@ -79,7 +79,7 @@ export function DistributePanel({ jobId }: { jobId: string }) {
               <input type="checkbox" disabled={!b.connected} checked={selected.has(b.board)} onChange={() => toggle(b.board)} />
               <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{b.label}</span>
               <span style={{ fontSize: 10.5, fontWeight: 700, color: '#64748B', background: '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>{b.mode === 'api' ? 'API' : 'Assisted'}</span>
-              {!b.connected && <span style={{ fontSize: 11.5, color: '#94A3B8' }}>not connected — <a href="/hire/settings/job-boards" style={{ color: '#4F46E5' }}>connect</a></span>}
+              {!b.connected && <span style={{ fontSize: 11.5, color: '#475569' }}>not connected — <a href="/hire/settings/job-boards" style={{ color: '#6D28D9' }}>connect</a></span>}
               <span style={{ marginLeft: 'auto' }}>{b.posting && statusPill(b.posting.status)}</span>
             </label>
           ))}
@@ -88,7 +88,7 @@ export function DistributePanel({ jobId }: { jobId: string }) {
         {comingSoon.length > 0 && (
           <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {comingSoon.map((b) => (
-              <span key={b.board} style={{ fontSize: 11.5, fontWeight: 600, color: '#94A3B8', background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 100, padding: '4px 12px' }}>{b.label} · coming soon</span>
+              <span key={b.board} style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px dashed #64748B', borderRadius: 100, padding: '4px 12px' }}>{b.label} · coming soon</span>
             ))}
           </div>
         )}
@@ -107,7 +107,7 @@ export function DistributePanel({ jobId }: { jobId: string }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 700, textTransform: 'capitalize' }}>{r.board}</span>
                   {statusPill(r.status)}
-                  {r.externalUrl && <a href={r.externalUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: '#4F46E5', marginLeft: 'auto' }}>Open board →</a>}
+                  {r.externalUrl && <a href={r.externalUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: '#6D28D9', marginLeft: 'auto' }}>Open board →</a>}
                 </div>
                 {r.error && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 4 }}>{r.error}</div>}
                 {r.payload && (
@@ -126,14 +126,14 @@ export function DistributePanel({ jobId }: { jobId: string }) {
       <div style={card}>
         <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>Current postings</div>
         {boards.filter((b) => b.posting).length === 0 ? (
-          <div style={{ fontSize: 13, color: '#94A3B8' }}>Not posted to any board yet.</div>
+          <div style={{ fontSize: 13, color: '#475569' }}>Not posted to any board yet.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {boards.filter((b) => b.posting).map((b) => (
               <div key={b.board} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>{b.label}</span>
                 {statusPill(b.posting!.status)}
-                {b.posting!.externalUrl && <a href={b.posting!.externalUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: '#4F46E5' }}>View →</a>}
+                {b.posting!.externalUrl && <a href={b.posting!.externalUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: '#6D28D9' }}>View →</a>}
                 <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                   {b.posting!.status === 'manual_pending' && <button onClick={() => markPosted(b.posting!.id)} style={ghost}>Mark as posted</button>}
                   {b.posting!.status !== 'expired' && <button onClick={() => expire(b.posting!.id)} style={{ ...ghost, color: '#DC2626' }}>Expire</button>}

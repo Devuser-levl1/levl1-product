@@ -9,8 +9,8 @@ interface Links { linkedin?: string; website?: string; portfolio?: string; twitt
 interface Enrichment { roleFamily: string | null; profile: Profile | null; company: Company | null; github: Github | null; links: Links | null; summary: string | null; status: string; sources: string[]; enrichedAt: string | null }
 
 const purple = '#6D28D9'
-const chip: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#4F46E5', background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '3px 9px' }
-const muted: React.CSSProperties = { fontSize: 12, color: '#94A3B8' }
+const chip: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#6D28D9', background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(109,40,217,0.18)', borderRadius: 100, padding: '3px 9px' }
+const muted: React.CSSProperties = { fontSize: 12, color: '#475569' }
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return <div style={{ marginBottom: 12 }}><div style={{ fontSize: 11, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{title}</div>{children}</div>
@@ -99,7 +99,7 @@ export function EnrichmentPanel({ candidateId }: { candidateId: string }) {
   return (
     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Enrichment{e?.roleFamily ? ` · ${e.roleFamily}` : ''}</div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Enrichment{e?.roleFamily ? ` · ${e.roleFamily}` : ''}</div>
         <button onClick={run} disabled={running} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: '#fff', background: purple, border: 'none', borderRadius: 8, padding: '6px 12px', cursor: running ? 'default' : 'pointer' }}>
           {running ? 'Enriching…' : e ? 'Re-enrich' : 'Enrich'}
         </button>
@@ -114,7 +114,7 @@ export function EnrichmentPanel({ candidateId }: { candidateId: string }) {
             {!e.profile && !e.company && !e.github && !e.summary && (e.links == null || Object.keys(e.links).length === 0) && (
               <div style={muted}>No public signals found for this candidate.</div>
             )}
-            {e.sources.length > 0 && <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 10, paddingTop: 8, borderTop: '1px dashed #E2E8F0' }}>Data from: {e.sources.join(', ')}</div>}
+            {e.sources.length > 0 && <div style={{ fontSize: 11, color: '#475569', marginTop: 10, paddingTop: 8, borderTop: '1px dashed #E2E8F0' }}>Data from: {e.sources.join(', ')}</div>}
           </div>
         )}
     </div>

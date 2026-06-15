@@ -29,7 +29,7 @@ export function ScorecardModal({ interviewId, onClose, onSaved }: { interviewId:
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Overall</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {OVERALL.map(([v, l]) => <button key={v} onClick={() => setOverall(v)} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (overall === v ? '#4F46E5' : '#E2E8F0'), background: overall === v ? 'rgba(79,70,229,0.08)' : '#fff', color: overall === v ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{l}</button>)}
+              {OVERALL.map(([v, l]) => <button key={v} onClick={() => setOverall(v)} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (overall === v ? '#6D28D9' : '#E2E8F0'), background: overall === v ? 'rgba(109,40,217,0.08)' : '#fff', color: overall === v ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>{l}</button>)}
             </div>
           </div>
           <Stars label="Technical" value={technical} onChange={setTechnical} />
@@ -38,7 +38,7 @@ export function ScorecardModal({ interviewId, onClose, onSaved }: { interviewId:
           <textarea style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, minHeight: 70 }} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save Scorecard'}</button>
+            <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save Scorecard'}</button>
           </div>
         </div>
       </div>

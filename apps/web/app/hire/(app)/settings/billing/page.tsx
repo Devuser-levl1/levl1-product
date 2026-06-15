@@ -34,11 +34,11 @@ export default function BillingPage() {
 
   async function upgrade(planId: string) { setBusy(planId); await startHireUpgrade(planId, load); setBusy(null) }
 
-  if (!s) return <div style={{ color: '#94A3B8' }}>Loading…</div>
+  if (!s) return <div style={{ color: '#475569' }}>Loading…</div>
 
   const bar = (used: number, limit: number) => {
     const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
-    const color = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#4F46E5'
+    const color = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#6D28D9'
     return { pct, color }
   }
   const Row = ({ label, used, limit }: { label: string; used: number; limit: number }) => {
@@ -57,10 +57,10 @@ export default function BillingPage() {
 
       <div style={{ ...card, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-          <div><div style={{ fontSize: 12, color: '#94A3B8', textTransform: 'uppercase' }}>Current plan</div><div style={{ fontSize: 20, fontWeight: 800 }}>{s.trialActive ? 'Trial' : s.planName}</div></div>
+          <div><div style={{ fontSize: 12, color: '#475569', textTransform: 'uppercase' }}>Current plan</div><div style={{ fontSize: 20, fontWeight: 800 }}>{s.trialActive ? 'Trial' : s.planName}</div></div>
           {s.trialActive && s.trialDaysLeft != null && <div style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: s.trialDaysLeft <= 2 ? '#DC2626' : s.trialDaysLeft <= 5 ? '#D97706' : '#059669' }}>Trial ends in {s.trialDaysLeft} day{s.trialDaysLeft !== 1 ? 's' : ''}</div>}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 10 }}>Usage this month</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 10 }}>Usage this month</div>
         <Row label="Candidates" used={s.usage.candidates} limit={s.limits.candidatesPerMonth} />
         <Row label="Active jobs" used={s.usage.activeJobs} limit={s.limits.activeJobs} />
         <Row label="Recruiter seats" used={s.usage.seats} limit={s.limits.recruiters} />
@@ -71,12 +71,12 @@ export default function BillingPage() {
         {Object.values(HIRE_PLANS).map((p) => {
           const current = !s.trialActive && s.plan === p.id
           return (
-            <div key={p.id} style={{ ...card, padding: 20, border: `1px solid ${'popular' in p && p.popular ? '#4F46E5' : '#E2E8F0'}` }}>
-              {'popular' in p && p.popular && <div style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', marginBottom: 4 }}>★ Recommended</div>}
+            <div key={p.id} style={{ ...card, padding: 20, border: `1px solid ${'popular' in p && p.popular ? '#6D28D9' : '#E2E8F0'}` }}>
+              {'popular' in p && p.popular && <div style={{ fontSize: 11, fontWeight: 700, color: '#6D28D9', marginBottom: 4 }}>★ Recommended</div>}
               <div style={{ fontSize: 17, fontWeight: 800 }}>{p.name}</div>
-              <div style={{ margin: '6px 0 12px' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{p.priceDisplay}</span><span style={{ fontSize: 13, color: '#94A3B8' }}>/mo</span></div>
+              <div style={{ margin: '6px 0 12px' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{p.priceDisplay}</span><span style={{ fontSize: 13, color: '#475569' }}>/mo</span></div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>{p.features.slice(0, 5).map((f) => <div key={f} style={{ fontSize: 12, color: '#475569' }}>✓ {f}</div>)}</div>
-              <button onClick={() => upgrade(p.id)} disabled={current || busy === p.id} style={{ width: '100%', padding: 10, borderRadius: 8, border: 'none', background: current ? '#F1F5F9' : '#4F46E5', color: current ? '#94A3B8' : '#fff', fontWeight: 700, cursor: current ? 'default' : 'pointer' }}>{current ? 'Current plan' : busy === p.id ? '…' : 'Upgrade'}</button>
+              <button onClick={() => upgrade(p.id)} disabled={current || busy === p.id} style={{ width: '100%', padding: 10, borderRadius: 8, border: 'none', background: current ? '#F1F5F9' : '#6D28D9', color: current ? '#475569' : '#fff', fontWeight: 700, cursor: current ? 'default' : 'pointer' }}>{current ? 'Current plan' : busy === p.id ? '…' : 'Upgrade'}</button>
             </div>
           )
         })}
@@ -84,9 +84,9 @@ export default function BillingPage() {
 
       <div style={{ ...card, marginTop: 16 }}>
         <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Billing history</div>
-        {s.history.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No payments yet.</div> : (
+        {s.history.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No payments yet.</div> : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead><tr style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>{['Date', 'Plan', 'Amount', 'Status'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+            <thead><tr style={{ color: '#475569', fontSize: 11, textTransform: 'uppercase' }}>{['Date', 'Plan', 'Amount', 'Status'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
             <tbody>{s.history.map((h, i) => <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}><td style={{ padding: '8px' }}>{new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td style={{ padding: '8px' }}>{h.planId}</td><td style={{ padding: '8px' }}>₹{(h.amount / 100).toLocaleString('en-IN')}</td><td style={{ padding: '8px', color: '#10B981' }}>{h.status}</td></tr>)}</tbody>
           </table>
         )}

@@ -61,7 +61,7 @@ export function ScheduleInterviewModal({ candidateId, candidateName, jobTitle, o
           {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Scheduling…' : 'Schedule Interview'}</button>
+            <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Scheduling…' : 'Schedule Interview'}</button>
           </div>
         </div>
       </div>

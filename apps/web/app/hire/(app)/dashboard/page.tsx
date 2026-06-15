@@ -26,12 +26,12 @@ export default function HireDashboard() {
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 18px' }}>Dashboard</h1>
 
       {d?.gettingStarted && !(d.gettingStarted.job && d.gettingStarted.candidate && d.gettingStarted.interview && d.gettingStarted.teammate) && (
-        <div style={{ ...card, marginBottom: 16, borderLeft: '3px solid #4F46E5' }}>
+        <div style={{ ...card, marginBottom: 16, borderLeft: '3px solid #6D28D9' }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>Getting started</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
             {([['job', 'Create your first job', '/hire/jobs/new'], ['candidate', 'Add your first candidate', '/hire/candidates'], ['interview', 'Run your first AI interview', '/hire/candidates'], ['teammate', 'Invite a teammate', '/hire/settings']] as const).map(([k, label, href]) => {
               const done = d.gettingStarted![k]
-              return <a key={k} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, textDecoration: 'none', color: done ? '#94A3B8' : '#334155' }}><span style={{ color: done ? '#10B981' : '#CBD5E1' }}>{done ? '✓' : '○'}</span>{label}</a>
+              return <a key={k} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, textDecoration: 'none', color: done ? '#475569' : '#334155' }}><span style={{ color: done ? '#10B981' : '#64748B' }}>{done ? '✓' : '○'}</span>{label}</a>
             })}
           </div>
         </div>
@@ -41,10 +41,10 @@ export default function HireDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <div style={card}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pipeline health</div>
-            <button onClick={() => router.push('/hire/analytics')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>Analytics →</button>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pipeline health</div>
+            <button onClick={() => router.push('/hire/analytics')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#6D28D9', background: 'none', border: 'none', cursor: 'pointer' }}>Analytics →</button>
           </div>
-          {!pipe || pipe.summary.totalCandidates === 0 ? <div style={{ fontSize: 13, color: '#CBD5E1' }}>No candidates yet.</div> : (
+          {!pipe || pipe.summary.totalCandidates === 0 ? <div style={{ fontSize: 13, color: '#64748B' }}>No candidates yet.</div> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {pipe.funnel.map((f, i) => { const max = Math.max(...pipe.funnel.map((x) => x.count), 1); return (
                 <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -57,39 +57,39 @@ export default function HireDashboard() {
           )}
         </div>
         <div style={card}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>This week</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>This week</div>
           <div style={{ display: 'flex', gap: 20 }}>
-            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week ? week.summary.totalCandidates : '—'}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>candidates added</div></div>
-            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week?.summary.avgAiScore ?? '—'}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>avg AI score</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week ? week.summary.totalCandidates : '—'}</div><div style={{ fontSize: 12, color: '#475569' }}>candidates added</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{week?.summary.avgAiScore ?? '—'}</div><div style={{ fontSize: 12, color: '#475569' }}>avg AI score</div></div>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={card}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Open Pipeline</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Open Pipeline</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A' }}>{d ? inr(d.pipeline.openTotal) : '—'}</div>
           <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{d ? `across ${d.pipeline.openCount} deals` : ''}</div>
           {d && (
-            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 8 }}>
+            <div style={{ fontSize: 12, color: '#475569', marginTop: 8 }}>
               {Object.entries(d.pipeline.byStage).map(([s, n]) => `${s}: ${n}`).join('  ·  ') || 'No open deals'}
             </div>
           )}
-          <button onClick={() => router.push('/hire/crm')} style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Pipeline →</button>
+          <button onClick={() => router.push('/hire/crm')} style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: '#6D28D9', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Pipeline →</button>
         </div>
 
         <div style={card}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Won (this month)</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Won (this month)</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#10B981' }}>{d ? inr(d.pipeline.wonMtd) : '—'}</div>
         </div>
       </div>
 
       <div style={{ ...card, marginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Upcoming Interviews</div>
-          <button onClick={() => router.push('/hire/interviews')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Upcoming Interviews</div>
+          <button onClick={() => router.push('/hire/interviews')} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#6D28D9', background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
         </div>
-        {!d || d.upcoming.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No upcoming interviews.</div> : (
+        {!d || d.upcoming.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No upcoming interviews.</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {d.upcoming.map((u) => (
               <div key={u.id} style={{ fontSize: 13, color: '#475569' }}>
@@ -101,13 +101,13 @@ export default function HireDashboard() {
       </div>
 
       <div style={{ ...card, marginTop: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Recent Activity</div>
-        {!d || d.recent.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No recent activity.</div> : (
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Recent Activity</div>
+        {!d || d.recent.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No recent activity.</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {d.recent.map((r, i) => (
               <div key={i} style={{ fontSize: 13, color: '#475569' }}>
-                <span style={{ color: '#CBD5E1', marginRight: 6 }}>•</span>{r.text}
-                <span style={{ color: '#CBD5E1', fontSize: 11, marginLeft: 6 }}>{new Date(r.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                <span style={{ color: '#64748B', marginRight: 6 }}>•</span>{r.text}
+                <span style={{ color: '#64748B', fontSize: 11, marginLeft: 6 }}>{new Date(r.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
               </div>
             ))}
           </div>

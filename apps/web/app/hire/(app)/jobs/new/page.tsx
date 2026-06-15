@@ -96,7 +96,7 @@ export default function NewJobPage() {
           <label style={label}>Job Description</label>
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
             {(['paste', 'upload'] as const).map((m) => (
-              <button key={m} type="button" onClick={() => setJdMode(m)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (jdMode === m ? '#4F46E5' : '#E2E8F0'), background: jdMode === m ? 'rgba(79,70,229,0.08)' : '#fff', color: jdMode === m ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{m === 'paste' ? 'Paste JD' : 'Upload JD (PDF/Word)'}</button>
+              <button key={m} type="button" onClick={() => setJdMode(m)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 8, border: '1px solid ' + (jdMode === m ? '#6D28D9' : '#E2E8F0'), background: jdMode === m ? 'rgba(109,40,217,0.08)' : '#fff', color: jdMode === m ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>{m === 'paste' ? 'Paste JD' : 'Upload JD (PDF/Word)'}</button>
             ))}
           </div>
           {jdMode === 'upload' && (
@@ -104,7 +104,7 @@ export default function NewJobPage() {
               <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={jdParsing} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleJdFile(f) }} style={{ fontSize: 13 }} />
               {jdParsing && <span style={{ fontSize: 13, color: '#64748B', marginLeft: 8 }}>Reading & parsing…</span>}
               {jdNote && !jdParsing && <div style={{ fontSize: 12, color: '#059669', marginTop: 6 }}>✓ {jdNote}</div>}
-              <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB. Text fills the box below; edit as needed.</div>
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB. Text fills the box below; edit as needed.</div>
             </div>
           )}
           <textarea style={{ ...inp, minHeight: 160, resize: 'vertical' }} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Paste the JD here…" />
@@ -119,7 +119,7 @@ export default function NewJobPage() {
         </div>
         {error && <div style={{ color: '#DC2626', fontSize: 13 }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={save} disabled={saving} style={{ padding: '12px 20px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'default' : 'pointer' }}>{saving ? 'Saving…' : 'Publish Job'}</button>
+          <button onClick={save} disabled={saving} style={{ padding: '12px 20px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 14, cursor: saving ? 'default' : 'pointer' }}>{saving ? 'Saving…' : 'Publish Job'}</button>
           <button onClick={() => router.push('/hire/jobs')} style={{ padding: '12px 20px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
         </div>
       </div>

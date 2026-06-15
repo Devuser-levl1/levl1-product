@@ -57,9 +57,12 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
       {/* Sidebar */}
-      <aside style={{ width: 220, background: '#0F172A', color: 'white', padding: '24px 16px', flexShrink: 0 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#818CF8', marginBottom: 32 }}>Levl1 Hire</div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <aside style={{ width: 224, background: '#0F172A', color: 'white', padding: '22px 14px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 28, padding: '0 6px' }}>
+          <span style={{ width: 26, height: 26, borderRadius: 8, background: 'linear-gradient(135deg, #6D28D9, #7C3AED)', transform: 'rotate(45deg)', flexShrink: 0 }} />
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>Levl1 <span style={{ color: '#A78BFA' }}>Hire</span></span>
+        </div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV.map((item) => {
             const active = pathname === item.href
             return (
@@ -68,8 +71,10 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
                 href={item.href}
                 style={{
                   color: active ? '#fff' : '#94A3B8',
-                  background: active ? '#1E293B' : 'transparent',
-                  textDecoration: 'none', padding: '8px 12px', borderRadius: 6, fontSize: 14,
+                  background: active ? 'rgba(124,58,237,0.22)' : 'transparent',
+                  boxShadow: active ? 'inset 2px 0 0 #A78BFA' : 'none',
+                  fontWeight: active ? 700 : 500,
+                  textDecoration: 'none', padding: '9px 12px', borderRadius: 8, fontSize: 13.5, transition: 'background .15s ease',
                 }}
               >
                 {item.label}

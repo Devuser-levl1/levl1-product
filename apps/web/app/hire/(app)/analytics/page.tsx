@@ -99,23 +99,23 @@ export default function AnalyticsPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Analytics</h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 8, padding: 3 }}>
-            {RANGES.map(([label, d]) => <button key={label} onClick={() => setDays(d)} style={{ fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 6, border: 'none', background: days === d ? '#fff' : 'transparent', color: days === d ? '#4F46E5' : '#64748B', cursor: 'pointer', boxShadow: days === d ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>{label}</button>)}
+            {RANGES.map(([label, d]) => <button key={label} onClick={() => setDays(d)} style={{ fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 6, border: 'none', background: days === d ? '#fff' : 'transparent', color: days === d ? '#6D28D9' : '#64748B', cursor: 'pointer', boxShadow: days === d ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>{label}</button>)}
           </div>
           <select value={jobId} onChange={(e) => setJobId(e.target.value)} style={sel}><option value="">All jobs</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
-          <button onClick={exportCsv} disabled={!data} style={{ ...sel, fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Export CSV</button>
+          <button onClick={exportCsv} disabled={!data} style={{ ...sel, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Export CSV</button>
         </div>
       </div>
 
       {/* Show the spinner only on the FIRST load (no data yet). On refetch we
           keep the existing content visible so the page never flickers. */}
-      {status === 'loading' && !data && <div style={{ color: '#94A3B8' }}>Loading…</div>}
+      {status === 'loading' && !data && <div style={{ color: '#475569' }}>Loading…</div>}
 
       {status === 'error' && (
         <div style={{ ...card, textAlign: 'center', padding: '48px 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#B91C1C' }}>Couldn&apos;t load analytics</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>{errMsg || 'Something went wrong.'}</div>
-          <button onClick={load} style={{ marginTop: 16, padding: '8px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}>Retry</button>
+          <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>{errMsg || 'Something went wrong.'}</div>
+          <button onClick={load} style={{ marginTop: 16, padding: '8px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Retry</button>
         </div>
       )}
 
@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
         <div style={{ ...card, textAlign: 'center', padding: '60px 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📊</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#475569' }}>Not enough data yet</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Add candidates and run interviews to see analytics here.</div>
+          <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>Add candidates and run interviews to see analytics here.</div>
         </div>
       )}
 
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
             <H>Source effectiveness</H>
             {data.sources.length === 0 ? <Empty /> : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead><tr style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>{['Source', 'Candidates', 'Avg AI Score', 'Advance Rate'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+                <thead><tr style={{ color: '#475569', fontSize: 11, textTransform: 'uppercase' }}>{['Source', 'Candidates', 'Avg AI Score', 'Advance Rate'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
                 <tbody>
                   {(() => { const best = Math.max(...data.sources.map((s) => s.advanceRate)); return data.sources.map((s) => (
                     <tr key={s.source} style={{ borderTop: '1px solid #F1F5F9' }}>
@@ -194,14 +194,14 @@ export default function AnalyticsPage() {
                 return (
                   <div key={t.stage} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}><span style={{ color: '#334155' }}>{t.stage}</span><span style={{ color: slow ? '#D97706' : '#64748B', fontWeight: slow ? 700 : 400 }}>{t.avgDays}d{slow ? ' ⚠' : ''}</span></div>
-                    <div style={{ height: 10, borderRadius: 5, background: '#F1F5F9', overflow: 'hidden' }}><div style={{ width: `${(t.avgDays / max) * 100}%`, height: '100%', background: slow ? '#F59E0B' : '#4F46E5' }} /></div>
+                    <div style={{ height: 10, borderRadius: 5, background: '#F1F5F9', overflow: 'hidden' }}><div style={{ width: `${(t.avgDays / max) * 100}%`, height: '100%', background: slow ? '#F59E0B' : '#6D28D9' }} /></div>
                   </div>
                 )
               })}
             </div>
             <div style={card}>
               <H>Candidates added / week</H>
-              {data.trend.length === 0 ? <Empty /> : <BarChart items={data.trend.map((t) => ({ label: t.week.split('-')[1], value: t.count }))} color="#4F46E5" />}
+              {data.trend.length === 0 ? <Empty /> : <BarChart items={data.trend.map((t) => ({ label: t.week.split('-')[1], value: t.count }))} color="#6D28D9" />}
             </div>
           </div>
 
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                 <H>Recruiter productivity</H>
                 {data.recruiterActivity.length === 0 ? <Empty /> : (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead><tr style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase' }}>{['Recruiter', 'Moves', 'Interviews', 'Notes'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+                    <thead><tr style={{ color: '#475569', fontSize: 11, textTransform: 'uppercase' }}>{['Recruiter', 'Moves', 'Interviews', 'Notes'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
                     <tbody>{data.recruiterActivity.map((r) => <tr key={r.userId} style={{ borderTop: '1px solid #F1F5F9' }}><td style={{ padding: '8px', fontWeight: 600 }}>{r.name}</td><td style={{ padding: '8px' }}>{r.stageMoves}</td><td style={{ padding: '8px' }}>{r.interviews}</td><td style={{ padding: '8px' }}>{r.notes}</td></tr>)}</tbody>
                   </table>
                 )}
@@ -235,12 +235,12 @@ export default function AnalyticsPage() {
 }
 
 function Kpi({ label, value }: { label: string; value: number | string }) {
-  return <div style={card}><div style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div><div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
+  return <div style={card}><div style={{ fontSize: 11, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div><div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
 }
 function H({ children }: { children: React.ReactNode }) { return <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 14 }}>{children}</div> }
-function Empty({ msg = 'Not enough data yet' }: { msg?: string }) { return <div style={{ fontSize: 13, color: '#CBD5E1', padding: '12px 0' }}>{msg}</div> }
+function Empty({ msg = 'Not enough data yet' }: { msg?: string }) { return <div style={{ fontSize: 13, color: '#64748B', padding: '12px 0' }}>{msg}</div> }
 function Stat({ label, value, sub, color = '#0F172A' }: { label: string; value: string; sub?: string; color?: string }) {
-  return <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={{ fontSize: 13, color: '#64748B', width: 120 }}>{label}</span><span style={{ fontSize: 18, fontWeight: 800, color }}>{value}</span>{sub && <span style={{ fontSize: 12, color: '#94A3B8' }}>{sub}</span>}</div>
+  return <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={{ fontSize: 13, color: '#64748B', width: 120 }}>{label}</span><span style={{ fontSize: 18, fontWeight: 800, color }}>{value}</span>{sub && <span style={{ fontSize: 12, color: '#475569' }}>{sub}</span>}</div>
 }
 function BarChart({ items, color }: { items: { label: string; value: number }[]; color: string }) {
   const max = Math.max(...items.map((i) => i.value), 1)
@@ -250,7 +250,7 @@ function BarChart({ items, color }: { items: { label: string; value: number }[];
         <div key={it.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <div style={{ fontSize: 11, color: '#64748B' }}>{it.value}</div>
           <div style={{ width: '100%', height: `${(it.value / max) * 90}px`, minHeight: 2, background: color, borderRadius: '4px 4px 0 0' }} />
-          <div style={{ fontSize: 10, color: '#94A3B8', textAlign: 'center' }}>{it.label}</div>
+          <div style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>{it.label}</div>
         </div>
       ))}
     </div>

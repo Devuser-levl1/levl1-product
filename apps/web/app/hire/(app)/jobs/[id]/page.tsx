@@ -31,7 +31,7 @@ export default function JobDetailPage() {
     else if (t === 'ai-interview') setTab('AI Interview')
   }, [])
 
-  if (!job) return <div style={{ color: '#94A3B8' }}>Loading…</div>
+  if (!job) return <div style={{ color: '#475569' }}>Loading…</div>
   const applyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/hire/apply/${job.applySlug}`
 
   return (
@@ -42,7 +42,7 @@ export default function JobDetailPage() {
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E2E8F0', marginBottom: 20 }}>
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#4F46E5' : 'transparent'), color: tab === t ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === t ? '#6D28D9' : 'transparent'), color: tab === t ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>{t}</button>
         ))}
       </div>
 
@@ -61,7 +61,7 @@ function Overview({ job }: { job: Job }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={card}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Description</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Description</div>
         <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{job.description}</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
@@ -70,10 +70,10 @@ function Overview({ job }: { job: Job }) {
         <Info label="Client" value={job.client?.name ?? '—'} />
       </div>
       <div style={card}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Pipeline · {job.candidates.length} candidates</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Pipeline · {job.candidates.length} candidates</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {perStage.map((p) => (
-            <span key={p.stage} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'rgba(79,70,229,0.07)', border: '1px solid rgba(79,70,229,0.2)', borderRadius: 100, padding: '5px 12px' }}>{p.stage} · {p.count}</span>
+            <span key={p.stage} style={{ fontSize: 12, fontWeight: 600, color: '#6D28D9', background: 'rgba(109,40,217,0.07)', border: '1px solid rgba(109,40,217,0.2)', borderRadius: 100, padding: '5px 12px' }}>{p.stage} · {p.count}</span>
           ))}
         </div>
       </div>
@@ -81,7 +81,7 @@ function Overview({ job }: { job: Job }) {
   )
 }
 function Info({ label, value }: { label: string; value: string }) {
-  return <div style={card}><div style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
+  return <div style={card}><div style={{ fontSize: 11, color: '#475569', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
 }
 
 function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; reload: () => void }) {
@@ -100,8 +100,8 @@ function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; rel
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>
-        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#94A3B8' }}>Public apply link: <a href={applyUrl} style={{ color: '#4F46E5' }}>{applyUrl}</a></div>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#475569' }}>Public apply link: <a href={applyUrl} style={{ color: '#6D28D9' }}>{applyUrl}</a></div>
       </div>
       {job.stages.map((stage) => {
         const list = job.candidates.filter((c) => c.currentStage === stage)
@@ -112,8 +112,8 @@ function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; rel
             <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12 }}>
               {list.map((c, i) => (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: i < list.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                  <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#0F172A', fontSize: 14 }}>{c.name}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>{c.email}</div></div>
-                  {typeof c.aiScore === 'number' ? <span style={{ fontFamily: 'monospace', fontWeight: 800, color: c.aiScore >= 70 ? '#10B981' : c.aiScore >= 55 ? '#F59E0B' : '#EF4444' }}>{c.aiScore}</span> : <span style={{ fontSize: 12, color: '#CBD5E1' }}>scoring…</span>}
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#0F172A', fontSize: 14 }}>{c.name}</div><div style={{ fontSize: 12, color: '#475569' }}>{c.email}</div></div>
+                  {typeof c.aiScore === 'number' ? <span style={{ fontFamily: 'monospace', fontWeight: 800, color: c.aiScore >= 70 ? '#10B981' : c.aiScore >= 55 ? '#F59E0B' : '#EF4444' }}>{c.aiScore}</span> : <span style={{ fontSize: 12, color: '#64748B' }}>scoring…</span>}
                 </div>
               ))}
             </div>
@@ -130,7 +130,7 @@ function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; rel
             <textarea placeholder="Resume text (optional)" value={form.resumeText} onChange={(e) => set('resumeText', e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, minHeight: 80 }} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={add} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add'}</button>
+              <button onClick={add} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add'}</button>
             </div>
           </div>
         </div>
@@ -175,11 +175,11 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
             {stages.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>Off by default — you stay in control. Applies after an AI interview report syncs back.</div>
+        <div style={{ fontSize: 11, color: '#475569', marginTop: 6 }}>Off by default — you stay in control. Applies after an AI interview report syncs back.</div>
       </div>
       {msg && <div style={{ fontSize: 13, color: msg === 'Saved.' ? '#10B981' : '#DC2626' }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <button onClick={save} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save changes</button>
+        <button onClick={save} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save changes</button>
         {job.status !== 'PAUSED' && <button onClick={() => setStatus('PAUSED')} style={ghostBtn}>Pause</button>}
         {job.status === 'PAUSED' && <button onClick={() => setStatus('ACTIVE')} style={ghostBtn}>Resume</button>}
         {job.status !== 'CLOSED' && <button onClick={() => setStatus('CLOSED')} style={ghostBtn}>Close</button>}

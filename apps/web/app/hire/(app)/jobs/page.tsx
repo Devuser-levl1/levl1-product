@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Job { id: string; title: string; department: string | null; status: string; createdAt: string; _count: { candidates: number }; client: { id: string; name: string } | null }
-const STATUS_COLORS: Record<string, string> = { ACTIVE: '#10B981', PAUSED: '#F59E0B', CLOSED: '#94A3B8' }
+const STATUS_COLORS: Record<string, string> = { ACTIVE: '#10B981', PAUSED: '#F59E0B', CLOSED: '#475569' }
 
 export default function JobsListPage() {
   const router = useRouter()
@@ -35,19 +35,19 @@ export default function JobsListPage() {
     <div style={{ maxWidth: 860 }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Jobs</h1>
-        <button onClick={() => router.push('/hire/jobs/new')} style={{ marginLeft: 'auto', padding: '10px 16px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>+ New Job</button>
+        <button onClick={() => router.push('/hire/jobs/new')} style={{ marginLeft: 'auto', padding: '10px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>+ New Job</button>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(['ALL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const).map((s) => (
-          <button key={s} onClick={() => setFilter(s)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (filter === s ? '#4F46E5' : '#E2E8F0'), background: filter === s ? 'rgba(79,70,229,0.08)' : '#fff', color: filter === s ? '#4F46E5' : '#64748B', cursor: 'pointer' }}>
+          <button key={s} onClick={() => setFilter(s)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (filter === s ? '#6D28D9' : '#E2E8F0'), background: filter === s ? 'rgba(109,40,217,0.08)' : '#fff', color: filter === s ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>
             {s.charAt(0) + s.slice(1).toLowerCase()} ({counts[s]})
           </button>
         ))}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, overflow: 'visible' }}>
-        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>No jobs yet. Create your first one.</div>}
+        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No jobs yet. Create your first one.</div>}
         {shown.map((j, idx) => (
           <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: idx < shown.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -56,7 +56,7 @@ export default function JobsListPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_COLORS[j.status], background: `${STATUS_COLORS[j.status]}1A`, padding: '2px 8px', borderRadius: 100 }}>{j.status.charAt(0) + j.status.slice(1).toLowerCase()}</span>
               </div>
               <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[j.client?.name, j.department].filter(Boolean).join(' · ') || '—'}</div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>{j._count.candidates} candidate{j._count.candidates !== 1 ? 's' : ''} · Created {new Date(j.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{j._count.candidates} candidate{j._count.candidates !== 1 ? 's' : ''} · Created {new Date(j.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
             </div>
             <button onClick={() => router.push(`/hire/jobs/${j.id}`)} style={ghost}>View</button>
             <button onClick={() => router.push(`/hire/jobs/${j.id}?tab=settings`)} style={ghost}>Edit</button>
