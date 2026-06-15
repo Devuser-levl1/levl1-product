@@ -5,12 +5,13 @@ import { StagesEditor } from '@/components/hire/stages-editor'
 import { KanbanBoard, KanbanCandidate, KanbanStage } from '@/components/hire/pipeline/KanbanBoard'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { DistributePanel } from '@/components/hire/distribute-panel'
+import { InterviewSetup } from '@/components/hire/interview-setup'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[] }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
-const TABS = ['Overview', 'Candidates', 'Pipeline', 'Distribute', 'Settings'] as const
+const TABS = ['Overview', 'Candidates', 'Pipeline', 'AI Interview', 'Distribute', 'Settings'] as const
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 24, color: '#475569', fontSize: 14 }
 const ghostBtn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }
 
@@ -24,7 +25,11 @@ export default function JobDetailPage() {
     fetch(`/api/hire/jobs/${id}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setJob(d) }).catch(() => {})
   }, [id])
   useEffect(() => { load() }, [load])
-  useEffect(() => { if (new URLSearchParams(window.location.search).get('tab') === 'settings') setTab('Settings') }, [])
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t === 'settings') setTab('Settings')
+    else if (t === 'ai-interview') setTab('AI Interview')
+  }, [])
 
   if (!job) return <div style={{ color: '#94A3B8' }}>Loading…</div>
   const applyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/hire/apply/${job.applySlug}`
@@ -44,6 +49,7 @@ export default function JobDetailPage() {
       {tab === 'Overview' && <Overview job={job} />}
       {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
       {tab === 'Pipeline' && <PipelineTab jobId={job.id} />}
+      {tab === 'AI Interview' && <InterviewSetup jobId={job.id} jobTitle={job.title} onGoToCandidates={() => setTab('Candidates')} />}
       {tab === 'Distribute' && <DistributePanel jobId={job.id} />}
       {tab === 'Settings' && <Settings job={job} reload={load} onDeleted={() => router.push('/hire/jobs')} />}
     </div>

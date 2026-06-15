@@ -25,7 +25,6 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [showSchedule, setShowSchedule] = useState(false)
   const [triggering, setTriggering] = useState(false)
   const [setupInfo, setSetupInfo] = useState<{ positionId: string; jobId: string } | null>(null)
-  const [settingUp, setSettingUp] = useState(false)
   const [wall, setWall] = useState<string | null>(null)
 
   const load = useCallback(() => {
@@ -55,17 +54,6 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
       load(); onChanged()
     } finally { setTriggering(false) }
   }
-  async function quickSetup() {
-    if (!setupInfo) return
-    setSettingUp(true)
-    try {
-      const res = await fetch(`/api/hire/jobs/${setupInfo.jobId}/setup-interview`, { method: 'POST' })
-      if (!res.ok) { alert('Setup failed'); return }
-      setSetupInfo(null)
-      await triggerInterview()
-    } finally { setSettingUp(false) }
-  }
-
   const stages = c?.job?.stages ?? []
   const link = c?.interviews?.[c.interviews.length - 1] ?? null
 
@@ -115,10 +103,9 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
               )}
               {setupInfo && (
                 <div style={{ border: '1px solid #FDE68A', background: '#FFFBEB', borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#B45309', marginBottom: 6 }}>Set up AI interview for this job</div>
-                  <div style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5, marginBottom: 10 }}>Before running AI interviews for “{c?.job?.title}”, generate &amp; approve a question set. Once approved, every triggered candidate is interviewed automatically.</div>
-                  <button onClick={quickSetup} disabled={settingUp} style={{ width: '100%', padding: '9px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{settingUp ? 'Setting up…' : 'Generate & approve, then trigger →'}</button>
-                  <a href={`/positions/${setupInfo.positionId}`} target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: 12, color: '#4F46E5' }}>Or set up manually in Levl1 Interviews →</a>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#B45309', marginBottom: 6 }}>Approve the questions first</div>
+                  <div style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5, marginBottom: 10 }}>Before running AI interviews for “{c?.job?.title}”, generate and have a human approve the question set. Once approved, you can trigger interviews for any candidate in this job.</div>
+                  <a href={`/hire/jobs/${setupInfo.jobId}?tab=ai-interview`} style={{ display: 'block', textAlign: 'center', padding: '9px', borderRadius: 8, background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Set up &amp; approve questions →</a>
                 </div>
               )}
               {link && (

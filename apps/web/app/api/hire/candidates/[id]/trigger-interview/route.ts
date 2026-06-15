@@ -12,6 +12,7 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
   if (!candidate.job) return NextResponse.json({ error: 'Candidate must be attached to a job' }, { status: 400 })
   if (!candidate.email) return NextResponse.json({ error: 'Candidate email required' }, { status: 400 })
 
+  // TODO: in-built interview billing — PAYG vs monthly bundle (10% off). See backlog.
   const allow = await checkAllowance(ctx.tenantId, 'interview')
   if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
 

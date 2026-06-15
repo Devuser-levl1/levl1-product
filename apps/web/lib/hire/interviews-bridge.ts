@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
 import Anthropic from '@anthropic-ai/sdk'
 import { Prisma } from '@prisma/client'
+import { CLAUDE_MODEL } from '@/lib/ai/model'
 
 /**
  * Tenant → Agency resolution. Each HireTenant that uses Interviews gets a
@@ -55,7 +56,7 @@ export async function ensureInterviewPosition(hireJobId: string, tenantId: strin
   return position.id
 }
 
-type QSet = { technicalQuestions: Prisma.InputJsonValue; scenarioQuestions: Prisma.InputJsonValue; behavioralQuestions: Prisma.InputJsonValue; eqQuestions: Prisma.InputJsonValue; whiteboardQuestions: Prisma.InputJsonValue; timeAllocation: Prisma.InputJsonValue }
+export type QSet = { technicalQuestions: Prisma.InputJsonValue; scenarioQuestions: Prisma.InputJsonValue; behavioralQuestions: Prisma.InputJsonValue; eqQuestions: Prisma.InputJsonValue; whiteboardQuestions: Prisma.InputJsonValue; timeAllocation: Prisma.InputJsonValue }
 
 function defaultQuestions(title: string): QSet {
   const q = (question: string) => ({ question, expectedKeyPoints: [] })
@@ -69,40 +70,50 @@ function defaultQuestions(title: string): QSet {
   }
 }
 
-async function generateQuestions(title: string, jd: string): Promise<QSet> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  const res = await client.messages.create({
-    model: 'claude-sonnet-4-20250514', max_tokens: 1200, temperature: 0.3,
-    messages: [{ role: 'user', content: `Generate interview questions for "${title}". JD: ${jd.slice(0, 1500)}.
+/**
+ * Generate a question set from a job title + JD using Claude, falling back to a
+ * sensible default set if AI is unavailable. Used by BOTH the in-built Hire flow
+ * (which then surfaces it for human review) and the API auto-approve path.
+ */
+export async function generateQuestionSet(title: string, jd: string): Promise<QSet> {
+  if (!process.env.ANTHROPIC_API_KEY) return defaultQuestions(title)
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const res = await client.messages.create({
+      model: CLAUDE_MODEL, max_tokens: 1600, temperature: 0.3,
+      messages: [{ role: 'user', content: `Generate interview questions for "${title}". JD: ${jd.slice(0, 1500)}.
 Return ONLY JSON: {"technicalQuestions":[{"question":"..","expectedKeyPoints":[".."]}],"scenarioQuestions":[...],"behavioralQuestions":[...],"eqQuestions":[...]}
-2-3 questions per section.` }],
-  })
-  const raw = res.content[0].type === 'text' ? res.content[0].text : '{}'
-  const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim())
-  return {
-    technicalQuestions: parsed.technicalQuestions ?? [],
-    scenarioQuestions: parsed.scenarioQuestions ?? [],
-    behavioralQuestions: parsed.behavioralQuestions ?? [],
-    eqQuestions: parsed.eqQuestions ?? [],
-    whiteboardQuestions: [],
-    timeAllocation: { technical: 12, scenario: 8, behavioral: 6, eq: 4 },
+6-7 technical, 2-3 each for scenario / behavioral / eq.` }],
+    })
+    const raw = res.content[0].type === 'text' ? res.content[0].text : '{}'
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim())
+    return {
+      technicalQuestions: parsed.technicalQuestions ?? [],
+      scenarioQuestions: parsed.scenarioQuestions ?? [],
+      behavioralQuestions: parsed.behavioralQuestions ?? [],
+      eqQuestions: parsed.eqQuestions ?? [],
+      whiteboardQuestions: [],
+      timeAllocation: { technical: 12, scenario: 8, behavioral: 6, eq: 4 },
+    }
+  } catch (e) {
+    console.error('[interviews-bridge] QS gen failed, using defaults:', e)
+    return defaultQuestions(title)
   }
 }
 
 /**
- * Ensure an Interviews Position has an APPROVED question set so AI interviews
- * can run without the manual tech-lead/HR approval UI. Used by API-originated
- * interviews (which have no human in the loop). Idempotent.
+ * AUTO-APPROVE path — for API-originated interviews ONLY (no human in the loop,
+ * e.g. an external ATS triggering via the public API). It generates AND approves
+ * the question set so the interview can run immediately.
+ *
+ * Do NOT call this from the in-built Hire UI flow — that flow requires explicit
+ * human (tech-lead / HR) approval via the interview-questions routes.
  */
-export async function ensureApprovedQuestionSet(positionId: string, title: string, description: string): Promise<void> {
+export async function autoApproveForApiInterview(positionId: string, title: string, description: string): Promise<void> {
   const position = await prisma.position.findUnique({ where: { id: positionId }, include: { questionSet: true } })
   if (position?.questionSet && position.techLeadApproved && position.hrApproved) return
 
-  let qs = defaultQuestions(title)
-  if (process.env.ANTHROPIC_API_KEY) {
-    try { qs = await generateQuestions(title, description) }
-    catch (e) { console.error('[interviews-bridge] QS gen failed, using defaults:', e) }
-  }
+  const qs = await generateQuestionSet(title, description)
   await prisma.questionSet.upsert({ where: { positionId }, update: qs, create: { positionId, ...qs } })
   await prisma.position.update({ where: { id: positionId }, data: { techLeadApproved: true, hrApproved: true, status: 'active' } })
 }

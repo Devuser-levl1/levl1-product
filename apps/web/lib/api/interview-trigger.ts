@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import {
   resolveAgencyId, ensureInterviewPosition, ensureInterviewsCandidate,
-  ensureApprovedQuestionSet, triggerInterviewsInvite,
+  autoApproveForApiInterview, triggerInterviewsInvite,
 } from '@/lib/hire/interviews-bridge'
 
 export interface TriggerInput {
@@ -63,7 +63,7 @@ export async function triggerPublicInterview(input: TriggerInput): Promise<Trigg
   }
 
   // 2. Ensure an approved question set so the interview can actually run.
-  await ensureApprovedQuestionSet(positionId, title, jdText)
+  await autoApproveForApiInterview(positionId, title, jdText)
 
   // 3. Mirror the candidate into the Interviews product and create the session.
   const interviewsCandidateId = await ensureInterviewsCandidate(

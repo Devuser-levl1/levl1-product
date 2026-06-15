@@ -521,6 +521,9 @@ model HireJob {
   aiAutoAdvance        Boolean @default(false)
   aiAutoAdvanceThreshold Int   @default(75)
   aiAutoAdvanceStage   String?
+  // In-built AI interview question approval: "single" = one authorized user
+  // approves both gates; "dual" = tech-lead + HR both approve. Default single.
+  approvalMode         String  @default("single")
   autoEmailStage       String?
   autoEmailSubject     String?
   autoEmailBody        String?  @db.Text
