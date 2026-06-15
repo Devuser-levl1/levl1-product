@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
+import { dispatchWebhook, tenantIdForInterview } from '@/lib/api/webhooks'
 
 export async function POST(req: NextRequest) {
   try {
@@ -368,6 +369,34 @@ export async function POST(req: NextRequest) {
           }
         } catch (syncErr) {
           console.error('[generate-report] Hire sync failed (non-fatal):', syncErr)
+        }
+
+        // ── Fire outbound webhooks (interview.completed + report.ready) ──
+        try {
+          const tenantId = await tenantIdForInterview(interviewId)
+          if (tenantId) {
+            const reportAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
+            const base = {
+              interviewId,
+              candidateId: resolvedCandidateId,
+              candidateName,
+              candidateEmail,
+              positionTitle,
+              company,
+              overallScore: weightedScore,
+              recommendation: report.recommendation ?? 'maybe',
+              reportUrl: `${reportAppUrl}/report/${interviewId}`,
+              completedAt: new Date().toISOString(),
+            }
+            await dispatchWebhook(tenantId, 'interview.completed', base)
+            await dispatchWebhook(tenantId, 'report.ready', {
+              ...base,
+              sectionScores: report.sectionScores ?? {},
+              summary: report.professionalSummary ?? '',
+            })
+          }
+        } catch (whErr) {
+          console.error('[generate-report] webhook dispatch failed (non-fatal):', whErr)
         }
       } catch (dbError: unknown) {
         const msg = dbError instanceof Error ? dbError.message : String(dbError)

@@ -422,12 +422,53 @@ model HireTenant {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  users       HireUser[]
-  jobs        HireJob[]
-  candidates  HireCandidate[]
-  clients     HireClient[]
-  deals       HireDeal[]
-  campaigns   HireCampaign[]
+  users           HireUser[]
+  jobs            HireJob[]
+  candidates      HireCandidate[]
+  clients         HireClient[]
+  deals           HireDeal[]
+  campaigns       HireCampaign[]
+  apiKeys         ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
+}
+
+// ── Public API + outbound webhooks (Build 0) ───────────────────────────────
+// Foundation for the standalone Interviews product and the Chrome extension.
+model ApiKey {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String                 // human label e.g. "Bullhorn prod"
+  prefix      String                 // first chars, shown in UI (e.g. "lvl1_ab12")
+  hashedKey   String   @unique       // sha256 hash only — never the raw key
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  @@index([tenantId])
+}
+
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url         String
+  secret      String                 // for HMAC-SHA256 signature
+  events      String[]               // e.g. ["interview.completed","report.ready"]
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  @@index([tenantId])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  endpointId  String
+  event       String
+  payload     Json
+  status      String   @default("pending")  // pending | success | failed
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  @@index([endpointId])
 }
 
 enum HireTenantType {
