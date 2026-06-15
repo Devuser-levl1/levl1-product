@@ -1,29 +1,22 @@
-import { withApiKeyAuth, ok, fail } from '@/lib/api/public-auth'
-import { prisma } from '@/lib/prisma'
+import { withInterviewsApiKeyAuth, ok, fail } from '@/lib/interviews/public-auth'
+import { createApiCandidate } from '@/lib/interviews/public-trigger'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/v1/candidates
- * Create a candidate. Body: { name, email, phone?, resumeUrl?, resumeText? }.
- * Returns: { data: { id } }. Tenant-scoped by API key.
+ * Create a candidate (ATS-agnostic — no Hire data). Body: { name, email, phone?,
+ * resumeText? }. Returns: { data: { id } }. Scoped to the API key's agency.
  */
-export const POST = withApiKeyAuth(async (req, ctx) => {
+export const POST = withInterviewsApiKeyAuth(async (req, ctx) => {
   const body = await req.json().catch(() => null)
   if (!body?.name || !body?.email) return fail(400, 'name and email are required')
 
-  const candidate = await prisma.hireCandidate.create({
-    data: {
-      tenantId: ctx.tenantId,
-      name: String(body.name),
-      email: String(body.email).toLowerCase(),
-      phone: body.phone ? String(body.phone) : null,
-      resumeUrl: body.resumeUrl ? String(body.resumeUrl) : null,
-      resumeText: body.resumeText ? String(body.resumeText) : null,
-      source: 'API',
-      currentStage: 'Sourced',
-    },
-    select: { id: true },
+  const candidate = await createApiCandidate(ctx.agencyId, {
+    name: String(body.name),
+    email: String(body.email),
+    phone: body.phone ? String(body.phone) : null,
+    resumeText: body.resumeText ? String(body.resumeText) : null,
   })
   return ok({ id: candidate.id }, 201)
 })

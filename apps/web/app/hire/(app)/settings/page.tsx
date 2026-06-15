@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { H, PageHeader, Card } from '@/components/ui/hire-kit'
+import { H } from '@/components/ui/hire-tokens'
+import { PageHeader, Card } from '@/components/ui/hire-kit'
 
 export default function HireSettings() {
   const items: [string, string, string][] = [

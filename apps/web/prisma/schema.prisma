@@ -70,6 +70,49 @@ model Agency {
   notifications Notification[]
   teamMembers   TeamMember[]
   clients       Client[]
+  interviewsApiKeys         InterviewsApiKey[]
+  interviewsWebhookEndpoints InterviewsWebhookEndpoint[]
+}
+
+// ── Interviews-owned public-API integration models (Phase 1) ────────────────
+// The standalone Interviews product's own API keys + webhooks, keyed to Agency
+// (the Interviews tenant). Mirrors the Hire-side ApiKey/WebhookEndpoint shape so
+// external ATSs integrate with Interviews directly — no Hire dependency.
+model InterviewsApiKey {
+  id          String   @id @default(cuid())
+  agencyId    String
+  agency      Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  name        String
+  prefix      String
+  hashedKey   String   @unique
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  @@index([agencyId])
+}
+
+model InterviewsWebhookEndpoint {
+  id          String   @id @default(cuid())
+  agencyId    String
+  agency      Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  url         String
+  secret      String
+  events      String[]
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  @@index([agencyId])
+}
+
+model InterviewsWebhookDelivery {
+  id          String   @id @default(cuid())
+  endpointId  String
+  event       String
+  payload     Json
+  status      String   @default("pending") // pending | success | failed
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  @@index([endpointId])
 }
 
 model TeamMember {

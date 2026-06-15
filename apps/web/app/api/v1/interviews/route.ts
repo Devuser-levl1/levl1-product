@@ -1,32 +1,33 @@
-import { withApiKeyAuth, ok, fail } from '@/lib/api/public-auth'
-import { triggerPublicInterview } from '@/lib/api/interview-trigger'
+import { withInterviewsApiKeyAuth, ok, fail } from '@/lib/interviews/public-auth'
+import { triggerInterview } from '@/lib/interviews/public-trigger'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 /**
  * POST /api/v1/interviews
- * Trigger an interview for a candidate against either an existing Hire job or
- * an inline JD (ATS-agnostic). Body:
- *   { candidateId, jobId }            — use a Hire job, OR
- *   { candidateId, title, jdText }    — inline JD, no Hire job needed.
+ * Trigger an interview for a candidate against an inline JD or an existing
+ * Interviews position (ATS-agnostic — no Hire job). Body:
+ *   { candidateId, title, jdText }   — inline JD, OR
+ *   { candidateId, positionId }      — an existing Interviews position.
  * Returns: { data: { interviewId, interviewUrl } }.
  */
-export const POST = withApiKeyAuth(async (req, ctx) => {
+export const POST = withInterviewsApiKeyAuth(async (req, ctx) => {
   const body = await req.json().catch(() => null)
   if (!body?.candidateId) return fail(400, 'candidateId is required')
 
-  const hasJob = !!body.jobId
   const hasInline = !!body.title && !!body.jdText
-  if (!hasJob && !hasInline) return fail(400, 'Provide either jobId, or both title and jdText')
+  const hasPosition = !!body.positionId
+  if (!hasInline && !hasPosition) return fail(400, 'Provide either positionId, or both title and jdText')
 
   try {
-    const result = await triggerPublicInterview({
-      tenantId: ctx.tenantId,
-      hireCandidateId: String(body.candidateId),
-      jobId: hasJob ? String(body.jobId) : null,
+    const result = await triggerInterview({
+      agencyId: ctx.agencyId,
+      candidateId: String(body.candidateId),
       inline: hasInline ? { title: String(body.title), jdText: String(body.jdText) } : null,
+      positionId: hasPosition ? String(body.positionId) : null,
     })
-    return ok({ interviewId: result.interviewId, interviewUrl: result.interviewUrl }, 201)
+    return ok(result, 201)
   } catch (e) {
     return fail(400, e instanceof Error ? e.message : 'Could not trigger interview')
   }

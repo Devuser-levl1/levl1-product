@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { attemptDelivery, MAX_ATTEMPTS } from '@/lib/api/webhooks'
+import { attemptInterviewsDelivery } from '@/lib/interviews/webhooks'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,20 @@ async function run(req: NextRequest) {
     if (okDelivered) succeeded++
   }
 
-  console.log('[cron/retry-webhooks] retried=%d succeeded=%d (of %d pending)', retried, succeeded, pending.length)
-  return NextResponse.json({ retried, succeeded, pending: pending.length })
+  // Interviews-owned deliveries (Phase 1) — same backoff + max attempts.
+  const ivwPending = await prisma.interviewsWebhookDelivery.findMany({
+    where: { status: 'pending', attempts: { lt: MAX_ATTEMPTS } },
+    orderBy: { createdAt: 'asc' }, take: 100,
+  })
+  let ivwRetried = 0, ivwSucceeded = 0
+  for (const d of ivwPending) {
+    const dueAt = d.createdAt.getTime() + Math.pow(Math.max(1, d.attempts), 2) * 60_000
+    if (d.attempts > 0 && dueAt > now) continue
+    ivwRetried++
+    const okDelivered = await attemptInterviewsDelivery(d.id).catch(() => false)
+    if (okDelivered) ivwSucceeded++
+  }
+
+  console.log('[cron/retry-webhooks] hire retried=%d ok=%d | interviews retried=%d ok=%d', retried, succeeded, ivwRetried, ivwSucceeded)
+  return NextResponse.json({ hire: { retried, succeeded, pending: pending.length }, interviews: { retried: ivwRetried, succeeded: ivwSucceeded, pending: ivwPending.length } })
 }

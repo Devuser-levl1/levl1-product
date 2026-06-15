@@ -1,37 +1,15 @@
 'use client'
 import React from 'react'
+import { H } from './hire-tokens'
 
 // ── Levl1 Hire shared UI kit ───────────────────────────────────────────────
 // One design system across the whole platform. Hire's accent is brand VIOLET
 // (#6D28D9 / #7C3AED) — distinct from the Interviews indigo — but the layout,
 // radii, shadows, type scale, spacing and interaction patterns are identical.
-// Import tokens as `H` and reuse these primitives instead of bespoke inline
-// styles, so screens stay consistent.
+// Tokens `H` live in the non-client ./hire-tokens so SERVER components can also
+// import them; this file re-exports them alongside the client-only primitives.
 
-export const H = {
-  // Brand accent (violet)
-  primary: '#6D28D9',
-  primaryBright: '#7C3AED',
-  primary400: '#A78BFA',
-  primaryTint: 'rgba(109,40,217,0.08)',
-  primaryTintBorder: 'rgba(109,40,217,0.20)',
-  // Neutrals (shared platform scale)
-  ink: '#0F172A',     // headings
-  body: '#334155',    // body text
-  muted: '#475569',   // muted text — legibility floor on white (≈7:1)
-  faint: '#64748B',   // secondary muted (≈4.8:1, AA)
-  border: '#E2E8F0',
-  borderLight: '#F1F5F9',
-  surface: '#F8FAFC',
-  white: '#FFFFFF',
-  // Status
-  green: '#059669', amber: '#D97706', red: '#DC2626',
-  // Radius / shadow
-  radius: 14, radiusSm: 10, radiusBtn: 9, pill: 100,
-  shadow: '0 1px 2px rgba(15,23,42,0.04)',
-  shadowCard: '0 1px 3px rgba(15,23,42,0.06)',
-  shadowPop: '0 16px 40px -12px rgba(15,23,42,0.22)',
-} as const
+export { H }
 
 // ── Card ────────────────────────────────────────────────────────────────
 export function Card({ children, style, ...rest }: React.HTMLAttributes<HTMLDivElement>) {

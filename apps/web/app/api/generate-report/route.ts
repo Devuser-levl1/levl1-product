@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { dispatchWebhook, tenantIdForInterview } from '@/lib/api/webhooks'
+import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 
 export async function POST(req: NextRequest) {
   try {
@@ -373,27 +374,35 @@ export async function POST(req: NextRequest) {
 
         // ── Fire outbound webhooks (interview.completed + report.ready) ──
         try {
+          const reportAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
+          const base = {
+            interviewId,
+            candidateId: resolvedCandidateId,
+            candidateName,
+            candidateEmail,
+            positionTitle,
+            company,
+            overallScore: weightedScore,
+            recommendation: report.recommendation ?? 'maybe',
+            reportUrl: `${reportAppUrl}/report/${interviewId}`,
+            completedAt: new Date().toISOString(),
+          }
+          const reportPayload = { ...base, sectionScores: report.sectionScores ?? {}, summary: report.professionalSummary ?? '' }
+
+          // Interviews-owned webhooks (Phase 1) — keyed off the Agency that owns
+          // the interview's Position. This is the standalone-Interviews path.
+          const agencyId = await agencyIdForInterview(interviewId)
+          if (agencyId) {
+            await dispatchInterviewsWebhook(agencyId, 'interview.completed', base)
+            await dispatchInterviewsWebhook(agencyId, 'report.ready', reportPayload)
+          }
+
+          // Hire-side webhooks (legacy coupling) — kept working until Phase 2
+          // removes Hire's in-built interview surface.
           const tenantId = await tenantIdForInterview(interviewId)
           if (tenantId) {
-            const reportAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
-            const base = {
-              interviewId,
-              candidateId: resolvedCandidateId,
-              candidateName,
-              candidateEmail,
-              positionTitle,
-              company,
-              overallScore: weightedScore,
-              recommendation: report.recommendation ?? 'maybe',
-              reportUrl: `${reportAppUrl}/report/${interviewId}`,
-              completedAt: new Date().toISOString(),
-            }
             await dispatchWebhook(tenantId, 'interview.completed', base)
-            await dispatchWebhook(tenantId, 'report.ready', {
-              ...base,
-              sectionScores: report.sectionScores ?? {},
-              summary: report.professionalSummary ?? '',
-            })
+            await dispatchWebhook(tenantId, 'report.ready', reportPayload)
           }
         } catch (whErr) {
           console.error('[generate-report] webhook dispatch failed (non-fatal):', whErr)
