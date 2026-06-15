@@ -18,7 +18,45 @@ export default function DevelopersPage() {
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Developers / API</h1>
       <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 22px' }}>Authenticate the public API (<code>/api/v1</code>) with an API key, and receive interview results via signed webhooks.</p>
       <ApiKeys />
+      <McpCard />
       <Webhooks />
+    </div>
+  )
+}
+
+function McpCard() {
+  const [copied, setCopied] = useState('')
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://levl1.io'
+  const url = `${origin}/api/mcp`
+  const config = `{
+  "mcpServers": {
+    "levl1-hire": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "${url}",
+        "--header", "Authorization: Bearer YOUR_API_KEY"]
+    }
+  }
+}`
+  const copy = (text: string, what: string) => { navigator.clipboard.writeText(text); setCopied(what); setTimeout(() => setCopied(''), 1500) }
+
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>Connect to AI (MCP)</div>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.1)', borderRadius: 100, padding: '2px 8px' }}>New</span>
+      </div>
+      <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 14 }}>Chat with your live Hire data from Claude Desktop, ChatGPT or any MCP client — &ldquo;which candidates for the Backend role scored above 80?&rdquo;. Read-only and scoped to your API key&apos;s account.</div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4 }}>MCP server URL</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <code style={{ flex: 1, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, padding: '8px 10px', fontSize: 12.5 }}>{url}</code>
+        <button style={btn} onClick={() => copy(url, 'url')}>{copied === 'url' ? 'Copied' : 'Copy'}</button>
+      </div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Claude Desktop config (claude_desktop_config.json)</div>
+      <pre style={{ background: '#0F172A', color: '#E2E8F0', borderRadius: 8, padding: 14, fontSize: 11.5, overflowX: 'auto', margin: 0 }}>{config}</pre>
+      <button style={{ ...ghost, marginTop: 8 }} onClick={() => copy(config, 'cfg')}>{copied === 'cfg' ? 'Copied' : 'Copy config'}</button>
+      <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 10 }}>Replace <code>YOUR_API_KEY</code> with a key above. Tools: list_jobs, search_candidates, get_candidate, get_interview_report, pipeline_summary, recent_activity. Read-only — the AI can view but never change your data.</div>
     </div>
   )
 }
