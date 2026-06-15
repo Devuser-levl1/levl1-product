@@ -598,9 +598,27 @@ model HireCandidate {
   activities     HireCandidateActivity[]
   interviews     HireInterviewLink[]
   hireInterviews HireInterview[]
+  enrichment     CandidateEnrichment?
 
   @@index([tenantId])
   @@index([tenantId, jobId])
+}
+
+// ── Candidate enrichment (Build 3) — role-agnostic, public sources only ────
+model CandidateEnrichment {
+  id              String   @id @default(cuid())
+  hireCandidateId String   @unique
+  hireCandidate   HireCandidate @relation(fields: [hireCandidateId], references: [id], onDelete: Cascade)
+  roleFamily      String?  // inferred, for UI emphasis only (never gates providers)
+  profile         Json?    // normalized: title, employer, yearsExp, location, skills[], education[], certifications[]
+  company         Json?    // current employer public context
+  github          Json?    // engineering signal when present
+  links           Json?    // { linkedin, website, portfolio, twitter, github, ... }
+  summary         String?  @db.Text // neutral AI-written summary, labeled AI-generated
+  status          String   @default("pending") // pending | enriched | partial | failed
+  sources         String[] // which providers contributed, for transparency
+  enrichedAt      DateTime?
+  createdAt       DateTime @default(now())
 }
 
 model HireCandidateActivity {

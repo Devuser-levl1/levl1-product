@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
+import { EnrichmentPanel } from '@/components/hire/enrichment-panel'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
 interface InterviewLink {
@@ -95,6 +96,8 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                 </>
               ) : <div style={{ fontSize: 13, color: '#94A3B8' }}>Not scored yet{c.job ? ' — scoring runs shortly after a resume is added.' : ' (link to a job + add resume text to score).'}</div>}
             </Sec>
+
+            <EnrichmentPanel candidateId={c.id} />
 
             <Sec title="Pipeline">
               <div style={{ fontSize: 12, color: '#64748B', marginBottom: 6 }}>{c.job ? c.job.title : 'No job assigned'}</div>
