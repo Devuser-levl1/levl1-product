@@ -29,7 +29,7 @@ export default function HireDashboard() {
         <div style={{ ...card, marginBottom: 16, borderLeft: '3px solid #6D28D9' }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>Getting started</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-            {([['job', 'Create your first job', '/hire/jobs/new'], ['candidate', 'Add your first candidate', '/hire/candidates'], ['interview', 'Run your first AI interview', '/hire/candidates'], ['teammate', 'Invite a teammate', '/hire/settings']] as const).map(([k, label, href]) => {
+            {([['job', 'Create your first job', '/hire/jobs/new'], ['candidate', 'Add your first candidate', '/hire/candidates'], ['interview', 'Schedule your first interview', '/hire/candidates'], ['teammate', 'Invite a teammate', '/hire/settings']] as const).map(([k, label, href]) => {
               const done = d.gettingStarted![k]
               return <a key={k} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, textDecoration: 'none', color: done ? '#475569' : '#334155' }}><span style={{ color: done ? '#10B981' : '#64748B' }}>{done ? '✓' : '○'}</span>{label}</a>
             })}

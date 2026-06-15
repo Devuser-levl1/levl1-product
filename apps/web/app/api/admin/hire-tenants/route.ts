@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(tenants.map((t) => ({
     id: t.id, name: t.name, type: t.type, plan: t.plan, trialActive: t.trialActive,
     trialEndsAt: t.trialEndsAt?.toISOString() ?? null, subscriptionStatus: t.subscriptionStatus,
-    usageCandidates: t.usageCandidatesThisMonth, usageInterviews: t.usageInterviewsThisMonth,
+    usageCandidates: t.usageCandidatesThisMonth,
     users: t._count.users, jobs: t._count.jobs, candidates: t._count.candidates, createdAt: t.createdAt.toISOString(),
   })))
 }

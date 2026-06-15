@@ -27,7 +27,7 @@ export const GET = withHireAuth(async (req, ctx, params) => {
         const plan = HIRE_PLANS[planId as HirePlanId]
         const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         await prisma.$transaction([
-          prisma.hireTenant.update({ where: { id: ctx.tenantId }, data: { plan: planId as HirePlanId, trialActive: false, subscriptionStatus: 'active', currentPeriodEnd: periodEnd, usageCandidatesThisMonth: 0, usageInterviewsThisMonth: 0, usageResetAt: new Date() } }),
+          prisma.hireTenant.update({ where: { id: ctx.tenantId }, data: { plan: planId as HirePlanId, trialActive: false, subscriptionStatus: 'active', currentPeriodEnd: periodEnd, usageCandidatesThisMonth: 0, usageResetAt: new Date() } }),
           prisma.hireBillingEvent.create({ data: { tenantId: ctx.tenantId, orderId, planId, amount: plan.price, status: 'success' } }),
         ]).catch(() => {})
       }

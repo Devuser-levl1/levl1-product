@@ -12,29 +12,6 @@ function sign(secret: string, rawBody: string): string {
 }
 
 /**
- * Resolve the owning HireTenant for an Interviews interview, so report/interview
- * completion (which happens in the Interviews product) can fire tenant-scoped
- * webhooks. Works for both job-based interviews (via HireInterviewLink) and
- * inline-JD API interviews (via Position.agencyId → HireTenant.linkedAgencyId).
- */
-export async function tenantIdForInterview(interviewId: string): Promise<string | null> {
-  const link = await prisma.hireInterviewLink.findFirst({
-    where: { interviewSessionId: interviewId },
-    include: { hireCandidate: { select: { tenantId: true } } },
-  })
-  if (link?.hireCandidate?.tenantId) return link.hireCandidate.tenantId
-
-  const interview = await prisma.interview.findUnique({
-    where: { id: interviewId },
-    include: { position: { select: { agencyId: true } } },
-  })
-  const agencyId = interview?.position?.agencyId
-  if (!agencyId) return null
-  const tenant = await prisma.hireTenant.findFirst({ where: { linkedAgencyId: agencyId }, select: { id: true } })
-  return tenant?.id ?? null
-}
-
-/**
  * Dispatch an event to all active endpoints of a tenant subscribed to it.
  * Creates a WebhookDelivery per endpoint and attempts immediate delivery;
  * failures are left for the retry cron.

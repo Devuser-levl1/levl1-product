@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         where: { id: tenantId },
         data: {
           plan: planId as HirePlanId, trialActive: false, subscriptionStatus: 'active',
-          currentPeriodEnd: periodEnd, usageCandidatesThisMonth: 0, usageInterviewsThisMonth: 0, usageResetAt: new Date(),
+          currentPeriodEnd: periodEnd, usageCandidatesThisMonth: 0, usageResetAt: new Date(),
         },
       }),
       prisma.hireBillingEvent.create({ data: { tenantId, orderId, planId, amount: plan.price, status: 'success' } }),

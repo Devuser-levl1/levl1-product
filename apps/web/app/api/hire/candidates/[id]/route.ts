@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
     where: { id: params.id, tenantId: ctx.tenantId },
-    include: { job: true, activities: { orderBy: { createdAt: 'desc' }, take: 50 }, interviews: true },
+    include: { job: true, activities: { orderBy: { createdAt: 'desc' }, take: 50 } },
   })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(candidate)
@@ -49,7 +49,7 @@ export const DELETE = withHireAuth(async (req, ctx, params) => {
   try { const b = await req.json(); reason = b?.reason ?? '' } catch { /* no body */ }
 
   await prisma.hireCandidateActivity.deleteMany({ where: { candidateId: candidate.id } })
-  await prisma.hireInterviewLink.deleteMany({ where: { hireCandidateId: candidate.id } })
+  await prisma.hireInterview.deleteMany({ where: { candidateId: candidate.id } })
   await prisma.hireCandidate.delete({ where: { id: candidate.id } })
 
   console.log(`[hire] Candidate deleted: ${candidate.name} by user ${ctx.userId}. Reason: ${reason}`)

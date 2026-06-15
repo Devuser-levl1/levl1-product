@@ -32,7 +32,6 @@ export const GET = withHireAuth(async (_req, ctx) => {
     limits,
     usage: {
       candidates: tenant.usageCandidatesThisMonth,
-      interviews: tenant.usageInterviewsThisMonth,
       activeJobs,
       seats,
     },

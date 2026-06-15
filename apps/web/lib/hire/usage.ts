@@ -8,7 +8,6 @@ interface TenantLike {
   trialEndsAt: Date | null
   subscriptionStatus: string | null
   usageCandidatesThisMonth: number
-  usageInterviewsThisMonth: number
   usageResetAt: Date | null
   currentPeriodEnd: Date | null
 }
@@ -27,15 +26,15 @@ function monthsApart(a: Date, b: Date) {
 export async function ensureUsageWindow(tenant: TenantLike): Promise<TenantLike> {
   const now = new Date()
   if (!tenant.usageResetAt || monthsApart(tenant.usageResetAt, now) >= 1) {
-    await prisma.hireTenant.update({ where: { id: tenant.id }, data: { usageCandidatesThisMonth: 0, usageInterviewsThisMonth: 0, usageResetAt: now } })
-    return { ...tenant, usageCandidatesThisMonth: 0, usageInterviewsThisMonth: 0, usageResetAt: now }
+    await prisma.hireTenant.update({ where: { id: tenant.id }, data: { usageCandidatesThisMonth: 0, usageResetAt: now } })
+    return { ...tenant, usageCandidatesThisMonth: 0, usageResetAt: now }
   }
   return tenant
 }
 
 export interface Allowance { allowed: boolean; reason?: string; message?: string }
 
-export async function checkAllowance(tenantId: string, kind: 'candidate' | 'interview' | 'job' | 'seat'): Promise<Allowance> {
+export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job' | 'seat'): Promise<Allowance> {
   const raw = await prisma.hireTenant.findUnique({ where: { id: tenantId } })
   if (!raw) return { allowed: false, reason: 'no_tenant', message: 'Tenant not found' }
   const tenant = await ensureUsageWindow(raw as TenantLike)
@@ -54,8 +53,6 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'inte
 
   if (kind === 'candidate' && tenant.usageCandidatesThisMonth >= limits.candidatesPerMonth)
     return { allowed: false, reason: 'candidate_limit', message: `You've reached ${limits.candidatesPerMonth} candidates this month.` }
-  if (kind === 'interview' && tenant.usageInterviewsThisMonth >= limits.aiInterviewsPerMonth)
-    return { allowed: false, reason: 'interview_limit', message: `You've reached ${limits.aiInterviewsPerMonth} AI interviews this month.` }
   if (kind === 'job') {
     const activeJobs = await prisma.hireJob.count({ where: { tenantId, status: 'ACTIVE' } })
     if (activeJobs >= limits.activeJobs) return { allowed: false, reason: 'job_limit', message: `Your plan allows ${limits.activeJobs} active jobs.` }
@@ -67,9 +64,9 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'inte
   return { allowed: true }
 }
 
-export async function incrementUsage(tenantId: string, kind: 'candidate' | 'interview') {
+export async function incrementUsage(tenantId: string, _kind: 'candidate' = 'candidate') {
   await prisma.hireTenant.update({
     where: { id: tenantId },
-    data: kind === 'candidate' ? { usageCandidatesThisMonth: { increment: 1 } } : { usageInterviewsThisMonth: { increment: 1 } },
+    data: { usageCandidatesThisMonth: { increment: 1 } },
   })
 }

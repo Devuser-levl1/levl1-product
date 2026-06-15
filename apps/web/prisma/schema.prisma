@@ -455,9 +455,7 @@ model HireTenant {
   cashfreeCustomerId   String?
   cashfreeSubId        String?
   subscriptionStatus   String?
-  linkedAgencyId       String?
   usageCandidatesThisMonth Int      @default(0)
-  usageInterviewsThisMonth Int      @default(0)
   usageResetAt             DateTime?
   currentPeriodEnd         DateTime?
   gettingStarted           Json?
@@ -642,7 +640,6 @@ model HireCandidate {
   updatedAt        DateTime   @updatedAt
 
   activities     HireCandidateActivity[]
-  interviews     HireInterviewLink[]
   hireInterviews HireInterview[]
   enrichment     CandidateEnrichment?
 
@@ -766,31 +763,6 @@ enum HireInterviewStatus {
 }
 
 // Integration join — links Hire candidate to Levl1 Interviews session
-model HireInterviewLink {
-  id                 String        @id @default(cuid())
-  hireCandidateId    String
-  hireCandidate      HireCandidate @relation(fields: [hireCandidateId], references: [id])
-  interviewSessionId String        // FK to Interview.id in the Interviews product
-  positionId         String?       // Interviews Position.id used for this interview
-  status             String        @default("pending") // pending | scheduled | in_progress | completed | failed
-  scorecard          Json?         // synced summary from the Interviews Report
-  overallScore       Int?          // denormalized for quick display in Hire
-  recommendation     String?       // strong_yes | yes | maybe | no
-  reportUrl          String?       // link to the full white-label report
-  syncedAt           DateTime?
-  createdAt          DateTime      @default(now())
-
-  @@index([hireCandidateId])
-  @@index([interviewSessionId])
-}
-
-model HireJobPositionMap {
-  id         String   @id @default(cuid())
-  hireJobId  String   @unique
-  positionId String
-  createdAt  DateTime @default(now())
-}
-
 model HireCampaign {
   id          String               @id @default(cuid())
   tenantId    String

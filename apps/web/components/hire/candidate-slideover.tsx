@@ -1,18 +1,13 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
-import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 import { EnrichmentPanel } from '@/components/hire/enrichment-panel'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
-interface InterviewLink {
-  id: string; status: string; overallScore: number | null; recommendation: string | null; reportUrl: string | null
-  scorecard: { sectionScores?: Record<string, { score: number }>; l2Recommended?: boolean } | null
-}
 interface Candidate {
   id: string; name: string; email: string; phone: string | null; currentTitle: string | null; currentCompany: string | null; linkedinUrl: string | null
   currentStage: string; aiScore: number | null; aiSummary: string | null; aiRecommendation: string | null; source: string | null
-  skills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]; interviews: InterviewLink[]
+  skills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]
 }
 
 const REC: Record<string, string> = { strong_yes: 'Strong Yes', yes: 'Yes', maybe: 'Maybe', no: 'No' }
@@ -23,9 +18,6 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [note, setNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
-  const [triggering, setTriggering] = useState(false)
-  const [setupInfo, setSetupInfo] = useState<{ positionId: string; jobId: string } | null>(null)
-  const [wall, setWall] = useState<string | null>(null)
 
   const load = useCallback(() => {
     fetch(`/api/hire/candidates/${candidateId}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setC(d) }).catch(() => {})
@@ -43,19 +35,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
     setNote(''); setSavingNote(false); load()
   }
 
-  async function triggerInterview() {
-    setTriggering(true); setSetupInfo(null)
-    try {
-      const res = await fetch(`/api/hire/candidates/${candidateId}/trigger-interview`, { method: 'POST' })
-      const data = await res.json()
-      if (res.status === 409 && data.error === 'question_set_not_ready') { setSetupInfo({ positionId: data.positionId, jobId: data.jobId }); return }
-      if (res.status === 402) { setWall(data.message ?? 'Upgrade to run more AI interviews.'); return }
-      if (!res.ok) { alert(data.error ?? 'Could not trigger interview'); return }
-      load(); onChanged()
-    } finally { setTriggering(false) }
-  }
   const stages = c?.job?.stages ?? []
-  const link = c?.interviews?.[c.interviews.length - 1] ?? null
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-end' }}>
@@ -97,39 +77,6 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
               <button onClick={() => setShowSchedule(true)} style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Schedule Interview</button>
             </Sec>
 
-            <Sec title="AI Interview (Levl1)">
-              {!link && !setupInfo && (
-                <button onClick={triggerInterview} disabled={triggering} style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{triggering ? 'Triggering…' : 'Trigger AI Interview'}</button>
-              )}
-              {setupInfo && (
-                <div style={{ border: '1px solid #FDE68A', background: '#FFFBEB', borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#B45309', marginBottom: 6 }}>Approve the questions first</div>
-                  <div style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5, marginBottom: 10 }}>Before running AI interviews for “{c?.job?.title}”, generate and have a human approve the question set. Once approved, you can trigger interviews for any candidate in this job.</div>
-                  <a href={`/hire/jobs/${setupInfo.jobId}?tab=ai-interview`} style={{ display: 'block', textAlign: 'center', padding: '9px', borderRadius: 8, background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Set up &amp; approve questions →</a>
-                </div>
-              )}
-              {link && (
-                <div>
-                  <div style={{ fontSize: 13, color: '#334155', marginBottom: 6 }}>Status: <strong style={{ textTransform: 'capitalize' }}>{link.status.replace('_', ' ')}</strong></div>
-                  {link.status === 'completed' ? (
-                    <>
-                      <div style={{ fontSize: 13, color: '#475569' }}>Overall: <strong style={{ color: link.overallScore != null ? scoreColor(link.overallScore) : '#64748B' }}>{link.overallScore ?? '—'}/100</strong>{link.recommendation ? ` · ${REC[link.recommendation] ?? link.recommendation}` : ''}</div>
-                      {link.scorecard?.l2Recommended != null && <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>L2 Recommended: {link.scorecard.l2Recommended ? '✓' : '—'}</div>}
-                      {link.scorecard?.sectionScores && <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>{Object.entries(link.scorecard.sectionScores).map(([k, v]) => `${k} ${v.score}`).join(' · ')}</div>}
-                      {link.reportUrl && <a href={link.reportUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>View Full Report →</a>}
-                    </>
-                  ) : link.status === 'failed' ? (
-                    <button onClick={triggerInterview} disabled={triggering} style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid #DC2626', background: '#fff', color: '#DC2626', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Retry</button>
-                  ) : (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, color: '#64748B' }}>{link.status === 'in_progress' ? 'Interview in progress…' : 'Invite sent — awaiting candidate'}</span>
-                      {link.status !== 'in_progress' && <button onClick={triggerInterview} disabled={triggering} style={{ marginLeft: 'auto', ...selectStyle, width: 'auto', fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Resend</button>}
-                    </div>
-                  )}
-                </div>
-              )}
-            </Sec>
-
             <Sec title="Contact">
               <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.7 }}>
                 {c.email}{c.phone ? ` · ${c.phone}` : ''}
@@ -159,7 +106,6 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
           </div>
         )}
       </div>
-      {wall && <HireUpgradeWall message={wall} onClose={() => setWall(null)} />}
       {showSchedule && c && (
         <ScheduleInterviewModal
           candidateId={c.id}

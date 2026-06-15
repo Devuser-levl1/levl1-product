@@ -64,7 +64,6 @@ export async function getCandidate(tenantId: string, candidateId: string) {
     where: { id: candidateId, tenantId },
     include: {
       job: { select: { title: true } },
-      interviews: { orderBy: { createdAt: 'desc' }, take: 3 },
       enrichment: true,
     },
   })
@@ -75,7 +74,6 @@ export async function getCandidate(tenantId: string, candidateId: string) {
     stage: c.currentStage, job: c.job?.title ?? null,
     aiScore: c.aiScore, aiRecommendation: c.aiRecommendation, aiSummary: c.aiSummary,
     skills: Array.isArray(c.skills) ? c.skills : [],
-    interviews: c.interviews.map((i) => ({ interviewId: i.interviewSessionId, status: i.status, overallScore: i.overallScore, recommendation: i.recommendation, reportUrl: i.reportUrl })),
     enrichment: c.enrichment ? {
       roleFamily: c.enrichment.roleFamily, status: c.enrichment.status,
       profile: c.enrichment.profile, company: c.enrichment.company, github: c.enrichment.github,
@@ -85,27 +83,21 @@ export async function getCandidate(tenantId: string, candidateId: string) {
 }
 
 export async function getInterviewReport(tenantId: string, interviewId: string) {
-  // Tenant ownership: the interview must belong to one of this tenant's candidates.
-  const link = await prisma.hireInterviewLink.findFirst({
-    where: { interviewSessionId: interviewId, hireCandidate: { tenantId } },
-    include: { hireCandidate: { select: { name: true } } },
+  // A scheduled interview + its recruiter scorecard (tenant-scoped via candidate).
+  const interview = await prisma.hireInterview.findFirst({
+    where: { id: interviewId, candidate: { tenantId } },
+    include: { candidate: { select: { name: true, job: { select: { title: true } } } } },
   })
-  if (!link) return null
-  const interview = await prisma.interview.findUnique({ where: { id: interviewId }, select: { candidateId: true } })
   if (!interview) return null
-  const report = await prisma.report.findUnique({ where: { candidateId: interview.candidateId } })
-  if (!report) return { interviewId, candidate: link.hireCandidate.name, status: link.status, reportReady: false }
   return {
-    interviewId,
-    candidate: link.hireCandidate.name,
-    overallScore: report.overallScore,
-    recommendation: report.recommendation,
-    professionalSummary: report.professionalSummary,
-    sectionScores: report.sectionScores,
-    strengthAreas: report.strengthAreas,
-    concernAreas: report.concernAreas,
-    hrNote: report.hrNote,
-    generatedAt: report.generatedAt,
+    interviewId: interview.id,
+    candidate: interview.candidate.name,
+    job: interview.candidate.job?.title ?? null,
+    type: interview.type,
+    status: interview.status,
+    scheduledAt: interview.scheduledAt,
+    interviewers: interview.interviewers,
+    scorecard: interview.scorecard,
   }
 }
 
@@ -137,21 +129,20 @@ export async function pipelineSummary(tenantId: string, args: { jobId?: string }
 export async function recentActivity(tenantId: string, args: { days?: number }) {
   const days = Math.min(90, Math.max(1, args.days ?? 7))
   const cutoff = new Date(Date.now() - days * 86400000)
-  const completed = await prisma.hireInterviewLink.findMany({
-    where: { hireCandidate: { tenantId }, status: 'completed', syncedAt: { gte: cutoff } },
-    include: { hireCandidate: { select: { name: true, job: { select: { title: true } } } } },
-    orderBy: { syncedAt: 'desc' },
+  const completed = await prisma.hireInterview.findMany({
+    where: { candidate: { tenantId }, status: 'COMPLETED', scheduledAt: { gte: cutoff } },
+    include: { candidate: { select: { name: true, job: { select: { title: true } } } } },
+    orderBy: { scheduledAt: 'desc' },
     take: 50,
   })
   return {
     sinceDays: days,
-    completedInterviews: completed.map((l) => ({
-      candidate: l.hireCandidate.name,
-      job: l.hireCandidate.job?.title ?? null,
-      overallScore: l.overallScore,
-      recommendation: l.recommendation,
-      reportUrl: l.reportUrl,
-      completedAt: l.syncedAt,
+    completedInterviews: completed.map((i) => ({
+      candidate: i.candidate.name,
+      job: i.candidate.job?.title ?? null,
+      type: i.type,
+      scorecard: i.scorecard,
+      completedAt: i.scheduledAt,
     })),
   }
 }

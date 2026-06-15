@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!PLANS.includes(plan)) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   await prisma.hireTenant.update({
     where: { id: params.id },
-    data: { plan, trialActive: false, subscriptionStatus: 'active', currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), usageCandidatesThisMonth: 0, usageInterviewsThisMonth: 0, usageResetAt: new Date() },
+    data: { plan, trialActive: false, subscriptionStatus: 'active', currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), usageCandidatesThisMonth: 0, usageResetAt: new Date() },
   })
   return NextResponse.json({ ok: true, plan })
 }

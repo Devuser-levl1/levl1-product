@@ -44,7 +44,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
   const [jobCount, candCount, linkCount, userCount] = await Promise.all([
     prisma.hireJob.count({ where: { tenantId: ctx.tenantId } }),
     prisma.hireCandidate.count({ where: { tenantId: ctx.tenantId } }),
-    prisma.hireInterviewLink.count({ where: { hireCandidate: { tenantId: ctx.tenantId } } }),
+    prisma.hireInterview.count({ where: { candidate: { tenantId: ctx.tenantId } } }),
     prisma.hireUser.count({ where: { tenantId: ctx.tenantId } }),
   ])
   const gettingStarted = { job: jobCount > 0, candidate: candCount > 0, interview: linkCount > 0, teammate: userCount > 1 }
