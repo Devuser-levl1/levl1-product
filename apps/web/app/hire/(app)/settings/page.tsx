@@ -5,6 +5,7 @@ const card: React.CSSProperties = { display: 'block', background: '#fff', border
 export default function HireSettings() {
   const items: [string, string, string][] = [
     ['Billing & plan', 'Manage your plan, usage and invoices.', '/hire/settings/billing'],
+    ['Job Boards', 'Connect LinkedIn, Indeed, Naukri & more for one-click posting.', '/hire/settings/job-boards'],
     ['Developers / API', 'API keys & outbound webhooks for integrations.', '/hire/settings/developers'],
   ]
   return (

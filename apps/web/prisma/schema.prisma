@@ -430,6 +430,7 @@ model HireTenant {
   campaigns       HireCampaign[]
   apiKeys         ApiKey[]
   webhookEndpoints WebhookEndpoint[]
+  jobBoardConnectors JobBoardConnector[]
 }
 
 // ── Public API + outbound webhooks (Build 0) ───────────────────────────────
@@ -530,8 +531,36 @@ model HireJob {
   updatedAt   DateTime      @updatedAt
 
   candidates  HireCandidate[]
+  postings    JobPosting[]
 
   @@index([tenantId])
+}
+
+// ── Multi-board job distribution (Build 1) ─────────────────────────────────
+model JobBoardConnector {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      HireTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  board       String                 // "linkedin" | "indeed" | "naukri" | ...
+  mode        String   @default("assisted") // "api" | "assisted"
+  credentials Json?                  // encrypted per-tenant creds when in api mode
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  @@unique([tenantId, board])
+}
+
+model JobPosting {
+  id          String   @id @default(cuid())
+  hireJobId   String
+  hireJob     HireJob  @relation(fields: [hireJobId], references: [id], onDelete: Cascade)
+  board       String
+  status      String   @default("pending") // pending | posted | manual_pending | failed | expired
+  externalId  String?                // board's post id when available
+  externalUrl String?
+  postedAt    DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  @@index([hireJobId])
 }
 
 enum HireJobStatus {
