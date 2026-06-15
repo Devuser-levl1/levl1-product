@@ -93,5 +93,13 @@ export function getSessionFromRequest(req: Request): SessionPayload | null {
   const cookieHeader = req.headers.get('cookie')
   const token = getTokenFromHeader(cookieHeader)
   if (!token) return null
-  return verifyJWT(token)
+  const payload = verifyJWT(token)
+  if (!payload) return null
+  // Levl1 SSO entitlement gate: a unified token carries `ent`. Block Interviews
+  // access when the account isn't entitled to Interviews (and require an agency
+  // context). Legacy tokens (no `ent`) are unaffected.
+  const ent = (payload as unknown as { ent?: { interviews?: boolean } }).ent
+  if (ent && ent.interviews === false) return null
+  if (!payload.agencyId) return null
+  return payload
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { verifyLevlSession, SESSION_COOKIE } from '@/lib/levl-sso'
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'levl1-dev-secret-change-in-production-please'
@@ -45,10 +46,24 @@ function verifyHireToken(token: string): HireTokenPayload | null {
 
 export function getHireContext(req: NextRequest): HireContext | null {
   try {
+    // 1. Unified Levl1 SSO session — preferred when present. Resolves the Hire
+    //    context from the namespaced fields and ENFORCES the Hire entitlement:
+    //    a Levl1 account not entitled to Hire gets no Hire access.
+    const unifiedToken = req.cookies.get(SESSION_COOKIE)?.value
+      ?? (req.headers.get('authorization')?.startsWith('Bearer ') ? req.headers.get('authorization')!.slice(7) : null)
+    if (unifiedToken) {
+      const u = verifyLevlSession(unifiedToken)
+      if (u && u.ent && u.hireTenantId && u.hireUserId) {
+        if (!u.ent.hire) return null // explicitly not entitled to Hire
+        return { userId: u.hireUserId, tenantId: u.hireTenantId, role: u.hireRole ?? 'recruiter' }
+      }
+      // A unified token present but without Hire context falls through to legacy.
+    }
+
+    // 2. Legacy hire_token (Authorization Bearer or cookie) — kept for transition.
     const authHeader = req.headers.get('authorization')
     let token: string | null = null
     if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7)
-    // Fallback to a cookie so browser navigations work without a header.
     if (!token) token = req.cookies.get('hire_token')?.value ?? null
     if (!token) return null
 

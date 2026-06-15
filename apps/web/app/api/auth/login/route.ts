@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { signJWT, buildSessionCookie } from '@/lib/auth'
+import { linkInterviewsLogin, unifiedPayloadFor, signLevlSession, buildSessionCookie } from '@/lib/levl-sso'
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,13 +31,11 @@ export async function POST(req: NextRequest) {
       data:  { lastLoginAt: new Date() },
     })
 
-    const token = signJWT({
-      userId:   user.id,
-      agencyId: user.agencyId,
-      email:    user.email,
-      role:     user.role,
-      name:     user.name,
-    })
+    // Levl1 SSO: record the Interviews side of this account and issue the
+    // unified session (carries any linked Hire entitlement → access both
+    // products with one login).
+    const account = await linkInterviewsLogin(user.email, user.id, user.agencyId)
+    const token = signLevlSession(unifiedPayloadFor(account, user.name))
 
     const now           = new Date()
     const trialDaysLeft = user.agency.trialExpiresAt

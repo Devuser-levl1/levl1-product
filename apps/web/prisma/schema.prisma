@@ -75,6 +75,26 @@ model Agency {
   atsConnections            AtsConnection[]
 }
 
+// ── Levl1 SSO: unified identity + entitlements (Phase 4) ───────────────────
+// Links a customer's Hire identity and Interviews identity (same email) and
+// records what they're entitled to. One Levl1 account → both products when
+// entitled.
+model LevlAccount {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  // Hire side
+  hireUserId       String?  @unique
+  hireTenantId     String?
+  // Interviews side
+  interviewsUserId String?  @unique
+  agencyId         String?
+  // Entitlements (what they've bought / opted into)
+  entHire          Boolean  @default(false)
+  entInterviews    Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 // ── ATS connector framework (Phase 3) ──────────────────────────────────────
 // Lets an Interviews customer connect an external ATS (or Levl1 Hire) and FETCH
 // jobs + candidates into Interviews to screen. Tied to Agency.
