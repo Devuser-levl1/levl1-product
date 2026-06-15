@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Levl1 Hire — Candidate Capture",
+  "version": "1.0.0",
+  "description": "Capture a candidate from a LinkedIn profile (or any page) into Levl1 Hire in one click — optionally trigger an AI interview.",
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "options_page": "options.html",
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://levl1.io/*",
+    "https://*.levl1.io/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/in/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

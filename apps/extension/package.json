@@ -1,0 +1,24 @@
+{
+  "name": "levl1-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Levl1 Hire candidate-capture Chrome extension (MV3). Packaged separately — not deployed on Render.",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "icons": "node gen-icons.mjs",
+    "zip": "node build.mjs && cd dist && zip -r ../levl1-extension.zip . -x '*.DS_Store' && cd ..",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
