@@ -22,6 +22,13 @@ interface RawCandidate {
   resumeText?: string | null
 }
 
+// Turn an uploaded file name into a human-ish candidate name when we couldn't
+// read a real name from the file ("Jane_Doe_CV.pdf" → "Jane Doe Cv").
+function nameFromFile(fileName?: string | null): string {
+  const base = (fileName || '').replace(/\.[^.]+$/, '').replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ').trim()
+  return base || 'Unknown candidate'
+}
+
 export const POST = withHireAuth(async (req, ctx) => {
   const contentType = req.headers.get('content-type') ?? ''
 
@@ -69,16 +76,23 @@ export const POST = withHireAuth(async (req, ctx) => {
     if (!allow.allowed) { results.errors.push(allow.message ?? 'Plan limit reached'); break }
     try {
       let data: RawCandidate = raw
+      // Even an unreadable file (OCR/vision also yielded nothing) must NOT be
+      // silently dropped (P0-5) — we still create the record, named from the
+      // file, and flag it 'could not read resume' for manual review.
+      let unreadable = false
       if (importType === 'resumes') {
-        // ONLY a truly empty / unreadable file fails — a parsed name with no
-        // email is still a valid sourced candidate.
-        if (!raw.resumeText) { results.failed++; results.errors.push(`${raw.name || 'File'}: empty or unreadable file`); continue }
+        if (!raw.resumeText) {
+          unreadable = true
+          data = { name: nameFromFile(raw.name), resumeText: null }
+        } else {
         const extracted = await extractCandidateFromResume(raw.resumeText, raw.name || 'resume')
         data = { ...extracted, resumeText: raw.resumeText }
+        if (!data.name) data.name = nameFromFile(raw.name)
         if (index === 0) {
           console.log('[hire/bulk] first candidate diagnostics — resumeTextLen=%d parsed=%j',
             raw.resumeText.length,
             { name: extracted.name, email: extracted.email, phone: extracted.phone, title: extracted.currentTitle, company: extracted.currentCompany, years: extracted.totalYears, skills: extracted.topSkills })
+        }
         }
       }
       index++
@@ -124,6 +138,14 @@ export const POST = withHireAuth(async (req, ctx) => {
         results.needsReview++
         await prisma.hireCandidateActivity.create({
           data: { candidateId: candidate.id, type: 'note', note: 'Needs review — email not detected, please add', userId: ctx.userId },
+        })
+      }
+      // The file itself couldn't be read (image-only with no OCR result, or
+      // corrupt) — record exists but flagged so it isn't silently lost.
+      if (unreadable) {
+        if (email) results.needsReview++
+        await prisma.hireCandidateActivity.create({
+          data: { candidateId: candidate.id, type: 'note', note: 'Needs review — could not read resume (image-only or corrupt file); please add details manually', userId: ctx.userId },
         })
       }
       await incrementUsage(ctx.tenantId, 'candidate')

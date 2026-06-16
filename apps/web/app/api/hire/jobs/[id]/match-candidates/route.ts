@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { matchCandidatesToJob, verdictToRecommendation, CandidateForMatch, JobForMatch } from '@/lib/hire/ai-matching'
+import { matchCandidatesToJob, verdictToRecommendation, coerceRubric, CandidateForMatch, JobForMatch } from '@/lib/hire/ai-matching'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const POOL_CAP = 60
 
-function toJob(j: { id: string; title: string; description: string; mustHaveSkills: string[]; niceToHaveSkills: string[]; screeningCriteria: string[] }): JobForMatch {
-  return { id: j.id, title: j.title, description: j.description, mustHaveSkills: j.mustHaveSkills, niceToHaveSkills: j.niceToHaveSkills, screeningCriteria: j.screeningCriteria }
+function toJob(j: { id: string; title: string; description: string; mustHaveSkills: string[]; niceToHaveSkills: string[]; screeningCriteria: string[]; rubric: unknown }): JobForMatch {
+  return { id: j.id, title: j.title, description: j.description, mustHaveSkills: j.mustHaveSkills, niceToHaveSkills: j.niceToHaveSkills, screeningCriteria: j.screeningCriteria, rubric: coerceRubric(j.rubric) }
 }
 
 // POST — rank the candidate pool for this job, cache to HireMatch, return ranked.

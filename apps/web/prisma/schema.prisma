@@ -621,6 +621,10 @@ model HireJob {
   screeningCriteria    String[]
   interviewFocus       String[]
   aiGenerated          Boolean @default(false)
+  // Recruiter-defined weighted screening rubric — the canonical thing AI scores
+  // candidates against. Json array of { skill, weight (1-5), required (bool) }.
+  // Empty/null → scoring falls back to mustHave/niceToHave + description.
+  rubric               Json?
   // In-built AI interview question approval: "single" = one authorized user
   // approves both gates; "dual" = tech-lead + HR both approve. Default single.
   approvalMode         String  @default("single")

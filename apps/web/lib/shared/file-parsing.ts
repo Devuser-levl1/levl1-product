@@ -43,11 +43,28 @@ export async function extractTextFromFile(
     return cleanText(result.value)
   }
 
-  // PDF
+  // PDF — fast path is pdf-parse. Image-based PDFs (scanned / photographed /
+  // Canva-exported) have NO text layer, so pdf-parse returns ~nothing → fall
+  // back to Claude vision OCR. We only OCR when the fast path comes up empty,
+  // so text PDFs stay on the cheap, instant path.
   if (name.endsWith('.pdf') || mimeType === 'application/pdf') {
     const parser = new PDFParse({ data: new Uint8Array(buffer) })
     const result = await parser.getText()
-    return cleanText(result.text)
+    const text = cleanText(result.text)
+    if (text.length >= OCR_MIN_CHARS) return text
+    console.warn('[file-parsing] PDF %s yielded %d chars from pdf-parse — image-based, falling back to Claude vision OCR', fileName, text.length)
+    const ocr = await visionExtractText(buffer, 'application/pdf')
+    console.log('[file-parsing] vision OCR for %s produced %d chars', fileName, ocr.length)
+    return ocr || text
+  }
+
+  // Image resume uploads (phone photos / screenshots) — vision OCR directly.
+  const imageMime = imageMediaType(name, mimeType)
+  if (imageMime) {
+    console.warn('[file-parsing] image file %s (%s) — using Claude vision OCR', fileName, imageMime)
+    const ocr = await visionExtractText(buffer, imageMime)
+    console.log('[file-parsing] vision OCR for image %s produced %d chars', fileName, ocr.length)
+    return ocr
   }
 
   // Plain text
@@ -56,6 +73,69 @@ export async function extractTextFromFile(
   }
 
   throw new Error(`Unsupported file type: ${fileName}`)
+}
+
+// A PDF page (or image) with fewer than this many extractable chars is treated
+// as image-based and routed to OCR.
+const OCR_MIN_CHARS = 50
+
+function imageMediaType(name: string, mimeType: string): 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif' | null {
+  if (name.endsWith('.png') || mimeType === 'image/png') return 'image/png'
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg') || mimeType === 'image/jpeg') return 'image/jpeg'
+  if (name.endsWith('.webp') || mimeType === 'image/webp') return 'image/webp'
+  if (name.endsWith('.gif') || mimeType === 'image/gif') return 'image/gif'
+  return null
+}
+
+/**
+ * OCR fallback via Claude vision. Sends the raw PDF (as a document block) or an
+ * image (as an image block) to Claude and asks for a verbatim transcription —
+ * Claude reads image-based resumes natively, so no OCR engine / page-rendering
+ * dependency is needed. Returns '' when nothing readable (caller flags review).
+ */
+async function visionExtractText(
+  buffer: Buffer,
+  mediaType: 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
+): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    console.warn('[file-parsing] No ANTHROPIC_API_KEY — cannot OCR image-based file')
+    return ''
+  }
+  const data = buffer.toString('base64')
+  const fileBlock =
+    mediaType === 'application/pdf'
+      ? { type: 'document' as const, source: { type: 'base64' as const, media_type: 'application/pdf' as const, data } }
+      : { type: 'image' as const, source: { type: 'base64' as const, media_type: mediaType, data } }
+
+  try {
+    const client = new Anthropic({ apiKey })
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 4096,
+      temperature: 0,
+      messages: [{
+        role: 'user',
+        content: [
+          fileBlock,
+          {
+            type: 'text',
+            text:
+              'This is a resume (CV), possibly scanned or a photo. Transcribe ALL readable text from it VERBATIM — ' +
+              'full name, email, phone, links, job titles, companies, dates, skills, and education — preserving the ' +
+              'original reading order. Output ONLY the transcribed text, no commentary or summary. ' +
+              'If the document is blank or nothing is legible, output exactly: NO_TEXT_FOUND',
+          },
+        ],
+      }],
+    })
+    const raw = response.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('').trim()
+    if (!raw || raw === 'NO_TEXT_FOUND') return ''
+    return cleanText(raw)
+  } catch (err) {
+    console.error('[file-parsing] vision OCR failed:', err instanceof Error ? err.message : err)
+    return ''
+  }
 }
 
 function cleanText(raw: string): string {

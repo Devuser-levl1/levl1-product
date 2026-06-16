@@ -19,6 +19,12 @@ export interface MatchResult {
   missingSkills: string[]
 }
 
+export interface RubricItem {
+  skill: string
+  weight: number      // 1-5, higher = matters more
+  required: boolean   // must-have → missing it caps the score low
+}
+
 export interface JobForMatch {
   id: string
   title: string
@@ -26,6 +32,23 @@ export interface JobForMatch {
   mustHaveSkills: string[]
   niceToHaveSkills: string[]
   screeningCriteria: string[]
+  // Recruiter-defined weighted rubric — when present, scoring is driven by THIS
+  // (what the recruiter actually cares about), not just the raw JD.
+  rubric?: RubricItem[]
+}
+
+// Coerce a Prisma Json value into a clean RubricItem[] (defensive — stored Json
+// is untyped). Returns [] for anything malformed.
+export function coerceRubric(v: unknown): RubricItem[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .map((r) => {
+      const o = (r ?? {}) as Record<string, unknown>
+      const skill = typeof o.skill === 'string' ? o.skill.trim() : ''
+      const weight = Math.max(1, Math.min(5, Math.round(Number(o.weight)) || 3))
+      return { skill, weight, required: Boolean(o.required) }
+    })
+    .filter((r) => r.skill.length > 0)
 }
 
 export interface CandidateForMatch {
@@ -71,19 +94,28 @@ export async function matchCandidatesToJob(job: JobForMatch, candidates: Candida
   if (!process.env.ANTHROPIC_API_KEY || candidates.length === 0) return []
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+  const rubric = job.rubric?.length ? job.rubric : null
+  const rubricBlock = rubric
+    ? `\nSCREENING RUBRIC (recruiter-defined — score PRIMARILY against this; weight 1-5 = importance):\n${rubric.map((r) => `- ${r.skill} (weight ${r.weight}/5${r.required ? ', MUST-HAVE' : ', nice-to-have'})`).join('\n')}`
+    : ''
+
   const jobBlock = `JOB
 Title: ${job.title}
 Must-have skills: ${job.mustHaveSkills.join(', ') || '(infer from description)'}
 Nice-to-have skills: ${job.niceToHaveSkills.join(', ') || '—'}
-Screening criteria: ${job.screeningCriteria.join('; ') || '—'}
+Screening criteria: ${job.screeningCriteria.join('; ') || '—'}${rubricBlock}
 Description: ${job.description.slice(0, 1500)}`
+
+  const scoringRule = rubric
+    ? `Score EACH candidate against the SCREENING RUBRIC above — this is what the recruiter actually cares about. Weight each rubric item by its weight (1-5). A candidate MISSING a MUST-HAVE rubric item cannot score above ~50 no matter what else they have. Draw matchedSkills/missingSkills from the rubric items. A candidate strong in a DIFFERENT stack should score LOW.`
+    : `Judge on the job's must-have skills, screening criteria and the candidate's actual experience — not just keyword overlap. A candidate strong in a DIFFERENT stack (e.g. Java for a .NET role) should score LOW.`
 
   const chunks: CandidateForMatch[][] = []
   for (let i = 0; i < candidates.length; i += CHUNK) chunks.push(candidates.slice(i, i + CHUNK))
 
   const all: MatchResult[] = []
   await Promise.all(chunks.map(async (chunk) => {
-    const prompt = `You are an expert technical recruiter evaluating how well each candidate fits a specific job. Judge on the job's must-have skills, screening criteria and the candidate's actual experience — not just keyword overlap. A candidate strong in a DIFFERENT stack (e.g. Java for a .NET role) should score LOW.
+    const prompt = `You are an expert technical recruiter evaluating how well each candidate fits a specific job. ${scoringRule}
 
 ${jobBlock}
 
@@ -194,7 +226,7 @@ export function verdictToRecommendation(v: Verdict): 'strong_yes' | 'yes' | 'may
 export async function scoreCandidateForJob(tenantId: string, candidateId: string, jobId: string): Promise<MatchResult | null> {
   const [candidate, job] = await Promise.all([
     prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId }, select: { id: true, name: true, currentTitle: true, currentCompany: true, totalYears: true, skills: true, resumeText: true } }),
-    prisma.hireJob.findFirst({ where: { id: jobId, tenantId }, select: { id: true, title: true, description: true, mustHaveSkills: true, niceToHaveSkills: true, screeningCriteria: true } }),
+    prisma.hireJob.findFirst({ where: { id: jobId, tenantId }, select: { id: true, title: true, description: true, mustHaveSkills: true, niceToHaveSkills: true, screeningCriteria: true, rubric: true } }),
   ])
   if (!candidate || !job) return null
 
@@ -202,7 +234,12 @@ export async function scoreCandidateForJob(tenantId: string, candidateId: string
     id: candidate.id, name: candidate.name, currentTitle: candidate.currentTitle, currentCompany: candidate.currentCompany,
     totalYears: candidate.totalYears, skills: Array.isArray(candidate.skills) ? (candidate.skills as string[]) : [], resumeText: candidate.resumeText,
   }
-  const [result] = await matchCandidatesToJob(job, [cand])
+  const jobForMatch: JobForMatch = {
+    id: job.id, title: job.title, description: job.description,
+    mustHaveSkills: job.mustHaveSkills, niceToHaveSkills: job.niceToHaveSkills, screeningCriteria: job.screeningCriteria,
+    rubric: coerceRubric(job.rubric),
+  }
+  const [result] = await matchCandidatesToJob(jobForMatch, [cand])
   if (!result) return null
 
   await prisma.hireMatch.upsert({

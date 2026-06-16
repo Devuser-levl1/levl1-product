@@ -6,9 +6,10 @@ import { KanbanBoard, KanbanCandidate, KanbanStage } from '@/components/hire/pip
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { DistributePanel } from '@/components/hire/distribute-panel'
 import { TopMatches } from '@/components/hire/top-matches'
+import { RubricEditor, RubricItem } from '@/components/hire/rubric-editor'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
-interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean }
+interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
 const TABS = ['Overview', 'Top Matches', 'Candidates', 'Pipeline', 'Distribute', 'Settings'] as const
@@ -44,7 +45,7 @@ export default function JobDetailPage() {
         ))}
       </div>
 
-      {tab === 'Overview' && <Overview job={job} />}
+      {tab === 'Overview' && <Overview job={job} reload={load} />}
       {tab === 'Top Matches' && <TopMatches jobId={job.id} jobTitle={job.title} onChanged={load} />}
       {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
       {tab === 'Pipeline' && <PipelineTab jobId={job.id} />}
@@ -54,7 +55,7 @@ export default function JobDetailPage() {
   )
 }
 
-function Overview({ job }: { job: Job }) {
+function Overview({ job, reload }: { job: Job; reload: () => void }) {
   const perStage = job.stages.map((s) => ({ stage: s, count: job.candidates.filter((c) => c.currentStage === s).length }))
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -77,6 +78,14 @@ function Overview({ job }: { job: Job }) {
           </div>
         </div>
       )}
+
+      <RubricEditor
+        jobId={job.id}
+        initial={Array.isArray(job.rubric) ? job.rubric : []}
+        mustHaveSkills={job.mustHaveSkills ?? []}
+        niceToHaveSkills={job.niceToHaveSkills ?? []}
+        onSaved={reload}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <Info label="Salary" value={job.salaryMin || job.salaryMax ? `${job.salaryMin ? lakh(job.salaryMin) : '–'} – ${job.salaryMax ? lakh(job.salaryMax) : '–'}` : '—'} />

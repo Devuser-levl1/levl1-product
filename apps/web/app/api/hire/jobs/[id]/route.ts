@@ -36,6 +36,19 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if ('niceToHaveSkills' in body) data.niceToHaveSkills = arr(body.niceToHaveSkills)
   if ('screeningCriteria' in body) data.screeningCriteria = arr(body.screeningCriteria)
   if ('interviewFocus' in body) data.interviewFocus = arr(body.interviewFocus)
+  // Recruiter-defined weighted screening rubric: [{ skill, weight 1-5, required }].
+  if ('rubric' in body) {
+    data.rubric = Array.isArray(body.rubric)
+      ? body.rubric
+          .map((r: unknown) => {
+            const o = (r ?? {}) as Record<string, unknown>
+            const skill = typeof o.skill === 'string' ? o.skill.trim() : ''
+            const weight = Math.max(1, Math.min(5, Math.round(Number(o.weight)) || 3))
+            return { skill, weight, required: Boolean(o.required) }
+          })
+          .filter((r: { skill: string }) => r.skill.length > 0)
+      : []
+  }
   if (['ACTIVE', 'PAUSED', 'CLOSED'].includes(body.status)) data.status = body.status
   if (typeof body.aiAutoAdvance === 'boolean') data.aiAutoAdvance = body.aiAutoAdvance
   if (body.aiAutoAdvanceThreshold != null) data.aiAutoAdvanceThreshold = Number(body.aiAutoAdvanceThreshold)
