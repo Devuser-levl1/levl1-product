@@ -12,7 +12,7 @@ interface Candidate { id: string; name: string; email: string; currentStage: str
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
-const TABS = ['Overview', 'Top Matches', 'Candidates', 'Pipeline', 'Distribute', 'Settings'] as const
+const TABS = ['Overview', 'Pipeline', 'Top Matches', 'Candidates', 'Activity', 'Distribute', 'Settings'] as const
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 24, color: '#475569', fontSize: 14 }
 const ghostBtn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }
 
@@ -48,6 +48,7 @@ export default function JobDetailPage() {
       {tab === 'Overview' && <Overview job={job} reload={load} />}
       {tab === 'Top Matches' && <TopMatches jobId={job.id} jobTitle={job.title} onChanged={load} />}
       {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
+      {tab === 'Activity' && <JobActivity jobId={job.id} />}
       {tab === 'Pipeline' && <PipelineTab jobId={job.id} />}
       {tab === 'Distribute' && <DistributePanel jobId={job.id} />}
       {tab === 'Settings' && <Settings job={job} reload={load} onDeleted={() => router.push('/hire/jobs')} />}
@@ -227,6 +228,29 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
         {job.status === 'PAUSED' && <button onClick={() => setStatus('ACTIVE')} style={ghostBtn}>Resume</button>}
         {job.status !== 'CLOSED' && <button onClick={() => setStatus('CLOSED')} style={ghostBtn}>Close</button>}
         <button onClick={del} style={{ ...ghostBtn, color: '#DC2626', borderColor: '#FECACA', marginLeft: 'auto' }}>Delete job</button>
+      </div>
+    </div>
+  )
+}
+
+interface JobActivityItem { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string; candidateName: string }
+function JobActivity({ jobId }: { jobId: string }) {
+  const [items, setItems] = useState<JobActivityItem[] | null>(null)
+  useEffect(() => { fetch(`/api/hire/jobs/${jobId}/activity`).then((r) => (r.ok ? r.json() : null)).then((d) => setItems(d?.items ?? [])).catch(() => setItems([])) }, [jobId])
+  if (!items) return <div style={card}>Loading…</div>
+  if (items.length === 0) return <div style={card}>No activity yet for this job&apos;s candidates.</div>
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {items.map((a) => (
+          <div key={a.id} style={{ display: 'flex', gap: 10, fontSize: 13, color: '#475569' }}>
+            <span style={{ color: '#94A3B8', fontSize: 11.5, whiteSpace: 'nowrap', width: 96, flexShrink: 0 }}>{new Date(a.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+            <span style={{ flex: 1 }}>
+              <strong style={{ color: '#0F172A', fontWeight: 600 }}>{a.candidateName}</strong>{' '}
+              {a.type === 'stage_change' ? `moved ${a.fromStage} → ${a.toStage}` : a.type === 'ai_scored' ? (a.note ?? 'scored by AI') : (a.note ?? a.type)}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
