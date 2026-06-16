@@ -128,12 +128,13 @@ export const POST = withHireAuth(async (req, ctx) => {
       }
       await incrementUsage(ctx.tenantId, 'candidate')
 
-      // Score against the JD only when imported WITH a job. Without a job the
-      // parsed skills/title/years above already populate the candidate; scoring
-      // is triggered later when they're attached to a job (PATCH route).
-      if (data.resumeText && jobId) {
+      // WITH a job → score against the JD. WITHOUT a job → generate a baseline
+      // résumé summary (no score) so the candidate has a summary + skills; JD
+      // scoring is deferred until they're attached to a job (PATCH route).
+      if (data.resumeText) {
         const { enqueue } = await import('@/lib/hire/jobs/queue')
-        await enqueue('hire-score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/bulk] enqueue failed:', e))
+        const job = jobId ? 'hire-score-candidate' : 'hire-baseline-summary'
+        await enqueue(job, { candidateId: candidate.id }).catch((e) => console.error('[hire/bulk] enqueue failed:', e))
       }
 
       results.created++

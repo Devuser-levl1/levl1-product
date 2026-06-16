@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss'
 import { JOB_NAME, scoreCandidateHandler } from './score-candidate'
+import { BASELINE_SUMMARY_JOB, baselineSummaryHandler } from './baseline-summary'
 import { REMINDER_JOB, interviewReminderHandler } from './interview-reminder'
 import { SEND_CAMPAIGN_JOB, sendCampaignHandler } from './send-campaign'
 
@@ -19,10 +20,16 @@ export async function getQueue(): Promise<PgBoss> {
         : new PgBoss(connectionString)
       await b.start()
 
-      // AI candidate scoring
+      // AI candidate scoring (vs a job's JD)
       await b.createQueue(JOB_NAME)
       await b.work<{ candidateId: string }>(JOB_NAME, async (jobs) => {
         for (const job of jobs) await scoreCandidateHandler(job.data)
+      })
+
+      // Baseline résumé summary (for candidates with no job yet)
+      await b.createQueue(BASELINE_SUMMARY_JOB)
+      await b.work<{ candidateId: string }>(BASELINE_SUMMARY_JOB, async (jobs) => {
+        for (const job of jobs) await baselineSummaryHandler(job.data)
       })
 
       // Interview reminders (24h / 1h before)

@@ -43,37 +43,50 @@ export const GET = withHireAuth(async (req, ctx) => {
 
 export const POST = withHireAuth(async (req, ctx) => {
   const body = await req.json()
-  if (!body.name || !body.email) {
-    return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
+  // A sourced candidate may not have an email yet — name is the only requirement.
+  if (!body.name) {
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
   const allow = await checkAllowance(ctx.tenantId, 'candidate')
   if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
+
+  const email = body.email ? String(body.email).toLowerCase() : null
+  const skills = Array.isArray(body.skills) && body.skills.length ? (body.skills as Prisma.InputJsonValue) : undefined
 
   const candidate = await prisma.hireCandidate.create({
     data: {
       tenantId: ctx.tenantId,
       jobId: body.jobId || null,
       name: String(body.name),
-      email: String(body.email).toLowerCase(),
+      email,
       phone: body.phone || null,
       currentTitle: body.currentTitle || body.currentRole || null,
       currentCompany: body.currentCompany || null,
-      linkedinUrl: body.linkedinUrl || null,
+      linkedinUrl: body.linkedinUrl || body.linkedIn || null,
+      totalYears: typeof body.totalYears === 'number' ? body.totalYears : null,
+      ...(skills !== undefined ? { skills } : {}),
       resumeText: body.resumeText || null,
       source: body.source || 'Manual',
       currentStage: body.stage || 'Sourced',
     },
   })
 
-  if (body.resumeText && body.jobId) {
+  // WITH a job → score; WITHOUT → baseline summary so the candidate isn't blank.
+  if (body.resumeText) {
     const { enqueue } = await import('@/lib/hire/jobs/queue')
-    await enqueue('hire-score-candidate', { candidateId: candidate.id }).catch((e) => console.error('[hire/candidates] enqueue failed:', e))
+    const job = body.jobId ? 'hire-score-candidate' : 'hire-baseline-summary'
+    await enqueue(job, { candidateId: candidate.id }).catch((e) => console.error('[hire/candidates] enqueue failed:', e))
   }
 
   await prisma.hireCandidateActivity.create({
     data: { candidateId: candidate.id, type: 'note', note: `Candidate added via ${body.source || 'manual entry'}`, userId: ctx.userId },
   })
+  if (!email) {
+    await prisma.hireCandidateActivity.create({
+      data: { candidateId: candidate.id, type: 'note', note: 'Needs review — email not detected, please add', userId: ctx.userId },
+    })
+  }
   await incrementUsage(ctx.tenantId, 'candidate')
 
   return NextResponse.json(candidate, { status: 201 })
