@@ -615,6 +615,12 @@ model HireJob {
   aiAutoAdvance        Boolean @default(false)
   aiAutoAdvanceThreshold Int   @default(75)
   aiAutoAdvanceStage   String?
+  // AI job-brief generator (P0-1) — structured fields that power matching + scoring.
+  mustHaveSkills       String[]
+  niceToHaveSkills     String[]
+  screeningCriteria    String[]
+  interviewFocus       String[]
+  aiGenerated          Boolean @default(false)
   // In-built AI interview question approval: "single" = one authorized user
   // approves both gates; "dual" = tech-lead + HR both approve. Default single.
   approvalMode         String  @default("single")

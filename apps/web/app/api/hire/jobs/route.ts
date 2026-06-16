@@ -29,6 +29,7 @@ export const POST = withHireAuth(async (req, ctx) => {
   const allow = await checkAllowance(ctx.tenantId, 'job')
   if (!allow.allowed) return NextResponse.json({ error: allow.reason, message: allow.message, upgrade: true }, { status: 402 })
 
+  const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()) : [])
   const job = await prisma.hireJob.create({
     data: {
       tenantId: ctx.tenantId,
@@ -41,6 +42,12 @@ export const POST = withHireAuth(async (req, ctx) => {
       stages,
       status: 'ACTIVE',
       clientId: body.clientId || null,
+      // AI job-brief structured fields (P0-1) — power matching + scoring later.
+      mustHaveSkills: arr(body.mustHaveSkills),
+      niceToHaveSkills: arr(body.niceToHaveSkills),
+      screeningCriteria: arr(body.screeningCriteria),
+      interviewFocus: arr(body.interviewFocus),
+      aiGenerated: body.aiGenerated === true,
     },
   })
   return NextResponse.json(job, { status: 201 })

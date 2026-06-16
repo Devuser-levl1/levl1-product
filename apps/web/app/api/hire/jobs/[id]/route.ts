@@ -30,6 +30,12 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if ('salaryMin' in body) data.salaryMin = body.salaryMin != null ? Number(body.salaryMin) : null
   if ('salaryMax' in body) data.salaryMax = body.salaryMax != null ? Number(body.salaryMax) : null
   if ('clientId' in body) data.clientId = body.clientId || null
+  // AI job-brief structured fields (P0-1) — editable on the detail page.
+  const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()) : [])
+  if ('mustHaveSkills' in body) data.mustHaveSkills = arr(body.mustHaveSkills)
+  if ('niceToHaveSkills' in body) data.niceToHaveSkills = arr(body.niceToHaveSkills)
+  if ('screeningCriteria' in body) data.screeningCriteria = arr(body.screeningCriteria)
+  if ('interviewFocus' in body) data.interviewFocus = arr(body.interviewFocus)
   if (['ACTIVE', 'PAUSED', 'CLOSED'].includes(body.status)) data.status = body.status
   if (typeof body.aiAutoAdvance === 'boolean') data.aiAutoAdvance = body.aiAutoAdvance
   if (body.aiAutoAdvanceThreshold != null) data.aiAutoAdvanceThreshold = Number(body.aiAutoAdvanceThreshold)

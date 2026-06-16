@@ -7,7 +7,7 @@ import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { DistributePanel } from '@/components/hire/distribute-panel'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
-interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[] }
+interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
 const TABS = ['Overview', 'Candidates', 'Pipeline', 'Distribute', 'Settings'] as const
@@ -57,9 +57,25 @@ function Overview({ job }: { job: Job }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={card}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Description</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</div>
+          {job.aiGenerated && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.1)', borderRadius: 100, padding: '2px 8px' }}>✨ AI-generated</span>}
+        </div>
         <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{job.description}</div>
       </div>
+
+      {((job.mustHaveSkills?.length ?? 0) > 0 || (job.niceToHaveSkills?.length ?? 0) > 0 || (job.screeningCriteria?.length ?? 0) > 0 || (job.interviewFocus?.length ?? 0) > 0) && (
+        <div style={card}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Role requirements</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <ChipList title="Must-have skills" items={job.mustHaveSkills ?? []} accent />
+            <ChipList title="Nice to have" items={job.niceToHaveSkills ?? []} />
+            <BulletList title="Screening criteria" items={job.screeningCriteria ?? []} />
+            <BulletList title="Interview focus" items={job.interviewFocus ?? []} />
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <Info label="Salary" value={job.salaryMin || job.salaryMax ? `${job.salaryMin ? lakh(job.salaryMin) : '–'} – ${job.salaryMax ? lakh(job.salaryMax) : '–'}` : '—'} />
         <Info label="Location" value={job.location ?? '—'} />
@@ -78,6 +94,26 @@ function Overview({ job }: { job: Job }) {
 }
 function Info({ label, value }: { label: string; value: string }) {
   return <div style={card}><div style={{ fontSize: 11, color: '#475569', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginTop: 4 }}>{value}</div></div>
+}
+function ChipList({ title, items, accent }: { title: string; items: string[]; accent?: boolean }) {
+  if (!items.length) return null
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>{title}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+        {items.map((s, i) => <span key={i} style={accent ? { fontSize: 11, fontWeight: 700, color: '#fff', background: '#6D28D9', borderRadius: 100, padding: '3px 10px' } : { fontSize: 11, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{s}</span>)}
+      </div>
+    </div>
+  )
+}
+function BulletList({ title, items }: { title: string; items: string[] }) {
+  if (!items.length) return null
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>{title}</div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#334155', lineHeight: 1.7 }}>{items.map((s, i) => <li key={i}>{s}</li>)}</ul>
+    </div>
+  )
 }
 
 function Candidates({ job, applyUrl, reload }: { job: Job; applyUrl: string; reload: () => void }) {
