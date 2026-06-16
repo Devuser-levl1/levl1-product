@@ -7,7 +7,7 @@ interface Activity { id: string; type: string; note: string | null; fromStage: s
 interface Candidate {
   id: string; name: string; email: string; phone: string | null; currentTitle: string | null; currentCompany: string | null; linkedinUrl: string | null
   currentStage: string; aiScore: number | null; aiSummary: string | null; aiRecommendation: string | null; source: string | null
-  skills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]
+  skills: string[] | null; topSkills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]
 }
 
 const REC: Record<string, string> = { strong_yes: 'Strong Yes', yes: 'Yes', maybe: 'Maybe', no: 'No' }
@@ -51,16 +51,28 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
             </div>
 
             <Sec title="AI Assessment">
-              {typeof c.aiScore === 'number' ? (
+              {(typeof c.aiScore === 'number' || c.aiSummary || (c.topSkills?.length ?? 0) > 0 || (c.skills?.length ?? 0) > 0) ? (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, color: scoreColor(c.aiScore) }}>{c.aiScore}<span style={{ fontSize: 13, color: '#475569' }}>/100</span></span>
-                    {c.aiRecommendation && <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{REC[c.aiRecommendation] ?? c.aiRecommendation}</span>}
-                  </div>
-                  {c.aiSummary && <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 8px' }}>{c.aiSummary}</p>}
-                  {Array.isArray(c.skills) && c.skills.length > 0 && (
-                    <div style={{ fontSize: 12, color: '#64748B' }}>Top Skills: {c.skills.join(', ')}</div>
+                  {typeof c.aiScore === 'number' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, color: scoreColor(c.aiScore) }}>{c.aiScore}<span style={{ fontSize: 13, color: '#475569' }}>/100</span></span>
+                      {c.aiRecommendation && <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{REC[c.aiRecommendation] ?? c.aiRecommendation}</span>}
+                    </div>
                   )}
+                  {c.aiSummary && <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 8px' }}>{c.aiSummary}</p>}
+                  {Array.isArray(c.topSkills) && c.topSkills.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={skillsLabel}>Top skills · role-relevant</div>
+                      <div style={chipRow}>{c.topSkills.map((s) => <span key={s} style={topChip}>{s}</span>)}</div>
+                    </div>
+                  )}
+                  {Array.isArray(c.skills) && c.skills.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={skillsLabel}>All skills · from résumé</div>
+                      <div style={chipRow}>{c.skills.map((s) => <span key={s} style={allChip}>{s}</span>)}</div>
+                    </div>
+                  )}
+                  {typeof c.aiScore !== 'number' && <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 8 }}>Not scored against a job yet — attach to a job to score.</div>}
                 </>
               ) : <div style={{ fontSize: 13, color: '#475569' }}>Not scored yet{c.job ? ' — scoring runs shortly after a resume is added.' : ' (link to a job + add resume text to score).'}</div>}
             </Sec>
@@ -120,6 +132,10 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
 }
 
 const selectStyle: React.CSSProperties = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
+const skillsLabel: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }
+const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 5 }
+const topChip: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#fff', background: '#6D28D9', borderRadius: 100, padding: '3px 10px' }
+const allChip: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }
 function Sec({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>

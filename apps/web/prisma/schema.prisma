@@ -681,7 +681,8 @@ model HireCandidate {
   totalYears       Int?
   resumeUrl        String?
   resumeText       String?    @db.Text
-  skills           Json?      // string[]
+  skills           Json?      // string[] — full skills list from résumé extraction
+  topSkills        Json?      // string[] — the most job-relevant skills surfaced by AI scoring
   currentStage     String     @default("Sourced")
   aiScore          Int?       // 0-100
   aiSummary        String?    @db.Text

@@ -20,13 +20,18 @@ export async function scoreCandidateHandler(data: { candidateId: string }) {
 
   const result = await scoreCandidate(candidate.resumeText, candidate.job.description, candidate.job.title)
 
+  // Two tiers: keep the full résumé skills in `skills` (only fill it if empty —
+  // don't clobber the richer extraction list) and store the job-relevant subset
+  // the scorer surfaced in `topSkills`.
+  const existingSkills = Array.isArray(candidate.skills) ? (candidate.skills as string[]) : []
   await prisma.hireCandidate.update({
     where: { id: data.candidateId },
     data: {
       aiScore: result.score,
       aiSummary: result.summary,
       aiRecommendation: result.recommendation,
-      skills: result.topSkills as Prisma.InputJsonValue,
+      topSkills: result.topSkills as Prisma.InputJsonValue,
+      ...(existingSkills.length === 0 && result.topSkills.length ? { skills: result.topSkills as Prisma.InputJsonValue } : {}),
     },
   })
 

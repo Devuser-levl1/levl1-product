@@ -28,7 +28,10 @@ export async function baselineSummaryHandler(data: { candidateId: string }) {
     where: { id: data.candidateId },
     data: {
       ...(summary ? { aiSummary: summary } : {}),
-      ...(topSkills.length || existingSkills.length ? { skills: (topSkills.length ? topSkills : existingSkills) as Prisma.InputJsonValue } : {}),
+      // Two tiers: the baseline's headline skills go to `topSkills`; the full
+      // résumé `skills` (from import extraction) is preserved, filled only if empty.
+      ...(topSkills.length ? { topSkills: topSkills as Prisma.InputJsonValue } : {}),
+      ...(existingSkills.length === 0 && topSkills.length ? { skills: topSkills as Prisma.InputJsonValue } : {}),
     },
   })
   console.log('[hire-baseline-summary] COMPLETED candidate=%s skills=%d in %dms', data.candidateId, topSkills.length, Date.now() - startedAt)
