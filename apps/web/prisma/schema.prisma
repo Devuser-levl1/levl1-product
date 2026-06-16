@@ -639,6 +639,25 @@ model HireJob {
   @@index([tenantId])
 }
 
+// ── AI candidate ↔ job matching (P0-3) ─────────────────────────────────────
+// Cached fit results so ranked matches load instantly and only recompute on
+// refresh / when the pool changes.
+model HireMatch {
+  id            String   @id @default(cuid())
+  tenantId      String
+  jobId         String
+  candidateId   String
+  score         Int      // 0-100 fit
+  verdict       String   // strong | good | partial | weak
+  reasons       Json     // string[] — why they fit / gaps
+  matchedSkills String[]
+  missingSkills String[]
+  createdAt     DateTime @default(now())
+  @@unique([jobId, candidateId])
+  @@index([tenantId, jobId])
+  @@index([tenantId, candidateId])
+}
+
 // ── Multi-board job distribution (Build 1) ─────────────────────────────────
 model JobBoardConnector {
   id          String   @id @default(cuid())

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
 import { EnrichmentPanel } from '@/components/hire/enrichment-panel'
+import { BestFitJobs } from '@/components/hire/best-fit-jobs'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
 interface Candidate {
@@ -87,6 +88,10 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                 </select>
               ) : <div style={{ fontSize: 13, color: '#334155' }}>Stage: {c.currentStage}</div>}
               <button onClick={() => setShowSchedule(true)} style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Schedule Interview</button>
+            </Sec>
+
+            <Sec title="Best-fit jobs">
+              <BestFitJobs candidateId={c.id} onAttached={() => { load(); onChanged() }} />
             </Sec>
 
             <Sec title="Contact">

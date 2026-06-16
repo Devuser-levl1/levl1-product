@@ -7,13 +7,17 @@ const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 
 interface Ana { summary: { totalCandidates: number; avgAiScore: number | null }; funnel: { name: string; count: number }[] }
+interface TopMatch { candidateId: string; candidateName: string; candidateTitle: string | null; jobId: string; jobTitle: string; score: number; verdict: string; reason: string | null }
+const mColor = (v: string) => (v === 'strong' ? '#059669' : v === 'good' ? '#6D28D9' : v === 'partial' ? '#D97706' : '#64748B')
 
 export default function HireDashboard() {
   const router = useRouter()
   const [d, setD] = useState<Dash | null>(null)
   const [week, setWeek] = useState<Ana | null>(null)
   const [pipe, setPipe] = useState<Ana | null>(null)
+  const [topMatches, setTopMatches] = useState<TopMatch[]>([])
   useEffect(() => { fetch('/api/hire/dashboard').then((r) => (r.ok ? r.json() : null)).then(setD).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/hire/matches/top').then((r) => (r.ok ? r.json() : null)).then((x) => setTopMatches(x?.matches ?? [])).catch(() => {}) }, [])
   useEffect(() => {
     const from7 = new Date(Date.now() - 7 * 86400000).toISOString()
     const to = new Date().toISOString()
@@ -33,6 +37,27 @@ export default function HireDashboard() {
               const done = d.gettingStarted![k]
               return <a key={k} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, textDecoration: 'none', color: done ? '#475569' : '#334155' }}><span style={{ color: done ? '#10B981' : '#64748B' }}>{done ? '✓' : '○'}</span>{label}</a>
             })}
+          </div>
+        </div>
+      )}
+
+      {topMatches.length > 0 && (
+        <div style={{ ...card, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>✨ Top AI-matched candidates</div>
+            <span style={{ fontSize: 11.5, color: '#94A3B8', marginLeft: 8 }}>across your open jobs</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {topMatches.map((m) => (
+              <div key={m.candidateId + m.jobId} onClick={() => router.push(`/hire/jobs/${m.jobId}`)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid #F1F5F9', borderRadius: 10, cursor: 'pointer' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 800, color: mColor(m.verdict), width: 30 }}>{m.score}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{m.candidateName} <span style={{ fontWeight: 500, color: '#94A3B8' }}>→ {m.jobTitle}</span></div>
+                  {m.reason && <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.reason}</div>}
+                </div>
+                <span style={{ fontSize: 16, color: '#CBD5E1' }}>›</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
