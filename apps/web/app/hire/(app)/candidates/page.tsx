@@ -5,7 +5,7 @@ import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
 
-interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; interviewScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null }
+interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; interviewScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null; match: { score: number; verdict: string; jobTitle: string | null } | null }
 interface Job { id: string; title: string; stages?: string[] }
 
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
@@ -39,10 +39,11 @@ export default function CandidatesPage() {
 
   const stageOptions = Array.from(new Set(cands.map((c) => c.currentStage)))
   const shown = cands.filter((c) => {
-    if (band === '80') return (c.aiScore ?? -1) >= 80
-    if (band === '60') return (c.aiScore ?? -1) >= 60 && (c.aiScore ?? -1) < 80
-    if (band === 'lt60') return c.aiScore != null && c.aiScore < 60
-    if (band === 'none') return c.aiScore == null
+    const sc = c.match?.score ?? null
+    if (band === '80') return (sc ?? -1) >= 80
+    if (band === '60') return (sc ?? -1) >= 60 && (sc ?? -1) < 80
+    if (band === 'lt60') return sc != null && sc < 60
+    if (band === 'none') return sc == null
     return true
   })
 
@@ -83,9 +84,9 @@ export default function CandidatesPage() {
               <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[c.currentTitle, c.currentCompany].filter(Boolean).join(' · ') || c.email}</div>
               <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>{c.job?.title ?? 'No job'} · {c.currentStage} · {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
             </div>
-            <div style={{ textAlign: 'center', minWidth: 48 }}>
-              <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 18, color: scoreColor(c.aiScore) }}>{c.aiScore ?? '—'}</div>
-              <div style={{ fontSize: 9, color: '#64748B' }}>score</div>
+            <div style={{ textAlign: 'right', minWidth: 96 }} title={c.match ? `AI match score vs ${c.match.jobTitle ?? 'job'}` : 'Attach to a job to get a match score'}>
+              <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 18, color: scoreColor(c.match?.score ?? null) }}>{c.match?.score ?? '—'}</div>
+              <div style={{ fontSize: 9.5, color: '#64748B', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.match ? `match · vs ${c.match.jobTitle ?? 'job'}` : c.job ? 'scoring…' : 'no job'}</div>
             </div>
             <button onClick={() => setSelected(c.id)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>View</button>
             <div style={{ position: 'relative' }}>

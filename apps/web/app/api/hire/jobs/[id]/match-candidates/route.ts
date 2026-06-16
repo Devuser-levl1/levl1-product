@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { matchCandidatesToJob, CandidateForMatch, JobForMatch } from '@/lib/hire/ai-matching'
+import { matchCandidatesToJob, verdictToRecommendation, CandidateForMatch, JobForMatch } from '@/lib/hire/ai-matching'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -49,6 +49,18 @@ export const POST = withHireAuth(async (req, ctx, params) => {
       update: { score: r.score, verdict: r.verdict, reasons: r.reasons as Prisma.InputJsonValue, matchedSkills: r.matchedSkills, missingSkills: r.missingSkills, createdAt: new Date() },
       create: { tenantId: ctx.tenantId, jobId: job.id, candidateId: r.candidateId, score: r.score, verdict: r.verdict, reasons: r.reasons as Prisma.InputJsonValue, matchedSkills: r.matchedSkills, missingSkills: r.missingSkills },
     }).catch((e) => console.error('[match-candidates] upsert failed:', e))
+  }
+
+  // Mirror onto candidates whose PRIMARY (attached) job is this job, so legacy
+  // displays + analytics read the same number as their HireMatch row.
+  const attachedHere = await prisma.hireCandidate.findMany({ where: { tenantId: ctx.tenantId, jobId: job.id }, select: { id: true } })
+  const attachedIds = new Set(attachedHere.map((c) => c.id))
+  for (const r of results) {
+    if (!attachedIds.has(r.candidateId)) continue
+    await prisma.hireCandidate.update({
+      where: { id: r.candidateId },
+      data: { aiScore: r.score, aiRecommendation: verdictToRecommendation(r.verdict) },
+    }).catch(() => {})
   }
 
   return rankedResponse(ctx.tenantId, job.id)

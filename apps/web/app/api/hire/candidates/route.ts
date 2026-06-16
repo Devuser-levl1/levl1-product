@@ -38,7 +38,23 @@ export const GET = withHireAuth(async (req, ctx) => {
     prisma.hireCandidate.count({ where }),
   ])
 
-  return NextResponse.json({ candidates, total, page, limit })
+  // The candidate's score is JOB-RELATIVE — read it from the canonical HireMatch
+  // row for their currently-attached job (the same row the job's Top Matches
+  // shows). No separate recompute; '—' when not attached to a job.
+  const attached = candidates.filter((c) => c.jobId)
+  const matchRows = attached.length
+    ? await prisma.hireMatch.findMany({
+        where: { tenantId: ctx.tenantId, OR: attached.map((c) => ({ jobId: c.jobId as string, candidateId: c.id })) },
+        select: { jobId: true, candidateId: true, score: true, verdict: true },
+      })
+    : []
+  const matchByCand = new Map(matchRows.map((m) => [`${m.jobId}|${m.candidateId}`, m]))
+  const withMatch = candidates.map((c) => {
+    const m = c.jobId ? matchByCand.get(`${c.jobId}|${c.id}`) : undefined
+    return { ...c, match: m ? { score: m.score, verdict: m.verdict, jobTitle: c.job?.title ?? null } : null }
+  })
+
+  return NextResponse.json({ candidates: withMatch, total, page, limit })
 })
 
 export const POST = withHireAuth(async (req, ctx) => {

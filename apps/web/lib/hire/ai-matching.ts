@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { CLAUDE_MODEL } from '@/lib/ai/model'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // ── AI candidate ↔ job matching (P0-3) ─────────────────────────────────────
 // Explains WHY a candidate fits a job (or vice-versa) — not keyword filtering.
@@ -174,4 +176,39 @@ Return ONLY a JSON array (no markdown):
     console.error('[ai-matching] match-jobs failed:', e instanceof Error ? e.message : e)
     return []
   }
+}
+
+// ── Single source of truth: score ONE candidate vs ONE job → HireMatch ──────
+// All candidate-vs-job scoring flows through here, so the Candidates list, job
+// Top Matches, candidate popup and dashboard all read the SAME HireMatch row.
+
+export function verdictToRecommendation(v: Verdict): 'strong_yes' | 'yes' | 'maybe' | 'no' {
+  return v === 'strong' ? 'strong_yes' : v === 'good' ? 'yes' : v === 'partial' ? 'maybe' : 'no'
+}
+
+/**
+ * Score a single candidate against a job and upsert the HireMatch row. Returns
+ * the MatchResult (or null if nothing to score). This is the ONLY path that
+ * produces a candidate-vs-job score.
+ */
+export async function scoreCandidateForJob(tenantId: string, candidateId: string, jobId: string): Promise<MatchResult | null> {
+  const [candidate, job] = await Promise.all([
+    prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId }, select: { id: true, name: true, currentTitle: true, currentCompany: true, totalYears: true, skills: true, resumeText: true } }),
+    prisma.hireJob.findFirst({ where: { id: jobId, tenantId }, select: { id: true, title: true, description: true, mustHaveSkills: true, niceToHaveSkills: true, screeningCriteria: true } }),
+  ])
+  if (!candidate || !job) return null
+
+  const cand: CandidateForMatch = {
+    id: candidate.id, name: candidate.name, currentTitle: candidate.currentTitle, currentCompany: candidate.currentCompany,
+    totalYears: candidate.totalYears, skills: Array.isArray(candidate.skills) ? (candidate.skills as string[]) : [], resumeText: candidate.resumeText,
+  }
+  const [result] = await matchCandidatesToJob(job, [cand])
+  if (!result) return null
+
+  await prisma.hireMatch.upsert({
+    where: { jobId_candidateId: { jobId, candidateId } },
+    update: { score: result.score, verdict: result.verdict, reasons: result.reasons as Prisma.InputJsonValue, matchedSkills: result.matchedSkills, missingSkills: result.missingSkills, createdAt: new Date() },
+    create: { tenantId, jobId, candidateId, score: result.score, verdict: result.verdict, reasons: result.reasons as Prisma.InputJsonValue, matchedSkills: result.matchedSkills, missingSkills: result.missingSkills },
+  })
+  return result
 }

@@ -55,9 +55,12 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
               {(typeof c.aiScore === 'number' || c.aiSummary || (c.topSkills?.length ?? 0) > 0 || (c.skills?.length ?? 0) > 0) ? (
                 <>
                   {typeof c.aiScore === 'number' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, color: scoreColor(c.aiScore) }}>{c.aiScore}<span style={{ fontSize: 13, color: '#475569' }}>/100</span></span>
-                      {c.aiRecommendation && <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{REC[c.aiRecommendation] ?? c.aiRecommendation}</span>}
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, color: scoreColor(c.aiScore) }}>{c.aiScore}<span style={{ fontSize: 13, color: '#475569' }}>/100</span></span>
+                        {c.aiRecommendation && <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{REC[c.aiRecommendation] ?? c.aiRecommendation}</span>}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>AI match {c.job ? <>vs <strong>{c.job.title}</strong></> : ''}</div>
                     </div>
                   )}
                   {c.aiSummary && <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 8px' }}>{c.aiSummary}</p>}
