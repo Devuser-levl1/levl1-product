@@ -1,6 +1,20 @@
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { computeTimeInStage } from '@/lib/hire/analytics'
+import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
+
+// A candidate's score is JOB-RELATIVE and lives in the canonical HireMatch row
+// (jobId+candidateId). candidate.aiScore is only a mirror and can be stale, so
+// every read here resolves the score from HireMatch for the attached job.
+async function matchScores(tenantId: string, rows: { id: string; jobId: string | null }[]) {
+  const pairs = rows.filter((r) => r.jobId).map((r) => ({ jobId: r.jobId as string, candidateId: r.id }))
+  if (pairs.length === 0) return new Map<string, { score: number; verdict: string }>()
+  const matches = await prisma.hireMatch.findMany({
+    where: { tenantId, OR: pairs.map((p) => ({ jobId: p.jobId, candidateId: p.candidateId })) },
+    select: { jobId: true, candidateId: true, score: true, verdict: true },
+  })
+  return new Map(matches.map((m) => [`${m.jobId}|${m.candidateId}`, { score: m.score, verdict: m.verdict }]))
+}
 
 // ── MCP shared query layer (Build 4) ───────────────────────────────────────
 // THE single place tenant scoping is enforced for MCP tools. Every function
@@ -44,19 +58,27 @@ export async function searchCandidates(tenantId: string, args: { jobId?: string;
   const limit = Math.min(50, Math.max(1, args.limit ?? 25))
   const rows = await prisma.hireCandidate.findMany({
     where,
-    select: { id: true, name: true, currentTitle: true, currentCompany: true, currentStage: true, aiScore: true, interviewScore: true, aiRecommendation: true, job: { select: { title: true } } },
+    select: { id: true, name: true, currentTitle: true, currentCompany: true, currentStage: true, jobId: true, aiScore: true, interviewScore: true, aiRecommendation: true, job: { select: { title: true } } },
     orderBy: [{ aiScore: 'desc' }, { createdAt: 'desc' }],
     take: limit,
   })
-  return {
-    count: rows.length,
-    cappedAt: limit,
-    candidates: rows.map((c) => ({
-      id: c.id, name: c.name, title: c.currentTitle, company: c.currentCompany,
-      stage: c.currentStage, aiScore: c.aiScore, interviewScore: c.interviewScore,
-      recommendation: c.aiRecommendation, job: c.job?.title ?? null,
-    })),
-  }
+  // Resolve the canonical job-relative score from HireMatch, then re-rank by it
+  // (the SQL orderBy used the possibly-stale mirror).
+  const scores = await matchScores(tenantId, rows)
+  const candidates = rows
+    .map((c) => {
+      const m = c.jobId ? scores.get(`${c.jobId}|${c.id}`) : undefined
+      return {
+        id: c.id, name: c.name, title: c.currentTitle, company: c.currentCompany,
+        stage: c.currentStage,
+        aiScore: m ? m.score : c.aiScore,
+        interviewScore: c.interviewScore,
+        recommendation: m ? verdictToRecommendation(m.verdict as Verdict) : c.aiRecommendation,
+        job: c.job?.title ?? null,
+      }
+    })
+    .sort((a, b) => (b.aiScore ?? -1) - (a.aiScore ?? -1))
+  return { count: candidates.length, cappedAt: limit, candidates }
 }
 
 export async function getCandidate(tenantId: string, candidateId: string) {
@@ -68,11 +90,12 @@ export async function getCandidate(tenantId: string, candidateId: string) {
     },
   })
   if (!c) return null
+  const m = c.jobId ? await prisma.hireMatch.findUnique({ where: { jobId_candidateId: { jobId: c.jobId, candidateId: c.id } }, select: { score: true, verdict: true } }) : null
   return {
     id: c.id, name: c.name, email: c.email, phone: c.phone,
     title: c.currentTitle, company: c.currentCompany, location: null,
     stage: c.currentStage, job: c.job?.title ?? null,
-    aiScore: c.aiScore, aiRecommendation: c.aiRecommendation, aiSummary: c.aiSummary,
+    aiScore: m ? m.score : c.aiScore, aiRecommendation: m ? verdictToRecommendation(m.verdict as Verdict) : c.aiRecommendation, aiSummary: c.aiSummary,
     skills: Array.isArray(c.skills) ? c.skills : [],
     enrichment: c.enrichment ? {
       roleFamily: c.enrichment.roleFamily, status: c.enrichment.status,
