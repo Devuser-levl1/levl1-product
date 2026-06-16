@@ -4,13 +4,39 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
+
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
     where: { id: params.id, tenantId: ctx.tenantId },
     include: { job: true, activities: { orderBy: { createdAt: 'desc' }, take: 50 } },
   })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(candidate)
+
+  // The candidate's score is JOB-RELATIVE and lives in the canonical HireMatch
+  // row (the same row the Candidates list + Top Matches read). The aiScore/etc.
+  // columns are only a mirror and can be stale (e.g. scored by an older path),
+  // so when a match row exists we OVERRIDE the mirror with it — the detail view
+  // must never show a different number than the list for the same candidate+job.
+  let merged: typeof candidate & { match?: unknown } = candidate
+  if (candidate.jobId) {
+    const match = await prisma.hireMatch.findUnique({
+      where: { jobId_candidateId: { jobId: candidate.jobId, candidateId: candidate.id } },
+      select: { score: true, verdict: true, reasons: true, matchedSkills: true },
+    })
+    if (match) {
+      const reasons = Array.isArray(match.reasons) ? (match.reasons as string[]) : []
+      merged = {
+        ...candidate,
+        aiScore: match.score,
+        aiRecommendation: verdictToRecommendation(match.verdict as Verdict),
+        aiSummary: candidate.aiSummary ?? (reasons.length ? reasons.join(' ') : null),
+        topSkills: (Array.isArray(candidate.topSkills) && candidate.topSkills.length ? candidate.topSkills : match.matchedSkills) as typeof candidate.topSkills,
+        match: { score: match.score, verdict: match.verdict, jobTitle: candidate.job?.title ?? null },
+      }
+    }
+  }
+  return NextResponse.json(merged)
 })
 
 export const PATCH = withHireAuth(async (req, ctx, params) => {
