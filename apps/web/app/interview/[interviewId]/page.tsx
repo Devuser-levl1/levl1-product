@@ -365,6 +365,17 @@ export default function InterviewPage() {
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
   const wrapUpFiredRef = useRef(false)           // one-shot wrap-up guard — closing fires exactly once (Build 01-B2)
+  // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
+  const codeContentRef = useRef('')
+  const questionStartRef = useRef<number>(Date.now())  // when current question was shown
+  const firstKeystrokeRef = useRef<number | null>(null) // first editor input time
+  const pasteStatsRef = useRef<{ largest: number; total: number; count: number; typed: number }>({ largest: 0, total: 0, count: 0, typed: 0 })
+  const resetAnswerTelemetry = useCallback(() => {
+    questionStartRef.current = Date.now()
+    firstKeystrokeRef.current = null
+    pasteStatsRef.current = { largest: 0, total: 0, count: 0, typed: 0 }
+    codeContentRef.current = ''
+  }, [])
   const transcriptBoxRef      = useRef<HTMLDivElement>(null)
   const codeTriggerShownRef   = useRef(false)
   const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -762,6 +773,13 @@ export default function InterviewPage() {
       return
     }
 
+    // ── T2 content-analysis (Build 02) — fire-and-forget on a substantive answer.
+    // Prefer the code editor answer (paste/latency live there); else a long spoken one.
+    const t2Answer = codeContentRef.current.trim() || responseText
+    if (t2Answer && t2Answer.length >= 40) {
+      runIntegrityAnalysis(t2Answer, q.question, (q as { difficulty?: string }).difficulty ?? null)
+    }
+
     // ── 0. Awaiting "more time or move on?" choice ───────────────────
     if (awaitingMoveOnChoiceRef.current) {
       awaitingMoveOnChoiceRef.current = false
@@ -999,6 +1017,7 @@ export default function InterviewPage() {
     redirectGivenRef.current      = false
     shortAnswerAskedRef.current   = false
     awaitingMoveOnChoiceRef.current = false
+    resetAnswerTelemetry()                // Build 02: fresh T2 timing/paste capture per question
 
     const q    = qs[idx]
     const prevQ = idx > 0 ? qs[idx - 1] : null
@@ -1384,12 +1403,46 @@ export default function InterviewPage() {
   /* ── Code editor sync (debounced 1 s) ────────────────────── */
   const handleCodeChange = (val: string | undefined) => {
     const v = val ?? ''
+    // T2 telemetry: first-keystroke latency + typed-char accounting (Build 02).
+    if (firstKeystrokeRef.current === null) firstKeystrokeRef.current = Date.now()
+    const delta = v.length - codeContentRef.current.length
+    if (delta > 0 && delta < 20) pasteStatsRef.current.typed += delta  // small positive deltas = typing
+    codeContentRef.current = v
     setCodeContent(v)
     if (codeDebounceRef.current) clearTimeout(codeDebounceRef.current)
     codeDebounceRef.current = setTimeout(() => {
       updateSessionCode(v, codeLanguage)
     }, 1000)
   }
+
+  // Monaco mount — register paste capture (metadata only, never the clipboard text).
+  const handleEditorMount = useCallback((editor: unknown) => {
+    const ed = editor as { onDidPaste: (cb: (e: { range: unknown }) => void) => void; getModel: () => { getValueInRange: (r: unknown) => string } | null }
+    try {
+      ed.onDidPaste((e) => {
+        const text = ed.getModel()?.getValueInRange(e.range) ?? ''
+        const size = text.length
+        const s = pasteStatsRef.current
+        s.count += 1; s.total += size; s.largest = Math.max(s.largest, size)
+      })
+    } catch { /* editor API shape differs — non-critical */ }
+  }, [])
+
+  // Fire the T2 content-analysis for a coding answer (fire-and-forget; never
+  // blocks the interview). Sends only text needed for analysis — no raw video.
+  const runIntegrityAnalysis = useCallback((answer: string, questionText: string, difficulty: string | null) => {
+    if (!answer || answer.trim().length < 40) return
+    const baseline = transcriptRef.current.filter((t) => t.speaker === 'candidate').slice(0, 4).map((t) => t.text).join('\n').slice(0, 1500)
+    const idleBeforeAnswerMs = firstKeystrokeRef.current ? firstKeystrokeRef.current - questionStartRef.current : null
+    fetch('/api/interview/integrity/analyze', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        interviewId, questionText, questionDifficulty: difficulty, answer, baseline,
+        latency: { timeToFirstKeystrokeMs: idleBeforeAnswerMs, idleBeforeAnswerMs },
+        paste: pasteStatsRef.current,
+      }),
+    }).catch(() => {})
+  }, [interviewId])
 
   /* ── Whiteboard export ────────────────────────────────────── */
   const handleWhiteboardExport = (dataUrl: string) => {
@@ -1716,6 +1769,7 @@ export default function InterviewPage() {
               theme="vs-dark"
               value={codeContent}
               onChange={handleCodeChange}
+              onMount={handleEditorMount}
               options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }}
             />
           </div>

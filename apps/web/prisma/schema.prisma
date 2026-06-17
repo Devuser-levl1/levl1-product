@@ -258,6 +258,9 @@ model Position {
   rubricApproved     Boolean   @default(false)
   scoringRubric      Json?
   dynamicIntensity   String    @default("standard")
+  // Cost lever (Build 02): the Claude-API AI-assist content check is toggleable
+  // per interview tier so it can be disabled on cost-sensitive plans.
+  aiAssistCheck      Boolean   @default(true)
   voiceAccent        String?
   softSkillWeightage Json?
   agencyId           String?
@@ -373,11 +376,17 @@ model InterviewIntegrityEvent {
   id          String    @id @default(cuid())
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  type        String    // gaze_away | no_face | multiple_faces | object_in_frame | tab_switch | window_blur | screen_share_drop | fullscreen_exit
+  // Build 01 (visible): gaze_away | no_face | multiple_faces | object_in_frame |
+  //   tab_switch | window_blur | screen_share_drop | fullscreen_exit
+  // Build 02 (content moat): ai_assisted_answer | latency_anomaly | paste_anomaly | combined_anomaly
+  type        String
   occurredAt  DateTime  @default(now())
   durationMs  Int?
   confidence  Float     @default(1)
   detail      String?
+  // Structured, evidence-linked metadata (Build 02): { span, latencyMs,
+  // pasteSize, rationale, correlatedWith, ... }. Never raw video/clipboard.
+  meta        Json?
   createdAt   DateTime  @default(now())
   @@index([interviewId])
 }

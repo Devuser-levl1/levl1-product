@@ -3,6 +3,7 @@
 // frames or images are part of this contract — only structured metadata.
 
 export const INTEGRITY_EVENT_TYPES = [
+  // ── Tier 1 (Build 01) — visible proctoring ──
   'gaze_away',          // face turned away beyond threshold for > N seconds
   'no_face',            // no face detected in frame for > N seconds
   'multiple_faces',     // a second person visible in frame
@@ -11,6 +12,11 @@ export const INTEGRITY_EVENT_TYPES = [
   'window_blur',        // window lost focus
   'screen_share_drop',  // an active screen-share track ended/interrupted
   'fullscreen_exit',    // candidate left fullscreen
+  // ── Tier 2 (Build 02) — content-analysis moat ──
+  'ai_assisted_answer', // LLM-pattern / capability-jump in an answer
+  'latency_anomaly',    // off-platform-lookup latency pattern
+  'paste_anomaly',      // large pre-formed block pasted into the editor
+  'combined_anomaly',   // co-occurring weak signals escalated together
 ] as const
 
 export type IntegrityEventType = (typeof INTEGRITY_EVENT_TYPES)[number]
@@ -23,6 +29,9 @@ export interface IntegrityEventInput {
   durationMs?: number
   confidence?: number
   detail?: string
+  // Structured, evidence-linked metadata (Build 02): span, latencyMs, pasteSize,
+  // rationale, correlatedWith. NEVER raw video frames or clipboard contents.
+  meta?: Record<string, unknown>
 }
 
 const TYPE_SET = new Set<string>(INTEGRITY_EVENT_TYPES)
@@ -37,11 +46,16 @@ export const INTEGRITY_LABELS: Record<IntegrityEventType, string> = {
   window_blur: 'Left the interview window',
   screen_share_drop: 'Screen share stopped',
   fullscreen_exit: 'Exited fullscreen',
+  ai_assisted_answer: 'Answer shows AI-assistance patterns',
+  latency_anomaly: 'Unusual answer-timing pattern',
+  paste_anomaly: 'Large block pasted into editor',
+  combined_anomaly: 'Multiple integrity signals co-occurred',
 }
 
 // High-confidence events trigger the in-interview "noted for review" notice.
 export const HIGH_CONFIDENCE_TYPES: ReadonlySet<IntegrityEventType> = new Set<IntegrityEventType>([
   'multiple_faces', 'object_in_frame', 'tab_switch', 'screen_share_drop',
+  'ai_assisted_answer', 'paste_anomaly', 'combined_anomaly',
 ])
 
 export function isIntegrityEventType(v: unknown): v is IntegrityEventType {
@@ -57,5 +71,6 @@ export function sanitizeEvent(raw: unknown): IntegrityEventInput | null {
   const durationMs = typeof o.durationMs === 'number' && o.durationMs >= 0 ? Math.round(o.durationMs) : undefined
   const confidence = typeof o.confidence === 'number' ? Math.max(0, Math.min(1, o.confidence)) : 1
   const detail = typeof o.detail === 'string' ? o.detail.slice(0, 300) : undefined
-  return { type: o.type, occurredAt, durationMs, confidence, detail }
+  const meta = o.meta && typeof o.meta === 'object' ? (o.meta as Record<string, unknown>) : undefined
+  return { type: o.type, occurredAt, durationMs, confidence, detail, meta }
 }

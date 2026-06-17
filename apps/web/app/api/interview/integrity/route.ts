@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { sanitizeEvent } from '@/lib/screen/integrity/events'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (clean.length === 0) return NextResponse.json({ ok: true, stored: 0 })
 
     await prisma.interviewIntegrityEvent.createMany({
-      data: clean.map((e) => ({ interviewId, type: e.type, occurredAt: new Date(e.occurredAt), durationMs: e.durationMs ?? null, confidence: e.confidence ?? 1, detail: e.detail ?? null })),
+      data: clean.map((e) => ({ interviewId, type: e.type, occurredAt: new Date(e.occurredAt), durationMs: e.durationMs ?? null, confidence: e.confidence ?? 1, detail: e.detail ?? null, meta: (e.meta ?? undefined) as Prisma.InputJsonValue | undefined })),
     })
     return NextResponse.json({ ok: true, stored: clean.length })
   } catch (err) {
