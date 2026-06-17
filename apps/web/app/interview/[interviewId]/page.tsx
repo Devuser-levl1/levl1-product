@@ -11,6 +11,7 @@ import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'l
 import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
+import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -365,6 +366,10 @@ export default function InterviewPage() {
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
   const wrapUpFiredRef = useRef(false)           // one-shot wrap-up guard — closing fires exactly once (Build 01-B2)
+  // ── Warm-up arc (Build 03) — routes brief small-talk replies away from the
+  // question pipeline and suppresses the question cold-start timers while active.
+  const warmupActiveRef = useRef(false)
+  const warmupCaptureRef = useRef<((text: string) => void) | null>(null)
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -624,11 +629,14 @@ export default function InterviewPage() {
         setListeningHint('')  // clear cold-start hints once they begin speaking
         clearSilenceTimers()
 
-        // 3 s of silence after speaking → capture response
+        // 3 s of silence after speaking → capture response. During the warm-up
+        // arc, route the reply to the warm-up handler instead of the Q pipeline.
         const captureTimer = setTimeout(() => {
           if (liveTranscriptRef.current.trim() && !capturedRef.current) {
             capturedRef.current = true
-            captureResponse(liveTranscriptRef.current)
+            const warmupCb = warmupCaptureRef.current
+            if (warmupCb) warmupCb(liveTranscriptRef.current)
+            else captureResponse(liveTranscriptRef.current)
           }
         }, 3000)
         silenceTimersRef.current = [captureTimer]
@@ -656,6 +664,7 @@ export default function InterviewPage() {
 
     // t12: gentle spoken nudge
     const t12 = setTimeout(async () => {
+      if (warmupActiveRef.current) return  // warm-up manages its own silence (Build 03)
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()   // prevent t20/t30 from also firing this invocation
       setListeningHint('')
@@ -675,6 +684,7 @@ export default function InterviewPage() {
 
     // t20: offer choice — move on or more time
     const t20 = setTimeout(async () => {
+      if (warmupActiveRef.current) return  // warm-up manages its own silence (Build 03)
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()
       setListeningHint('')
@@ -695,6 +705,7 @@ export default function InterviewPage() {
 
     // t30: auto-advance — gracefully move to next question
     const t30 = setTimeout(async () => {
+      if (warmupActiveRef.current) return  // warm-up manages its own silence (Build 03)
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()
       awaitingMoveOnChoiceRef.current = false
@@ -1258,6 +1269,74 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTranscript, speakText, startListening])
 
+  /* ── Warm-up arc (Build 03) ───────────────────────────────── */
+  // Listen for one brief warm-up reply (or resolve '' on a short timeout so a
+  // silent candidate still progresses). Routes capture via warmupCaptureRef.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const awaitWarmupReply = useCallback((timeoutMs: number): Promise<string> => {
+    return new Promise((resolve) => {
+      let done = false
+      const finish = (text: string) => {
+        if (done) return
+        done = true
+        warmupCaptureRef.current = null
+        try { stopListening() } catch {}
+        resolve(text)
+      }
+      warmupCaptureRef.current = (text) => finish(text)
+      startListening()
+      setTimeout(() => finish(''), timeoutMs)
+    })
+  }, [startListening, stopListening])
+
+  // Three-beat, time-boxed warm-up, then a firm transition into the questions.
+  // ≤3 exchanges / ~60s. Reactive: beat 2 conditions on the candidate's reply.
+  // Build-01 termination handling is preserved even here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const runWarmup = useCallback(async () => {
+    if (!candidate || !position) { await moveToQuestion(0); return }
+    warmupActiveRef.current = true
+    const firstName = candidate.name.split(' ')[0]
+    const ctx = buildSessionContext()  // candidate's real local day/time
+
+    // Beat 1 — greet by name + day/time-correct opener (neutral employer framing).
+    const opener = buildOpener({ firstName, ctx, role: position.title, orgName: position.company })
+    addTranscript({ speaker: 'ai', text: opener, type: 'intro' })
+    await speakText(opener)
+    const reply1 = await awaitWarmupReply(15000)
+
+    // Preserve Build-01: honor explicit termination even during warm-up.
+    const term1 = detectTerminationIntent(reply1)
+    if (term1) { warmupActiveRef.current = false; warmupCaptureRef.current = null; await endByTermination(term1.reason); return }
+
+    // Beat 2 — ONE reactive follow-up conditioned on the actual reply.
+    let followup = ''
+    try {
+      const r = await fetch('/api/interview/warmup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateReply: reply1, firstName, role: position.title, dayContext: ctx }),
+      })
+      if (r.ok) followup = (await r.json()).line
+    } catch { /* fall back below */ }
+    if (!followup) followup = reply1 ? 'Thanks for sharing that — glad you could make it.' : 'No worries — glad you could join.'
+    addTranscript({ speaker: 'ai', text: followup, type: 'transition' })
+    await speakText(followup)
+    const reply2 = await awaitWarmupReply(12000)
+    const term2 = detectTerminationIntent(reply2)
+    if (term2) { warmupActiveRef.current = false; warmupCaptureRef.current = null; await endByTermination(term2.reason); return }
+
+    // Beat 3 — signposted, firm transition into the evaluation.
+    const transition = buildTransition()
+    addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
+    await speakText(transition)
+    await awaitWarmupReply(7000)  // brief "ready?" — don't require, time-box firmly
+
+    warmupActiveRef.current = false
+    warmupCaptureRef.current = null
+    await delay(600)
+    await moveToQuestion(0)
+  }, [candidate, position, addTranscript, speakText, awaitWarmupReply, moveToQuestion, endByTermination])
+
   /* ── Start interview ──────────────────────────────────────── */
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
@@ -1334,28 +1413,17 @@ export default function InterviewPage() {
       body: JSON.stringify({ status: 'in_progress', startedAt: new Date().toISOString() }),
     }).catch(() => {}) // fire and forget
 
-    // 2 s pause — give candidate time to settle before Alex speaks
+    // 2 s pause — give candidate time to settle before the interviewer speaks
     await delay(2000)
 
-    const firstName = candidate.name.split(' ')[0]
-    const intro =
-      `Hi ${firstName}, I am Alex, your AI interviewer for today. ` +
-      `We have ${duration} minutes together for the ${position.title} role at ${position.company}. ` +
-      `I will ask you a mix of technical, scenario-based, and behavioural questions. ` +
-      `Please speak clearly, take your time, and elaborate on your experience. ` +
-      `Let us begin.`
-
-    addTranscript({ speaker: 'ai', text: intro, type: 'intro' })
-    await speakText(intro)
-
-    // 2 s natural pause before first question
-    await delay(2000)
-
-    await moveToQuestion(0)
+    // Build 03: warm, time-boxed warm-up arc (greet + day/time opener → one
+    // reactive follow-up → signposted transition) replaces the static intro.
+    // It flows into moveToQuestion(0) itself.
+    await runWarmup()
   }, [
     candidate, position, interview, interviewId,
     setActiveSession, updateInterview, setPhase,
-    addTranscript, speakText, moveToQuestion,
+    addTranscript, speakText, runWarmup,
   ])
 
   /* ── End Interview flow ───────────────────────────────────── */
