@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { ScheduleInterviewModal } from '@/components/hire/schedule-interview-modal'
 import { EnrichmentPanel } from '@/components/hire/enrichment-panel'
 import { BestFitJobs } from '@/components/hire/best-fit-jobs'
+import { EmailComposer } from '@/components/hire/email-composer'
 
 interface Activity { id: string; type: string; note: string | null; fromStage: string | null; toStage: string | null; createdAt: string }
 interface Candidate {
@@ -23,6 +24,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [note, setNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
 
   const load = useCallback(() => {
     fetch(`/api/hire/candidates/${candidateId}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setC(d) }).catch(() => {})
@@ -124,6 +126,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                       {c.linkedinUrl ? <div><a href={c.linkedinUrl} style={{ color: '#6D28D9' }}>{c.linkedinUrl}</a></div> : null}
                       {c.source ? <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>Source: {c.source}</div> : null}
                     </div>
+                    <button onClick={() => setShowEmail(true)} disabled={!c.email} title={c.email ? 'Send a 1:1 email' : 'No email on file'} style={{ marginTop: 10, width: '100%', padding: '9px', borderRadius: 8, border: '1px solid #6D28D9', background: '#fff', color: c.email ? '#6D28D9' : '#94A3B8', fontWeight: 700, fontSize: 13, cursor: c.email ? 'pointer' : 'default' }}>✉ Send email</button>
                   </Sec>
                 </>
               )}
@@ -189,6 +192,7 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
           onScheduled={() => { setShowSchedule(false); load(); onChanged() }}
         />
       )}
+      {showEmail && c && <EmailComposer candidateId={c.id} onClose={() => setShowEmail(false)} onSent={() => { load(); onChanged() }} />}
     </div>
   )
 }

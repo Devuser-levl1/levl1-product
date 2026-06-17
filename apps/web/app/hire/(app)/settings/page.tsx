@@ -6,6 +6,7 @@ export default function HireSettings() {
   const items: [string, string, string][] = [
     ['Billing & plan', 'Manage your plan, usage and invoices.', '/hire/settings/billing'],
     ['Job Boards', 'Connect LinkedIn, Indeed, Naukri & more for one-click posting.', '/hire/settings/job-boards'],
+    ['Email Templates', 'Reusable templates with {{name}}, {{job}}, {{company}} tokens for 1:1 outreach.', '/hire/settings/email-templates'],
     ['Developers / API', 'API keys, outbound webhooks & the MCP server for integrations.', '/hire/settings/developers'],
   ]
   return (

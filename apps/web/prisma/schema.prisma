@@ -522,6 +522,7 @@ model HireTenant {
   clients         HireClient[]
   deals           HireDeal[]
   campaigns       HireCampaign[]
+  emailTemplates  HireEmailTemplate[]
   apiKeys         ApiKey[]
   webhookEndpoints WebhookEndpoint[]
   jobBoardConnectors JobBoardConnector[]
@@ -865,6 +866,22 @@ model HireCampaign {
   createdAt   DateTime             @default(now())
 
   recipients  HireCampaignRecipient[]
+
+  @@index([tenantId])
+}
+
+// Reusable 1:1 email templates (Settings → Email Templates). Personalization
+// tokens {{name}} {{job}} {{company}} are filled at send time from the
+// candidate + job. The 1:1 bridge before full email integration.
+model HireEmailTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    HireTenant @relation(fields: [tenantId], references: [id])
+  name      String
+  subject   String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tenantId])
 }
