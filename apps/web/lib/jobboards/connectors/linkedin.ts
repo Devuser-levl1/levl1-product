@@ -1,4 +1,4 @@
-import { BoardConnector, JobForPosting, PostResult, buildJobPayload } from '../index'
+import { BoardConnector, JobForPosting, PostResult, InboundCandidate, buildJobPayload, sampleInboundCandidates } from '../index'
 
 // LinkedIn connector. We don't have live job-posting API credentials on the
 // pilot account, so this runs in "assisted post" mode: produce a correctly
@@ -18,5 +18,10 @@ export const linkedinConnector: BoardConnector = {
       externalUrl: 'https://www.linkedin.com/talent/post-a-job',
       payload: buildJobPayload(job),
     }
+  },
+  // Inbound scaffolded for v1. Replace with LinkedIn's applicant API to go live.
+  inbound: 'scaffold',
+  async pull(): Promise<InboundCandidate[]> {
+    return sampleInboundCandidates('linkedin', 'LinkedIn')
   },
 }

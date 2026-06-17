@@ -1,4 +1,4 @@
-import { BoardConnector, JobForPosting, PostResult, buildJobPayload } from '../index'
+import { BoardConnector, JobForPosting, PostResult, InboundCandidate, buildJobPayload, sampleInboundCandidates } from '../index'
 
 // Indeed connector — assisted post mode (see linkedin.ts for the rationale).
 // Indeed primarily ingests jobs via XML feed / sponsored-job API; until creds
@@ -14,5 +14,9 @@ export const indeedConnector: BoardConnector = {
       externalUrl: 'https://employers.indeed.com/p/post-job',
       payload: buildJobPayload(job),
     }
+  },
+  inbound: 'scaffold',
+  async pull(): Promise<InboundCandidate[]> {
+    return sampleInboundCandidates('indeed', 'Indeed')
   },
 }

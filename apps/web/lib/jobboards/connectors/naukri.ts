@@ -1,4 +1,4 @@
-import { BoardConnector, JobForPosting, PostResult, buildJobPayload } from '../index'
+import { BoardConnector, JobForPosting, PostResult, InboundCandidate, buildJobPayload, sampleInboundCandidates } from '../index'
 
 // Naukri connector — assisted post mode. Naukri's RMS API requires an
 // enterprise contract; until provisioned we generate the payload + deep link to
@@ -14,5 +14,9 @@ export const naukriConnector: BoardConnector = {
       externalUrl: 'https://www.naukri.com/recruit/post-job',
       payload: buildJobPayload(job),
     }
+  },
+  inbound: 'scaffold',
+  async pull(): Promise<InboundCandidate[]> {
+    return sampleInboundCandidates('naukri', 'Naukri')
   },
 }
