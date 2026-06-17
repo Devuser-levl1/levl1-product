@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AskLevl1 } from '@/components/hire/ask-levl1'
 
 interface Home {
   isEmpty: boolean
@@ -33,8 +32,6 @@ export default function HireDashboard() {
     <div style={{ maxWidth: 900 }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>{greeting}{name ? `, ${name}` : ''}.</h1>
       <div style={{ fontSize: 15, color: '#64748B', marginBottom: 22 }}>Here&apos;s what needs you today.</div>
-
-      <AskLevl1 />
 
       {h?.isEmpty ? (
         <div style={{ ...card, textAlign: 'center', padding: '48px 24px' }}>

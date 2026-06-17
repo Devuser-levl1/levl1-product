@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
@@ -120,6 +121,10 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main style={{ flex: 1, padding: 32 }}>{children}</main>
       </div>
+
+      {/* Persistent, app-wide agentic assistant — slides in as a right overlay,
+          stays open across navigation, never reflows the page. */}
+      <AskLevl1Drawer />
     </div>
   )
 }
