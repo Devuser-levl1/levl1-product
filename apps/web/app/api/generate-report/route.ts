@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
+import { Prisma } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
   try {
@@ -153,6 +154,11 @@ export async function POST(req: NextRequest) {
             `    "eq":         { "score": <number>, "outOf": 100 },\n` +
             `    "whiteboard": { "score": <number>, "outOf": 100 }\n` +
             `  },\n` +
+            `  "communication": {\n` +
+            `    "coherence": <0-10>, "fluency": <0-10>, "grammar": <0-10>, "clarity": <0-10>,\n` +
+            `    "cefr": "<A1|A2|B1|B2|C1|C2>",\n` +
+            `    "rationale": "<1 sentence on spoken communication quality, grounded in the transcript>"\n` +
+            `  },\n` +
             `  "strengthAreas": ["<specific strength with evidence>", ...],\n` +
             `  "concernAreas": ["<specific concern with evidence>", ...],\n` +
             `  "questionWiseEvaluation": [\n` +
@@ -209,6 +215,7 @@ export async function POST(req: NextRequest) {
         const ss = (report.sectionScores ?? {}) as Record<string, { outOf?: number }>
         for (const k of Object.keys(ss)) ss[k] = { score: null, outOf: ss[k]?.outOf ?? 100, status: INSUFFICIENT_EVIDENCE } as never
         report.sectionScores = ss
+        report.communication = { status: INSUFFICIENT_EVIDENCE }
         report.insufficientEvidence = true
         report.recommendation = 'no'
         report.professionalSummary = `Insufficient evidence to score: the candidate did not provide evaluable content during this interview, so no competency assessment can be made. This should not be read as a pass or fail. ${report.professionalSummary ?? ''}`.trim()
@@ -267,6 +274,7 @@ export async function POST(req: NextRequest) {
         transcriptHighlights:   report.transcriptHighlights ?? [],
         hrNote:                 report.hrNote ?? '',
         l2Recommendation:       report.l2Recommendation ?? '',
+        communication:          (report.communication ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       }
       try {
         const savedReport = await prisma.report.upsert({

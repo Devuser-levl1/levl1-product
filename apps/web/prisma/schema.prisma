@@ -435,6 +435,10 @@ model Report {
   transcriptHighlights   Json
   hrNote                 String    @db.Text
   l2Recommendation       String    @db.Text
+  // Communication axis (Build 04) — kept SEPARATE from competency so a strong
+  // communicator with weak competency (or vice-versa) reads honestly.
+  // { coherence, fluency, grammar, clarity (0-10), cefr, rationale, status }
+  communication          Json?
   generatedAt            DateTime  @default(now())
 }
 

@@ -46,6 +46,7 @@ export async function GET(
       recommendation:         r.recommendation,
       professionalSummary:    r.professionalSummary,
       sectionScores:          r.sectionScores,
+      communication:          r.communication ?? null,
       strengthAreas:          r.strengthAreas,
       concernAreas:           r.concernAreas,
       questionWiseEvaluation: r.questionWiseEvaluation,
