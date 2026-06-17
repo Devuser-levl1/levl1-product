@@ -500,6 +500,13 @@ model HireTenant {
   domain      String?        @unique
   logoUrl     String?
 
+  // Branded public career page (career-page builder).
+  careerSlug        String?  @unique
+  careerEnabled     Boolean  @default(false)
+  brandColor        String?            // hex, e.g. #6D28D9 — public page accent
+  careerTagline     String?
+  careerDescription String?  @db.Text
+
   // Trial
   trialEndsAt DateTime?
   trialActive Boolean        @default(true)
@@ -626,6 +633,8 @@ model HireJob {
   // candidates against. Json array of { skill, weight (1-5), required (bool) }.
   // Empty/null → scoring falls back to mustHave/niceToHave + description.
   rubric               Json?
+  // Show this job on the tenant's public career page (only ACTIVE + this flag).
+  showOnCareers        Boolean @default(false)
   // In-built AI interview question approval: "single" = one authorized user
   // approves both gates; "dual" = tech-lead + HR both approve. Default single.
   approvalMode         String  @default("single")
