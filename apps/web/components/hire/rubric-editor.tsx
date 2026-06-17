@@ -1,7 +1,12 @@
 'use client'
 import { useState } from 'react'
 
-export interface RubricItem { skill: string; weight: number; required: boolean }
+export type RubricCategory = 'Technical' | 'Domain' | 'Tools' | 'Soft'
+export interface RubricItem { skill: string; weight: number; required: boolean; category?: RubricCategory }
+
+const CATEGORIES: RubricCategory[] = ['Technical', 'Domain', 'Tools', 'Soft']
+const CAT_COLOR: Record<RubricCategory, string> = { Technical: '#6D28D9', Domain: '#0EA5E9', Tools: '#10B981', Soft: '#F59E0B' }
+const UNCAT_COLOR = '#CBD5E1'
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 24 }
 
@@ -40,7 +45,7 @@ export function RubricEditor({
   }
 
   async function saveAndRescore() {
-    const clean = rows.map((r) => ({ skill: r.skill.trim(), weight: r.weight, required: r.required })).filter((r) => r.skill)
+    const clean = rows.map((r) => ({ skill: r.skill.trim(), weight: r.weight, required: r.required, ...(r.category ? { category: r.category } : {}) })).filter((r) => r.skill)
     setSaving(true); setMsg('')
     try {
       const res = await fetch(`/api/hire/jobs/${jobId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rubric: clean }) })
@@ -54,6 +59,32 @@ export function RubricEditor({
     } finally { setSaving(false) }
   }
 
+  // ── Distribution rollups (live, from the current rows with a skill) ────────
+  const valid = rows.filter((r) => r.skill.trim())
+  const totalWeight = valid.reduce((s, r) => s + r.weight, 0)
+  const mustWeight = valid.filter((r) => r.required).reduce((s, r) => s + r.weight, 0)
+  const niceWeight = totalWeight - mustWeight
+  const mustCount = valid.filter((r) => r.required).length
+  const niceCount = valid.length - mustCount
+  const pct = (w: number) => (totalWeight ? Math.round((w / totalWeight) * 100) : 0)
+  const mustPct = pct(mustWeight)
+  const nicePct = 100 - mustPct
+
+  const usesCategories = valid.some((r) => r.category)
+  const catRollup = (() => {
+    if (!usesCategories) return [] as { label: string; weight: number; pct: number; color: string }[]
+    const out: { label: string; weight: number; pct: number; color: string }[] = []
+    for (const cat of CATEGORIES) {
+      const w = valid.filter((r) => r.category === cat).reduce((s, r) => s + r.weight, 0)
+      if (w > 0) out.push({ label: cat, weight: w, pct: pct(w), color: CAT_COLOR[cat] })
+    }
+    const uncat = valid.filter((r) => !r.category).reduce((s, r) => s + r.weight, 0)
+    if (uncat > 0) out.push({ label: 'Uncategorized', weight: uncat, pct: pct(uncat), color: UNCAT_COLOR })
+    return out.sort((a, b) => b.weight - a.weight)
+  })()
+
+  const rigid = totalWeight > 0 && mustPct >= 85 && niceCount === 0
+
   return (
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -63,6 +94,43 @@ export function RubricEditor({
       <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>
         Define what actually matters for this role. AI scores every candidate against these weighted skills — higher weight counts more, and missing a must-have caps the score.
       </p>
+
+      {/* Distribution summary — must-have vs nice-to-have weight split. */}
+      {valid.length > 0 && (
+        <div style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Weight distribution</span>
+            <span style={{ fontSize: 12, color: '#64748B' }}>
+              <strong style={{ color: '#6D28D9' }}>{mustCount} must-have{mustCount === 1 ? '' : 's'} = {mustPct}%</strong>
+              {' · '}
+              <strong style={{ color: '#94A3B8' }}>{niceCount} nice-to-have{niceCount === 1 ? '' : 's'} = {nicePct}%</strong>
+            </span>
+          </div>
+          <div style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', background: '#E2E8F0' }}>
+            {mustWeight > 0 && <div title={`Must-have · ${mustPct}%`} style={{ width: `${mustPct}%`, background: '#6D28D9' }} />}
+            {niceWeight > 0 && <div title={`Nice-to-have · ${nicePct}%`} style={{ width: `${nicePct}%`, background: '#C4B5FD' }} />}
+          </div>
+          {rigid && <div style={{ fontSize: 11.5, color: '#B45309', marginTop: 8 }}>⚠ Rubric is rigid — almost all weight is in must-haves. Consider a few nice-to-haves so strong-but-imperfect candidates still surface.</div>}
+
+          {/* Optional category rollup. */}
+          {usesCategories && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #EEF2F7' }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Balance by category</div>
+              <div style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', background: '#E2E8F0', marginBottom: 8 }}>
+                {catRollup.map((c) => <div key={c.label} title={`${c.label} · ${c.pct}%`} style={{ width: `${c.pct}%`, background: c.color }} />)}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {catRollup.map((c) => (
+                  <span key={c.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#475569' }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 3, background: c.color }} />
+                    {c.pct}% {c.label.toLowerCase()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {rows.length === 0 && (
         <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 12 }}>No rubric yet — pre-fill from the JD or add skills below. Until you do, scoring uses the raw job description.</div>
@@ -75,8 +143,17 @@ export function RubricEditor({
               value={r.skill}
               onChange={(e) => set(i, { skill: e.target.value })}
               placeholder="Skill or criterion (e.g. ASP.NET Core)"
-              style={{ flex: 1, minWidth: 180, padding: '8px 10px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13 }}
+              style={{ flex: 1, minWidth: 160, padding: '8px 10px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13 }}
             />
+            <select
+              value={r.category ?? ''}
+              onChange={(e) => set(i, { category: (e.target.value || undefined) as RubricCategory | undefined })}
+              title="Category (optional)"
+              style={{ padding: '7px 8px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, color: r.category ? '#334155' : '#94A3B8' }}
+            >
+              <option value="">Category…</option>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
             <label style={{ fontSize: 11.5, color: '#64748B', display: 'flex', alignItems: 'center', gap: 5 }}>
               Weight
               <select value={r.weight} onChange={(e) => set(i, { weight: Number(e.target.value) })} style={{ padding: '7px 8px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13 }}>

@@ -19,10 +19,14 @@ export interface MatchResult {
   missingSkills: string[]
 }
 
+export type RubricCategory = 'Technical' | 'Domain' | 'Tools' | 'Soft'
+export const RUBRIC_CATEGORIES: RubricCategory[] = ['Technical', 'Domain', 'Tools', 'Soft']
+
 export interface RubricItem {
   skill: string
   weight: number      // 1-5, higher = matters more
   required: boolean   // must-have → missing it caps the score low
+  category?: RubricCategory  // optional grouping for balance (Technical/Domain/Tools/Soft)
 }
 
 export interface JobForMatch {
@@ -46,7 +50,8 @@ export function coerceRubric(v: unknown): RubricItem[] {
       const o = (r ?? {}) as Record<string, unknown>
       const skill = typeof o.skill === 'string' ? o.skill.trim() : ''
       const weight = Math.max(1, Math.min(5, Math.round(Number(o.weight)) || 3))
-      return { skill, weight, required: Boolean(o.required) }
+      const category = RUBRIC_CATEGORIES.includes(o.category as RubricCategory) ? (o.category as RubricCategory) : undefined
+      return { skill, weight, required: Boolean(o.required), ...(category ? { category } : {}) }
     })
     .filter((r) => r.skill.length > 0)
 }
@@ -96,7 +101,7 @@ export async function matchCandidatesToJob(job: JobForMatch, candidates: Candida
 
   const rubric = job.rubric?.length ? job.rubric : null
   const rubricBlock = rubric
-    ? `\nSCREENING RUBRIC (recruiter-defined — score PRIMARILY against this; weight 1-5 = importance):\n${rubric.map((r) => `- ${r.skill} (weight ${r.weight}/5${r.required ? ', MUST-HAVE' : ', nice-to-have'})`).join('\n')}`
+    ? `\nSCREENING RUBRIC (recruiter-defined — score PRIMARILY against this; weight 1-5 = importance):\n${rubric.map((r) => `- ${r.skill} (weight ${r.weight}/5${r.required ? ', MUST-HAVE' : ', nice-to-have'}${r.category ? `, ${r.category}` : ''})`).join('\n')}`
     : ''
 
   const jobBlock = `JOB

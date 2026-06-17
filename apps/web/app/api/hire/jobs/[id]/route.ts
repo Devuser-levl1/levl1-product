@@ -44,7 +44,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
             const o = (r ?? {}) as Record<string, unknown>
             const skill = typeof o.skill === 'string' ? o.skill.trim() : ''
             const weight = Math.max(1, Math.min(5, Math.round(Number(o.weight)) || 3))
-            return { skill, weight, required: Boolean(o.required) }
+            const cats = ['Technical', 'Domain', 'Tools', 'Soft']
+            const category = cats.includes(o.category as string) ? (o.category as string) : undefined
+            return { skill, weight, required: Boolean(o.required), ...(category ? { category } : {}) }
           })
           .filter((r: { skill: string }) => r.skill.length > 0)
       : []
