@@ -352,11 +352,34 @@ model Interview {
   runningScore      Int?
   consentGiven      Boolean   @default(false)
   consentGivenAt    DateTime?
+  // Conversation hardening (Build 01-B): how the session actually ended, and a
+  // one-shot wrap-up guard so the closing can never double-fire.
+  terminationReason   String?   // COMPLETED | TERMINATED_BY_CANDIDATE | CONSENT_WITHDRAWN | ABANDONED
+  consentWithdrawnAt  DateTime?
+  wrapUpAt            DateTime? // set once when wrap-up runs — idempotency marker
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  token        InterviewToken?
-  verification InterviewVerification?
+  token           InterviewToken?
+  verification    InterviewVerification?
+  integrityEvents InterviewIntegrityEvent[]
+}
+
+// ── Integrity Layer, Tier 1 (Build 01-A) — Screen-scoped ───────────────────
+// Structured proctoring events captured client-side during the voice interview.
+// NO raw frames/images are ever stored — only event metadata. Flags route to
+// HUMAN REVIEW; they never auto-disqualify and never affect the competency score.
+model InterviewIntegrityEvent {
+  id          String    @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  type        String    // gaze_away | no_face | multiple_faces | object_in_frame | tab_switch | window_blur | screen_share_drop | fullscreen_exit
+  occurredAt  DateTime  @default(now())
+  durationMs  Int?
+  confidence  Float     @default(1)
+  detail      String?
+  createdAt   DateTime  @default(now())
+  @@index([interviewId])
 }
 
 model InterviewVerification {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 
 export async function GET(
   _req: NextRequest,
@@ -15,6 +16,7 @@ export async function GET(
       where: { id: interviewId },
       include: {
         verification: true,
+        integrityEvents: { orderBy: { occurredAt: 'asc' } },
         candidate: {
           include: {
             report:   true,
@@ -77,6 +79,12 @@ export async function GET(
         integrityScore:  v.integrityScore,
         integrityFlags:  v.integrityFlags ?? [],
       } : null,
+      // Tier-1 proctoring summary (Build 01-A) — evidence-linked, human-review
+      // routed, SEPARATE from the competency score. Build 04 styles this panel.
+      integrity: summarizeIntegrity(interview.integrityEvents),
+      // How the session ended (Build 01-B) — distinguishes a real completion
+      // from an early/consent-withdrawn stop.
+      terminationReason: interview.terminationReason ?? null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch report'

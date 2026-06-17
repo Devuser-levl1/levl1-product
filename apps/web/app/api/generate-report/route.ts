@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
+import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
 
 export async function POST(req: NextRequest) {
   try {
@@ -192,8 +193,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Report generation failed — invalid response format' }, { status: 500 })
     }
 
+    // ── Insufficient-evidence honesty (Build 01-B3) ───────────────────
+    // Never emit a confident score for content that wasn't actually evaluable.
+    {
+      const evResponses = (Array.isArray(questionResponses) ? questionResponses : [])
+        .map((r: { candidateResponse?: string }) => ({ response: r.candidateResponse }))
+      // Per-question evidence tag (evidence-linked, audit-able).
+      if (Array.isArray(report.questionWiseEvaluation)) {
+        report.questionWiseEvaluation = report.questionWiseEvaluation.map((q: { candidateResponse?: string }) => ({
+          ...q, status: isNonEvaluableResponse(q.candidateResponse) ? INSUFFICIENT_EVIDENCE : 'SCORED',
+        }))
+      }
+      // Whole-interview gate: an unengaged interview is NOT a polished pass/fail.
+      if (!interviewHasAnyEvidence(evResponses)) {
+        const ss = (report.sectionScores ?? {}) as Record<string, { outOf?: number }>
+        for (const k of Object.keys(ss)) ss[k] = { score: null, outOf: ss[k]?.outOf ?? 100, status: INSUFFICIENT_EVIDENCE } as never
+        report.sectionScores = ss
+        report.insufficientEvidence = true
+        report.recommendation = 'no'
+        report.professionalSummary = `Insufficient evidence to score: the candidate did not provide evaluable content during this interview, so no competency assessment can be made. This should not be read as a pass or fail. ${report.professionalSummary ?? ''}`.trim()
+      }
+    }
+
     // ── Apply rubric weights if position has a scoring rubric ─────────
-    let weightedScore = Math.round(report.overallScore ?? 0)
+    let weightedScore = report.insufficientEvidence ? 0 : Math.round(report.overallScore ?? 0)
     let l2Recommended = false
 
     try {
@@ -213,7 +236,7 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      if (positionData?.scoringRubric) {
+      if (positionData?.scoringRubric && !report.insufficientEvidence) {
         const rubric = positionData.scoringRubric as { technical?: number; problemSolving?: number; behavioral?: number; eq?: number }
         const ss = report.sectionScores ?? {}
         const t  = (ss.technical?.score  ?? weightedScore) * ((rubric.technical     ?? 40) / 100)

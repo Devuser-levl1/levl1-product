@@ -8,6 +8,9 @@ import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
 import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'lucide-react'
+import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
+import { detectTerminationIntent } from '@/lib/screen/session/termination'
+import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -360,6 +363,8 @@ export default function InterviewPage() {
   const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
   const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
+  const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
+  const wrapUpFiredRef = useRef(false)           // one-shot wrap-up guard — closing fires exactly once (Build 01-B2)
   const transcriptBoxRef      = useRef<HTMLDivElement>(null)
   const codeTriggerShownRef   = useRef(false)
   const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -742,6 +747,21 @@ export default function InterviewPage() {
 
     const lower = responseText.toLowerCase().trim()
 
+    // ── 0a. Explicit termination intent (Build 01-B1) ────────────────
+    // Honor it immediately — never substitute the canned end-of-flow closing.
+    // Consent withdrawal is a hard stop; a plain end-request confirms once.
+    const termination = detectTerminationIntent(responseText, { repeated: terminationAskedRef.current })
+    if (termination) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      if (termination.kind === 'consent_withdrawal' || termination.immediate) {
+        await endByTermination(termination.reason)
+      } else {
+        terminationAskedRef.current = true
+        await handleEndInterviewRequest()
+      }
+      return
+    }
+
     // ── 0. Awaiting "more time or move on?" choice ───────────────────
     if (awaitingMoveOnChoiceRef.current) {
       awaitingMoveOnChoiceRef.current = false
@@ -1109,8 +1129,47 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, position, interview, interviewId, addReport, updateCandidate])
 
+  // End the interview because the CANDIDATE asked to (or withdrew consent).
+  // Uses an honest acknowledgment — NOT the canned "ran out of questions"
+  // closing — persists the reason, and never double-fires (Build 01-B1/B2).
+  // A consent-withdrawn session is a hard stop and is NOT scored normally.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const endByTermination = useCallback(async (reason: TerminationReason) => {
+    if (wrapUpFiredRef.current) return
+    wrapUpFiredRef.current = true
+    setShowEndConfirm(false)
+    stopAllAudio(); stopListening()
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+
+    const firstName = candidate?.name.split(' ')[0] || 'there'
+    const closing = reason === TERMINATION_REASONS.CONSENT_WITHDRAWN
+      ? `Understood, ${firstName}. I'm stopping the interview now, and your withdrawal of consent has been recorded. Thank you for your time.`
+      : `Understood, ${firstName}. We'll end the interview here as you've asked. Thank you for your time — the team will follow up on next steps.`
+    addTranscript({ speaker: 'ai', text: closing, type: 'closing' })
+    await speakText(closing)
+
+    setPhase('completed')
+    stopListening()
+    if (interview) updateInterview(interview.id, { status: 'completed', candidateJoined: true })
+    fetch(`/api/interviews/${interviewId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'completed', completedAt: new Date().toISOString(), terminationReason: reason,
+        ...(reason === TERMINATION_REASONS.CONSENT_WITHDRAWN ? { consentWithdrawnAt: new Date().toISOString() } : {}),
+      }),
+    }).catch(() => {})
+
+    // Consent withdrawal → do NOT score as a normal completion. A candidate-
+    // ended interview still produces a report (it will mark dimensions with no
+    // evaluable content as insufficient-evidence rather than confident scores).
+    if (reason !== TERMINATION_REASONS.CONSENT_WITHDRAWN) generateReport().catch(console.error)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidate, interview, interviewId, stopAllAudio, stopListening, addTranscript, speakText, setPhase, updateInterview])
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const startClosing = useCallback(async () => {
+    if (wrapUpFiredRef.current) return  // exactly-once wrap-up (Build 01-B2)
+    wrapUpFiredRef.current = true
     setPhase('closing')
     const firstName = candidate?.name.split(' ')[0] || 'there'
     const closing =
@@ -1151,7 +1210,7 @@ export default function InterviewPage() {
     fetch(`/api/interviews/${interviewId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString() }),
+      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString(), terminationReason: TERMINATION_REASONS.COMPLETED }),
     }).catch(() => {})
 
     try {
@@ -1302,6 +1361,7 @@ export default function InterviewPage() {
 
   const handleEndConfirmContinue = useCallback(async () => {
     setShowEndConfirm(false)
+    terminationAskedRef.current = false
     const continuePhrase = 'Great, let us continue.'
     addTranscript({ speaker: 'ai', text: continuePhrase, type: 'transition' })
     await speakText(continuePhrase)
@@ -1315,9 +1375,11 @@ export default function InterviewPage() {
   const handleEndConfirmEnd = useCallback(async () => {
     setShowEndConfirm(false)
     stopAllAudio()
-    await startClosing()
+    // Candidate confirmed they want to stop → honest termination closing +
+    // persisted reason, NOT the canned end-of-flow script.
+    await endByTermination(TERMINATION_REASONS.TERMINATED_BY_CANDIDATE)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stopAllAudio, startClosing])
+  }, [stopAllAudio, endByTermination])
 
   /* ── Code editor sync (debounced 1 s) ────────────────────── */
   const handleCodeChange = (val: string | undefined) => {
@@ -1430,6 +1492,10 @@ export default function InterviewPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
+
+      {/* Tier-1 visible proctoring — live monitoring indicator + capture (Build 01-A).
+          This branch only renders while the interview is live, so monitoring is active. */}
+      <IntegrityMonitor interviewId={interviewId} active={true} />
 
       {/* ── Header ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: '#fff', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
