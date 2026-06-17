@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { Leaderboard } from '@/components/hire/leaderboard'
 
 interface Analytics {
   summary: { totalCandidates: number; activeJobs: number; avgAiScore: number | null; avgInterviewScore: number | null; hires: number; avgTimeToHireDays: number | null; openPipelineValue: number; wonValue: number }
@@ -21,6 +22,7 @@ const RANGES = [['30d', 30], ['90d', 90], ['365d', 365]] as const
 export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null)
   const [jobs, setJobs] = useState<Job[]>([])
+  const [view, setView] = useState<'overview' | 'leaderboard'>('overview')
   const [days, setDays] = useState(90)
   const [jobId, setJobId] = useState('')
   // Single status machine — avoids flip/flicker between multiple booleans.
@@ -95,22 +97,33 @@ export default function AnalyticsPage() {
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Analytics</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 8, padding: 3 }}>
-            {RANGES.map(([label, d]) => <button key={label} onClick={() => setDays(d)} style={{ fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 6, border: 'none', background: days === d ? '#fff' : 'transparent', color: days === d ? '#6D28D9' : '#64748B', cursor: 'pointer', boxShadow: days === d ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>{label}</button>)}
+        {view === 'overview' && (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 4, background: '#F1F5F9', borderRadius: 8, padding: 3 }}>
+              {RANGES.map(([label, d]) => <button key={label} onClick={() => setDays(d)} style={{ fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 6, border: 'none', background: days === d ? '#fff' : 'transparent', color: days === d ? '#6D28D9' : '#64748B', cursor: 'pointer', boxShadow: days === d ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>{label}</button>)}
+            </div>
+            <select value={jobId} onChange={(e) => setJobId(e.target.value)} style={sel}><option value="">All jobs</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
+            <button onClick={exportCsv} disabled={!data} style={{ ...sel, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Export CSV</button>
           </div>
-          <select value={jobId} onChange={(e) => setJobId(e.target.value)} style={sel}><option value="">All jobs</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
-          <button onClick={exportCsv} disabled={!data} style={{ ...sel, fontWeight: 600, color: '#6D28D9', cursor: 'pointer' }}>Export CSV</button>
-        </div>
+        )}
       </div>
+
+      {/* View tabs */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #E2E8F0', marginBottom: 20 }}>
+        {(['overview', 'leaderboard'] as const).map((t) => (
+          <button key={t} onClick={() => setView(t)} style={{ padding: '9px 14px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (view === t ? '#6D28D9' : 'transparent'), color: view === t ? '#6D28D9' : '#64748B', cursor: 'pointer', textTransform: 'capitalize' }}>{t}</button>
+        ))}
+      </div>
+
+      {view === 'leaderboard' && <Leaderboard />}
 
       {/* Show the spinner only on the FIRST load (no data yet). On refetch we
           keep the existing content visible so the page never flickers. */}
-      {status === 'loading' && !data && <div style={{ color: '#475569' }}>Loading…</div>}
+      {view === 'overview' && status === 'loading' && !data && <div style={{ color: '#475569' }}>Loading…</div>}
 
-      {status === 'error' && (
+      {view === 'overview' && status === 'error' && (
         <div style={{ ...card, textAlign: 'center', padding: '48px 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#B91C1C' }}>Couldn&apos;t load analytics</div>
@@ -119,7 +132,7 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {status !== 'error' && data && data.summary.totalCandidates === 0 && (
+      {view === 'overview' && status !== 'error' && data && data.summary.totalCandidates === 0 && (
         <div style={{ ...card, textAlign: 'center', padding: '60px 24px' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📊</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#475569' }}>Not enough data yet</div>
@@ -127,7 +140,7 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {status !== 'error' && data && data.summary.totalCandidates > 0 && (
+      {view === 'overview' && status !== 'error' && data && data.summary.totalCandidates > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Row 1 — KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12 }}>
