@@ -297,6 +297,7 @@ export default function InterviewPage() {
           score:         data.runningScore ?? undefined,
         }
         isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
+        setConsentOk(!!data.consentGiven || !!data.isDemo)  // I-P0-1 soft consent gate
         const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
         if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
 
@@ -379,6 +380,7 @@ export default function InterviewPage() {
   const warmupActiveRef = useRef(false)
   const warmupCaptureRef = useRef<((text: string) => void) | null>(null)
   const isDemoRef = useRef(false)  // demo-gallery run (Build 05) — never bills usage
+  const [consentOk, setConsentOk] = useState(false)  // soft consent gate before start (I-P0-1)
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -1615,13 +1617,27 @@ export default function InterviewPage() {
           <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
+          {/* Soft consent gate (I-P0-1): the interview cannot START until the
+              candidate explicitly acknowledges the recording/data-processing
+              notice. Acknowledgement is logged with a timestamp server-side. */}
+          {!consentOk && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, textAlign: 'left', fontSize: 12.5, color: '#475569', lineHeight: 1.6, marginBottom: 14, cursor: 'pointer', padding: '12px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10 }}>
+              <input type="checkbox" onChange={async (e) => {
+                if (!e.target.checked) return
+                try { await fetch(`/api/schedule/${interviewId}/consent`, { method: 'POST' }) } catch {}
+                setConsentOk(true)
+              }} style={{ marginTop: 2 }} />
+              <span>I consent to this interview being <strong>recorded and monitored</strong> and to my responses being processed and evaluated by Levl1&apos;s AI for this hiring assessment. I understand I can withdraw consent at any time to stop the interview.</span>
+            </label>
+          )}
           <button
             onClick={startInterview}
-            style={{ width: '100%', padding: '14px 0', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}
+            disabled={!consentOk}
+            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'linear-gradient(135deg, #4F46E5, #4338CA)' : '#CBD5E1', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
           >
             Start Interview →
           </button>
-          <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>By starting, you consent to this interview being recorded and evaluated.</div>
+          <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>{consentOk ? 'Consent acknowledged. You can begin when ready.' : 'Acknowledge the consent notice above to begin.'}</div>
         </div>
       </div>
     )

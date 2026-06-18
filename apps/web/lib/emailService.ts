@@ -31,6 +31,9 @@ interface EmailOptions {
   html: string
   from?: string
   replyTo?: string
+  // Optional Resend attachments (e.g. an .ics calendar file). Additive — existing
+  // callers (incl. Hire's sendHireEmail) are unaffected.
+  attachments?: { filename: string; content: string; contentType?: string }[]
 }
 
 export async function sendEmail(opts: EmailOptions): Promise<{ id?: string }> {
@@ -59,6 +62,7 @@ export async function sendEmail(opts: EmailOptions): Promise<{ id?: string }> {
       subject: opts.subject,
       html: opts.html,
       ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+      ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
     }),
   })
 

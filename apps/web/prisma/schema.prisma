@@ -433,6 +433,23 @@ model LoginOtp {
   @@index([expiresAt])
 }
 
+// ── Slot booking (Build I-P0-1, Screen-scoped) ─────────────────────────────
+// One row per BOOKED slot. The @@unique([positionId, startTime]) makes booking
+// atomic — a second candidate picking the same slot fails the unique constraint
+// (caught + surfaced as "slot taken"), preventing double-booking. Reschedule
+// releases the old row and books a new one; cancel deletes the row.
+model SlotBooking {
+  id          String   @id @default(cuid())
+  positionId  String
+  interviewId String   @unique          // one active booking per interview
+  candidateId String
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+  @@unique([positionId, startTime])     // ← prevents double-booking
+  @@index([positionId])
+}
+
 model InterviewToken {
   id          String    @id @default(cuid())
   token       String    @unique @default(cuid())
