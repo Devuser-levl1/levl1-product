@@ -44,6 +44,12 @@ const SILENCE_THRESHOLDS = {
   AUTO_ADVANCE:    30,  // Alex auto-advances to next question
 } as const
 
+// Diagnostic fix: end-of-turn endpointing. Was a fixed 3000ms — ~3s of dead air
+// every turn, the single biggest source of perceived "robotic" lag. 1500ms still
+// tolerates a thinking pause (the timer resets on each new interim transcript)
+// but responds far more promptly. Env-tunable for further tuning.
+const RESPONSE_ENDPOINT_MS = Math.max(700, Number(process.env.NEXT_PUBLIC_RESPONSE_ENDPOINT_MS) || 1500)
+
 /* ── Keyword trigger lists (checked before calling Claude) ───────── */
 // Candidate asking about fit/suitability → redirect and continue
 const REDIRECT_TRIGGERS = [
@@ -525,9 +531,14 @@ export default function InterviewPage() {
     if (!isMountedRef.current) return
     setPhase('speaking')
 
-    if (process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY) {
+    // Diagnostic fix: ALWAYS attempt ElevenLabs via the server route (which holds
+    // ELEVENLABS_API_KEY). The old client-side gate on NEXT_PUBLIC_ELEVENLABS_API_KEY
+    // meant that if only the server key was set, every interview silently fell back
+    // to robotic browser speechSynthesis. The route returns non-audio if unconfigured,
+    // and we still fall through to browser TTS below as a last resort.
+    {
       try {
-        // Fix 4: 8-second timeout — fall through to browser TTS on timeout
+        // 8-second timeout — fall through to browser TTS on timeout
         const controller = new AbortController()
         const timeout    = setTimeout(() => controller.abort(), 8000)
         const res = await fetch('/api/interview/generate-speech', {
@@ -632,8 +643,9 @@ export default function InterviewPage() {
         setListeningHint('')  // clear cold-start hints once they begin speaking
         clearSilenceTimers()
 
-        // 3 s of silence after speaking → capture response. During the warm-up
-        // arc, route the reply to the warm-up handler instead of the Q pipeline.
+        // End-of-turn after a short silence → capture response (RESPONSE_ENDPOINT_MS,
+        // reset on each new interim). During the warm-up arc, route the reply to
+        // the warm-up handler instead of the Q pipeline.
         const captureTimer = setTimeout(() => {
           if (liveTranscriptRef.current.trim() && !capturedRef.current) {
             capturedRef.current = true
@@ -641,7 +653,7 @@ export default function InterviewPage() {
             if (warmupCb) warmupCb(liveTranscriptRef.current)
             else captureResponse(liveTranscriptRef.current)
           }
-        }, 3000)
+        }, RESPONSE_ENDPOINT_MS)
         silenceTimersRef.current = [captureTimer]
       }
     }
@@ -929,10 +941,12 @@ export default function InterviewPage() {
       suggestedTransition: '',
     }
     try {
-      const prevQ = transcriptRef.current
-        .filter(t => t.speaker === 'ai' && t.questionId)
-        .slice(-3)
-        .map(t => ({ question: t.text, response: '' }))
+      // Diagnostic fix: pass the candidate's ACTUAL prior answers (not empty
+      // strings) so the brain has session memory and can reference what they
+      // really said earlier — the main cause of non-referential, robotic replies.
+      const prevQ = responsesRef.current
+        .slice(-5)
+        .map(r => ({ question: r.questionText, response: r.candidateResponse }))
 
       const res = await fetch('/api/interview/evaluate-response', {
         method: 'POST',

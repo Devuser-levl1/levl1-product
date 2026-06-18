@@ -15,9 +15,11 @@ export async function POST(req: NextRequest) {
 
     const client = new Anthropic({ apiKey })
 
+    // Real prior answers now flow in (the caller used to send empty responses).
+    // Give the engine enough memory to reference what the candidate actually said.
     const prevCtx = previousResponses.length
-      ? '\n\nPrevious Q&A:\n' +
-        previousResponses.slice(-3).map((p, i) => `Q${i + 1}: ${p.question}\nA${i + 1}: ${p.response}`).join('\n')
+      ? '\n\nEarlier in THIS interview (reference these — the candidate already said them):\n' +
+        previousResponses.slice(-5).map((p, i) => `Q${i + 1}: ${p.question}\nA${i + 1}: ${p.response}`).join('\n')
       : ''
 
     const res = await client.messages.create({
