@@ -40,15 +40,16 @@ export interface IntegritySummary {
 // Signal weight when reasonably confident. Heavy = clearer integrity signals.
 const HEAVY: ReadonlySet<string> = new Set([
   'multiple_faces', 'object_in_frame', 'tab_switch', 'screen_share_drop',
-  'ai_assisted_answer', 'paste_anomaly', 'combined_anomaly',
+  'ai_assisted_answer', 'paste_anomaly', 'combined_anomaly', 'second_voice',
 ])
 const MIN_CONFIDENCE = 0.6
 
 // Families — co-occurrence ACROSS families is what escalates (not repeats of one).
-const FAMILY: Record<string, 'camera' | 'focus' | 'content'> = {
+const FAMILY: Record<string, 'camera' | 'focus' | 'content' | 'audio'> = {
   gaze_away: 'camera', no_face: 'camera', multiple_faces: 'camera', object_in_frame: 'camera',
   tab_switch: 'focus', window_blur: 'focus', screen_share_drop: 'focus', fullscreen_exit: 'focus',
   ai_assisted_answer: 'content', latency_anomaly: 'content', paste_anomaly: 'content', combined_anomaly: 'content',
+  second_voice: 'audio',
 }
 const CO_WINDOW_MS = 90_000
 

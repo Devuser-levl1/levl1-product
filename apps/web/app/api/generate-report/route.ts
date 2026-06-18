@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
+import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { Prisma } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
     const resumeExcerpt = resumeText.slice(0, 1500)
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: SCORING_MODEL,  // brain split: final scoring on the deeper model
       max_tokens: 4096,
       system:
         'You are a senior recruitment consultant evaluating a candidate interview. ' +

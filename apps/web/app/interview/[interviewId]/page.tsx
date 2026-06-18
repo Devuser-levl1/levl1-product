@@ -12,7 +12,7 @@ import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
-import { DeepgramStt } from '@/lib/screen/interview/deepgram-stt'
+import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
@@ -57,6 +57,9 @@ const REDIRECT_TRIGGERS = [
   'am i right for', 'am i a good fit', 'do i qualify',
   'what do you think of me', 'how am i doing', 'am i doing well',
   'am i the right', 'would i be a good', 'am i suitable',
+  'am i selected', 'did i get', 'did i pass', 'do i get the job',
+  'do you think i', 'will i get', 'have i been selected', 'am i hired',
+  'my chances', 'did i do well', 'did i do good',
 ] as const
 
 // Candidate asking to repeat/clarify the question
@@ -384,8 +387,13 @@ export default function InterviewPage() {
   const transcriptRef     = useRef<TranscriptEntry[]>([])
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
-  const dgSttRef          = useRef<DeepgramStt | null>(null)  // I-P0-3: Deepgram streaming STT
-  const sttPreferWebSpeechRef = useRef(false)    // once Deepgram fails, skip it for the session
+  const dgSttRef          = useRef<ScribeStt | null>(null)  // ElevenLabs Scribe v2 Realtime STT
+  const sttPreferWebSpeechRef = useRef(false)    // once Scribe fails, skip it for the session
+  // Interview-long mic recording for post-interview fraud diarization (Scribe batch).
+  const fraudRecorderRef  = useRef<MediaRecorder | null>(null)
+  const fraudStreamRef    = useRef<MediaStream | null>(null)
+  const fraudChunksRef    = useRef<Blob[]>([])
+  const fraudUploadedRef  = useRef(false)
   const aiSpeakingRef     = useRef(false)        // bugfix: true while Alex's TTS plays — drop mic echo
   const noInputStrikesRef = useRef(0)            // bugfix: consecutive silent turns → mic warning, never end
   const candidateSpokeRef = useRef(false)        // bugfix: any captured candidate speech this session?
@@ -707,13 +715,15 @@ export default function InterviewPage() {
     }
 
     if (sttPreferWebSpeechRef.current) {
-      // Deepgram already failed this session (e.g. token 403 — key lacks keys:write).
-      // Don't hit the token route again every turn; use Web Speech directly.
+      // Scribe already failed this session (token/mic). Don't re-hit the token
+      // route every turn; use Web Speech directly for the rest of the interview.
       runWebSpeech()
     } else {
-      // ── Deepgram streaming (primary): Nova-tier cloud STT with ADAPTIVE
-      //    endpointing — onUtteranceEnd replaces the fixed 1500 ms timer. ──
-      const dg = new DeepgramStt({
+      // ── ElevenLabs Scribe v2 Realtime (primary) ──
+      //   VAD commit handles endpointing (tuned NOT to cut off mid-sentence);
+      //   committed_transcript → onUtteranceEnd. Keyterms bias control + tech words.
+      const keyterms = [...DEFAULT_KEYTERMS, ...((position?.techStack ?? []) as string[])]
+      const dg = new ScribeStt({
         onInterim: (text) => {
           if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
           liveTranscriptRef.current = text
@@ -721,12 +731,15 @@ export default function InterviewPage() {
           if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
         },
         onUtteranceEnd: (text) => captureNow(text),
+      }, {
+        languageCode: process.env.NEXT_PUBLIC_SCRIBE_LANGUAGE ?? 'en',
+        keyterms,
+        vadSilenceSecs: Number(process.env.NEXT_PUBLIC_SCRIBE_VAD_SILENCE_SECS) || 2.0,
       })
       dgSttRef.current = dg
       dg.start().then((ok) => {
-        // Fall back gracefully if Deepgram didn't start and we haven't moved on.
         if (!ok && dgSttRef.current === dg && !capturedRef.current && phaseRef.current === 'listening') {
-          sttPreferWebSpeechRef.current = true  // stop retrying Deepgram this session
+          sttPreferWebSpeechRef.current = true  // stop retrying Scribe this session
           dgSttRef.current = null
           runWebSpeech()
         }
@@ -933,14 +946,16 @@ export default function InterviewPage() {
       // Substantive answer — fall through to normal handling
     }
 
-    // ── 1. Fit / qualification questions ────────────────────────────
+    // ── 1. Outcome-fishing / fit questions → deflect, do NOT advance ────
+    // "am I selected?" / "do you think I'm a fit?" must be deflected and the SAME
+    // question re-asked — never treated as an answer, never advanced (Build 03).
     if (REDIRECT_TRIGGERS.some(w => lower.includes(w))) {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
-      const resp = "That's not something I can comment on during the interview — the team will be in touch after. Let's continue."
+      const resp = "That's not something I can comment on during the interview — the team will be in touch after. Let's stay with the question."
       addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
       await speakText(resp)
       await delay(800)
-      await moveToQuestion(currentQIdxRef.current + 1)
+      startListening()  // re-listen on the SAME question — no advance
       return
     }
 
@@ -1302,6 +1317,7 @@ export default function InterviewPage() {
     wrapUpFiredRef.current = true
     setShowEndConfirm(false)
     stopAllAudio(); stopListening()
+    stopAndUploadFraudRecording()  // ship audio for post-interview diarization
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
 
     const firstName = candidate?.name.split(' ')[0] || 'there'
@@ -1365,6 +1381,7 @@ export default function InterviewPage() {
     setPhase('completed')
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
     stopListening()
+    stopAndUploadFraudRecording()  // ship audio for post-interview diarization
 
     updateCandidate(interview?.candidateId ?? '', {
       status: 'completed',
@@ -1473,9 +1490,48 @@ export default function InterviewPage() {
     await moveToQuestion(0)
   }, [candidate, position, addTranscript, speakText, awaitWarmupReply, moveToQuestion, endByTermination])
 
+  /* ── Fraud recording (interview-long; batch-diarized post-interview) ── */
+  const startFraudRecording = useCallback(async () => {
+    if (fraudRecorderRef.current || typeof MediaRecorder === 'undefined') return
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      fraudStreamRef.current = stream
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
+      const rec = new MediaRecorder(stream, { mimeType: mime })
+      rec.ondataavailable = (e) => { if (e.data.size > 0) fraudChunksRef.current.push(e.data) }
+      rec.start(2000)
+      fraudRecorderRef.current = rec
+    } catch { /* best-effort; fraud diarization is review-only and non-blocking */ }
+  }, [])
+
+  // Stop the recording and ship it to batch diarization (fire-and-forget, once).
+  const stopAndUploadFraudRecording = useCallback(() => {
+    if (fraudUploadedRef.current) return
+    fraudUploadedRef.current = true
+    const rec = fraudRecorderRef.current
+    const finish = () => {
+      const chunks = fraudChunksRef.current
+      fraudStreamRef.current?.getTracks().forEach((t) => t.stop())
+      fraudStreamRef.current = null
+      if (!chunks.length) return
+      const blob = new Blob(chunks, { type: rec?.mimeType || 'audio/webm' })
+      // Skip uploads that are too small to contain a real second voice.
+      if (blob.size < 4096) return
+      try {
+        fetch(`/api/interview/fraud-diarize?interviewId=${encodeURIComponent(interviewId)}`, {
+          method: 'POST', headers: { 'Content-Type': blob.type }, body: blob, keepalive: true,
+        }).catch(() => {})
+      } catch {}
+    }
+    if (rec && rec.state !== 'inactive') { rec.onstop = finish; try { rec.stop() } catch { finish() } }
+    else finish()
+    fraudRecorderRef.current = null
+  }, [interviewId])
+
   /* ── Start interview ──────────────────────────────────────── */
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
+    startFraudRecording()  // begin the interview-long recording for fraud diarization
 
     // Fix 6: load questions from DB questionSet first; fall back to buildQuestions()
     let qs: LocalQuestion[] = []

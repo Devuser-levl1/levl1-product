@@ -18,12 +18,17 @@ built and owned by Abhijit Majumdar (Avyoma Labs).
                `CLAUDE_MODEL` (lib/ai/model.ts). The live-interview BRAIN
                (evaluate-response, generate-dynamic-question) uses
                `INTERVIEW_MODEL` = claude-opus-4-8 (lib/screen/interview/model.ts).
-- Voice:       ElevenLabs (Interviews product only)
-- Transcription: Deepgram streaming STT (Interviews product only). Mic audio is
-               captured in the browser and streamed to Deepgram's realtime
-               WebSocket via a short-lived grant token (/api/deepgram/token);
-               adaptive endpointing drives turn-taking. Falls back to the browser
-               Web Speech API when DEEPGRAM_API_KEY is unset or the grant fails.
+- Voice:       ElevenLabs — TTS (eleven_turbo) AND STT (Scribe), single-vendor.
+- Transcription: ElevenLabs Scribe v2 (Interviews product only).
+               • LIVE: Scribe v2 Realtime over WebSocket. Browser captures 16 kHz
+                 PCM and streams it; auth is a single-use token minted server-side
+                 (/api/elevenlabs/stt-token → POST /v1/single-use-token/realtime_scribe,
+                 reusing ELEVENLABS_API_KEY). VAD commit drives turn-taking; keyterm
+                 prompting biases control/tech words. Falls back to Web Speech if the
+                 token/mic fails. (Replaced Deepgram.)
+               • FRAUD: Scribe v2 batch with diarization runs post-interview on the
+                 recorded audio (/api/interview/fraud-diarize) to detect a second/
+                 whispering voice → `second_voice` integrity events (review-only).
 - Email:       Resend
 - Auth:        JWT (access token), bcrypt — NO Google OAuth
 - File storage: PostgreSQL text fields for MVP (no Cloudinary yet)

@@ -17,6 +17,8 @@ export const INTEGRITY_EVENT_TYPES = [
   'latency_anomaly',    // off-platform-lookup latency pattern
   'paste_anomaly',      // large pre-formed block pasted into the editor
   'combined_anomaly',   // co-occurring weak signals escalated together
+  // ── Post-interview audio diarization (Scribe v2 batch) ──
+  'second_voice',       // a second/whispering speaker detected in the recording
 ] as const
 
 export type IntegrityEventType = (typeof INTEGRITY_EVENT_TYPES)[number]
@@ -50,6 +52,7 @@ export const INTEGRITY_LABELS: Record<IntegrityEventType, string> = {
   latency_anomaly: 'Unusual answer-timing pattern',
   paste_anomaly: 'Large block pasted into editor',
   combined_anomaly: 'Multiple integrity signals co-occurred',
+  second_voice: 'A second voice was heard in the recording',
 }
 
 // High-confidence events trigger the in-interview "noted for review" notice.
