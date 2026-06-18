@@ -218,7 +218,12 @@ export async function POST(req: NextRequest) {
         report.communication = { status: INSUFFICIENT_EVIDENCE }
         report.insufficientEvidence = true
         report.recommendation = 'no'
-        report.professionalSummary = `Insufficient evidence to score: the candidate did not provide evaluable content during this interview, so no competency assessment can be made. This should not be read as a pass or fail. ${report.professionalSummary ?? ''}`.trim()
+        // bugfix: distinguish a likely mic/STT failure from a genuinely unengaged
+        // candidate, so an empty report isn't misread as a real (failed) assessment.
+        const sttNote = body.sttFailed
+          ? 'No candidate audio was captured for the entire session, which strongly suggests a microphone or speech-to-text failure rather than a candidate who did not engage — this interview should be re-run after confirming the mic works. '
+          : ''
+        report.professionalSummary = `Insufficient evidence to score: ${sttNote}the candidate did not provide evaluable content during this interview, so no competency assessment can be made. This should not be read as a pass or fail. ${report.professionalSummary ?? ''}`.trim()
       }
     }
 

@@ -2,43 +2,86 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// ── Deepgram short-lived token (Build I-P0-3, Part 2) ───────────────────────
+// ── Deepgram short-lived STT credential (Build I-P0-3; bugfix) ──────────────
 // The browser streams mic audio straight to Deepgram's WebSocket for the lowest
-// latency, but the long-lived DEEPGRAM_API_KEY must never reach the client. This
-// route mints a SHORT-LIVED, usage-scoped grant token (Deepgram /v1/auth/grant,
-// ttl seconds) that the browser uses as the WS bearer. If grant minting isn't
-// available on the plan, it falls back to returning a temporary scoped API key.
+// latency, but the long-lived DEEPGRAM_API_KEY must never reach the client.
 //
-// No auth gate: the live-interview pages (incl. unauthenticated demos) need STT,
-// exactly like the integrity ingest + warmup routes. Abuse is bounded by the
-// short TTL and Deepgram's own per-project usage caps.
+// We MINT A SCOPED, SHORT-LIVED TEMPORARY API KEY (Deepgram key-creation API,
+// `time_to_live_in_seconds`) — the method available on standard plans. The older
+// /v1/auth/grant approach 503'd on this plan, so it's gone. The temp key is
+// scoped to `usage:write` (listen/STT only) and self-expires, so a harvested
+// credential is near-worthless.
+//
+// No login gate: live-interview pages (incl. anonymous ?demo=1) need STT, like
+// the integrity-ingest + warmup routes. Abuse is bounded by a per-IP rate limit,
+// the short TTL, and the minimal scope. Client falls back to Web Speech on 503.
 
-const GRANT_TTL_SECONDS = 30
+const KEY_TTL_SECONDS = Math.max(30, Number(process.env.DEEPGRAM_KEY_TTL_SECONDS ?? 60))
+const PER_IP_PER_MIN = Math.max(1, Number(process.env.DEEPGRAM_TOKEN_RATE_PER_MIN ?? 12))
 
-export async function POST(_req: NextRequest) {
+// Lightweight per-IP rate limit so the (anonymous) route can't be farmed for keys.
+const WINDOW_MS = 60_000
+const ipHits = new Map<string, number[]>()
+function rateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (ipHits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
+  if (recent.length >= PER_IP_PER_MIN) { ipHits.set(ip, recent); return true }
+  recent.push(now); ipHits.set(ip, recent)
+  return false
+}
+
+// Resolve the Deepgram project id (keys are created under a project). Prefer the
+// env var; otherwise look it up once and cache it for the process lifetime.
+let cachedProjectId: string | null = null
+async function getProjectId(key: string): Promise<string | null> {
+  if (process.env.DEEPGRAM_PROJECT_ID) return process.env.DEEPGRAM_PROJECT_ID
+  if (cachedProjectId) return cachedProjectId
+  const res = await fetch('https://api.deepgram.com/v1/projects', {
+    headers: { Authorization: `Token ${key}` },
+  })
+  if (!res.ok) return null
+  const data = (await res.json()) as { projects?: Array<{ project_id?: string }> }
+  cachedProjectId = data.projects?.[0]?.project_id ?? null
+  return cachedProjectId
+}
+
+export async function POST(req: NextRequest) {
   const key = process.env.DEEPGRAM_API_KEY
   if (!key) {
     // Not configured → client falls back to the browser Web Speech recognizer.
     return NextResponse.json({ error: 'stt_unconfigured' }, { status: 503 })
   }
 
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+  if (rateLimited(ip)) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
+
   try {
-    // Preferred: a temporary grant token (cannot be reused after TTL).
-    const res = await fetch('https://api.deepgram.com/v1/auth/grant', {
+    const projectId = await getProjectId(key)
+    if (!projectId) {
+      console.warn('[deepgram/token] could not resolve project id (set DEEPGRAM_PROJECT_ID)')
+      return NextResponse.json({ error: 'stt_no_project' }, { status: 503 })
+    }
+
+    const res = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
       method: 'POST',
       headers: { Authorization: `Token ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ttl_seconds: GRANT_TTL_SECONDS, scopes: ['usage:write'] }),
+      body: JSON.stringify({
+        comment: 'levl1-interview-ephemeral',
+        scopes: ['usage:write'],            // listen/STT only
+        time_to_live_in_seconds: KEY_TTL_SECONDS,
+      }),
     })
+
     if (res.ok) {
-      const data = (await res.json()) as { access_token?: string; expires_in?: number }
-      if (data.access_token) {
-        return NextResponse.json({ token: data.access_token, kind: 'grant', expiresIn: data.expires_in ?? GRANT_TTL_SECONDS })
+      const data = (await res.json()) as { key?: string; api_key_id?: string }
+      if (data.key) {
+        // `kind: 'key'` → the browser authenticates the WS with the `token` subprotocol.
+        return NextResponse.json({ token: data.key, kind: 'key', expiresIn: KEY_TTL_SECONDS })
       }
     }
-    // Some Deepgram plans don't expose /auth/grant — surface a clear, non-fatal error.
     const detail = await res.text().catch(() => '')
-    console.warn('[deepgram/token] grant unavailable:', res.status, detail.slice(0, 200))
-    return NextResponse.json({ error: 'stt_grant_unavailable' }, { status: 503 })
+    console.warn('[deepgram/token] key creation failed:', res.status, detail.slice(0, 200))
+    return NextResponse.json({ error: 'stt_key_failed' }, { status: 503 })
   } catch (err) {
     console.error('[deepgram/token]', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'stt_token_failed' }, { status: 500 })

@@ -362,6 +362,7 @@ export default function InterviewPage() {
   const [isListening, setIsListening] = useState(false)
   const [micFailed, setMicFailed]    = useState(false)
   const [textInputMode, setTextInputMode]   = useState(false)
+  const [sttWarning, setSttWarning]  = useState<string | null>(null)  // bugfix: "I can't hear you" banner
   const [textInputValue, setTextInputValue] = useState('')
   const [timeRemaining, setTimeRemaining]   = useState(0)
   const [, setQuestionResponses]     = useState<QuestionResponse[]>([])
@@ -384,6 +385,9 @@ export default function InterviewPage() {
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
   const dgSttRef          = useRef<DeepgramStt | null>(null)  // I-P0-3: Deepgram streaming STT
+  const aiSpeakingRef     = useRef(false)        // bugfix: true while Alex's TTS plays — drop mic echo
+  const noInputStrikesRef = useRef(0)            // bugfix: consecutive silent turns → mic warning, never end
+  const candidateSpokeRef = useRef(false)        // bugfix: any captured candidate speech this session?
   const silenceTimersRef  = useRef<ReturnType<typeof setTimeout>[]>([])
   const timerIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const capturedRef       = useRef(false)
@@ -552,6 +556,10 @@ export default function InterviewPage() {
 
     if (!isMountedRef.current) return
     setPhase('speaking')
+    // Echo guard: while Alex speaks, the mic may transcribe his own TTS. Mark it
+    // so the recognizer drops those captures (prevents the false-termination loop
+    // where "…end the interview…" gets re-heard and treated as candidate intent).
+    aiSpeakingRef.current = true
 
     // Diagnostic fix: ALWAYS attempt ElevenLabs via the server route (which holds
     // ELEVENLABS_API_KEY). The old client-side gate on NEXT_PUBLIC_ELEVENLABS_API_KEY
@@ -583,6 +591,8 @@ export default function InterviewPage() {
             audio.onerror = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve() }
             audio.play().catch(() => { audioRef.current = null; resolve() })
           })
+          // Brief grace so the tail/echo of the last words isn't captured as speech.
+          setTimeout(() => { aiSpeakingRef.current = false }, 500)
           return
         }
         const bodyText = await res.text().catch(() => '(unreadable)')
@@ -629,6 +639,7 @@ export default function InterviewPage() {
         window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true })
       }
     })
+    setTimeout(() => { aiSpeakingRef.current = false }, 500)  // clear echo guard (TTS fallback path)
   }, [setPhase, stopAllAudio])
 
   /* ── STT ──────────────────────────────────────────────────── */
@@ -651,8 +662,14 @@ export default function InterviewPage() {
 
     // Shared end-of-turn capture. During the warm-up arc, route to its handler.
     const captureNow = (text: string) => {
+      // Echo guard: drop anything captured while Alex is speaking — it's his own
+      // TTS bleeding into the mic, never candidate intent. This is what stops the
+      // false-termination loop (his "…end the interview…" being re-heard as a request).
+      if (aiSpeakingRef.current) { liveTranscriptRef.current = ''; setLiveTranscript(''); return }
       if (!text.trim() || capturedRef.current) return
       capturedRef.current = true
+      candidateSpokeRef.current = true   // genuine candidate input captured this session
+      noInputStrikesRef.current = 0      // reset the silence counter
       const warmupCb = warmupCaptureRef.current
       if (warmupCb) warmupCb(text)
       else captureResponse(text)
@@ -667,6 +684,7 @@ export default function InterviewPage() {
       const rec = new SR()
       rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US'
       rec.onresult = (event: SpeechRecognitionEvent) => {
+        if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
         const text = Array.from(event.results).map(r => r[0].transcript).join(' ').trim()
         liveTranscriptRef.current = text
         setLiveTranscript(text)
@@ -691,6 +709,7 @@ export default function InterviewPage() {
     //    endpointing — onUtteranceEnd replaces the fixed 1500 ms timer. ──
     const dg = new DeepgramStt({
       onInterim: (text) => {
+        if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
         liveTranscriptRef.current = text
         setLiveTranscript(text)
         if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
@@ -767,6 +786,21 @@ export default function InterviewPage() {
       stopActiveRecognizer()
       setIsListening(false)
 
+      // Silence is NEVER consent to end (Build 01). If the candidate hasn't spoken
+      // at all this session, treat persistent silence as a likely mic/STT failure:
+      // warn them and open the text box — but keep going, don't terminate.
+      noInputStrikesRef.current += 1
+      if (!candidateSpokeRef.current && noInputStrikesRef.current >= 2) {
+        const warn = "I'm not hearing anything yet — please check that your microphone is on and that you've allowed mic access in your browser. You can also type your answer in the box below."
+        setSttWarning('We can’t hear you. Check your microphone / mic permissions, or type your answer below.')
+        setTextInputMode(true)
+        addTranscript({ speaker: 'ai', text: warn, type: 'transition' })
+        await speakText(warn)
+        const phaseAfterWarn = phaseRef.current as string
+        if (phaseAfterWarn !== 'completed' && phaseAfterWarn !== 'closing') { await delay(1200); startListening() }
+        return
+      }
+
       const autoAdv = "Let's come back to that if time allows."
       addTranscript({ speaker: 'ai', text: autoAdv, type: 'transition' })
       await speakText(autoAdv)
@@ -797,6 +831,9 @@ export default function InterviewPage() {
     if (!text) return
     setTextInputValue('')
     capturedRef.current = true
+    candidateSpokeRef.current = true   // typed input is genuine input
+    noInputStrikesRef.current = 0
+    setSttWarning(null)
     captureResponse(text)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textInputValue])
@@ -1177,6 +1214,9 @@ export default function InterviewPage() {
       techStack:        position.techStack ?? [],
       experienceLevel:  position.experienceLevel ?? '',
       roleType:         '',
+      // bugfix: no candidate speech captured all session → likely mic/STT failure,
+      // not a real (poor) interview. Lets the report note it honestly.
+      sttFailed:        !candidateSpokeRef.current && responsesRef.current.length === 0,
     }
 
     console.log('[generateReport] Starting — candidateId:', candidate.id, 'transcript lines:', transcriptRef.current.length, 'responses:', responsesRef.current.length)
@@ -1836,6 +1876,14 @@ export default function InterviewPage() {
           {listeningHint && (
             <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '2px 0' }}>
               {listeningHint}
+            </div>
+          )}
+
+          {/* Mic/STT trouble banner (bugfix) — shown when we capture no input. */}
+          {sttWarning && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: '#B45309', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '8px 12px', margin: '2px 0' }}>
+              <MicOff size={14} color="#D97706" />
+              <span>{sttWarning}</span>
             </div>
           )}
 
