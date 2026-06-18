@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '@/store/appStore'
 import { Position } from '@/store/appStore'
@@ -254,6 +254,7 @@ function fmt(secs: number) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function InterviewPage() {
   const params = useParams()
+  const router = useRouter()
   const interviewId = params.interviewId as string
 
   const {
@@ -779,6 +780,18 @@ export default function InterviewPage() {
     captureResponse(text)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textInputValue])
+
+  /* ── Submit code-editor answer ────────────────────────────── */
+  // Lets the candidate explicitly submit what they wrote/drew in the code editor
+  // as their answer (instead of having to also say something out loud). The
+  // editor content is already the preferred source for T2 integrity analysis.
+  const submitCodeAnswer = useCallback(() => {
+    const code = codeContentRef.current.trim()
+    if (!code || phaseRef.current !== 'listening' || capturedRef.current) return
+    capturedRef.current = true
+    captureResponse(code)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /* ── Core interview flow ───────────────────────────────────── */
 
@@ -1601,6 +1614,32 @@ export default function InterviewPage() {
   }
 
   if (phase === 'completed') {
+    // Demo runs: instead of "close this window", show the prospect their real
+    // evidence report (the whole point of the demo). Client-side navigation keeps
+    // the ephemeral demo data alive (no pagehide → no cleanup beacon) until the
+    // report tab is closed, and the report page surfaces the full integrity panel.
+    if (isDemoRef.current) {
+      return (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+          <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
+            <div style={{ fontSize: 56, marginBottom: 20 }}>📊</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>Your sample report is ready</div>
+            <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
+              Great job, {candidate.name.split(' ')[0]}! We&apos;ve scored your responses and run the same integrity checks a real candidate gets. Open your evidence report to see scores, strengths, concerns and the integrity panel.
+            </div>
+            <button
+              onClick={() => router.push(`/report/${interviewId}?demo=1`)}
+              style={{ marginTop: 28, padding: '14px 28px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(79,70,229,0.32)', letterSpacing: '-0.01em' }}
+            >
+              View your sample report →
+            </button>
+            <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>
+              This is a demo — your data is temporary and isn&apos;t shared with any employer.
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
@@ -1884,6 +1923,21 @@ export default function InterviewPage() {
                   {lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
                 </button>
               ))}
+              {/* Submit the editor content as the answer to the current question. */}
+              <button
+                onClick={submitCodeAnswer}
+                disabled={phase !== 'listening' || !codeContent.trim()}
+                title={phase !== 'listening' ? 'Wait for your turn to answer' : 'Submit your code as the answer'}
+                style={{
+                  marginLeft: 'auto', padding: '5px 16px', borderRadius: 6, border: 'none',
+                  cursor: (phase === 'listening' && codeContent.trim()) ? 'pointer' : 'not-allowed',
+                  background: (phase === 'listening' && codeContent.trim()) ? '#4F46E5' : '#E2E8F0',
+                  color: (phase === 'listening' && codeContent.trim()) ? '#fff' : '#94A3B8',
+                  fontSize: 11.5, fontWeight: 700, transition: 'all 0.15s',
+                }}
+              >
+                Submit Answer
+              </button>
             </div>
             <MonacoEditor
               height={220}

@@ -55,18 +55,36 @@ export default function ReportPage() {
 
   useEffect(() => {
     if (report || !interviewId) return
+    const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1'
+    let alive = true
     setLoadingFromDb(true)
-    fetch(`/api/reports/interview/${interviewId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: (CandidateReport & { error?: string }) | null) => {
-        if (data && !data.error) {
-          addReport(interviewId, data as CandidateReport)
-          const c = candidates.find((x) => x.interviewId === interviewId)
-          if (c) updateCandidate(c.id, { reportGenerated: true })
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoadingFromDb(false))
+    // Demo reports are generated async right as the interview ends, so the first
+    // fetch can race ahead of generation — poll a few times on 404 before giving up.
+    const MAX_TRIES = isDemo ? 10 : 1
+    const load = (attempt: number) => {
+      fetch(`/api/reports/interview/${interviewId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: (CandidateReport & { error?: string }) | null) => {
+          if (!alive) return
+          if (data && !data.error) {
+            addReport(interviewId, data as CandidateReport)
+            const c = candidates.find((x) => x.interviewId === interviewId)
+            if (c) updateCandidate(c.id, { reportGenerated: true })
+            setLoadingFromDb(false)
+          } else if (attempt < MAX_TRIES) {
+            setTimeout(() => { if (alive) load(attempt + 1) }, 2500)
+          } else {
+            setLoadingFromDb(false)
+          }
+        })
+        .catch(() => {
+          if (!alive) return
+          if (attempt < MAX_TRIES) setTimeout(() => { if (alive) load(attempt + 1) }, 2500)
+          else setLoadingFromDb(false)
+        })
+    }
+    load(1)
+    return () => { alive = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewId])
 
