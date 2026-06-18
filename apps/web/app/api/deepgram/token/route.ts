@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const projectId = await getProjectId(key)
     if (!projectId) {
       console.warn('[deepgram/token] could not resolve project id (set DEEPGRAM_PROJECT_ID)')
-      return NextResponse.json({ error: 'stt_no_project' }, { status: 503 })
+      return NextResponse.json({ error: 'deepgram_project_unresolved — set DEEPGRAM_PROJECT_ID, or the key cannot list projects' }, { status: 503 })
     }
 
     const res = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
@@ -79,9 +79,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ token: data.key, kind: 'key', expiresIn: KEY_TTL_SECONDS })
       }
     }
-    const detail = await res.text().catch(() => '')
-    console.warn('[deepgram/token] key creation failed:', res.status, detail.slice(0, 200))
-    return NextResponse.json({ error: 'stt_key_failed' }, { status: 503 })
+    // Surface the precise Deepgram failure (status + short body) so it's diagnosable
+    // from the browser Network tab without Render log access. A 401/403 here almost
+    // always means the DEEPGRAM_API_KEY lacks key-creation rights — use an
+    // Owner/Admin key (Member keys can't mint child keys).
+    const detail = (await res.text().catch(() => '')).slice(0, 300)
+    console.warn('[deepgram/token] key creation failed:', res.status, detail)
+    const hint = (res.status === 401 || res.status === 403)
+      ? 'deepgram_key_lacks_key_creation_permission — use an Owner/Admin API key'
+      : 'deepgram_key_creation_failed'
+    return NextResponse.json({ error: hint, deepgramStatus: res.status, detail }, { status: 503 })
   } catch (err) {
     console.error('[deepgram/token]', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'stt_token_failed' }, { status: 500 })
