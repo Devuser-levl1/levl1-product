@@ -6,7 +6,7 @@
    - Background sync placeholder
 ═══════════════════════════════════════════════════════════════ */
 
-const CACHE_NAME    = 'levl1-v1'
+const CACHE_NAME    = 'levl1-v2'  // bumped → activate purges all old caches (stale-bundle fix)
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -49,6 +49,16 @@ self.addEventListener('fetch', (event) => {
   /* Always let API calls pass through untouched — never cache or intercept */
   if (url.pathname.startsWith('/api/')) return
 
+  /* Live, network-critical routes must NEVER be served from cache — caching them
+     pins users to an old bundle and breaks the Deepgram token / WS. Network-only. */
+  if (
+    url.pathname.startsWith('/interview/') ||
+    url.pathname.startsWith('/report/') ||
+    url.pathname.startsWith('/admin/')
+  ) {
+    return
+  }
+
   /* Skip non-GET, cross-origin, and Next.js internals */
   if (
     request.method !== 'GET' ||
@@ -72,17 +82,20 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  /* Cache-first for static assets */
+  /* Cache-first for static assets — with a network fallback that can't throw an
+     uncaught rejection (the old sw.js:79 "Failed to fetch"). */
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached
-      return fetch(request).then((res) => {
-        if (res && res.status === 200) {
-          const clone = res.clone()
-          caches.open(CACHE_NAME).then((c) => c.put(request, clone))
-        }
-        return res
-      })
+      return fetch(request)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone()
+            caches.open(CACHE_NAME).then((c) => c.put(request, clone)).catch(() => {})
+          }
+          return res
+        })
+        .catch(() => cached || Response.error())
     })
   )
 })
