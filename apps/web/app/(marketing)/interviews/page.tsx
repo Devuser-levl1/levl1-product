@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Container, Reveal, Stagger, StaggerItem, Button, Eyebrow, GradientText } from '@/components/marketing/ui'
 import { T } from '@/components/marketing/tokens'
 import { ScorecardMock, ApprovalMock, InterviewRoomMock, VerificationMock } from '@/components/marketing/mocks'
+import { DemoGallery } from '@/components/screen/demo/DemoGallery'
 
 export const metadata: Metadata = {
   title: 'Levl1 Interviews — Autonomous AI voice interviews',
@@ -28,11 +29,16 @@ export default function InterviewsPage() {
               <Reveal><Eyebrow color={T.indigo}>Levl1 Interviews · Autonomous AI voice interviews</Eyebrow></Reveal>
               <Reveal delay={0.1}><h1 className="mk-h1">First-round interviews, <GradientText>done for you.</GradientText></h1></Reveal>
               <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 510, margin: '20px 0 28px' }}>Levl1 conducts structured 30-minute voice interviews across technical, scenario, behavioral and EQ — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few.</p></Reveal>
-              <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Button href="/contact" variant="ghost">See a sample report</Button></div></Reveal>
+              <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="#try-live">Try a live interview</Button><Button href="/contact" variant="ghost">Book a demo</Button></div></Reveal>
             </div>
             <Reveal delay={0.2}><ScorecardMock /></Reveal>
           </div>
         </Container>
+      </section>
+
+      {/* Build 05 — no-friction demo gallery (the demo IS the Screen product). */}
+      <section className="mk-section" style={{ paddingTop: 24 }}>
+        <DemoGallery />
       </section>
 
       <section className="mk-section"><Container>

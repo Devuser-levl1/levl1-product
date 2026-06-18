@@ -36,6 +36,7 @@ interface ReportPayload {
   transcriptHighlights: { quote: string; context: string }[]
   integrity: IntegritySummaryShape | null
   terminationReason: string | null
+  isDemo?: boolean
   candidateName?: string; positionTitle?: string; company?: string; interviewDate?: string; duration?: number
   insufficientEvidence?: boolean
 }
@@ -188,8 +189,11 @@ export default function ReportPage() {
           </div>
         ) : null}
 
-        {/* R4 — Integrity panel */}
-        <IntegrityPanel integrity={R.integrity} terminationReason={R.terminationReason} />
+        {/* R4 — Integrity panel. In demo mode with no integrity data captured,
+            HIDE it rather than render an empty/zeroed section to a prospect. */}
+        {!(R.isDemo && (!R.integrity || R.integrity.totalEvents === 0)) && (
+          <IntegrityPanel integrity={R.integrity} terminationReason={R.terminationReason} />
+        )}
 
         {/* R5 — Transcript / highlights (collapsible) */}
         <Collapsible title="Transcript highlights & questions">

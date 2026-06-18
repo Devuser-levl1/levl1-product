@@ -16,14 +16,30 @@ export const dynamic = 'force-dynamic'
 
 const DEMO_AGENCY_NAME = '__Levl1 Demo__'
 
-// Simple per-IP rate limit to prevent demo-start abuse.
-const hits = new Map<string, number[]>()
-function rateLimited(ip: string): boolean {
+// Rate limiting (G5) — protects against abuse + runaway voice/LLM cost (still on
+// the pricier ElevenLabs path until the Sarvam swap). Two layers, both env-tunable:
+//   DEMO_RATE_LIMIT_PER_IP  — demo starts per IP per 24h (default 3)
+//   DEMO_GLOBAL_DAILY_CAP   — global circuit-breaker per 24h (default 200)
+// Counts only SUCCESSFUL starts so failed attempts don't burn a prospect's quota.
+const DAY_MS = 24 * 60 * 60 * 1000
+const PER_IP_LIMIT = Math.max(1, Number(process.env.DEMO_RATE_LIMIT_PER_IP ?? 3))
+const GLOBAL_DAILY_CAP = Math.max(1, Number(process.env.DEMO_GLOBAL_DAILY_CAP ?? 200))
+const ipHits = new Map<string, number[]>()
+let globalHits: number[] = []
+
+function checkRate(ip: string): { ok: true } | { ok: false; reason: 'ip' | 'global' } {
   const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < 60_000)
-  recent.push(now)
-  hits.set(ip, recent)
-  return recent.length > 6 // max 6 demo starts / minute / IP
+  globalHits = globalHits.filter((t) => now - t < DAY_MS)
+  if (globalHits.length >= GLOBAL_DAILY_CAP) return { ok: false, reason: 'global' }
+  const recent = (ipHits.get(ip) ?? []).filter((t) => now - t < DAY_MS)
+  if (recent.length >= PER_IP_LIMIT) return { ok: false, reason: 'ip' }
+  return { ok: true }
+}
+function recordStart(ip: string) {
+  const now = Date.now()
+  const recent = (ipHits.get(ip) ?? []).filter((t) => now - t < DAY_MS)
+  recent.push(now); ipHits.set(ip, recent)
+  globalHits.push(now)
 }
 
 async function getDemoAgencyId(): Promise<string> {
@@ -36,7 +52,13 @@ async function getDemoAgencyId(): Promise<string> {
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
-    if (rateLimited(ip)) return NextResponse.json({ error: 'Too many demo starts — please try again in a minute.' }, { status: 429 })
+    const rate = checkRate(ip)
+    if (!rate.ok) {
+      const msg = rate.reason === 'global'
+        ? 'Our live demo is at capacity right now — book a quick call and we\'ll walk you through it.'
+        : 'You\'ve reached the demo limit for now — book a call and we\'ll give you full access.'
+      return NextResponse.json({ error: msg, limit: rate.reason, bookACall: true }, { status: 429 })
+    }
 
     const body = await req.json().catch(() => ({}))
     const persona = getDemoPersona(String(body.slug ?? ''))
@@ -79,6 +101,7 @@ export async function POST(req: NextRequest) {
     })
     await prisma.interviewToken.create({ data: { interviewId: interview.id, expiresAt: new Date(Date.now() + 2 * 3600_000) } })
 
+    recordStart(ip)  // count only successful starts toward the rate limit
     console.log('[demo/start] persona=%s interview=%s (isDemo)', persona.slug, interview.id)
     return NextResponse.json({ interviewId: interview.id, durationMin: persona.durationMin })
   } catch (err) {

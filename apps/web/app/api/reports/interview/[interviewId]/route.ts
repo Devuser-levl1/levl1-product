@@ -86,6 +86,9 @@ export async function GET(
       // How the session ended (Build 01-B) — distinguishes a real completion
       // from an early/consent-withdrawn stop.
       terminationReason: interview.terminationReason ?? null,
+      // Demo run (Build 05) — drives the report's conversion gating + hiding the
+      // integrity panel when no integrity data was captured.
+      isDemo: interview.isDemo,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch report'
