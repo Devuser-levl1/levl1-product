@@ -38,13 +38,20 @@ export async function POST(req: NextRequest) {
           company: { equals: body.company, mode: 'insensitive' },
           status:  { notIn: ['closed', 'lost', 'won'] },
         },
-        select: { id: true, title: true, status: true },
       })
       if (existing) {
-        return NextResponse.json(
-          { error: 'duplicate', message: `A position for "${body.title}" at "${body.company}" already exists.`, existingId: existing.id },
-          { status: 409 },
-        )
+        // Find-or-create: REUSE the existing position (200) instead of 409. The
+        // caller's intent is "ensure this position exists so I can attach a
+        // candidate" — blindly 409-ing left it with no valid positionId, which
+        // is exactly what caused the downstream Candidate FK violation.
+        // Opt-in 409 only when a UI explicitly wants the duplicate warning.
+        if (body.failOnDuplicate === true) {
+          return NextResponse.json(
+            { error: 'duplicate', message: `A position for "${body.title}" at "${body.company}" already exists.`, existingId: existing.id, position: existing },
+            { status: 409 },
+          )
+        }
+        return NextResponse.json({ ...existing, _deduped: true }, { status: 200 })
       }
     }
 
