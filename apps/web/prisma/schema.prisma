@@ -417,6 +417,22 @@ model InterviewVerification {
   updatedAt       DateTime  @updatedAt
 }
 
+// ── Email + OTP login (Screen auth overhaul) ───────────────────────────────
+// One-time login codes. Code is stored HASHED; single-use (consumedAt), short
+// expiry, brute-force capped (attempts). Email is the NORMALIZED address.
+model LoginOtp {
+  id         String    @id @default(cuid())
+  email      String    // normalized (lowercase, trimmed)
+  codeHash   String    // sha256 of the 6-digit code — never the plaintext
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  requestIp  String?
+  createdAt  DateTime  @default(now())
+  @@index([email])
+  @@index([expiresAt])
+}
+
 model InterviewToken {
   id          String    @id @default(cuid())
   token       String    @unique @default(cuid())

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail } from '@/lib/emailService'
+import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
 
     for (const m of members) {
       if (!m.email?.trim()) continue
+      const email = normalizeEmail(m.email)
+      // Business-email-only — can't invite a teammate on a personal address.
+      const emailErr = businessEmailError(email)
+      if (emailErr) { results.push({ email, ok: false, error: emailErr }); continue }
 
       const inviteToken = crypto.randomBytes(32).toString('hex')
 
@@ -31,8 +36,8 @@ export async function POST(req: NextRequest) {
         where: { inviteToken },
         create: {
           agencyId:    session.agencyId,
-          name:        m.name?.trim() || m.email,
-          email:       m.email.trim(),
+          name:        m.name?.trim() || email,
+          email,
           role:        m.role ?? 'recruiter',
           status:      'invited',
           inviteToken,

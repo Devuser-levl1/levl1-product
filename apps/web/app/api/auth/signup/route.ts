@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signJWT, buildSessionCookie } from '@/lib/auth'
+import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 
 export async function POST(req: NextRequest) {
   try {
-    const { agencyName, name, email, password, phone } = await req.json()
+    const body = await req.json()
+    const { agencyName, name, phone } = body
+    const email = normalizeEmail(body.email)  // normalize → kills duplicate-by-case
 
-    if (!agencyName || !name || !email || !password) {
+    if (!agencyName || !name || !email) {
       return NextResponse.json({ error: 'All required fields must be filled.' }, { status: 400 })
     }
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
-    }
+    // Business-email-only — same policy as the OTP/login path.
+    const emailErr = businessEmailError(email)
+    if (emailErr) return NextResponse.json({ error: emailErr }, { status: 400 })
 
-    // Check email uniqueness
+    // App-level uniqueness on the NORMALIZED email (the DB index is also unique).
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
-      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 })
+      return NextResponse.json({ error: 'An account with this email already exists. Sign in with an email code instead.' }, { status: 409 })
     }
 
-    const passwordHash  = await bcrypt.hash(password, 12)
+    // Passwords are retired — accounts are passwordless and sign in via email code.
     const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // +14 days
 
     // Create Agency + User in a transaction
@@ -42,7 +44,6 @@ export async function POST(req: NextRequest) {
         data: {
           name,
           email,
-          passwordHash,
           role:     'admin',
           agencyId: agency.id,
           phone,
