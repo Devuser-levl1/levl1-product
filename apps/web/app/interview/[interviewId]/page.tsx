@@ -9,6 +9,7 @@ import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
 import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
+import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
@@ -289,6 +290,7 @@ export default function InterviewPage() {
           candidateJoined: data.candidateJoined ?? false,
           score:         data.runningScore ?? undefined,
         }
+        isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
         const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
         if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
 
@@ -370,6 +372,7 @@ export default function InterviewPage() {
   // question pipeline and suppresses the question cold-start timers while active.
   const warmupActiveRef = useRef(false)
   const warmupCaptureRef = useRef<((text: string) => void) | null>(null)
+  const isDemoRef = useRef(false)  // demo-gallery run (Build 05) — never bills usage
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -1212,12 +1215,15 @@ export default function InterviewPage() {
     await speakText(closing)
     finishInterview()
     generateReport().catch(console.error)
-    // Increment usage counter (fire-and-forget)
-    fetch('/api/usage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'increment' }),
-    }).catch(() => { /* non-critical */ })
+    // Increment usage counter (fire-and-forget) — NEVER for demo runs (Build 05),
+    // so a logged-in prospect trying the demo can't burn their paid quota.
+    if (!isDemoRef.current) {
+      fetch('/api/usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'increment' }),
+      }).catch(() => { /* non-critical */ })
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, setPhase, addTranscript, speakText])
 
@@ -1617,6 +1623,8 @@ export default function InterviewPage() {
       {/* Tier-1 visible proctoring — live monitoring indicator + capture (Build 01-A).
           This branch only renders while the interview is live, so monitoring is active. */}
       <IntegrityMonitor interviewId={interviewId} active={true} />
+      {/* Demo conversion affordance — self-gates on ?demo=1 (Build 05). */}
+      <DemoSalesCTA label="Talk to sales" />
 
       {/* ── Header ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: '#fff', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>

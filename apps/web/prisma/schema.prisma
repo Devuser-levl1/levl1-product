@@ -245,6 +245,9 @@ model Position {
   workMode           String    @default("hybrid")
   interviewDuration  Int       @default(30)
   status             String    @default("draft")
+  // Demo gallery (Build 05) — pre-built one-click demo positions. Tagged so they
+  // never pollute real analytics, billing/usage, or the review queue.
+  isDemo             Boolean   @default(false)
   jdText             String?   @db.Text
   jdSource           String?   // pasted | generated | uploaded
   jdApprovedBy       String?
@@ -322,6 +325,7 @@ model Candidate {
   positionId       String
   position         Position  @relation(fields: [positionId], references: [id])
   status           String    @default("pending")
+  isDemo           Boolean   @default(false) // demo-gallery candidate (Build 05)
   invitedAt        DateTime?
   scheduledAt      DateTime?
   interviewedAt    DateTime?
@@ -341,6 +345,8 @@ model Interview {
   positionId        String
   position          Position  @relation(fields: [positionId], references: [id])
   status            String    @default("scheduled")
+  // Demo-gallery run (Build 05) — excluded from analytics, billing, review queue.
+  isDemo            Boolean   @default(false)
   scheduledAt       DateTime?
   startedAt         DateTime?
   completedAt       DateTime?

@@ -14,7 +14,8 @@ export async function GET(req: NextRequest) {
     const status = sp.get('status')
     const agencyId = sp.get('agencyId')
 
-    const where: Prisma.InterviewWhereInput = {}
+    // Exclude demo-gallery runs (Build 05) from the review queue unless asked for.
+    const where: Prisma.InterviewWhereInput = sp.get('includeDemo') === 'true' ? {} : { isDemo: false }
     if (status && status !== 'all') where.status = status
     if (agencyId && agencyId !== 'all') where.position = { agencyId }
 

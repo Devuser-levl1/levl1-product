@@ -9,6 +9,7 @@ import {
   CompetencyRadar, CommunicationDial, SkillEvidenceList, IntegrityPanel,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
+import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 
 /* ─── Constants ─────────────────────────────────────────────────── */
 const SECTION_LABELS: Record<string, string> = { technical: 'Technical', scenario: 'Scenario', behavioral: 'Behavioral', eq: 'Emotional IQ', whiteboard: 'Whiteboard' }
@@ -119,6 +120,7 @@ export default function ReportPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: 'var(--font-sans)' }}>
+      <DemoSalesCTA />
       {/* Print header */}
       <div className="print-only" style={{ display: 'none', padding: '0 0 16px', borderBottom: `2px solid ${INDIGO}`, marginBottom: 24, alignItems: 'center', gap: 10 }}>
         <Zap size={18} color="#7C3AED" fill="#7C3AED" />
