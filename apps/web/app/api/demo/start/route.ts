@@ -3,6 +3,30 @@ import { prisma } from '@/lib/prisma'
 import { getDemoPersona } from '@/lib/screen/demo/personas'
 import { sweepStaleDemoData } from '@/lib/screen/demo/cleanup'
 import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
+import { sendEmail } from '@/lib/emailService'
+
+const LEADS_EMAIL = process.env.DEMO_LEADS_EMAIL ?? 'sales@levl1.io'
+
+// Notify sales of a new demo lead (fire-and-forget; never blocks the demo).
+async function notifySales(lead: { name: string; email: string; personaSlug: string; marketingConsent: boolean }) {
+  const roleTitle = getDemoPersona(lead.personaSlug)?.title ?? lead.personaSlug
+  await sendEmail({
+    to: LEADS_EMAIL,
+    replyTo: lead.email,
+    subject: `New demo lead: ${lead.name} — ${roleTitle}`,
+    html: `<div style="font-family:Inter,system-ui,sans-serif;font-size:14px;color:#0F172A;line-height:1.7">
+      <div style="font-size:16px;font-weight:800;color:#4F46E5;margin-bottom:10px">New Levl1 demo lead</div>
+      <table style="border-collapse:collapse">
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Name</td><td><strong>${lead.name}</strong></td></tr>
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Work email</td><td><a href="mailto:${lead.email}">${lead.email}</a></td></tr>
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Tried role</td><td>${roleTitle}</td></tr>
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Marketing consent</td><td>${lead.marketingConsent ? '✅ opted in' : '— not opted in'}</td></tr>
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">When</td><td>${new Date().toUTCString()}</td></tr>
+      </table>
+      <p style="color:#94A3B8;font-size:12px;margin-top:16px">Reply to this email to reach the prospect directly.</p>
+    </div>`,
+  })
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -69,6 +93,7 @@ export async function POST(req: NextRequest) {
     // Lead capture (gate): require a name + business email before starting.
     const name = String(body.name ?? '').trim()
     const email = normalizeEmail(body.email)
+    const marketingConsent = body.marketingConsent === true
     if (!name) return NextResponse.json({ error: 'Please enter your name.' }, { status: 400 })
     const emailErr = businessEmailError(email)
     if (emailErr) return NextResponse.json({ error: emailErr }, { status: 400 })
@@ -115,7 +140,9 @@ export async function POST(req: NextRequest) {
     await prisma.interviewToken.create({ data: { interviewId: interview.id, expiresAt: new Date(Date.now() + 2 * 3600_000) } })
 
     // Persist the LEAD (sales artifact) — survives the ephemeral demo cleanup.
-    await prisma.demoLead.create({ data: { name, email, personaSlug: persona.slug, interviewId: interview.id, requestIp: ip } }).catch((e) => console.error('[demo/start] lead capture failed:', e instanceof Error ? e.message : e))
+    await prisma.demoLead.create({ data: { name, email, personaSlug: persona.slug, marketingConsent, interviewId: interview.id, requestIp: ip } }).catch((e) => console.error('[demo/start] lead capture failed:', e instanceof Error ? e.message : e))
+    // Notify sales (fire-and-forget — never blocks the demo).
+    notifySales({ name, email, personaSlug: persona.slug, marketingConsent }).catch((e) => console.error('[demo/start] sales notify failed:', e instanceof Error ? e.message : e))
 
     recordStart(ip)  // count only successful starts toward the rate limit
     console.log('[demo/start] lead=%s persona=%s interview=%s', email, persona.slug, interview.id)

@@ -456,13 +456,14 @@ model SlotBooking {
 // ephemeral demo-session cleanup (the interview/candidate are wiped; the lead is
 // kept).
 model DemoLead {
-  id          String   @id @default(cuid())
-  name        String
-  email       String                 // normalized business email
-  personaSlug String
-  interviewId String?                // the (ephemeral) demo interview they started
-  requestIp   String?
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  email            String                 // normalized business email
+  personaSlug      String
+  marketingConsent Boolean  @default(false) // explicit opt-in to be contacted (GDPR)
+  interviewId      String?                // the (ephemeral) demo interview they started
+  requestIp        String?
+  createdAt        DateTime @default(now())
   @@index([email])
   @@index([createdAt])
 }

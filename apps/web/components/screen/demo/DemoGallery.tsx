@@ -17,6 +17,7 @@ export function DemoGallery() {
   const [leadFor, setLeadFor] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [consent, setConsent] = useState(false)
 
   const shown = filter === 'All' ? DEMO_PERSONAS : DEMO_PERSONAS.filter((p) => p.category === filter)
   const chosen = DEMO_PERSONAS.find((p) => p.slug === leadFor)
@@ -29,7 +30,7 @@ export function DemoGallery() {
     if (!email.trim()) { setErr('Please enter your work email.'); return }
     setStarting(true); setErr('')
     try {
-      const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim() }) })
+      const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim(), marketingConsent: consent }) })
       const d = await res.json()
       if (!res.ok) { setErr(d.error ?? 'Could not start the demo.'); setStarting(false); return }
       router.push(`/interview/${d.interviewId}?demo=1`)
@@ -92,6 +93,11 @@ export function DemoGallery() {
             <label style={lbl}>Work email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') start() }} placeholder="you@company.com" style={inp} />
             <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 14, fontSize: 12.5, color: '#475569', lineHeight: 1.55, cursor: 'pointer' }}>
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>I agree that Levl1 may contact me about my demo results and its products. (Optional — you can still try the demo without this.)</span>
+            </label>
 
             {err && <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginTop: 10 }}>{err}</div>}
 
