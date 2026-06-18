@@ -385,6 +385,7 @@ export default function InterviewPage() {
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
   const dgSttRef          = useRef<DeepgramStt | null>(null)  // I-P0-3: Deepgram streaming STT
+  const sttPreferWebSpeechRef = useRef(false)    // once Deepgram fails, skip it for the session
   const aiSpeakingRef     = useRef(false)        // bugfix: true while Alex's TTS plays — drop mic echo
   const noInputStrikesRef = useRef(0)            // bugfix: consecutive silent turns → mic warning, never end
   const candidateSpokeRef = useRef(false)        // bugfix: any captured candidate speech this session?
@@ -705,25 +706,32 @@ export default function InterviewPage() {
       try { rec.start() } catch {}
     }
 
-    // ── Deepgram streaming (primary): Nova-tier cloud STT with ADAPTIVE
-    //    endpointing — onUtteranceEnd replaces the fixed 1500 ms timer. ──
-    const dg = new DeepgramStt({
-      onInterim: (text) => {
-        if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
-        liveTranscriptRef.current = text
-        setLiveTranscript(text)
-        if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
-      },
-      onUtteranceEnd: (text) => captureNow(text),
-    })
-    dgSttRef.current = dg
-    dg.start().then((ok) => {
-      // Fall back gracefully if Deepgram didn't start and we haven't moved on.
-      if (!ok && dgSttRef.current === dg && !capturedRef.current && phaseRef.current === 'listening') {
-        dgSttRef.current = null
-        runWebSpeech()
-      }
-    })
+    if (sttPreferWebSpeechRef.current) {
+      // Deepgram already failed this session (e.g. token 403 — key lacks keys:write).
+      // Don't hit the token route again every turn; use Web Speech directly.
+      runWebSpeech()
+    } else {
+      // ── Deepgram streaming (primary): Nova-tier cloud STT with ADAPTIVE
+      //    endpointing — onUtteranceEnd replaces the fixed 1500 ms timer. ──
+      const dg = new DeepgramStt({
+        onInterim: (text) => {
+          if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
+          liveTranscriptRef.current = text
+          setLiveTranscript(text)
+          if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
+        },
+        onUtteranceEnd: (text) => captureNow(text),
+      })
+      dgSttRef.current = dg
+      dg.start().then((ok) => {
+        // Fall back gracefully if Deepgram didn't start and we haven't moved on.
+        if (!ok && dgSttRef.current === dg && !capturedRef.current && phaseRef.current === 'listening') {
+          sttPreferWebSpeechRef.current = true  // stop retrying Deepgram this session
+          dgSttRef.current = null
+          runWebSpeech()
+        }
+      })
+    }
 
     setIsListening(true)
     setPhase('listening')
