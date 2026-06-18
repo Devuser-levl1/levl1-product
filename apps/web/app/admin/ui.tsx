@@ -10,6 +10,7 @@ export function Shell({ children, onSignOut }: { children: React.ReactNode; onSi
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Link href="/admin" style={{ fontSize: 18, fontWeight: 800, color: '#fff', textDecoration: 'none' }}>Levl1 Admin</Link>
             <Link href="/admin/interviews" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Interviews</Link>
+            <Link href="/admin/demo-leads" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Demo Leads</Link>
             <Link href="/admin/hire" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Hire</Link>
           </div>
           {onSignOut && (
