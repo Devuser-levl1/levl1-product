@@ -862,6 +862,12 @@ export default function InterviewPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const captureResponse = useCallback(async (responseText: string) => {
+    // Hard stop: once the interview has wrapped up (terminated/closed), never
+    // process another capture — this is what was letting the flow march on to the
+    // next question AFTER "we'll end the interview here" (the self-restart symptom).
+    if (wrapUpFiredRef.current) return
+    // Echo guard (belt-and-suspenders): drop captures that land while Alex speaks.
+    if (aiSpeakingRef.current) return
     stopListening()
     setPhase('processing')
     setLiveTranscript('')
@@ -1130,6 +1136,9 @@ export default function InterviewPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const moveToQuestion = useCallback(async (idx: number) => {
+    // If the interview has already wrapped up (terminated/closed), do NOT advance
+    // to another question — prevents the post-end "let's shift gears…" continuation.
+    if (wrapUpFiredRef.current) return
     const qs = questionsRef.current
     if (idx >= qs.length) { await startClosing(); return }
 
