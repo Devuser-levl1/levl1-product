@@ -327,9 +327,12 @@ function CandidateCard({
 
 /* ─── Page ──────────────────────────────────────────────────────── */
 export default function CandidatesPage() {
-  const { candidates, positions, showUploadFlow, setShowUploadFlow } = useAppStore();
+  const { candidates: allCandidates, positions, showUploadFlow, setShowUploadFlow } = useAppStore();
   const [selectedPosition, setSelectedPosition] = useState<string>("all");
   const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
+
+  // Never show public-gallery demo runs in a real agency's pipeline.
+  const candidates = allCandidates.filter((c) => !c.isDemo);
 
   const filtered =
     selectedPosition === "all"

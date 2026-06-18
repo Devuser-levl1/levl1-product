@@ -17,6 +17,7 @@ export interface Position {
   interviewDuration?: number
   dynamicQuestionIntensity?: 'light' | 'standard' | 'deep'
   voiceAccent?: string
+  isDemo?: boolean   // demo run — never shown in a real agency's UI
 }
 
 export interface Candidate {
@@ -43,6 +44,7 @@ export interface Candidate {
   interviewId?: string
   reportGenerated?: boolean
   reportGeneratedAt?: string
+  isDemo?: boolean   // public-gallery demo run — never shown in a real agency's UI
 }
 
 export interface Interview {
@@ -57,6 +59,7 @@ export interface Interview {
   agentOnline: boolean
   candidateJoined: boolean
   score?: number
+  isDemo?: boolean   // demo run — purged from the store after the demo
 }
 
 /* ── Report types ───────────────────────────────────────────────── */
@@ -219,6 +222,7 @@ interface AppStore {
   addInterview: (iv: Interview) => void
   addReport: (interviewId: string, report: CandidateReport) => void
   addPositionReport: (positionId: string, report: PositionReport) => void
+  purgeDemoData: () => void  // drop any demo run from the store (real agency UI never shows demos)
   showNewPositionFlow: boolean
   setShowNewPositionFlow: (v: boolean) => void
   showUploadFlow: boolean
@@ -286,6 +290,19 @@ export const useAppStore = create<AppStore>((set) => ({
     candidates: state.candidates.map((c) => c.id === id ? { ...c, ...updates } : c),
   })),
   removeCandidate: (id) => set((state) => ({ candidates: state.candidates.filter((c) => c.id !== id) })),
+  purgeDemoData: () => set((state) => {
+    const demoInterviewIds = new Set(state.interviews.filter((i) => i.isDemo).map((i) => i.id))
+    const demoCandidateIds = new Set(state.candidates.filter((c) => c.isDemo).map((c) => c.id))
+    state.interviews.forEach((i) => { if (i.isDemo) demoCandidateIds.add(i.candidateId) })
+    const reports = { ...state.reports }
+    Array.from(demoInterviewIds).forEach((id) => { delete reports[id] })
+    return {
+      candidates: state.candidates.filter((c) => !c.isDemo && !demoCandidateIds.has(c.id)),
+      interviews: state.interviews.filter((i) => !i.isDemo),
+      positions: state.positions.filter((p) => !p.isDemo),
+      reports,
+    }
+  }),
   updateInterview: (id, updates) => set((state) => ({
     interviews: state.interviews.map((i) => i.id === id ? { ...i, ...updates } : i),
   })),

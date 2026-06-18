@@ -295,6 +295,7 @@ export default function InterviewPage() {
           agentOnline:   data.agentOnline ?? false,
           candidateJoined: data.candidateJoined ?? false,
           score:         data.runningScore ?? undefined,
+          isDemo:        !!data.isDemo,
         }
         isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
         setConsentOk(!!data.consentGiven || !!data.isDemo)  // I-P0-1 soft consent gate
@@ -309,7 +310,7 @@ export default function InterviewPage() {
             positionId: data.positionId, positionTitle: data.position?.title ?? '',
             status: data.candidate.status ?? 'scheduled', uploadedAt: data.candidate.uploadedAt ?? '',
             topSkills: data.candidate.topSkills ?? [],
-            interviewId: data.id,
+            interviewId: data.id, isDemo: !!data.isDemo,
           }])
         }
         if (data.position && !ps.find(p => p.id === data.positionId)) {
@@ -319,7 +320,7 @@ export default function InterviewPage() {
             techStack: data.position.techStack ?? [], status: data.position.status ?? 'active',
             interviewsScheduled: 0, interviewsCompleted: 0, createdAt: data.position.createdAt ?? '',
             approvals: { techLead: data.position.techLeadApproved, hr: data.position.hrApproved },
-            interviewDuration: data.position.interviewDuration ?? 30,
+            interviewDuration: data.position.interviewDuration ?? 30, isDemo: !!data.isDemo,
           }])
         }
         setDbLoading(false)
@@ -331,6 +332,21 @@ export default function InterviewPage() {
       })
   // Only run on mount — subsequent store updates handle everything
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewId])
+
+  // Demo hygiene: a demo run must never linger in a (possibly logged-in) agency's
+  // session. On leaving the tab, kill the demo data server-side (ephemeral); on
+  // unmount, purge it from the local store so it can't show in the candidates UI.
+  useEffect(() => {
+    const onLeave = () => {
+      if (!isDemoRef.current) return
+      try { navigator.sendBeacon('/api/demo/cleanup', new Blob([JSON.stringify({ interviewId })], { type: 'text/plain' })) } catch {}
+    }
+    window.addEventListener('pagehide', onLeave)
+    return () => {
+      window.removeEventListener('pagehide', onLeave)
+      if (isDemoRef.current) useAppStore.getState().purgeDemoData()
+    }
   }, [interviewId])
 
   /* ── State ────────────────────────────────────────────────── */

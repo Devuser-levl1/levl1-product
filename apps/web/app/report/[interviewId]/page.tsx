@@ -70,6 +70,16 @@ export default function ReportPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewId])
 
+  // Demo hygiene: after the prospect has seen the demo report, kill it. Beacon
+  // deletes the (ephemeral) server data on tab-leave; unmount purges the store so
+  // a logged-in agency never sees the demo in their candidates/reports.
+  useEffect(() => {
+    if (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('demo') !== '1') return
+    const onLeave = () => { try { navigator.sendBeacon('/api/demo/cleanup', new Blob([JSON.stringify({ interviewId })], { type: 'text/plain' })) } catch {} }
+    window.addEventListener('pagehide', onLeave)
+    return () => { window.removeEventListener('pagehide', onLeave); useAppStore.getState().purgeDemoData() }
+  }, [interviewId])
+
   async function generateReport() {
     if (!candidate) { toast.error('Candidate not found for this interview'); return }
     setGenerating(true)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getDemoPersona } from '@/lib/screen/demo/personas'
+import { sweepStaleDemoData } from '@/lib/screen/demo/cleanup'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
     const persona = getDemoPersona(String(body.slug ?? ''))
     if (!persona) return NextResponse.json({ error: 'Unknown demo persona' }, { status: 404 })
+
+    // Safety net: demo data is ephemeral — purge anything stale before creating more.
+    await sweepStaleDemoData().catch(() => {})
 
     const agencyId = await getDemoAgencyId()
 
