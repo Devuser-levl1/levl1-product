@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getDemoPersona } from '@/lib/screen/demo/personas'
 import { sweepStaleDemoData } from '@/lib/screen/demo/cleanup'
+import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,13 @@ export async function POST(req: NextRequest) {
     const persona = getDemoPersona(String(body.slug ?? ''))
     if (!persona) return NextResponse.json({ error: 'Unknown demo persona' }, { status: 404 })
 
+    // Lead capture (gate): require a name + business email before starting.
+    const name = String(body.name ?? '').trim()
+    const email = normalizeEmail(body.email)
+    if (!name) return NextResponse.json({ error: 'Please enter your name.' }, { status: 400 })
+    const emailErr = businessEmailError(email)
+    if (emailErr) return NextResponse.json({ error: emailErr }, { status: 400 })
+
     // Safety net: demo data is ephemeral — purge anything stale before creating more.
     await sweepStaleDemoData().catch(() => {})
 
@@ -96,8 +104,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Use the captured lead identity on the (ephemeral) demo candidate.
     const candidate = await prisma.candidate.create({
-      data: { name: 'Demo Candidate', email: `demo+${position.id}@levl1.demo`, positionId: position.id, isDemo: true, topSkills: persona.skills, status: 'pending' },
+      data: { name, email, positionId: position.id, isDemo: true, topSkills: persona.skills, status: 'pending' },
     })
 
     const interview = await prisma.interview.create({
@@ -105,8 +114,11 @@ export async function POST(req: NextRequest) {
     })
     await prisma.interviewToken.create({ data: { interviewId: interview.id, expiresAt: new Date(Date.now() + 2 * 3600_000) } })
 
+    // Persist the LEAD (sales artifact) — survives the ephemeral demo cleanup.
+    await prisma.demoLead.create({ data: { name, email, personaSlug: persona.slug, interviewId: interview.id, requestIp: ip } }).catch((e) => console.error('[demo/start] lead capture failed:', e instanceof Error ? e.message : e))
+
     recordStart(ip)  // count only successful starts toward the rate limit
-    console.log('[demo/start] persona=%s interview=%s (isDemo)', persona.slug, interview.id)
+    console.log('[demo/start] lead=%s persona=%s interview=%s', email, persona.slug, interview.id)
     return NextResponse.json({ interviewId: interview.id, durationMin: persona.durationMin })
   } catch (err) {
     console.error('[demo/start] error:', err instanceof Error ? err.message : err)

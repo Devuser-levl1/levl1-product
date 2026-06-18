@@ -450,6 +450,23 @@ model SlotBooking {
   @@index([positionId])
 }
 
+// ── Demo lead capture ──────────────────────────────────────────────────────
+// Captured when a prospect starts a demo interview (name + business email). This
+// is the SALES artifact and PERSISTS — it is intentionally NOT touched by the
+// ephemeral demo-session cleanup (the interview/candidate are wiped; the lead is
+// kept).
+model DemoLead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String                 // normalized business email
+  personaSlug String
+  interviewId String?                // the (ephemeral) demo interview they started
+  requestIp   String?
+  createdAt   DateTime @default(now())
+  @@index([email])
+  @@index([createdAt])
+}
+
 model InterviewToken {
   id          String    @id @default(cuid())
   token       String    @unique @default(cuid())

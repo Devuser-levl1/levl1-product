@@ -11,20 +11,29 @@ const VIOLET = '#7C3AED'
 export function DemoGallery() {
   const router = useRouter()
   const [filter, setFilter] = useState<DemoCategory | 'All'>('All')
-  const [starting, setStarting] = useState<string | null>(null)
+  const [starting, setStarting] = useState(false)
   const [err, setErr] = useState('')
+  // Lead-capture gate: which persona the prospect chose + their details.
+  const [leadFor, setLeadFor] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
 
   const shown = filter === 'All' ? DEMO_PERSONAS : DEMO_PERSONAS.filter((p) => p.category === filter)
+  const chosen = DEMO_PERSONAS.find((p) => p.slug === leadFor)
 
-  async function start(slug: string) {
-    if (starting) return
-    setStarting(slug); setErr('')
+  function openLead(slug: string) { setLeadFor(slug); setErr('') }
+
+  async function start() {
+    if (starting || !leadFor) return
+    if (!name.trim()) { setErr('Please enter your name.'); return }
+    if (!email.trim()) { setErr('Please enter your work email.'); return }
+    setStarting(true); setErr('')
     try {
-      const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) })
+      const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim() }) })
       const d = await res.json()
-      if (!res.ok) { setErr(d.error ?? 'Could not start the demo.'); setStarting(null); return }
+      if (!res.ok) { setErr(d.error ?? 'Could not start the demo.'); setStarting(false); return }
       router.push(`/interview/${d.interviewId}?demo=1`)
-    } catch { setErr('Network error — please try again.'); setStarting(null) }
+    } catch { setErr('Network error — please try again.'); setStarting(false) }
   }
 
   return (
@@ -59,8 +68,8 @@ export function DemoGallery() {
               <span>🎙 {p.accent}</span>
               <span>{p.language}</span>
             </div>
-            <button onClick={() => start(p.slug)} disabled={!!starting} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 10, border: 'none', cursor: starting ? 'default' : 'pointer', color: '#fff', fontWeight: 700, fontSize: 14, background: starting === p.slug ? VIOLET : `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>
-              {starting === p.slug ? 'Starting…' : 'Try interview →'}
+            <button onClick={() => openLead(p.slug)} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 14, background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>
+              Try interview →
             </button>
           </div>
         ))}
@@ -70,7 +79,34 @@ export function DemoGallery() {
         Evaluating for your team? <a href="/contact" style={{ color: INDIGO, fontWeight: 700 }}>Book a demo with our team →</a>
       </div>
 
+      {/* Lead-capture gate — name + work email before the demo starts. */}
+      {leadFor && (
+        <div onClick={() => !starting && setLeadFor(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '100%', background: '#fff', borderRadius: 16, padding: 26 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: VIOLET, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{chosen?.title} · ~{chosen?.durationMin} min</div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>Start your live interview</h3>
+            <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 18px' }}>Tell us who you are and we&apos;ll begin right away. You&apos;ll get the full evidence report at the end.</p>
+
+            <label style={lbl}>Name</label>
+            <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={inp} />
+            <label style={lbl}>Work email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') start() }} placeholder="you@company.com" style={inp} />
+            <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
+
+            {err && <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginTop: 10 }}>{err}</div>}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setLeadFor(null)} disabled={starting} style={{ flex: 1, padding: 11, borderRadius: 10, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={start} disabled={starting} style={{ flex: 2, padding: 11, borderRadius: 10, border: 'none', color: '#fff', fontWeight: 700, fontSize: 14, cursor: starting ? 'default' : 'pointer', background: starting ? VIOLET : `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>{starting ? 'Starting…' : 'Start interview →'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`.lv-demo-card { transition: transform .15s, box-shadow .15s, border-color .15s; } .lv-demo-card:hover { transform: translateY(-2px); border-color: #C7D2FE; box-shadow: 0 10px 28px rgba(79,70,229,0.10); }`}</style>
     </div>
   )
 }
+
+const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', margin: '12px 0 5px' }
+const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }

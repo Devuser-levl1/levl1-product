@@ -10,7 +10,7 @@
 // only) — the gallery + launch path need no code changes. Starter set is
 // exactly three: Backend Engineer, Data Engineer, Full-Stack Engineer.
 
-export type DemoCategory = 'Backend' | 'Data' | 'Full-Stack'
+export type DemoCategory = 'Backend' | 'Data' | 'Full-Stack' | 'Product' | 'Program' | 'Risk' | 'Marketing'
 
 export interface DemoQuestion { question: string; expectedKeyPoints: string[]; techTag?: string; estimatedMinutes?: number; followUp?: string }
 
@@ -91,7 +91,79 @@ export const DEMO_PERSONAS: DemoPersona[] = [
       eq: [], whiteboard: [],
     },
   },
+  {
+    slug: 'product-manager',
+    title: 'Product Manager',
+    category: 'Product',
+    skills: ['Prioritization', 'Discovery', 'Metrics', 'Stakeholders'],
+    durationMin: 7, accent: 'Neutral (global)', language: 'English',
+    blurb: 'Product sense — framing problems, prioritising, and measuring impact.',
+    jdText: 'A product manager who frames customer problems, prioritises ruthlessly, aligns stakeholders, and ties launches to measurable outcomes.',
+    questions: {
+      technical: [
+        tech('Walk me through how you decide what to build next when engineering, sales, and a big customer all want different things.', ['prioritization framework', 'data + impact vs effort', 'stakeholder alignment', 'saying no with rationale'], 'prioritization'),
+        tech('How do you tell whether a feature you shipped actually worked? Give a concrete example.', ['success metric defined upfront', 'leading vs lagging', 'instrumentation', 'iterate or kill'], 'metrics'),
+      ],
+      scenario: [tech('Adoption of a new feature is far below your forecast two weeks after launch. How do you investigate?', ['funnel / drop-off', 'talk to users', 'segment', 'hypothesis-driven fixes'], 'discovery')],
+      behavioral: [beh('Tell me about a product decision you owned that was unpopular but right. How did you handle it?', ['ownership', 'evidence over opinion', 'stakeholder management', 'outcome'])],
+      eq: [], whiteboard: [],
+    },
+  },
+  {
+    slug: 'project-manager',
+    title: 'Project Manager',
+    category: 'Program',
+    skills: ['Planning', 'Risk', 'Delivery', 'Communication'],
+    durationMin: 7, accent: 'Neutral (global)', language: 'English',
+    blurb: 'Delivery leadership — planning, risk, and keeping cross-functional work on track.',
+    jdText: 'A project/program manager who plans realistically, surfaces risk early, unblocks teams, and drives cross-functional delivery to a date.',
+    questions: {
+      technical: [
+        tech('A cross-functional project is slipping and the deadline is fixed. Walk me through what you actually do.', ['re-scope vs resource', 'critical path', 'transparent trade-offs', 'escalation'], 'delivery'),
+        tech('How do you identify and track risks on a project before they become fire-fights?', ['risk register', 'likelihood x impact', 'mitigation owners', 'early signals'], 'risk'),
+      ],
+      scenario: [tech('Two teams you depend on disagree on an interface and it is blocking delivery. How do you resolve it?', ['get the decision-makers in a room', 'frame the trade-off', 'time-box', 'document + move on'], 'stakeholders')],
+      behavioral: [beh('Tell me about a project you personally rescued when it was off track. What did you do?', ['ownership', 'specific actions', 'outcome'])],
+      eq: [], whiteboard: [],
+    },
+  },
+  {
+    slug: 'risk-auditor',
+    title: 'Risk & Compliance Auditor',
+    category: 'Risk',
+    skills: ['Controls', 'SOX/ITGC', 'Audit', 'Evidence'],
+    durationMin: 7, accent: 'Neutral (global)', language: 'English',
+    blurb: 'Controls & audit — testing controls, finding gaps, and evidencing them.',
+    jdText: 'A risk & compliance auditor who designs and tests controls, identifies gaps, and documents audit-quality evidence across IT and process risk.',
+    questions: {
+      technical: [
+        tech('Walk me through how you would test an access-control (ITGC) for a financial system end to end.', ['design vs operating effectiveness', 'sample selection', 'evidence', 'exceptions handling'], 'itgc'),
+        tech('You find a control gap during an audit. What do you do, step by step?', ['quantify exposure', 'root cause', 'remediation + owner', 'document finding'], 'audit'),
+      ],
+      scenario: [tech('A control owner pushes back that your finding is "not a real risk." How do you handle it?', ['evidence-based', 'tie to a real exposure', 'professional, not adversarial', 'escalate if needed'], 'controls')],
+      behavioral: [beh('Tell me about an audit or risk finding you owned that drove a real change. What was your contribution?', ['ownership', 'specific finding', 'measurable outcome'])],
+      eq: [], whiteboard: [],
+    },
+  },
+  {
+    slug: 'marketing-specialist',
+    title: 'Marketing Specialist',
+    category: 'Marketing',
+    skills: ['Campaigns', 'Funnel', 'Content', 'Analytics'],
+    durationMin: 7, accent: 'Neutral (global)', language: 'English',
+    blurb: 'Growth marketing — campaigns, funnel, and tying spend to results.',
+    jdText: 'A marketing specialist who plans and runs campaigns, owns funnel metrics, and ties spend to pipeline and measurable results.',
+    questions: {
+      technical: [
+        tech('You have a fixed budget to grow qualified leads next quarter. Walk me through how you would allocate it.', ['channel mix by CAC/intent', 'test budget', 'funnel stage targeting', 'measurement plan'], 'campaigns'),
+        tech('A campaign is getting lots of clicks but very few conversions. How do you diagnose it?', ['message-match / landing page', 'audience targeting', 'funnel drop-off', 'attribution'], 'funnel'),
+      ],
+      scenario: [tech('Leadership asks you to prove marketing drove revenue last quarter. How do you approach it?', ['attribution model', 'pipeline influenced vs sourced', 'caveats / honesty', 'leading indicators'], 'analytics')],
+      behavioral: [beh('Tell me about a campaign you personally owned that you are proud of. What did you do and what happened?', ['ownership', 'specific work', 'measured impact'])],
+      eq: [], whiteboard: [],
+    },
+  },
 ]
 
-export const DEMO_CATEGORIES: DemoCategory[] = ['Backend', 'Data', 'Full-Stack']
+export const DEMO_CATEGORIES: DemoCategory[] = ['Backend', 'Data', 'Full-Stack', 'Product', 'Program', 'Risk', 'Marketing']
 export function getDemoPersona(slug: string): DemoPersona | undefined { return DEMO_PERSONAS.find((p) => p.slug === slug) }
