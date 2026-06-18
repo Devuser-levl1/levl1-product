@@ -65,7 +65,7 @@ function CandidateCard({
       positionId: candidate.positionId,
       positionTitle: candidate.positionTitle,
       scheduledAt: candidate.scheduledAt ?? new Date().toISOString(),
-      duration: position?.interviewDuration ?? 45,
+      duration: position?.interviewDuration ?? 30,
       status: "scheduled",
       agentOnline: true,
       candidateJoined: false,

@@ -73,7 +73,7 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
       positionId: candidate.positionId,
       positionTitle: candidate.positionTitle,
       scheduledAt: candidate.scheduledAt ?? new Date().toISOString(),
-      duration: position?.interviewDuration ?? 45,
+      duration: position?.interviewDuration ?? 30,
       status: 'scheduled',
       agentOnline: true,
       candidateJoined: false,
@@ -179,7 +179,7 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
     },
   ]
 
-  const duration = position?.interviewDuration ?? 45
+  const duration = position?.interviewDuration ?? 30
 
   return (
     <div

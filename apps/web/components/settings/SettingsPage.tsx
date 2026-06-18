@@ -122,7 +122,6 @@ export default function SettingsPage() {
   const [notifNoShow,     setNotifNoShow]     = useState(true);
   const [notifCompletion, setNotifCompletion] = useState(true);
 
-  const [defaultDuration, setDefaultDuration] = useState("30");
   const [recordTranscript, setRecordTranscript] = useState(true);
   const [autoScore,         setAutoScore]       = useState(true);
 
@@ -621,13 +620,12 @@ export default function SettingsPage() {
       {/* Interview Defaults */}
       <Section icon={Mic} title="Interview Defaults" description="Default settings applied to new interview sessions">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Field label="Default Duration (minutes)">
-            <select value={defaultDuration} onChange={(e) => setDefaultDuration(e.target.value)} style={SELECT_STYLE}>
-              <option value="20">20 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">60 minutes</option>
-            </select>
+          <Field label="Interview Duration">
+            {/* Build 06: production interviews are fixed at 30 minutes — no
+                selectable options, to reduce config surface. */}
+            <div style={{ ...SELECT_STYLE, display: 'flex', alignItems: 'center', color: '#475569', background: '#F8FAFC', cursor: 'default' }}>
+              30 minutes <span style={{ marginLeft: 8, fontSize: 11, color: '#94A3B8' }}>· fixed</span>
+            </div>
           </Field>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,6 +71,10 @@ export async function POST(req: NextRequest) {
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED.has(k)) data[k] = v
     }
+    // Production interviews are FIXED at 30 min (Build 06) — ignore any client
+    // value (20/45/60 are gone). Demo durations use a separate route and are
+    // unaffected.
+    data.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
 
     const position = await prisma.position.create({ data: data as never })
     return NextResponse.json(position, { status: 201 })

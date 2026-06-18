@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED.has(k)) safe[k] = v
     }
+    // Production interviews are fixed at 30 min (Build 06) — never let an update
+    // set 20/45/60.
+    if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
 
     const position = await prisma.position.update({
       where: { id: params.id },
