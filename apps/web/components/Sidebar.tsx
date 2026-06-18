@@ -10,6 +10,7 @@ import {
   Users,
   Video,
   BarChart2,
+  LineChart,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +35,7 @@ const NAV_MAIN: NavItem[] = [
   { section: "candidates", icon: Users,            label: "Candidates" },
   { section: "interviews", icon: Video,            label: "Interviews" },
   { section: "reports",    icon: BarChart2,        label: "Reports"    },
+  { section: "analytics",  icon: LineChart,        label: "Analytics"  },
 ];
 
 const NAV_BOTTOM: NavItem[] = [

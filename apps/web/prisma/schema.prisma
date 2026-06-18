@@ -496,6 +496,10 @@ model Report {
   // communicator with weak competency (or vice-versa) reads honestly.
   // { coherence, fluency, grammar, clarity (0-10), cefr, rationale, status }
   communication          Json?
+  // Honest evidence gate (Build 04 / analytics I-P0-2): true when the interview
+  // had no evaluable content, so this report is NOT a pass/fail. Persisted so
+  // analytics can exclude it in-DB rather than re-parsing sectionScores JSON.
+  insufficientEvidence   Boolean   @default(false)
   generatedAt            DateTime  @default(now())
 }
 

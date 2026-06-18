@@ -275,6 +275,7 @@ export async function POST(req: NextRequest) {
         hrNote:                 report.hrNote ?? '',
         l2Recommendation:       report.l2Recommendation ?? '',
         communication:          (report.communication ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        insufficientEvidence:   report.insufficientEvidence === true,
       }
       try {
         const savedReport = await prisma.report.upsert({
