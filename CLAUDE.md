@@ -14,9 +14,16 @@ built and owned by Abhijit Majumdar (Avyoma Labs).
 - Frontend:    Next.js 14 (App Router), TailwindCSS
 - Backend:     Next.js API routes
 - Database:    PostgreSQL on Render, Prisma ORM
-- AI:          Anthropic Claude (claude-sonnet-4-20250514) via @anthropic-ai/sdk
+- AI:          Anthropic Claude via @anthropic-ai/sdk. Hire/shared features use
+               `CLAUDE_MODEL` (lib/ai/model.ts). The live-interview BRAIN
+               (evaluate-response, generate-dynamic-question) uses
+               `INTERVIEW_MODEL` = claude-opus-4-8 (lib/screen/interview/model.ts).
 - Voice:       ElevenLabs (Interviews product only)
-- Transcription: Deepgram (Interviews product only)
+- Transcription: Deepgram streaming STT (Interviews product only). Mic audio is
+               captured in the browser and streamed to Deepgram's realtime
+               WebSocket via a short-lived grant token (/api/deepgram/token);
+               adaptive endpointing drives turn-taking. Falls back to the browser
+               Web Speech API when DEEPGRAM_API_KEY is unset or the grant fails.
 - Email:       Resend
 - Auth:        JWT (access token), bcrypt — NO Google OAuth
 - File storage: PostgreSQL text fields for MVP (no Cloudinary yet)

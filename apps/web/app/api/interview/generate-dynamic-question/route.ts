@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { INTERVIEW_MODEL } from '@/lib/screen/interview/model'
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,17 +24,19 @@ export async function POST(req: NextRequest) {
 
     const typeGuide =
       dynamicType === 'project_deepdive' ? 'Ask about a specific project or achievement from their resume — go deep on what they personally built or owned.' :
-      dynamicType === 'coding'           ? 'Give a specific coding or technical design challenge directly relevant to their stated tech stack.' :
-      'Ask a focused follow-up that probes something specific they just mentioned.'
+      dynamicType === 'coding'           ? 'Give a specific coding or technical design challenge directly relevant to their stated tech stack. Favour one that surfaces an EDGE CASE — failure modes, error handling, scale, or concurrency.' :
+      'Ask a focused follow-up that probes the single highest-signal gap in what they just said — the most important weakness or unverified claim, not the easiest thing to ask.'
 
     const res = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: INTERVIEW_MODEL,
       max_tokens: 200,
-      temperature: 0.5,
+      // Opus 4.8 rejects temperature/top_p/top_k. Low effort keeps generation snappy.
+      output_config: { effort: 'low' },
       system:
         'You are a senior technical interviewer conducting a live interview. ' +
         'Generate exactly ONE focused question. ' +
         'Reference the candidate\'s specific experience, projects, or technologies where possible. ' +
+        'Prefer questions that test depth via a relevant edge case (failure modes, scale, concurrency, error handling) when the topic is technical. ' +
         'Be conversational — this should feel natural in a live interview, not like a written quiz. ' +
         'No positive reinforcement. No preamble. Return only the question text.',
       messages: [{

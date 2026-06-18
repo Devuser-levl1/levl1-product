@@ -12,6 +12,7 @@ import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
+import { DeepgramStt } from '@/lib/screen/interview/deepgram-stt'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
@@ -382,6 +383,7 @@ export default function InterviewPage() {
   const transcriptRef     = useRef<TranscriptEntry[]>([])
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
+  const dgSttRef          = useRef<DeepgramStt | null>(null)  // I-P0-3: Deepgram streaming STT
   const silenceTimersRef  = useRef<ReturnType<typeof setTimeout>[]>([])
   const timerIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const capturedRef       = useRef(false)
@@ -389,6 +391,7 @@ export default function InterviewPage() {
   const rephraseCountRef      = useRef(0)
   const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
   const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
+  const followUpCountRef      = useRef(0)        // I-P0-3: follow-ups asked on this question (cap 3)
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
   const wrapUpFiredRef = useRef(false)           // one-shot wrap-up guard — closing fires exactly once (Build 01-B2)
@@ -629,63 +632,80 @@ export default function InterviewPage() {
   }, [setPhase, stopAllAudio])
 
   /* ── STT ──────────────────────────────────────────────────── */
+  // Stop whichever recognizer is currently active (Deepgram or Web Speech).
+  const stopActiveRecognizer = useCallback(() => {
+    if (recognitionRef.current) { try { recognitionRef.current.stop() } catch {} recognitionRef.current = null }
+    if (dgSttRef.current)       { try { dgSttRef.current.stop() }       catch {} dgSttRef.current = null }
+  }, [])
+
   const startListening = useCallback(() => {
     if (micFailed) { setTextInputMode(true); return }
 
-    const SR: ISpeechRecognitionConstructor | undefined =
-      window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { setMicFailed(true); setTextInputMode(true); return }
-
-    if (recognitionRef.current) { try { recognitionRef.current.stop() } catch {} }
-
-    // Reset per-listen state
+    // Reset per-listen state (shared by Deepgram + Web Speech fallback)
     clearSilenceTimers()
+    stopActiveRecognizer()
     hasSpokenRef.current = false
     capturedRef.current  = false
     setListeningHint('')
+    playChime()  // soft chime → signals mic is live
 
-    // Soft chime → signals mic is live
-    playChime()
-
-    const rec = new SR()
-    rec.continuous     = true
-    rec.interimResults = true
-    rec.lang           = 'en-US'
-
-    rec.onresult = (event: SpeechRecognitionEvent) => {
-      const text = Array.from(event.results).map(r => r[0].transcript).join(' ').trim()
-      liveTranscriptRef.current = text
-      setLiveTranscript(text)
-
-      if (text) {
-        hasSpokenRef.current = true
-        setListeningHint('')  // clear cold-start hints once they begin speaking
-        clearSilenceTimers()
-
-        // End-of-turn after a short silence → capture response (RESPONSE_ENDPOINT_MS,
-        // reset on each new interim). During the warm-up arc, route the reply to
-        // the warm-up handler instead of the Q pipeline.
-        const captureTimer = setTimeout(() => {
-          if (liveTranscriptRef.current.trim() && !capturedRef.current) {
-            capturedRef.current = true
-            const warmupCb = warmupCaptureRef.current
-            if (warmupCb) warmupCb(liveTranscriptRef.current)
-            else captureResponse(liveTranscriptRef.current)
-          }
-        }, RESPONSE_ENDPOINT_MS)
-        silenceTimersRef.current = [captureTimer]
-      }
+    // Shared end-of-turn capture. During the warm-up arc, route to its handler.
+    const captureNow = (text: string) => {
+      if (!text.trim() || capturedRef.current) return
+      capturedRef.current = true
+      const warmupCb = warmupCaptureRef.current
+      if (warmupCb) warmupCb(text)
+      else captureResponse(text)
     }
 
-    rec.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setMicFailed(true)
-        setTextInputMode(true)
+    // ── Web Speech fallback — only if Deepgram can't start (no key, mic denied,
+    //    unsupported browser). Keeps the fixed-timer endpointing it always had. ──
+    const runWebSpeech = () => {
+      const SR: ISpeechRecognitionConstructor | undefined =
+        window.SpeechRecognition || window.webkitSpeechRecognition
+      if (!SR) { setMicFailed(true); setTextInputMode(true); return }
+      const rec = new SR()
+      rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US'
+      rec.onresult = (event: SpeechRecognitionEvent) => {
+        const text = Array.from(event.results).map(r => r[0].transcript).join(' ').trim()
+        liveTranscriptRef.current = text
+        setLiveTranscript(text)
+        if (text) {
+          hasSpokenRef.current = true
+          setListeningHint('')
+          clearSilenceTimers()
+          const captureTimer = setTimeout(() => captureNow(liveTranscriptRef.current), RESPONSE_ENDPOINT_MS)
+          silenceTimersRef.current = [captureTimer]
+        }
       }
+      rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setMicFailed(true); setTextInputMode(true)
+        }
+      }
+      recognitionRef.current = rec
+      try { rec.start() } catch {}
     }
 
-    recognitionRef.current = rec
-    rec.start()
+    // ── Deepgram streaming (primary): Nova-tier cloud STT with ADAPTIVE
+    //    endpointing — onUtteranceEnd replaces the fixed 1500 ms timer. ──
+    const dg = new DeepgramStt({
+      onInterim: (text) => {
+        liveTranscriptRef.current = text
+        setLiveTranscript(text)
+        if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
+      },
+      onUtteranceEnd: (text) => captureNow(text),
+    })
+    dgSttRef.current = dg
+    dg.start().then((ok) => {
+      // Fall back gracefully if Deepgram didn't start and we haven't moved on.
+      if (!ok && dgSttRef.current === dg && !capturedRef.current && phaseRef.current === 'listening') {
+        dgSttRef.current = null
+        runWebSpeech()
+      }
+    })
+
     setIsListening(true)
     setPhase('listening')
 
@@ -702,7 +722,7 @@ export default function InterviewPage() {
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()   // prevent t20/t30 from also firing this invocation
       setListeningHint('')
-      try { recognitionRef.current?.stop() } catch {}
+      stopActiveRecognizer()
       setIsListening(false)
 
       const nudge = "Take your time — I'm here whenever you're ready."
@@ -722,7 +742,7 @@ export default function InterviewPage() {
       if (hasSpokenRef.current || capturedRef.current || phaseRef.current !== 'listening') return
       clearSilenceTimers()
       setListeningHint('')
-      try { recognitionRef.current?.stop() } catch {}
+      stopActiveRecognizer()
       setIsListening(false)
 
       const prompt = "Would you like a moment more, or shall we move on to the next question?"
@@ -744,7 +764,7 @@ export default function InterviewPage() {
       clearSilenceTimers()
       awaitingMoveOnChoiceRef.current = false
       setListeningHint('')
-      try { recognitionRef.current?.stop() } catch {}
+      stopActiveRecognizer()
       setIsListening(false)
 
       const autoAdv = "Let's come back to that if time allows."
@@ -763,13 +783,13 @@ export default function InterviewPage() {
   }, [micFailed, setPhase, clearSilenceTimers])
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current) { try { recognitionRef.current.stop() } catch {} }
+    stopActiveRecognizer()
     clearSilenceTimers()
     setIsListening(false)
     setLiveTranscript('')
     setListeningHint('')
     liveTranscriptRef.current = ''
-  }, [clearSilenceTimers])
+  }, [clearSilenceTimers, stopActiveRecognizer])
 
   /* ── Submit text input (fallback) ─────────────────────────── */
   const submitTextInput = useCallback(() => {
@@ -988,6 +1008,7 @@ export default function InterviewPage() {
           candidateResponse: responseText,
           previousResponses: prevQ,
           dynamicIntensity:  position?.dynamicQuestionIntensity ?? 'standard',
+          followUpCount:     followUpCountRef.current,  // I-P0-3 depth cap
         }),
       })
       ev = await res.json()
@@ -1046,7 +1067,13 @@ export default function InterviewPage() {
     const nextQ   = questionsRef.current[nextIdx]
     const isSectionChange = nextQ && nextQ.section !== q.section
 
-    if (ev.shouldAskFollowUp && ev.followUpQuestion) {
+    // I-P0-3 (Part 3a): honour at most MAX_FOLLOWUPS per question. Past the cap we
+    // advance gracefully even if the model still wants to drill — the dimension is
+    // recorded as partially-evidenced (gaps already in keyPointsMissed).
+    const MAX_FOLLOWUPS = 3
+    const withinBudget  = followUpCountRef.current < MAX_FOLLOWUPS
+    if (ev.shouldAskFollowUp && ev.followUpQuestion && withinBudget) {
+      followUpCountRef.current += 1
       addTranscript({ speaker: 'ai', text: ev.followUpQuestion, questionId: q.id, type: 'followup' })
       await speakText(ev.followUpQuestion)
       await delay(1500)
@@ -1075,6 +1102,7 @@ export default function InterviewPage() {
     rephraseCountRef.current      = 0     // reset all per-question edge-case state
     redirectGivenRef.current      = false
     shortAnswerAskedRef.current   = false
+    followUpCountRef.current       = 0    // I-P0-3: fresh follow-up budget per question
     awaitingMoveOnChoiceRef.current = false
     resetAnswerTelemetry()                // Build 02: fresh T2 timing/paste capture per question
 
