@@ -69,10 +69,16 @@ const REPEAT_TRIGGERS = [
   'what do you mean', "i don't understand", "i dont understand",
 ] as const
 
-// Candidate doesn't know → rephrase once, then move on
+// Candidate is STUCK → ONE diluted/guided follow-up, then move on (Fix 1).
+// Broad coverage so a genuine "I'm stuck" never falls through to 3x drilling.
 const DONT_KNOW_TRIGGERS = [
-  "i don't know", "i dont know", "no idea", "not sure about this",
-  "i have no idea", "i'm not sure", "im not sure",
+  "i don't know", "i dont know", "i don't really know", "no idea", "no clue",
+  "not sure about this", "i have no idea", "i'm not sure", "im not sure",
+  "not really sure", "can't recall", "cannot recall", "can't remember",
+  "cannot remember", "don't remember", "can't think", "cannot think",
+  "unable to think", "can't think of", "drawing a blank", "blanking",
+  "i forget", "i forgot", "my mind is blank", "i'm blanking", "im blanking",
+  "i'm stuck", "im stuck", "not coming to me", "can't say",
 ] as const
 
 // Candidate explicitly wants to skip
@@ -659,6 +665,9 @@ export default function InterviewPage() {
   }, [])
 
   const startListening = useCallback(() => {
+    // Never re-open the mic once the interview has wrapped up (time-up / termination
+    // / closing) — stops an in-flight question flow from reviving after Fix 3.
+    if (wrapUpFiredRef.current || phaseRef.current === 'closing' || phaseRef.current === 'completed') return
     if (micFailed) { setTextInputMode(true); return }
 
     // Reset per-listen state (shared by Deepgram + Web Speech fallback)
@@ -989,21 +998,46 @@ export default function InterviewPage() {
       return
     }
 
-    // ── 4. I don't know ─────────────────────────────────────────────
+    // ── 4. Stuck ("I don't know / can't recall / blanking") — Fix 1 ──────
+    // ONE diluted/guided attempt to unblock; if still stuck, MOVE ON immediately
+    // (short-circuits the 3-follow-up budget — no drilling). Dimension stays
+    // not-evidenced for this question.
     if (DONT_KNOW_TRIGGERS.some(w => lower.includes(w))) {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
       if (rephraseCountRef.current >= 1) {
-        const ack = "That's completely fine, let's move on."
+        const ack = pick([
+          "That's completely fine — let's move on.",
+          "No problem at all, we'll move on.",
+          "Understood — let's keep going.",
+        ] as const)
         addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
         await speakText(ack)
-        await delay(800)
+        await delay(700)
         await moveToQuestion(currentQIdxRef.current + 1)
       } else {
         rephraseCountRef.current++
-        const rephrase = `No problem — let me ask it from a different angle. ${q.question}`
-        addTranscript({ speaker: 'ai', text: rephrase, questionId: q.id, type: 'preset' })
-        await speakText(rephrase)
-        await delay(1500)
+        // Generate a SIMPLER / more guided version (hint, narrower sub-question,
+        // example) so they have an entry point. Fall back to a guided template.
+        let diluted = ''
+        try {
+          const r = await fetch('/api/interview/generate-dynamic-question', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dynamicType: 'simplify',
+              questionText: q.question,
+              lastResponse: responseText,
+              positionTitle: position?.title ?? '',
+              techStack: position?.techStack ?? [],
+              previousResponses: responsesRef.current.slice(-3).map(r => ({ question: r.questionText, response: r.candidateResponse })),
+            }),
+          })
+          if (r.ok) diluted = (await r.json()).question
+        } catch { /* fall back below */ }
+        const hint = q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the basics'
+        if (!diluted) diluted = `No problem — let's make it simpler. To start, just tell me whatever you do know about ${hint}.`
+        addTranscript({ speaker: 'ai', text: diluted, questionId: q.id, type: 'preset' })
+        await speakText(diluted)
+        await delay(1200)
         startListening()
       }
       return
@@ -1346,12 +1380,16 @@ export default function InterviewPage() {
   }, [candidate, interview, interviewId, stopAllAudio, stopListening, addTranscript, speakText, setPhase, updateInterview])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const startClosing = useCallback(async () => {
-    if (wrapUpFiredRef.current) return  // exactly-once wrap-up (Build 01-B2)
-    wrapUpFiredRef.current = true
+  const startClosing = useCallback(async (opts?: { closing?: string; alreadyClaimed?: boolean }) => {
+    // exactly-once wrap-up (Build 01-B2). handleTimeUp claims the flag itself and
+    // passes alreadyClaimed so this doesn't no-op out from under it.
+    if (!opts?.alreadyClaimed) {
+      if (wrapUpFiredRef.current) return
+      wrapUpFiredRef.current = true
+    }
     setPhase('closing')
     const firstName = candidate?.name.split(' ')[0] || 'there'
-    const closing =
+    const closing = opts?.closing ??
       `Thank you ${firstName}, that brings us to the end of our interview today. ` +
       `You covered a great deal of ground and I appreciate your thoughtfulness in each response. ` +
       `The team will review your evaluation and be in touch with next steps. ` +
@@ -1406,10 +1444,19 @@ export default function InterviewPage() {
   }, [setPhase, stopListening, updateCandidate, updateInterview, interview, interviewId, runningScore])
 
   const handleTimeUp = useCallback(async () => {
-    if (phaseRef.current === 'completed' || phaseRef.current === 'closing') return
+    // Deterministic priority gate (Fix 3): the time-up wrap-up wins, exactly once,
+    // and never overlaps a next question. Claim the wrap-up FIRST (synchronously)
+    // so any in-flight moveToQuestion/captureResponse bails on wrapUpFiredRef, then
+    // cancel any question TTS already playing so there's no simultaneous speech.
+    if (wrapUpFiredRef.current || phaseRef.current === 'completed' || phaseRef.current === 'closing') return
+    wrapUpFiredRef.current = true
+    stopAllAudio()       // cut off any in-progress next-question TTS
     stopListening()
-    await startClosing()
-  }, [stopListening, startClosing])
+    const firstName = candidate?.name.split(' ')[0] || 'there'
+    const closing = `Thank you ${firstName} — that's the time we have for today. ` +
+      `I appreciate everything you shared. The team will review your evaluation and be in touch with next steps. It was great speaking with you.`
+    await startClosing({ closing, alreadyClaimed: true })
+  }, [stopListening, stopAllAudio, startClosing, candidate])
 
   // Fix 2: Whiteboard Done handler — resume AI flow after candidate submits diagram
   const handleWhiteboardDone = useCallback(async () => {
@@ -1452,8 +1499,18 @@ export default function InterviewPage() {
     const firstName = candidate.name.split(' ')[0]
     const ctx = buildSessionContext()  // candidate's real local day/time
 
-    // Beat 1 — greet by name + day/time-correct opener (neutral employer framing).
-    const opener = buildOpener({ firstName, ctx, role: position.title, orgName: position.company })
+    // Beat 1 — VARIED, warm opener (Fix 4): generated fresh each run, conditioned
+    // on the real local day/time. Falls back to the deterministic buildOpener if
+    // the model is slow/unavailable so the warm-up never blocks.
+    let opener = ''
+    try {
+      const r = await fetch('/api/interview/warmup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ beat: 'opener', firstName, role: position.title, dayContext: ctx }),
+      })
+      if (r.ok) opener = (await r.json()).line
+    } catch { /* fall back below */ }
+    if (!opener) opener = buildOpener({ firstName, ctx, role: position.title, orgName: position.company })
     addTranscript({ speaker: 'ai', text: opener, type: 'intro' })
     await speakText(opener)
     const reply1 = await awaitWarmupReply(15000)

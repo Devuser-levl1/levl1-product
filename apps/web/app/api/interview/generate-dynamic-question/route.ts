@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     const previousResponses: Array<{ question: string; response: string }> = body.previousResponses ?? []
     const lastResponse: string       = body.lastResponse ?? ''
     const dynamicType: string        = body.dynamicType ?? 'followup'
+    const questionText: string       = body.questionText ?? ''  // original Q (for 'simplify')
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'No API key' }, { status: 500 })
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     const typeGuide =
       dynamicType === 'project_deepdive' ? 'Ask about a specific project or achievement from their resume — go deep on what they personally built or owned.' :
       dynamicType === 'coding'           ? 'Give a specific coding or technical design challenge directly relevant to their stated tech stack. Favour one that surfaces an EDGE CASE — failure modes, error handling, scale, or concurrency.' :
+      dynamicType === 'simplify'         ? 'The candidate is STUCK on the question below. Re-ask a SIMPLER, more guided version: narrow it to one concrete sub-part, offer a small hint or a starting example, or make it more specific so they have an entry point. Warm and encouraging, no pressure. This is a single gentle attempt to unblock them — do not stack multiple asks.' :
       'Ask a focused follow-up that probes the single highest-signal gap in what they just said — the most important weakness or unverified claim, not the easiest thing to ask.'
 
     const res = await client.messages.create({
@@ -46,6 +48,7 @@ export async function POST(req: NextRequest) {
           `Tech stack: ${techStack.join(', ')}\n` +
           `Resume highlights: ${candidateResume || 'Not provided'}\n\n` +
           `Recent interview exchange:\n${prevCtx}\n\n` +
+          (questionText ? `Original question they are stuck on: "${questionText}"\n\n` : '') +
           `Candidate just said: "${lastResponse}"\n\n` +
           `Type: ${typeGuide}\n\n` +
           `Generate ONE question now:`,
