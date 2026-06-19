@@ -1652,11 +1652,11 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const runTour = useCallback(async () => {
     const steps: { area: string; line: string }[] = [
-      { area: 'ai',         line: "Before we begin, a quick tour. On the left is me, Alex — this little panel lights up when I'm speaking or listening." },
-      { area: 'video',      line: "Right next to it is your camera, with a live-monitoring indicator. Just keep your face comfortably in view." },
-      { area: 'question',   line: "Below that, your current question will always be shown here." },
-      { area: 'editor',     line: "Underneath is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
-      { area: 'transcript', line: "And on the right is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
+      { area: 'question',   line: "Before we begin, a quick tour. Across the top you'll always see your current question." },
+      { area: 'ai',         line: "On the left is me, Alex — this panel lights up when I'm speaking or listening." },
+      { area: 'video',      line: "Just below me is your camera, with a live-monitoring indicator. Keep your face comfortably in view." },
+      { area: 'editor',     line: "On the right is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
+      { area: 'transcript', line: "And below the editor is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
     ]
     setTourActive(true)
     tourSkipRef.current = false
@@ -2099,43 +2099,20 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {/* ── Main content: two columns (left = interviewer/video + question + editor; right = transcript) ── */}
-      <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', gap: 16, minHeight: 0 }}>
+      {/* ── Main content: question full-width on top, then two columns
+           (left = AI + candidate video, stacked & equal; right = editor + transcript). ── */}
+      <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 }}>
 
-        {/* ════ LEFT COLUMN ════ */}
-        <div className="iv-left" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-
-          {messageFromRecruiter && (
-            <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span>📋 {messageFromRecruiter}</span>
-              <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
-            </div>
-          )}
-
-          {/* Top sub-row: modest AI interviewer box (left) + prominent candidate
-              video (right). Fixed-height row so the editor below gets generous space. */}
-          <div data-tour="topbar" className="iv-top-row" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 12, alignItems: 'stretch', height: 200, flexShrink: 0 }}>
-            <div data-tour="ai" style={{ borderRadius: 16, outline: tourHighlight === 'ai' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-              <AIVisualizer
-                phase={phase}
-                isWarmingUp={isWarmingUp}
-                liveTranscriptLength={liveTranscript.length}
-                timeRemaining={timeRemaining}
-                candidateName={candidate.name}
-                positionTitle={position.title}
-                compact
-              />
-            </div>
-            {/* Candidate video — enlarged & prominent. Same IntegrityMonitor feed/CV
-                (inline variant); a bigger face also helps the CV detection. */}
-            <div data-tour="video" style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" />
-            </div>
+        {messageFromRecruiter && (
+          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <span>📋 {messageFromRecruiter}</span>
+            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
           </div>
+        )}
 
-          {/* Question Display */}
-          <div data-tour="question" style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-            {currentQ ? (
+        {/* ════ Question Display — FULL WIDTH across the top ════ */}
+        <div data-tour="question" style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
@@ -2165,8 +2142,35 @@ export default function InterviewPage() {
             </div>
           </div>
 
+        {/* ════ TWO COLUMNS ════ */}
+        <div className="iv-cols" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16 }}>
+
+          {/* ──── LEFT: AI window (top) + candidate video (below) — stacked & EQUAL ──── */}
+          <div className="iv-left" style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+            <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1, minHeight: 0, display: 'flex', borderRadius: 18, outline: tourHighlight === 'ai' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+              <AIVisualizer
+                phase={phase}
+                isWarmingUp={isWarmingUp}
+                liveTranscriptLength={liveTranscript.length}
+                timeRemaining={timeRemaining}
+                candidateName={candidate.name}
+                positionTitle={position.title}
+                compact
+              />
+            </div>
+            {/* Candidate video — same IntegrityMonitor feed/CV (inline variant).
+                Equal-sized box with normal proportions; objectFit:cover keeps the
+                face naturally framed (no stretch/letterbox). */}
+            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" />
+            </div>
+          </div>
+
+          {/* ──── RIGHT: editor (top, generous height) + transcript (below) — stacked ──── */}
+          <div className="iv-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div data-tour="editor" style={{ flex: 1, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
             {/* tab strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
               <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
@@ -2216,10 +2220,9 @@ export default function InterviewPage() {
               </button>
             </div>
           </div>
-        </div>
 
-        {/* ════ RIGHT COLUMN: full-height transcript ════ */}
-        <div data-tour="transcript" className="iv-transcript" style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          {/* Transcript — BELOW the editor in the right column. Live, auto-scroll, scrollable back. */}
+          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {/* header + live status */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2274,7 +2277,10 @@ export default function InterviewPage() {
               <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 10, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700 }}>Send</button>
             </div>
           )}
-        </div>
+          </div>
+
+          </div>{/* iv-right */}
+        </div>{/* iv-cols */}
 
       </main>
 
@@ -2379,16 +2385,17 @@ export default function InterviewPage() {
           to { transform: rotate(360deg); }
         }
 
+        /* AI window fills its (equal-sized) box so it matches the candidate video. */
+        .iv-ai-fill > div { flex: 1; height: 100%; justify-content: center; }
+
         /* ── Narrower widths: stack the two columns; keep the editor present.
            Desktop-first — this only prevents bad breakage below ~900px. ── */
         @media (max-width: 900px) {
-          .iv-surface { flex-direction: column !important; overflow: auto !important; }
-          .iv-transcript { width: 100% !important; min-height: 240px; }
-          .iv-left { min-height: 0; }
-          .iv-top-row { grid-template-columns: 1fr 200px !important; }
-        }
-        @media (max-width: 560px) {
-          .iv-top-row { grid-template-columns: 1fr !important; }
+          .iv-surface { overflow: auto !important; }
+          .iv-cols { flex-direction: column !important; flex: none !important; }
+          .iv-left { width: 100% !important; }
+          .iv-left > div { min-height: 200px; }
+          .iv-transcript { min-height: 240px; }
         }
       `}</style>
     </div>
