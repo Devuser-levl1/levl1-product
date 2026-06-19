@@ -936,7 +936,7 @@ export default function InterviewPage() {
     // Prefer the code editor answer (paste/latency live there); else a long spoken one.
     const t2Answer = codeContentRef.current.trim() || responseText
     if (t2Answer && t2Answer.length >= 40) {
-      runIntegrityAnalysis(t2Answer, q.question, (q as { difficulty?: string }).difficulty ?? null)
+      runIntegrityAnalysis(t2Answer, q.question, (q as { difficulty?: string }).difficulty ?? null, q.id)
     }
 
     // ── 0. Awaiting "more time or move on?" choice ───────────────────
@@ -1793,7 +1793,7 @@ export default function InterviewPage() {
 
   // Fire the T2 content-analysis for a coding answer (fire-and-forget; never
   // blocks the interview). Sends only text needed for analysis — no raw video.
-  const runIntegrityAnalysis = useCallback((answer: string, questionText: string, difficulty: string | null) => {
+  const runIntegrityAnalysis = useCallback((answer: string, questionText: string, difficulty: string | null, questionId?: string) => {
     if (!answer || answer.trim().length < 40) return
     const baseline = transcriptRef.current.filter((t) => t.speaker === 'candidate').slice(0, 4).map((t) => t.text).join('\n').slice(0, 1500)
     // Anti-overlay latency: the gap from the question being shown to the answer
@@ -1806,7 +1806,7 @@ export default function InterviewPage() {
     fetch('/api/interview/integrity/analyze', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        interviewId, questionText, questionDifficulty: difficulty, answer, baseline, spoken,
+        interviewId, questionText, questionId, questionDifficulty: difficulty, answer, baseline, spoken,
         latency: { timeToFirstKeystrokeMs: idleBeforeAnswerMs, idleBeforeAnswerMs },
         paste: pasteStatsRef.current,
       }),

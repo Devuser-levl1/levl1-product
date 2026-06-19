@@ -179,12 +179,72 @@ function SkillRow({ rank, dim, questions }: { rank: number; dim: Dimension; ques
 }
 
 // ── R4. Integrity panel — first-class, evidence-linked, never "disqualified" ─
+// Reviewer-facing summary categories: a stable, scannable headline set. Each maps
+// one or more raw event types to a human label (e.g. tab_switch + window_blur →
+// "Tab / window switches"). Counts come from the summary's countsByType.
+const INTEGRITY_CATEGORIES: { label: string; types: string[]; keyZero?: boolean }[] = [
+  { label: 'Tab / window switches',     types: ['tab_switch', 'window_blur'] },
+  { label: 'Phone / off-screen glances', types: ['gaze_away'] },
+  { label: 'Second person on screen',   types: ['multiple_faces'], keyZero: true },
+  { label: 'Face not visible',          types: ['no_face'] },
+  { label: 'Left fullscreen / share',   types: ['fullscreen_exit', 'screen_share_drop'] },
+  { label: 'AI-assistance signals',     types: ['ai_assisted_answer'], keyZero: true },
+  { label: 'Answer-timing anomalies',   types: ['latency_anomaly'] },
+  { label: 'Reading / read-aloud',      types: ['reading_gaze', 'read_aloud_cadence'] },
+  { label: 'Pasted blocks',             types: ['paste_anomaly'] },
+  { label: 'Second voice detected',     types: ['second_voice'], keyZero: true },
+]
+
+type IntegrityEvt = IntegritySummaryShape['events'][number]
+const CLUSTER_MS = 75_000  // events within this gap are treated as co-occurring
+
+function clockOf(iso: string) { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+function qContextOf(events: IntegrityEvt[]): string | null {
+  for (const e of events) {
+    const m = e.meta as { questionText?: string } | null
+    if (m?.questionText) return m.questionText
+  }
+  return null
+}
+
+function EvidenceRow({ e }: { e: IntegrityEvt }) {
+  const span = (e.meta as { span?: string; transcript?: string } | null)?.span ?? (e.meta as { transcript?: string } | null)?.transcript
+  return (
+    <div style={{ display: 'flex', gap: 10, fontSize: 12.5 }}>
+      <span style={{ color: '#94A3B8', fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'nowrap', fontSize: 11.5, paddingTop: 1 }}>{clockOf(e.occurredAt)}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ fontWeight: 700, color: '#334155' }}>{e.label}</span>
+        {typeof e.confidence === 'number' && e.confidence < 1 && <span style={{ color: '#94A3B8' }}> · {Math.round(e.confidence * 100)}% conf.</span>}
+        {e.detail && <div style={{ color: '#64748B', marginTop: 2 }}>{e.detail}</div>}
+        {span && <div style={{ color: '#475569', marginTop: 3, fontStyle: 'italic', borderLeft: '2px solid #E2E8F0', paddingLeft: 8 }}>“{span}”</div>}
+      </div>
+    </div>
+  )
+}
+
 export function IntegrityPanel({ integrity, terminationReason }: { integrity: IntegritySummaryShape | null; terminationReason?: string | null }) {
   if (!integrity) return null
   const flagged = integrity.reviewStatus === 'FLAGGED_FOR_REVIEW'
   const color = flagged ? '#B45309' : '#059669'
   const bg = flagged ? 'rgba(245,158,11,0.1)' : 'rgba(5,150,105,0.1)'
-  const typeCounts = Object.entries(integrity.countsByType).filter(([, n]) => n > 0)
+
+  // R1 — summary: category → count. Show any with a count, plus the key categories
+  // even at zero (reassuring "0 second person / second voice").
+  const counts = integrity.countsByType
+  const summary = INTEGRITY_CATEGORIES
+    .map((c) => ({ label: c.label, n: c.types.reduce((s, t) => s + (counts[t] ?? 0), 0), keyZero: !!c.keyZero }))
+    .filter((c) => c.n > 0 || c.keyZero)
+
+  // R2 — detail: chronological, with overlapping events grouped into correlated
+  // clusters (co-occurring in time → one linked entry tied to the answer window).
+  const sorted = [...integrity.events].sort((a, b) => +new Date(a.occurredAt) - +new Date(b.occurredAt))
+  const clusters: { events: IntegrityEvt[]; lastAt: number }[] = []
+  for (const e of sorted) {
+    const t = +new Date(e.occurredAt)
+    const last = clusters[clusters.length - 1]
+    if (last && t - last.lastAt <= CLUSTER_MS) { last.events.push(e); last.lastAt = t }
+    else clusters.push({ events: [e], lastAt: t })
+  }
 
   return (
     <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22 }}>
@@ -193,36 +253,49 @@ export function IntegrityPanel({ integrity, terminationReason }: { integrity: In
         <span style={{ fontSize: 12.5, fontWeight: 800, color, background: bg, borderRadius: 100, padding: '4px 12px' }}>{flagged ? 'Flagged for review' : 'Clean'}</span>
         <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Separate from competency · for human review, not a verdict</span>
       </div>
-      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 16px' }}>
         Proctoring &amp; answer-content signals captured during the session. These inform a human reviewer; they never auto-disqualify and do not change the competency score.
       </p>
 
+      {/* ── R1: SUMMARY (bold counts per activity) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8, marginBottom: 16 }}>
+        {summary.map((c) => {
+          const hit = c.n > 0
+          return (
+            <div key={c.label} style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '10px 12px', borderRadius: 10, border: `1px solid ${hit ? 'rgba(245,158,11,0.3)' : '#EEF2F6'}`, background: hit ? 'rgba(245,158,11,0.06)' : '#F8FAFC' }}>
+              <span style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: hit ? '#B45309' : '#94A3B8', fontFamily: 'var(--font-display, inherit)' }}>{c.n}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: hit ? '#92400E' : '#64748B' }}>{c.label}</span>
+            </div>
+          )
+        })}
+      </div>
+
       {integrity.combined.detected && integrity.combined.rationale && (
-        <div style={{ fontSize: 12.5, color: '#92400E', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '10px 12px', marginBottom: 14 }}>
+        <div style={{ fontSize: 12.5, color: '#92400E', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '10px 12px', marginBottom: 16 }}>
           <strong>Combined signal:</strong> {integrity.combined.rationale}
         </div>
       )}
 
-      {typeCounts.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-          {typeCounts.map(([t, n]) => <span key={t} style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{t.replace(/_/g, ' ')} · {n}</span>)}
-        </div>
-      )}
-
+      {/* ── R2: DETAIL (chronological, correlated) ── */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Evidence timeline</div>
       {integrity.events.length === 0 ? (
         <div style={{ fontSize: 13, color: '#94A3B8' }}>No integrity events were recorded for this session.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {integrity.events.map((e, i) => {
-            const span = (e.meta as { span?: string } | null)?.span
+          {clusters.map((cl, i) => {
+            if (cl.events.length === 1) {
+              return <div key={i} style={{ padding: '8px 10px', border: '1px solid #F1F5F9', borderRadius: 8 }}><EvidenceRow e={cl.events[0]} /></div>
+            }
+            // Correlated group — co-occurring signals shown as one linked entry.
+            const qText = qContextOf(cl.events)
+            const labels = Array.from(new Set(cl.events.map((e) => e.label)))
             return (
-              <div key={i} style={{ display: 'flex', gap: 10, fontSize: 12.5, padding: '8px 10px', border: '1px solid #F1F5F9', borderRadius: 8 }}>
-                <span style={{ color: '#94A3B8', fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'nowrap', fontSize: 11.5 }}>{new Date(e.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontWeight: 700, color: '#334155' }}>{e.label}</span>
-                  {typeof e.confidence === 'number' && e.confidence < 1 && <span style={{ color: '#94A3B8' }}> · {Math.round(e.confidence * 100)}% conf.</span>}
-                  {e.detail && <div style={{ color: '#64748B', marginTop: 2 }}>{e.detail}</div>}
-                  {span && <div style={{ color: '#475569', marginTop: 3, fontStyle: 'italic', borderLeft: '2px solid #E2E8F0', paddingLeft: 8 }}>“{span}”</div>}
+              <div key={i} style={{ border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.04)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#6D28D9', marginBottom: 6 }}>
+                  Correlated activity — {labels.length} signals co-occurred{qText ? <> while answering: <span style={{ fontStyle: 'italic', fontWeight: 600, color: '#4F46E5' }}>“{qText.slice(0, 90)}{qText.length > 90 ? '…' : ''}”</span></> : ''}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '2px solid rgba(124,58,237,0.25)', paddingLeft: 10 }}>
+                  {cl.events.map((e, j) => <EvidenceRow key={j} e={e} />)}
                 </div>
               </div>
             )

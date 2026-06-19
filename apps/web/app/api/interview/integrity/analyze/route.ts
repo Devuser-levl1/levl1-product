@@ -74,10 +74,16 @@ export async function POST(req: NextRequest) {
 
     const flags = [latencyFlag, pasteFlag, aiFlag, cadenceFlag].filter((f): f is NonNullable<typeof f> => f !== null)
     if (flags.length > 0) {
+      // Carry the question context on EVERY content flag so the report can correlate
+      // it to the answer window ("…while answering Q3"), not just the AI-assist flag.
+      const qCtx = {
+        ...(body.questionId ? { questionId: String(body.questionId) } : {}),
+        ...(typeof body.questionText === 'string' ? { questionText: body.questionText } : {}),
+      }
       await prisma.interviewIntegrityEvent.createMany({
         data: flags.map((f) => ({
           interviewId, type: f.type, confidence: f.confidence, detail: f.rationale,
-          meta: { ...f.meta, ...(body.questionId ? { questionId: String(body.questionId) } : {}) } as Prisma.InputJsonValue,
+          meta: { ...f.meta, ...qCtx } as Prisma.InputJsonValue,
         })),
       })
     }
