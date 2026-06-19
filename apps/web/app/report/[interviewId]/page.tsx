@@ -7,6 +7,7 @@ import { useAppStore, CandidateReport } from '@/store/appStore'
 import toast from 'react-hot-toast'
 import {
   CompetencyRadar, CommunicationDial, SkillEvidenceList, IntegrityPanel,
+  CultureFitPanel, CultureFitShape,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -35,6 +36,7 @@ interface ReportPayload {
   concernAreas: string[]
   transcriptHighlights: { quote: string; context: string }[]
   integrity: IntegritySummaryShape | null
+  cultureFit: CultureFitShape | null
   terminationReason: string | null
   isDemo?: boolean
   candidateName?: string; positionTitle?: string; company?: string; interviewDate?: string; duration?: number
@@ -222,6 +224,9 @@ export default function ReportPage() {
         {!(R.isDemo && (!R.integrity || R.integrity.totalEvents === 0)) && (
           <IntegrityPanel integrity={R.integrity} terminationReason={R.terminationReason} />
         )}
+
+        {/* R4b — Culture & values fit (separate axis from competency) */}
+        <CultureFitPanel cultureFit={R.cultureFit} />
 
         {/* R5 — Transcript / highlights (collapsible) */}
         <Collapsible title="Transcript highlights & questions">

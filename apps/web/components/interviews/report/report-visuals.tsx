@@ -222,6 +222,45 @@ function EvidenceRow({ e }: { e: IntegrityEvt }) {
   )
 }
 
+// ── Culture / values fit (Build 08) — SEPARATE axis from competency + integrity ──
+export interface CultureFitShape {
+  fitScore: number
+  summary: string
+  responses: { id: string; prompt: string; dimension?: string; reverse?: boolean; value: number; label: string }[]
+}
+
+export function CultureFitPanel({ cultureFit }: { cultureFit: CultureFitShape | null }) {
+  if (!cultureFit || !Array.isArray(cultureFit.responses) || cultureFit.responses.length === 0) return null
+  const s = cultureFit.fitScore
+  const band = s >= 75 ? '#059669' : s >= 50 ? '#7C3AED' : '#D97706'
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Culture &amp; Values Fit</h3>
+        <span style={{ fontSize: 13, fontWeight: 800, color: band, background: `${band}1A`, borderRadius: 100, padding: '4px 12px' }}>{s}/100</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Self-reported · separate from competency</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>{cultureFit.summary}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {cultureFit.responses.map((r, i) => {
+          const adj = r.reverse ? 6 - r.value : r.value  // positive-direction strength
+          const hue = adj >= 4 ? '#059669' : adj >= 3 ? '#7C3AED' : '#D97706'
+          return (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 12.5, padding: '9px 11px', border: '1px solid #F1F5F9', borderRadius: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {r.dimension && <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 6 }}>{r.dimension}</span>}
+                <span style={{ color: '#334155' }}>{r.prompt}</span>
+                {r.reverse && <span style={{ fontSize: 10, color: '#94A3B8' }}> · reverse-scored</span>}
+              </div>
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: hue, background: `${hue}14`, borderRadius: 100, padding: '2px 10px', fontSize: 11.5 }}>{r.label || '—'}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function IntegrityPanel({ integrity, terminationReason }: { integrity: IntegritySummaryShape | null; terminationReason?: string | null }) {
   if (!integrity) return null
   const flagged = integrity.reviewStatus === 'FLAGGED_FOR_REVIEW'

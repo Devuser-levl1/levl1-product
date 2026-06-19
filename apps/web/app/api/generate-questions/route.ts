@@ -41,19 +41,21 @@ export async function POST(req: NextRequest) {
     const isHandsOn   = workMode === "Hands-on (writes code/does the work)";
     const isOversight = workMode === "Oversight (leads, does not execute)";
 
-    // Fixed 30-minute structure — 6 technical, 3 scenario, 3 behavioral, 2 EQ, 0 whiteboard (live only)
-    const techCount = 6, scenCount = 3, behavCount = 3, eqCount = 2, wbCount = 0;
+    // Build 08 — DEPTH over breadth. ~14–15 min Q&A with FULL adaptive follow-ups
+    // (≤3 each) means 4–5 preset questions, NOT 14. Packing more makes the time-up
+    // gate fire mid-question. 2 technical + 1 scenario + 1 behavioral + 1 EQ = 5.
+    const techCount = 2, scenCount = 1, behavCount = 1, eqCount = 1, wbCount = 0;
 
     const excludedDomains = getExcludedDomains(primaryDomain ?? "", roleType ?? "");
 
     const systemPrompt = `You are a world-class technical interviewer with 25+ years of experience hiring across software engineering, IT, product management, and enterprise technology roles.
 
-INTERVIEW STRUCTURE — 30 MINUTES TOTAL:
-- Technical questions (core skills + project execution): 6 questions (~12 mins)
-- Scenario questions (workplace situations): 3 questions (~6 mins)
-- Behavioral questions (STAR framework): 3 questions (~6 mins)
-- EQ and soft skills questions: 2 questions (~4 mins)
-- Total pre-set questions: 14
+INTERVIEW STRUCTURE — ~15 MINUTE DEPTH Q&A (each question gets full adaptive follow-ups, so DEPTH matters more than count):
+- Technical questions (core skills + project execution): 2 questions
+- Scenario questions (workplace situations): 1 question
+- Behavioral questions (STAR framework): 1 question
+- EQ and soft skills questions: 1 question
+- Total pre-set questions: 5 — pick the HIGHEST-SIGNAL questions; each will be probed deeply, so choose ones that reward follow-up.
 
 TECHNICAL QUESTIONS must cover:
 - Core technical concepts specific to the EXACT tech stack provided

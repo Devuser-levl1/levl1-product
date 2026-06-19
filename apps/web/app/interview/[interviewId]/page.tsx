@@ -14,6 +14,8 @@ import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
 import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
+import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
+import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -301,7 +303,7 @@ export default function InterviewPage() {
           positionId:    data.positionId,
           positionTitle: data.position?.title   ?? '',
           scheduledAt:   data.scheduledAt ?? data.createdAt,
-          duration:      data.duration ?? 30,
+          duration:      data.duration ?? PRODUCTION_INTERVIEW_MINUTES,
           status:        data.status,
           agentOnline:   data.agentOnline ?? false,
           candidateJoined: data.candidateJoined ?? false,
@@ -331,7 +333,7 @@ export default function InterviewPage() {
             techStack: data.position.techStack ?? [], status: data.position.status ?? 'active',
             interviewsScheduled: 0, interviewsCompleted: 0, createdAt: data.position.createdAt ?? '',
             approvals: { techLead: data.position.techLeadApproved, hr: data.position.hrApproved },
-            interviewDuration: data.position.interviewDuration ?? 30, isDemo: !!data.isDemo,
+            interviewDuration: data.position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES, isDemo: !!data.isDemo,
           }])
         }
         setDbLoading(false)
@@ -370,6 +372,11 @@ export default function InterviewPage() {
   const [tourHighlight, setTourHighlight] = useState<string | null>(null)
   const [tourActive, setTourActive] = useState(false)
   const tourSkipRef = useRef(false)
+  // Likert culture-fit segment (Build 08): runs after the Q&A, before closing.
+  const [cultureFitActive, setCultureFitActive] = useState(false)
+  const [cultureFitItems, setCultureFitItems] = useState<LikertItem[]>([])
+  const [cultureFitAnswers, setCultureFitAnswers] = useState<Record<string, { value: number; label: string }>>({})
+  const cultureFitDoneRef = useRef(false)  // one-shot guard
   const [listeningHint, setListeningHint]   = useState('')
   const [isWarmingUp, setIsWarmingUp]       = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -1209,7 +1216,12 @@ export default function InterviewPage() {
     // to another question — prevents the post-end "let's shift gears…" continuation.
     if (wrapUpFiredRef.current) return
     const qs = questionsRef.current
-    if (idx >= qs.length) { await startClosing(); return }
+    if (idx >= qs.length) {
+      // After the Q&A: production runs the short Likert culture-fit segment, then
+      // closes. Demo skips straight to the closing (short taste, unchanged).
+      if (!isDemoRef.current && !cultureFitDoneRef.current) { await beginCultureFit(); return }
+      await startClosing(); return
+    }
 
     currentQIdxRef.current = idx
     setCurrentQIdx(idx)
@@ -1286,7 +1298,7 @@ export default function InterviewPage() {
       positionTitle:    position.title,
       company:          position.company,
       interviewDate:    new Date().toISOString().slice(0, 10),
-      duration:         position.interviewDuration ?? 30,
+      duration:         position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES,
       transcript:       transcriptRef.current,
       questionResponses: responsesRef.current,
       resumeText:       '',
@@ -1313,7 +1325,7 @@ export default function InterviewPage() {
         company:           position.company,
         techStack:         position.techStack ?? [],
         experienceLevel:   position.experienceLevel ?? '',
-        interviewDuration: position.interviewDuration ?? 30,
+        interviewDuration: position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES,
       }))
     } catch { /* non-critical */ }
 
@@ -1423,6 +1435,44 @@ export default function InterviewPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, setPhase, addTranscript, speakText])
+
+  /* ── Likert culture-fit segment (Build 08): after Q&A, before closing ─── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const beginCultureFit = useCallback(async () => {
+    if (cultureFitDoneRef.current && cultureFitActive) return
+    cultureFitDoneRef.current = true            // one-shot
+    if (wrapUpFiredRef.current) { await startClosing(); return }
+    stopListening()
+    setPhase('processing')
+    let items: LikertItem[] = []
+    try {
+      const r = await fetch(`/api/interview/culture-fit?interviewId=${encodeURIComponent(interviewId)}`)
+      if (r.ok) items = (await r.json()).items ?? []
+    } catch { /* fall through to closing if unavailable */ }
+    if (!items.length || wrapUpFiredRef.current) { await startClosing(); return }
+    setCultureFitItems(items)
+    const intro = "Before we wrap up, I'd like to understand how you like to work. I'll show a few short statements — for each, choose how much you agree, from strongly disagree to strongly agree. This is about fit, separate from the technical questions."
+    addTranscript({ speaker: 'ai', text: intro, type: 'transition' })
+    await speakText(intro)
+    setCultureFitActive(true)  // render the on-screen Likert form (selectable)
+  }, [interviewId, addTranscript, speakText, startClosing, stopListening, setPhase])
+
+  const submitCultureFit = useCallback(async () => {
+    const responses = cultureFitItems.map((it) => ({
+      ...it,
+      value: cultureFitAnswers[it.id]?.value ?? 0,
+      label: cultureFitAnswers[it.id]?.label ?? '',
+    }))
+    setCultureFitActive(false)
+    // Persist + score on the SEPARATE axis (fire-and-forget — never blocks closing).
+    fetch('/api/interview/culture-fit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interviewId, responses }),
+    }).catch(() => {})
+    const ack = 'Thank you — that is everything I needed.'
+    addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
+    await startClosing()
+  }, [cultureFitItems, cultureFitAnswers, interviewId, addTranscript, startClosing])
 
   const finishInterview = useCallback(() => {
     console.log('[interview] Status changed to completed')
@@ -1674,7 +1724,7 @@ export default function InterviewPage() {
     setQuestions(qs)
     questionsRef.current = qs
 
-    const duration = position.interviewDuration ?? 30
+    const duration = position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES
     setTimeRemaining(duration * 60)
 
     setActiveSession({
@@ -1938,7 +1988,7 @@ export default function InterviewPage() {
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? 30} minutes · AI Interviewer: Alex</div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: Alex</div>
           <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
@@ -2010,6 +2060,42 @@ export default function InterviewPage() {
             Quick interface tour…
           </span>
           <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: '#4F46E5', color: '#fff', fontSize: 12.5, fontWeight: 700 }}>Skip tour →</button>
+        </div>
+      )}
+
+      {/* ── Likert culture-fit segment (Build 08) — after Q&A, before closing ── */}
+      {cultureFitActive && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: '24px 26px', boxShadow: '0 24px 60px rgba(15,23,42,0.3)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Culture &amp; values fit · separate from your technical score</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 800, color: '#4F46E5', margin: '0 0 6px' }}>A few quick statements</h2>
+            <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 18px' }}>For each statement, choose how much you agree. There are no right answers — this is about how you like to work.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {cultureFitItems.map((it, idx) => (
+                <div key={it.id}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#334155', marginBottom: 8, lineHeight: 1.5 }}>{idx + 1}. {it.prompt}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                    {LIKERT_OPTIONS.map((opt) => {
+                      const sel = cultureFitAnswers[it.id]?.value === opt.value
+                      return (
+                        <button key={opt.value} onClick={() => setCultureFitAnswers((a) => ({ ...a, [it.id]: { value: opt.value, label: opt.label } }))}
+                          style={{ padding: '8px 6px', borderRadius: 9, cursor: 'pointer', border: `1px solid ${sel ? '#4F46E5' : '#E2E8F0'}`, background: sel ? '#4F46E5' : '#F8FAFC', color: sel ? '#fff' : '#475569', fontSize: 11, fontWeight: 600, lineHeight: 1.25, transition: 'all 0.12s' }}>
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
+              <span style={{ fontSize: 12, color: '#94A3B8' }}>{Object.keys(cultureFitAnswers).length} of {cultureFitItems.length} answered</span>
+              <button onClick={submitCultureFit} disabled={Object.keys(cultureFitAnswers).length < cultureFitItems.length}
+                style={{ marginLeft: 'auto', padding: '11px 26px', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 700, cursor: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'not-allowed' : 'pointer', background: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#E2E8F0' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#94A3B8' : '#fff' }}>
+                Finish interview →
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

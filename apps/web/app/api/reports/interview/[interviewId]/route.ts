@@ -17,6 +17,7 @@ export async function GET(
       include: {
         verification: true,
         integrityEvents: { orderBy: { occurredAt: 'asc' } },
+        cultureFit: true,
         candidate: {
           include: {
             report:   true,
@@ -83,6 +84,10 @@ export async function GET(
       // Tier-1 proctoring summary (Build 01-A) — evidence-linked, human-review
       // routed, SEPARATE from the competency score. Build 04 styles this panel.
       integrity: summarizeIntegrity(interview.integrityEvents),
+      // Culture/values fit (Build 08) — SEPARATE axis, never blended into competency.
+      cultureFit: interview.cultureFit
+        ? { fitScore: interview.cultureFit.fitScore, summary: interview.cultureFit.summary, responses: interview.cultureFit.responses }
+        : null,
       // How the session ended (Build 01-B) — distinguishes a real completion
       // from an early/consent-withdrawn stop.
       terminationReason: interview.terminationReason ?? null,

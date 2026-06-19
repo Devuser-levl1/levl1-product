@@ -243,8 +243,11 @@ model Position {
   domainContext      String?
   companyStage       String?
   workMode           String    @default("hybrid")
-  interviewDuration  Int       @default(30)
+  interviewDuration  Int       @default(18)  // Build 08: ~17–18 min (was 30)
   status             String    @default("draft")
+  // Build 08 — per-position Likert culture-fit items (overrides the generic
+  // default set). Screen-scoped; shape: [{ id, prompt, reverse?, dimension? }].
+  cultureFitItems    Json?
   // Demo gallery (Build 05) — pre-built one-click demo positions. Tagged so they
   // never pollute real analytics, billing/usage, or the review queue.
   isDemo             Boolean   @default(false)
@@ -350,7 +353,7 @@ model Interview {
   scheduledAt       DateTime?
   startedAt         DateTime?
   completedAt       DateTime?
-  duration          Int       @default(30)
+  duration          Int       @default(18)
   actualDuration    Int?
   agentOnline       Boolean   @default(false)
   candidateJoined   Boolean   @default(false)
@@ -372,6 +375,23 @@ model Interview {
   token           InterviewToken?
   verification    InterviewVerification?
   integrityEvents InterviewIntegrityEvent[]
+  cultureFit      CultureFitResult?
+}
+
+// ── Likert culture/values-fit (Build 08) — Screen-scoped ───────────────────
+// A SEPARATE axis from the competency score (same principle as integrity). One
+// row per interview: the per-item Likert responses + a derived 0–100 fit score
+// and short summary. Evidence-linked — the raw item responses are kept, not just
+// the number.
+model CultureFitResult {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  // [{ id, prompt, dimension?, reverse?, value (1-5), label }]
+  responses   Json
+  fitScore    Int       // 0–100, NOT blended into competency
+  summary     String    @db.Text
+  createdAt   DateTime  @default(now())
 }
 
 // ── Integrity Layer, Tier 1 (Build 01-A) — Screen-scoped ───────────────────
