@@ -372,6 +372,9 @@ export default function InterviewPage() {
   // Auto-tour (before the first question): which area is highlighted + active flag.
   const [tourHighlight, setTourHighlight] = useState<string | null>(null)
   const [tourActive, setTourActive] = useState(false)
+  // Measured screen-rect of the currently highlighted area → drives the focus
+  // ring + pointer arrow overlay during the tour.
+  const [tourRect, setTourRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const tourSkipRef = useRef(false)
   // Likert culture-fit segment (Build 08): runs after the Q&A, before closing.
   const [cultureFitActive, setCultureFitActive] = useState(false)
@@ -535,7 +538,9 @@ export default function InterviewPage() {
 
   /* ── Countdown timer ──────────────────────────────────────── */
   useEffect(() => {
-    if (phase === 'waiting' || phase === 'completed') return
+    // Don't start the clock until the interface tour has finished — the timer
+    // begins with the warm-up, not while the candidate is being walked through.
+    if (phase === 'waiting' || phase === 'completed' || tourActive) return
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
     timerIntervalRef.current = setInterval(() => {
       setTimeRemaining(prev => {
@@ -550,7 +555,23 @@ export default function InterviewPage() {
     }, 1000)
     return () => clearInterval(timerIntervalRef.current!)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase === 'waiting', phase === 'completed'])
+  }, [phase === 'waiting', phase === 'completed', tourActive])
+
+  /* ── Tour focus: measure the highlighted area for the ring + arrow ───── */
+  useEffect(() => {
+    if (!tourHighlight) { setTourRect(null); return }
+    const measure = () => {
+      const el = document.querySelector(`[data-tour="${tourHighlight}"]`)
+      if (el) {
+        const r = el.getBoundingClientRect()
+        setTourRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+      }
+    }
+    measure()
+    const t = setTimeout(measure, 80)   // re-measure once layout/transitions settle
+    window.addEventListener('resize', measure)
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
+  }, [tourHighlight])
 
   /* ── Clear all silence timers ─────────────────────────────── */
   const clearSilenceTimers = useCallback(() => {
@@ -2054,6 +2075,35 @@ export default function InterviewPage() {
       </header>
 
       {/* Auto-tour banner — short narrated walkthrough; skippable; ends before Q1. */}
+      {/* Tour focus ring + pointer arrow — tracks the highlighted area. */}
+      {tourActive && tourRect && (() => {
+        const above = tourRect.top > 120   // room above? point down from above : point up from below
+        const arrowTop = above ? tourRect.top - 52 : tourRect.top + tourRect.height + 10
+        const arrowLeft = tourRect.left + tourRect.width / 2
+        return (
+          <>
+            <div style={{
+              position: 'fixed', top: tourRect.top - 5, left: tourRect.left - 5,
+              width: tourRect.width + 10, height: tourRect.height + 10,
+              borderRadius: 20, border: '3px solid #7C3AED', pointerEvents: 'none', zIndex: 75,
+              boxShadow: '0 0 0 4px rgba(124,58,237,0.22), 0 0 28px rgba(124,58,237,0.5)',
+              transition: 'top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease',
+              animation: 'tourRing 1.4s ease-in-out infinite',
+            }} />
+            <div style={{
+              position: 'fixed', top: arrowTop, left: arrowLeft, transform: 'translateX(-50%)',
+              zIndex: 76, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
+              background: '#7C3AED', color: '#fff', borderRadius: 100, padding: '6px 14px',
+              fontSize: 12.5, fontWeight: 700, letterSpacing: '0.01em', whiteSpace: 'nowrap',
+              boxShadow: '0 8px 22px rgba(124,58,237,0.45)',
+              animation: 'tourBounce 1s ease-in-out infinite',
+            }}>
+              {above ? <>Look here <span style={{ fontSize: 14 }}>↓</span></> : <><span style={{ fontSize: 14 }}>↑</span> Look here</>}
+            </div>
+          </>
+        )
+      })()}
+
       {tourActive && (
         <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: '#0F0F1A', color: '#E2E8F0', borderRadius: 100, padding: '8px 10px 8px 18px', boxShadow: '0 10px 30px rgba(15,23,42,0.35)', border: '1px solid rgba(124,58,237,0.4)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
@@ -2384,6 +2434,14 @@ export default function InterviewPage() {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes tourRing {
+          0%, 100% { box-shadow: 0 0 0 4px rgba(124,58,237,0.22), 0 0 24px rgba(124,58,237,0.45); }
+          50%      { box-shadow: 0 0 0 7px rgba(124,58,237,0.10), 0 0 40px rgba(124,58,237,0.65); }
+        }
+        @keyframes tourBounce {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50%      { transform: translateX(-50%) translateY(-5px); }
         }
 
         /* AI window fills its (equal-sized) box so it matches the candidate video. */
