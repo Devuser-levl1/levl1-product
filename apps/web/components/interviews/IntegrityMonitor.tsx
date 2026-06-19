@@ -12,7 +12,10 @@ import { IntegrityEventInput, INTEGRITY_LABELS, IntegrityEventType } from '@/lib
 
 const INDIGO = '#4F46E5'
 
-export function IntegrityMonitor({ interviewId, active }: { interviewId: string; active: boolean }) {
+// variant 'floating' = the original fixed bottom-right self-view; 'inline' fills
+// its parent (for the redesigned top-left video slot). Same video element + same
+// integrity client either way — capture/CV is unchanged.
+export function IntegrityMonitor({ interviewId, active, variant = 'floating' }: { interviewId: string; active: boolean; variant?: 'floating' | 'inline' }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const clientRef = useRef<IntegrityMonitorClient | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -60,19 +63,26 @@ export function IntegrityMonitor({ interviewId, active }: { interviewId: string;
 
   if (!active) return null
 
+  const inline = variant === 'inline'
+  // Inner self-view tile (identical content; outer wrapper differs by variant).
+  const tile = (
+    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: inline ? 14 : 12, overflow: 'hidden', background: '#0F172A', boxShadow: inline ? 'none' : '0 6px 20px rgba(15,23,42,0.25)', border: `1.5px solid ${INDIGO}` }}>
+      <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: camState === 'on' ? 'block' : 'none' }} />
+      {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
+      <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(15,23,42,0.6)', borderRadius: 100, padding: '2px 8px' }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 0 0 rgba(34,197,94,0.7)', animation: 'lv-pulse 2s infinite' }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>Live monitoring</span>
+      </div>
+    </div>
+  )
+
   return (
     <>
-      {/* Live monitoring indicator + self-view */}
-      <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-        <div style={{ position: 'relative', width: 132, height: 99, borderRadius: 12, overflow: 'hidden', background: '#0F172A', boxShadow: '0 6px 20px rgba(15,23,42,0.25)', border: `1.5px solid ${INDIGO}` }}>
-          <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: camState === 'on' ? 'block' : 'none' }} />
-          {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
-          <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(15,23,42,0.6)', borderRadius: 100, padding: '2px 8px' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 0 0 rgba(34,197,94,0.7)', animation: 'lv-pulse 2s infinite' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>Live monitoring</span>
-          </div>
-        </div>
-      </div>
+      {/* Self-view + live-monitoring indicator. Inline fills the layout slot;
+          floating is the original fixed bottom-right tile. */}
+      {inline
+        ? <div style={{ width: '100%', height: '100%' }}>{tile}</div>
+        : <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>{tile}</div>}
 
       {/* Transient, professional "noted for review" notice */}
       {notice && (

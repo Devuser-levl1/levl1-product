@@ -376,8 +376,9 @@ export default function InterviewPage() {
   const [timeRemaining, setTimeRemaining]   = useState(0)
   const [, setQuestionResponses]     = useState<QuestionResponse[]>([])
   const [runningScore, setRunningScore] = useState(0)
-  const [showCode, setShowCode]           = useState(false)
-  const [showWhiteboard, setShowWhiteboard] = useState(false)
+  // Permanent editor pane: which tab is active. Both tabs stay mounted so work is
+  // retained when switching (Monaco keeps codeContent; whiteboard keeps its canvas).
+  const [editorTab, setEditorTab] = useState<'code' | 'whiteboard'>('code')
   const [waitingWhiteboard, setWaitingWhiteboard] = useState(false) // Fix 2
   const [codeContent, setCodeContent] = useState('')
   const [codeLanguage, setCodeLanguage] = useState('javascript')
@@ -1212,9 +1213,9 @@ export default function InterviewPage() {
     const q    = qs[idx]
     const prevQ = idx > 0 ? qs[idx - 1] : null
 
-    // Auto-open panels
-    if (q.section === 'whiteboard') setShowWhiteboard(true)
-    if (q.section === 'technical' || q.section === 'scenario') setShowCode(true)
+    // Auto-focus the relevant editor tab (the pane is always present now).
+    if (q.section === 'whiteboard') setEditorTab('whiteboard')
+    else if (q.section === 'technical' || q.section === 'scenario') setEditorTab('code')
 
     const isFirstCodeTrigger = (q.section === 'technical' || q.section === 'scenario') && !codeTriggerShownRef.current
 
@@ -1766,6 +1767,26 @@ export default function InterviewPage() {
     updateSessionWhiteboard(dataUrl)
   }
 
+  // Base "Submit Answer" — submits the ACTIVE tab's work for the current question.
+  // Switching tabs never loses unsubmitted work (both stay mounted); only this
+  // explicit submit captures an answer.
+  const submitActiveTab = () => {
+    if (editorTab === 'whiteboard') {
+      // While the flow is paused on a whiteboard question, Submit = "Done sketching".
+      if (waitingWhiteboard) { void handleWhiteboardDone(); return }
+      if (phaseRef.current !== 'listening' || capturedRef.current) return
+      capturedRef.current = true
+      candidateSpokeRef.current = true
+      captureResponse('(Answer provided on the whiteboard — diagram attached.)')
+      return
+    }
+    submitCodeAnswer()
+  }
+  // Whether the base Submit is actionable right now (per active tab).
+  const canSubmit = editorTab === 'whiteboard'
+    ? (waitingWhiteboard || phase === 'listening')
+    : (phase === 'listening' && codeContent.trim().length > 0)
+
   /* ═══════════════════════════════════════════════════════════
      RENDER
   ═══════════════════════════════════════════════════════════ */
@@ -1903,9 +1924,8 @@ export default function InterviewPage() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
 
-      {/* Tier-1 visible proctoring — live monitoring indicator + capture (Build 01-A).
-          This branch only renders while the interview is live, so monitoring is active. */}
-      <IntegrityMonitor interviewId={interviewId} active={true} />
+      {/* Tier-1 proctoring (Build 01-A) — the single live capture instance now renders
+          INLINE in the top-left video slot below (one camera stream + one CV client). */}
       {/* Demo conversion affordance — self-gates on ?demo=1 (Build 05). */}
       <DemoSalesCTA label="Talk to sales" />
 
@@ -1931,32 +1951,37 @@ export default function InterviewPage() {
         </div>
       </header>
 
-      {/* ── Main content ── */}
-      <main style={{ flex: 1, overflow: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── Main content: two columns (left = interviewer/video + question + editor; right = transcript) ── */}
+      <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', gap: 16, minHeight: 0 }}>
 
-        {/* Recruiter message banner */}
-        {messageFromRecruiter && (
-          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>📋 {messageFromRecruiter}</span>
-            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
+        {/* ════ LEFT COLUMN ════ */}
+        <div className="iv-left" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+
+          {messageFromRecruiter && (
+            <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span>📋 {messageFromRecruiter}</span>
+              <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
+            </div>
+          )}
+
+          {/* Top sub-row: AI interviewer (left) + candidate video (right) */}
+          <div className="iv-top-row" style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: 12, alignItems: 'stretch', minHeight: 150, flexShrink: 0 }}>
+            <AIVisualizer
+              phase={phase}
+              isWarmingUp={isWarmingUp}
+              liveTranscriptLength={liveTranscript.length}
+              timeRemaining={timeRemaining}
+              candidateName={candidate.name}
+              positionTitle={position.title}
+            />
+            {/* Candidate video — same IntegrityMonitor feed/CV, relocated here (inline variant) */}
+            <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', minHeight: 150 }}>
+              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" />
+            </div>
           </div>
-        )}
 
-        {/* ── AI + Question row ── */}
-        <div className="interview-ai-question-row" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, alignItems: 'start' }}>
-
-          {/* AI Interviewer Panel — premium visualizer */}
-          <AIVisualizer
-            phase={phase}
-            isWarmingUp={isWarmingUp}
-            liveTranscriptLength={liveTranscript.length}
-            timeRemaining={timeRemaining}
-            candidateName={candidate.name}
-            positionTitle={position.title}
-          />
-
-          {/* Current question card */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Question Display */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
             {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1968,9 +1993,9 @@ export default function InterviewPage() {
                     {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.65, margin: 0 }}>{currentQ.question}</p>
+                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.6, margin: 0 }}>{currentQ.question}</p>
                 {currentQ.section === 'whiteboard' && (
-                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>✏️ Use the whiteboard below to sketch your answer</div>
+                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>✏️ Use the Whiteboard tab below to sketch your answer</div>
                 )}
               </>
             ) : (
@@ -1978,192 +2003,127 @@ export default function InterviewPage() {
                 {phase === 'intro' ? 'Your interview is starting…' : 'Preparing next question…'}
               </div>
             )}
+            {/* slim progress strip */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
+              {questions.map((q, idx) => {
+                const done = idx < currentQIdx; const current = idx === currentQIdx; const color = SECTION_COLOR[q.section]
+                return <div key={q.id} title={SECTION_LABEL[q.section]} style={{ flex: 1, height: 4, borderRadius: 2, background: done ? color : current ? `${color}55` : '#E2E8F0', transition: 'all 0.4s ease' }} />
+              })}
+            </div>
+          </div>
+
+          {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
+          <div style={{ flex: 1, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* tab strip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
+              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
+                <Code2 size={13} /> Code / Text
+              </button>
+              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'whiteboard' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
+                <PenLine size={13} /> Whiteboard
+              </button>
+              {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
+            </div>
+
+            {/* tab content — BOTH stay mounted, toggled via display so work is retained when switching */}
+            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+              {/* Code / Text */}
+              <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
+                <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
+                  {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
+                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
+                      {lang === 'plaintext' ? 'Plain Text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <div className="interview-monaco-wrapper" style={{ flex: 1, minHeight: 0 }}>
+                  <MonacoEditor
+                    height="100%"
+                    language={codeLanguage}
+                    theme="vs-dark"
+                    value={codeContent}
+                    onChange={handleCodeChange}
+                    onMount={handleEditorMount}
+                    options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }}
+                  />
+                </div>
+              </div>
+              {/* Whiteboard */}
+              <div style={{ position: 'absolute', inset: 0, display: editorTab === 'whiteboard' ? 'block' : 'none', overflow: 'hidden' }}>
+                <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} />
+              </div>
+            </div>
+
+            {/* base Submit — submits the ACTIVE tab's answer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
+              <span style={{ marginRight: 'auto', fontSize: 11, color: '#94A3B8' }}>{editorTab === 'code' ? 'Submit your written answer for this question' : 'Submit your whiteboard answer for this question'}</span>
+              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? '#4F46E5' : '#E2E8F0', color: canSubmit ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700, transition: 'all 0.15s' }}>
+                Submit Answer
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* ── Transcript / response area ── */}
-        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            {isWarmingUp ? (
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', fontStyle: 'italic' }}>
-                Take your time…
-              </span>
-            ) : isListening ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#DC2626' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
-                Recording… speak your answer
-              </span>
-            ) : (
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {micFailed ? <MicOff size={13} /> : <Mic size={13} />}
-                {micFailed ? 'Microphone unavailable — use text input below' : 'Waiting for your response'}
-              </span>
+        {/* ════ RIGHT COLUMN: full-height transcript ════ */}
+        <div className="iv-transcript" style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+          {/* header + live status */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', fontFamily: 'var(--font-display)' }}>Transcript</span>
+              {isWarmingUp ? (
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', fontStyle: 'italic' }}>Take your time…</span>
+              ) : isListening ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#DC2626' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
+                  Recording…
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {micFailed ? <MicOff size={12} /> : <Mic size={12} />}{micFailed ? 'Mic unavailable' : 'Waiting'}
+                </span>
+              )}
+            </div>
+            {listeningHint && <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic' }}>{listeningHint}</div>}
+            {sttWarning && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: '#B45309', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '8px 10px' }}>
+                <MicOff size={14} color="#D97706" /><span>{sttWarning}</span>
+              </div>
             )}
           </div>
 
-          {/* Silence hint (3 s / 6 s graduated messages) */}
-          {listeningHint && (
-            <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', padding: '2px 0' }}>
-              {listeningHint}
-            </div>
-          )}
-
-          {/* Mic/STT trouble banner (bugfix) — shown when we capture no input. */}
-          {sttWarning && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: '#B45309', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '8px 12px', margin: '2px 0' }}>
-              <MicOff size={14} color="#D97706" />
-              <span>{sttWarning}</span>
-            </div>
-          )}
-
-          {/* Live transcript */}
-          <div ref={transcriptBoxRef} style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {transcript.slice(-4).map(entry => (
-              <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>
-                  {entry.speaker === 'ai' ? 'ALEX' : 'YOU'}
-                </span>
+          {/* full live transcript (Scribe v2 Realtime), auto-scroll, scrollable back */}
+          <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {transcript.map(entry => (
+              <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? 'ALEX' : 'YOU'}</span>
                 <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}
             {liveTranscript && (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, minWidth: 60, paddingTop: 2, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
                 <span style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
               </div>
             )}
           </div>
 
-          {/* Text input fallback */}
+          {/* text input fallback at the base of the rail */}
           {(textInputMode || micFailed) && phase === 'listening' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
               <textarea
                 value={textInputValue}
                 onChange={e => setTextInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) submitTextInput() }}
-                placeholder="Type your response here… (⌘+Enter to submit)"
-                style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 72, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
+                placeholder="Type your response… (⌘+Enter)"
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 56, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
               />
-              <button
-                onClick={submitTextInput}
-                disabled={!textInputValue.trim()}
-                style={{ padding: '0 20px', borderRadius: 10, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700, transition: 'all 0.15s' }}
-              >
-                Submit
-              </button>
+              <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 10, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700 }}>Send</button>
             </div>
           )}
         </div>
 
-        {/* ── Progress bar ── */}
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', padding: '12px 20px' }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            {questions.map((q, idx) => {
-              const done    = idx < currentQIdx
-              const current = idx === currentQIdx
-              const color   = SECTION_COLOR[q.section]
-              return (
-                <div key={q.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div style={{ height: 5, borderRadius: 3, background: done ? color : current ? `${color}55` : '#E2E8F0', transition: 'all 0.4s ease' }} />
-                  <div style={{ fontSize: 9, fontWeight: 700, color: done ? color : current ? color : '#CBD5E1', letterSpacing: '0.04em', textAlign: 'center' }}>
-                    {done ? '✓' : SECTION_LABEL[q.section]?.slice(0, 4).toUpperCase()}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
       </main>
-
-      {/* ── Bottom dock — always visible ──────────────────────── */}
-      <div style={{ flexShrink: 0, background: '#fff', borderTop: '1px solid #E2E8F0', zIndex: 10 }}>
-
-        {/* Toggle buttons */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 20px',
-          borderBottom: (showCode || showWhiteboard) ? '1px solid #E2E8F0' : 'none',
-        }}>
-          <button
-            onClick={() => setShowCode(v => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: showCode ? '#4F46E5' : '#F1F5F9',
-              color: showCode ? '#fff' : '#64748B',
-              fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            <Code2 size={13} />
-            ≡ Code Editor
-          </button>
-          <button
-            onClick={() => setShowWhiteboard(v => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: showWhiteboard ? '#4F46E5' : '#F1F5F9',
-              color: showWhiteboard ? '#fff' : '#64748B',
-              fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            <PenLine size={13} />
-            ⬜ Whiteboard
-          </button>
-        </div>
-
-        {/* Code Editor panel */}
-        {showCode && (
-          <div className="interview-monaco-wrapper" style={{ borderBottom: showWhiteboard ? '1px solid #E2E8F0' : 'none' }}>
-            <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
-              {(['javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
-                <button
-                  key={lang}
-                  onClick={() => setCodeLanguage(lang)}
-                  style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}
-                >
-                  {lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
-                </button>
-              ))}
-              {/* Submit the editor content as the answer to the current question. */}
-              <button
-                onClick={submitCodeAnswer}
-                disabled={phase !== 'listening' || !codeContent.trim()}
-                title={phase !== 'listening' ? 'Wait for your turn to answer' : 'Submit your code as the answer'}
-                style={{
-                  marginLeft: 'auto', padding: '5px 16px', borderRadius: 6, border: 'none',
-                  cursor: (phase === 'listening' && codeContent.trim()) ? 'pointer' : 'not-allowed',
-                  background: (phase === 'listening' && codeContent.trim()) ? '#4F46E5' : '#E2E8F0',
-                  color: (phase === 'listening' && codeContent.trim()) ? '#fff' : '#94A3B8',
-                  fontSize: 11.5, fontWeight: 700, transition: 'all 0.15s',
-                }}
-              >
-                Submit Answer
-              </button>
-            </div>
-            <MonacoEditor
-              height={220}
-              language={codeLanguage}
-              theme="vs-dark"
-              value={codeContent}
-              onChange={handleCodeChange}
-              onMount={handleEditorMount}
-              options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }}
-            />
-          </div>
-        )}
-
-        {/* Whiteboard panel */}
-        {showWhiteboard && (
-          <div className="interview-whiteboard" style={{ maxHeight: 320, overflow: 'hidden' }}>
-            <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} />
-          </div>
-        )}
-      </div>
 
       {/* ── End confirm modal ── */}
       {showEndConfirm && (
@@ -2266,27 +2226,16 @@ export default function InterviewPage() {
           to { transform: rotate(360deg); }
         }
 
-        /* ── Mobile: single-column interview room ── */
-        @media (max-width: 768px) {
-          .interview-ai-question-row {
-            grid-template-columns: 1fr !important;
-          }
-          .interview-whiteboard {
-            display: none !important;
-          }
-          .interview-monaco-wrapper {
-            display: none !important;
-          }
-          /* Larger mic button on mobile */
-          .interview-mic-btn {
-            width: 64px !important;
-            height: 64px !important;
-          }
-          /* Reduce page padding */
-          .interview-room-page {
-            padding: 8px 12px !important;
-            gap: 10px !important;
-          }
+        /* ── Narrower widths: stack the two columns; keep the editor present.
+           Desktop-first — this only prevents bad breakage below ~900px. ── */
+        @media (max-width: 900px) {
+          .iv-surface { flex-direction: column !important; overflow: auto !important; }
+          .iv-transcript { width: 100% !important; min-height: 240px; }
+          .iv-left { min-height: 0; }
+          .iv-top-row { grid-template-columns: 1fr 200px !important; }
+        }
+        @media (max-width: 560px) {
+          .iv-top-row { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
