@@ -48,7 +48,7 @@ export function ScorecardMock() {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>Priya Nair</div>
-            <div style={{ fontSize: 11, color: '#64748B' }}>Staff Engineer · 30-min AI interview</div>
+            <div style={{ fontSize: 11, color: '#64748B' }}>Staff Engineer · 18-min AI interview</div>
             <div style={{ display: 'inline-flex', gap: 6, marginTop: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: 'rgba(16,185,129,0.1)', borderRadius: 5, padding: '2px 8px' }}>Strong Yes</span><span style={{ fontSize: 10, fontWeight: 700, color: '#4F46E5', background: 'rgba(79,70,229,0.1)', borderRadius: 5, padding: '2px 8px' }}>Identity verified ✓</span></div>
           </div>
         </div>
