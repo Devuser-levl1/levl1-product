@@ -24,9 +24,12 @@ export interface SecondVoiceSegment {
 
 export interface DiarizeOptions {
   // A non-primary span must have at least this many words AND this duration to
-  // count — filters out one-off mis-attributions and ambient blips.
-  minWords?: number       // default 3
-  minDurationSec?: number // default 1.2
+  // count — filters out one-off mis-attributions and ambient blips. Defaults are
+  // tuned toward catching SHORT/QUIET whispers (the observed miss), while the
+  // two-condition AND guard limits ambient false-positives. Env-overridable
+  // (FRAUD_DIARIZE_MIN_WORDS / FRAUD_DIARIZE_MIN_SEC) if a deployment is noisy.
+  minWords?: number       // default 2
+  minDurationSec?: number // default 0.8
   maxGapSec?: number      // words within this gap are the same span (default 1.5)
 }
 
@@ -45,8 +48,8 @@ export function primarySpeaker(words: ScribeBatchWord[]): string | null {
 }
 
 export function analyzeDiarization(words: ScribeBatchWord[], opts: DiarizeOptions = {}): SecondVoiceSegment[] {
-  const minWords = opts.minWords ?? 3
-  const minDur = opts.minDurationSec ?? 1.2
+  const minWords = opts.minWords ?? 2
+  const minDur = opts.minDurationSec ?? 0.8
   const maxGap = opts.maxGapSec ?? 1.5
 
   const primary = primarySpeaker(words)
