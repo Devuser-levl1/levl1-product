@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
             `}`,
         },
       ],
-      temperature: 0.1,
+      // NOTE: SCORING_MODEL is Opus 4.8, which rejects temperature/top_p/top_k (400).
     })
 
     const raw = response.content[0].type === 'text' ? response.content[0].text : '{}'
