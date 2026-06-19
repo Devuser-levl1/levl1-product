@@ -31,6 +31,7 @@ interface Props {
   timeRemaining?:        number   // shown in top-right corner
   candidateName?:        string
   positionTitle?:        string
+  compact?:              boolean  // modest height (waveform-only box, no dominant block)
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -47,6 +48,7 @@ export function AIVisualizer({
   timeRemaining,
   candidateName,
   positionTitle,
+  compact = false,
 }: Props) {
   /* Which visualizer to show */
   const showSphere   = phase === 'speaking' || phase === 'intro' || phase === 'closing'
@@ -74,7 +76,7 @@ export function AIVisualizer({
       background:   '#0F0F1A',
       borderRadius: 18,
       border:       '1px solid rgba(124,58,237,0.28)',
-      padding:      '16px 16px 14px',
+      padding:      compact ? '12px 14px 12px' : '16px 16px 14px',
       display:      'flex',
       flexDirection: 'column',
       alignItems:   'center',
@@ -113,8 +115,8 @@ export function AIVisualizer({
         )}
       </div>
 
-      {/* ── Candidate info ───────────────────────────────────── */}
-      {(candidateName || positionTitle) && (
+      {/* ── Candidate info (hidden in compact — already in the header) ─── */}
+      {!compact && (candidateName || positionTitle) && (
         <div style={{ textAlign: 'center', width: '100%', marginTop: -4 }}>
           {candidateName && (
             <div style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', letterSpacing: '0.02em' }}>
@@ -127,8 +129,8 @@ export function AIVisualizer({
         </div>
       )}
 
-      {/* ── Visualizer container (fixed 200 px tall) ─────────── */}
-      <div style={{ position: 'relative', width: '100%', height: 200 }}>
+      {/* ── Visualizer container (modest height in compact mode) ─────────── */}
+      <div style={{ position: 'relative', width: '100%', height: compact ? 110 : 200 }}>
 
         {/* Soft purple radial glow behind both visualizers */}
         <div style={{
@@ -152,7 +154,7 @@ export function AIVisualizer({
           transition:    'opacity 0.30s ease',
           pointerEvents: showWaveform ? 'auto' : 'none',
         }}>
-          <WaveformVisualizer audioLevel={audioLevel} height={120} />
+          <WaveformVisualizer audioLevel={audioLevel} height={compact ? 72 : 120} />
         </div>
 
         {/* Morphing Sphere — speaking / intro / closing */}

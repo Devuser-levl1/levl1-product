@@ -366,6 +366,10 @@ export default function InterviewPage() {
   const [currentQIdx, setCurrentQIdx] = useState(0)
   const [transcript, setTranscript]  = useState<TranscriptEntry[]>([])
   const [liveTranscript, setLiveTranscript] = useState('')
+  // Auto-tour (before the first question): which area is highlighted + active flag.
+  const [tourHighlight, setTourHighlight] = useState<string | null>(null)
+  const [tourActive, setTourActive] = useState(false)
+  const tourSkipRef = useRef(false)
   const [listeningHint, setListeningHint]   = useState('')
   const [isWarmingUp, setIsWarmingUp]       = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -1591,6 +1595,35 @@ export default function InterviewPage() {
     fraudRecorderRef.current = null
   }, [interviewId])
 
+  /* ── Auto-tour: narrated walkthrough before the first question ──────── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const runTour = useCallback(async () => {
+    const steps: { area: string; line: string }[] = [
+      { area: 'ai',         line: "Before we begin, a quick tour. On the left is me, Alex — this little panel lights up when I'm speaking or listening." },
+      { area: 'video',      line: "Right next to it is your camera, with a live-monitoring indicator. Just keep your face comfortably in view." },
+      { area: 'question',   line: "Below that, your current question will always be shown here." },
+      { area: 'editor',     line: "Underneath is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
+      { area: 'transcript', line: "And on the right is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
+    ]
+    setTourActive(true)
+    tourSkipRef.current = false
+    for (const step of steps) {
+      if (tourSkipRef.current) break
+      setTourHighlight(step.area)
+      addTranscript({ speaker: 'ai', text: step.line, type: 'transition' })
+      await speakText(step.line)            // resolves early if Skip calls stopAllAudio()
+      if (tourSkipRef.current) break
+      await delay(250)
+    }
+    setTourHighlight(null)
+    setTourActive(false)
+  }, [addTranscript, speakText])
+
+  const skipTour = useCallback(() => {
+    tourSkipRef.current = true
+    stopAllAudio()  // cut the current narration so skip is immediate
+  }, [stopAllAudio])
+
   /* ── Start interview ──────────────────────────────────────── */
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
@@ -1671,6 +1704,10 @@ export default function InterviewPage() {
     // 2 s pause — give candidate time to settle before the interviewer speaks
     await delay(2000)
 
+    // Brief automatic interface tour (skippable) — completes BEFORE the first
+    // question (runWarmup → moveToQuestion(0) runs only after this returns).
+    await runTour()
+
     // Build 03: warm, time-boxed warm-up arc (greet + day/time opener → one
     // reactive follow-up → signposted transition) replaces the static intro.
     // It flows into moveToQuestion(0) itself.
@@ -1678,7 +1715,7 @@ export default function InterviewPage() {
   }, [
     candidate, position, interview, interviewId,
     setActiveSession, updateInterview, setPhase,
-    addTranscript, speakText, runWarmup,
+    addTranscript, speakText, runWarmup, runTour,
   ])
 
   /* ── End Interview flow ───────────────────────────────────── */
@@ -1956,6 +1993,17 @@ export default function InterviewPage() {
         </div>
       </header>
 
+      {/* Auto-tour banner — short narrated walkthrough; skippable; ends before Q1. */}
+      {tourActive && (
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: '#0F0F1A', color: '#E2E8F0', borderRadius: 100, padding: '8px 10px 8px 18px', boxShadow: '0 10px 30px rgba(15,23,42,0.35)', border: '1px solid rgba(124,58,237,0.4)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#A78BFA', animation: 'pulseDot 1.2s ease-in-out infinite' }} />
+            Quick interface tour…
+          </span>
+          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: '#4F46E5', color: '#fff', fontSize: 12.5, fontWeight: 700 }}>Skip tour →</button>
+        </div>
+      )}
+
       {/* ── Main content: two columns (left = interviewer/video + question + editor; right = transcript) ── */}
       <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', gap: 16, minHeight: 0 }}>
 
@@ -1969,24 +2017,29 @@ export default function InterviewPage() {
             </div>
           )}
 
-          {/* Top sub-row: AI interviewer (left) + candidate video (right) */}
-          <div className="iv-top-row" style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: 12, alignItems: 'stretch', minHeight: 150, flexShrink: 0 }}>
-            <AIVisualizer
-              phase={phase}
-              isWarmingUp={isWarmingUp}
-              liveTranscriptLength={liveTranscript.length}
-              timeRemaining={timeRemaining}
-              candidateName={candidate.name}
-              positionTitle={position.title}
-            />
-            {/* Candidate video — same IntegrityMonitor feed/CV, relocated here (inline variant) */}
-            <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', minHeight: 150 }}>
+          {/* Top sub-row: modest AI interviewer box (left) + prominent candidate
+              video (right). Fixed-height row so the editor below gets generous space. */}
+          <div data-tour="topbar" className="iv-top-row" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 12, alignItems: 'stretch', height: 200, flexShrink: 0 }}>
+            <div data-tour="ai" style={{ borderRadius: 16, outline: tourHighlight === 'ai' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+              <AIVisualizer
+                phase={phase}
+                isWarmingUp={isWarmingUp}
+                liveTranscriptLength={liveTranscript.length}
+                timeRemaining={timeRemaining}
+                candidateName={candidate.name}
+                positionTitle={position.title}
+                compact
+              />
+            </div>
+            {/* Candidate video — enlarged & prominent. Same IntegrityMonitor feed/CV
+                (inline variant); a bigger face also helps the CV detection. */}
+            <div data-tour="video" style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" />
             </div>
           </div>
 
           {/* Question Display */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+          <div data-tour="question" style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
             {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2018,7 +2071,7 @@ export default function InterviewPage() {
           </div>
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div style={{ flex: 1, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div data-tour="editor" style={{ flex: 1, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
             {/* tab strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
               <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
@@ -2071,7 +2124,7 @@ export default function InterviewPage() {
         </div>
 
         {/* ════ RIGHT COLUMN: full-height transcript ════ */}
-        <div className="iv-transcript" style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+        <div data-tour="transcript" className="iv-transcript" style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {/* header + live status */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
