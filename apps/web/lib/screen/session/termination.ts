@@ -27,6 +27,15 @@ const END_INTENT = [
   'please end this', 'please end the interview', 'please stop the interview',
   'can we stop', 'can we end', "let's stop", "let's end", 'i need to stop',
   'terminate the interview', 'i want to quit', 'i quit the interview',
+  // Bug C: "close" / "wrap up" / "finish" framings were missing → real end
+  // requests ("Can we close the interview, please?") were treated as answers.
+  'close the interview', 'close this interview', 'can we close', "let's close",
+  'i want to close', 'i would like to close', 'please close the interview',
+  'wrap up the interview', 'wrap this up', 'can we wrap up', "let's wrap up",
+  'finish the interview', 'finish this interview', 'finish my interview',
+  'i want to finish', 'i would like to finish', 'can we finish the interview',
+  'end it here', 'end now', 'end the call', 'i am done with the interview',
+  "i'm done with the interview",
 ]
 
 function norm(s: string): string {

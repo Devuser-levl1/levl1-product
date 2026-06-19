@@ -411,6 +411,7 @@ export default function InterviewPage() {
   const rephraseCountRef      = useRef(0)
   const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
   const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
+  const stuckActiveRef        = useRef(false)    // Bug A: gave the one diluted hint; next weak reply → move on
   const followUpCountRef      = useRef(0)        // I-P0-3: follow-ups asked on this question (cap 3)
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
@@ -999,13 +1000,19 @@ export default function InterviewPage() {
       return
     }
 
-    // ── 4. Stuck ("I don't know / can't recall / blanking") — Fix 1 ──────
-    // ONE diluted/guided attempt to unblock; if still stuck, MOVE ON immediately
-    // (short-circuits the 3-follow-up budget — no drilling). Dimension stays
-    // not-evidenced for this question.
-    if (DONT_KNOW_TRIGGERS.some(w => lower.includes(w))) {
+    // ── 4. Stuck handling (Bug A fix) ───────────────────────────────────
+    // ONE diluted/guided attempt to unblock, then MOVE ON if the candidate is
+    // STILL not giving a real answer — where "still stuck" = another stuck phrase
+    // OR just a short non-answer after the hint (not only verbatim stuck phrases).
+    // Carried across turns via stuckActiveRef so it can't drift into drilling.
+    const isStuckPhrase = DONT_KNOW_TRIGGERS.some(w => lower.includes(w))
+    const stuckWordCount = responseText.trim().split(/\s+/).filter(Boolean).length
+    if (isStuckPhrase || (stuckActiveRef.current && stuckWordCount < 6)) {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
-      if (rephraseCountRef.current >= 1) {
+      if (stuckActiveRef.current) {
+        // Already gave the one hint and they're still stuck → move on gracefully
+        // (short-circuits the follow-up budget; dimension stays not-evidenced).
+        stuckActiveRef.current = false
         const ack = pick([
           "That's completely fine — let's move on.",
           "No problem at all, we'll move on.",
@@ -1015,34 +1022,36 @@ export default function InterviewPage() {
         await speakText(ack)
         await delay(700)
         await moveToQuestion(currentQIdxRef.current + 1)
-      } else {
-        rephraseCountRef.current++
-        // Generate a SIMPLER / more guided version (hint, narrower sub-question,
-        // example) so they have an entry point. Fall back to a guided template.
-        let diluted = ''
-        try {
-          const r = await fetch('/api/interview/generate-dynamic-question', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              dynamicType: 'simplify',
-              questionText: q.question,
-              lastResponse: responseText,
-              positionTitle: position?.title ?? '',
-              techStack: position?.techStack ?? [],
-              previousResponses: responsesRef.current.slice(-3).map(r => ({ question: r.questionText, response: r.candidateResponse })),
-            }),
-          })
-          if (r.ok) diluted = (await r.json()).question
-        } catch { /* fall back below */ }
-        const hint = q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the basics'
-        if (!diluted) diluted = `No problem — let's make it simpler. To start, just tell me whatever you do know about ${hint}.`
-        addTranscript({ speaker: 'ai', text: diluted, questionId: q.id, type: 'preset' })
-        await speakText(diluted)
-        await delay(1200)
-        startListening()
+        return
       }
+      // First stuck signal → ONE diluted/guided follow-up (hint / narrower sub-
+      // question / example), conditioned on the question + their reply.
+      stuckActiveRef.current = true
+      let diluted = ''
+      try {
+        const r = await fetch('/api/interview/generate-dynamic-question', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dynamicType: 'simplify',
+            questionText: q.question,
+            lastResponse: responseText,
+            positionTitle: position?.title ?? '',
+            techStack: position?.techStack ?? [],
+            previousResponses: responsesRef.current.slice(-3).map(r => ({ question: r.questionText, response: r.candidateResponse })),
+          }),
+        })
+        if (r.ok) diluted = (await r.json()).question
+      } catch { /* fall back below */ }
+      const hint = q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the basics'
+      if (!diluted) diluted = `No problem — let's make it simpler. To start, just tell me whatever you do know about ${hint}.`
+      addTranscript({ speaker: 'ai', text: diluted, questionId: q.id, type: 'preset' })
+      await speakText(diluted)
+      await delay(1200)
+      startListening()
       return
     }
+    // They were mid-stuck but just gave a real (substantive) answer → unblocked.
+    if (stuckActiveRef.current) stuckActiveRef.current = false
 
     // ── 5. Skip / move on ────────────────────────────────────────────
     if (SKIP_TRIGGERS.some(w => lower.includes(w))) {
@@ -1074,17 +1083,12 @@ export default function InterviewPage() {
 
     addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
 
-    // ── 6. Word count — very short answer ───────────────────────────
+    // ── 6. (Bug B) Short answers no longer get a HARDCODED, context-free probe
+    // ("Could you walk me through a specific example of that?") — that fired out of
+    // context (e.g. right after "I don't know"). Short answers now flow into the
+    // evaluate step below, whose follow-up IS conditioned on the candidate's actual
+    // answer + prior turns (real Scribe transcript reaching Sonnet every turn).
     const wordCount = responseText.trim().split(/\s+/).filter(Boolean).length
-    if (wordCount < 8 && !shortAnswerAskedRef.current) {
-      shortAnswerAskedRef.current = true
-      const followUp = 'Could you walk me through a specific example of that?'
-      addTranscript({ speaker: 'ai', text: followUp, type: 'transition' })
-      await speakText(followUp)
-      await delay(1500)
-      startListening()
-      return
-    }
 
     // ── 7. Evaluate ──────────────────────────────────────────────────
     let ev: EvalResult = {
@@ -1206,6 +1210,7 @@ export default function InterviewPage() {
     rephraseCountRef.current      = 0     // reset all per-question edge-case state
     redirectGivenRef.current      = false
     shortAnswerAskedRef.current   = false
+    stuckActiveRef.current        = false // Bug A: fresh stuck-state per question
     followUpCountRef.current       = 0    // I-P0-3: fresh follow-up budget per question
     awaitingMoveOnChoiceRef.current = false
     resetAnswerTelemetry()                // Build 02: fresh T2 timing/paste capture per question
