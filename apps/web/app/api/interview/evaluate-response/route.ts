@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { INTERVIEW_MODEL } from '@/lib/screen/interview/model'
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 // Hard cap on follow-ups per question (Build I-P0-3, Part 3a). The client enforces
 // this too; we tell the model so it stops drilling and advances gracefully.
@@ -42,11 +43,11 @@ export async function POST(req: NextRequest) {
       // per-turn decision fast; thinking stays off (we demand JSON-only output).
       output_config: { effort: 'low' },
       system:
-        'You are the decision engine for Alex, a professional AI interviewer.\n\n' +
-        'ROLE: Evaluate candidate responses objectively and decide how Alex should proceed.\n' +
+        `You are the decision engine for ${INTERVIEWER_NAME}, a professional AI interviewer.\n\n` +
+        `ROLE: Evaluate candidate responses objectively and decide how ${INTERVIEWER_NAME} should proceed.\n` +
         'Only credit points the candidate explicitly mentioned — never infer or assume knowledge not demonstrated.\n' +
         'Keep evaluatorNote to 1-2 factual sentences only.\n\n' +
-        'ALEX\'S TONE RULES (apply to all generated text):\n' +
+        `${INTERVIEWER_NAME.toUpperCase()}'S TONE RULES (apply to all generated text):\n` +
         '- NEVER use: "Great answer", "Excellent", "Perfect", "Wonderful", "Fantastic"\n' +
         '- ALWAYS use: "Thank you", "Understood", "Got it", "Noted", "That is helpful"\n' +
         '- Calm, warm, professional at all times — never make the candidate feel judged\n\n' +

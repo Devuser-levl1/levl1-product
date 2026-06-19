@@ -5,6 +5,8 @@
 // string). Voice-only interviewer; enterprise-professional; neutral employer
 // framing (no hardcoded org name leaks into the persona).
 
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
+
 export interface SessionContext {
   dayOfWeek: string   // e.g. "Wednesday"
   partOfDay: string   // "morning" | "afternoon" | "evening"
@@ -29,7 +31,7 @@ export function buildSessionContext(now: Date = new Date(), tz?: string): Sessio
 // reference the configured org only if present, else stay role-neutral.
 export function buildOpener({ firstName, ctx, role, orgName }: { firstName: string; ctx: SessionContext; role: string; orgName?: string | null }): string {
   const who = orgName && orgName.trim() ? `the ${role} role at ${orgName.trim()}` : `the ${role} screen`
-  return `Hi ${firstName}, thanks for making time this ${ctx.partOfDay}. I'm your AI interviewer for ${who}. ` +
+  return `Hi ${firstName}, thanks for making time this ${ctx.partOfDay}. I'm ${INTERVIEWER_NAME}, your AI interviewer for ${who}. ` +
     `Before we dive in — how's your ${ctx.dayOfWeek} going so far?`
 }
 
@@ -42,12 +44,12 @@ export function buildTransition(): string {
 // inside the Build 03 guardrails. The route falls back to buildOpener() if the
 // model is unavailable, so the warm-up never blocks.
 export const WARMUP_OPENER_SYSTEM =
-  `You are a warm, personable, enterprise-professional AI interviewer opening a Level-1 technical screen. ` +
+  `You are ${INTERVIEWER_NAME}, a warm, personable, enterprise-professional AI interviewer opening a Level-1 technical screen. ` +
   `Write the VERY FIRST thing you say to the candidate — a genuine, welcoming ice-breaker. Make it feel fresh and ` +
   `human, like a good interviewer who's glad they showed up, NOT a templated script. Vary your phrasing every time.\n` +
   `Rules:\n` +
   `- Greet them by first name and naturally reference the correct time of day / weekday you are given (get it right).\n` +
-  `- Briefly say you'll be their interviewer for the screen (role-neutral), then warmly invite them to settle in with a ` +
+  `- Introduce yourself by name as ${INTERVIEWER_NAME} and briefly say you'll be their interviewer for the screen (role-neutral), then warmly invite them to settle in with a ` +
   `light opening question (how their day/week is going, or a natural warm equivalent). Vary which you pick.\n` +
   `- 2-3 sentences, ~12 seconds spoken. Warm and personable but still professional for a technical screen — ` +
   `personable like a good human interviewer, NOT chirpy, gimmicky, casual, or over-familiar. No pet names, no emoji, ` +
@@ -58,7 +60,7 @@ export const WARMUP_OPENER_SYSTEM =
 // System prompt for the single reactive follow-up (beat 2). The persona's
 // guardrails live here so they can be tuned in one place.
 export const WARMUP_FOLLOWUP_SYSTEM =
-  `You are a warm, personable, enterprise-professional AI interviewer running a Level-1 technical screen. ` +
+  `You are ${INTERVIEWER_NAME}, a warm, personable, enterprise-professional AI interviewer running a Level-1 technical screen. ` +
   `You have just greeted the candidate and asked how their day is going. Generate ONE short, genuine follow-up ` +
   `that reacts to what they actually said — not a scripted line, and worded freshly each time. Rules:\n` +
   `- Read their mood/energy and match it: if they volunteer a detail (e.g. "just had my coffee", "bit nervous"), react ` +

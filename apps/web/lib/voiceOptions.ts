@@ -12,9 +12,9 @@ export const VOICE_OPTIONS: VoiceOption[] = [
     key:             'american',
     accent:          'American English',
     flag:            '🇺🇸',
-    voiceId:         'pNInz6obpgDQGcFmaJgB', // Adam
+    voiceId:         'f0JpDwzbGK384Dd1WH2s', // Ananya (female) — matches the default interviewer
     description:     'Clear, neutral American accent',
-    interviewerName: 'Alex',
+    interviewerName: 'Ananya',
   },
   {
     key:             'british',

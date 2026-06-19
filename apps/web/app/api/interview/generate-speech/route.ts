@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getVoiceId } from '@/lib/voiceOptions'
+import { DEFAULT_INTERVIEWER_VOICE_ID } from '@/lib/screen/interviewer'
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,12 +15,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Priority: explicit voiceId in request → voiceAccent key → env var → Rachel fallback
+    // Priority: explicit voiceId in request → voiceAccent key → env var → Ananya (female) default
     const vid =
       voiceId ||
       (voiceAccent ? getVoiceId(voiceAccent) : null) ||
       process.env.ELEVENLABS_VOICE_ID ||
-      '21m00Tcm4TlvDq8ikWAM' // Rachel — always available
+      DEFAULT_INTERVIEWER_VOICE_ID // Ananya — female, env ELEVENLABS_VOICE_ID overrides
 
     console.log('[generate-speech] text length:', text?.length ?? 0, 'voice:', vid)
 

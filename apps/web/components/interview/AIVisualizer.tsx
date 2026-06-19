@@ -3,6 +3,7 @@
 import { WaveformVisualizer } from './WaveformVisualizer'
 import { MorphingSphere }     from './MorphingSphere'
 import type { InterviewPhase } from '@/store/appStore'
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 /* ── Status config ───────────────────────────────────────────── */
 const STATUS: Partial<Record<string, { label: string; dot: string; color: string }>> = {
@@ -93,7 +94,7 @@ export function AIVisualizer({
       }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', letterSpacing: '0.01em' }}>
-            Alex
+            {INTERVIEWER_NAME}
           </div>
           <div style={{ fontSize: 10, color: '#475569', fontWeight: 500, marginTop: 1 }}>
             AI Interviewer

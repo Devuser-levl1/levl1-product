@@ -161,7 +161,7 @@ export default function SignupPage() {
             AI interviews in<br />minutes, not weeks
           </h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: 36 }}>
-            Screen candidates 10× faster with Alex, your AI interviewer. Get structured evaluations before the first human call.
+            Screen candidates 10× faster with Ananya, your AI interviewer. Get structured evaluations before the first human call.
           </p>
 
           {/* Perks */}

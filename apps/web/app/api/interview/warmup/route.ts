@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { LIVE_INTERVIEW_MODEL } from '@/lib/screen/interview/model'
 import { WARMUP_FOLLOWUP_SYSTEM, WARMUP_OPENER_SYSTEM } from '@/lib/screen/session/persona'
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 20
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const isOpener = body.beat === 'opener'
 
   const fallback = isOpener
-    ? `Hi ${firstName}, thanks for making time this ${part || 'today'}. I'm your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`
+    ? `Hi ${firstName}, thanks for making time this ${part || 'today'}. I'm ${INTERVIEWER_NAME}, your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`
     : (reply ? `Thanks for sharing that. Glad you're here.` : `No worries at all — glad you could make it.`)
 
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ line: fallback })

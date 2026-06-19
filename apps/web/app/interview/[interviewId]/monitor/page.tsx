@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAppStore } from '@/store/appStore'
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import {
   Radio, Clock, CheckCircle2, AlertCircle, Zap,
   Code2, PenLine, MessageSquare, X, ExternalLink,
@@ -228,7 +229,7 @@ export default function MonitorPage() {
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
                     color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981',
                   }}>
-                    {entry.speaker === 'ai' ? '🤖 AI (Alex)' : `👤 ${candidate.name.split(' ')[0]}`}
+                    {entry.speaker === 'ai' ? `🤖 AI (${INTERVIEWER_NAME})` : `👤 ${candidate.name.split(' ')[0]}`}
                   </span>
                   <span style={{ fontSize: 9, color: '#334155' }}>
                     {new Date(entry.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

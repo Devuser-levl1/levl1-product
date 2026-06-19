@@ -16,6 +16,7 @@ import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -1653,7 +1654,7 @@ export default function InterviewPage() {
   const runTour = useCallback(async () => {
     const steps: { area: string; line: string }[] = [
       { area: 'question',   line: "Before we begin, a quick tour. Across the top you'll always see your current question." },
-      { area: 'ai',         line: "On the left is me, Alex — this panel lights up when I'm speaking or listening." },
+      { area: 'ai',         line: `On the left is me, ${INTERVIEWER_NAME} — this panel lights up when I'm speaking or listening.` },
       { area: 'video',      line: "Just below me is your camera, with a live-monitoring indicator. Keep your face comfortably in view." },
       { area: 'editor',     line: "On the right is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
       { area: 'transcript', line: "And below the editor is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
@@ -1988,7 +1989,7 @@ export default function InterviewPage() {
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: Alex</div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {INTERVIEWER_NAME}</div>
           <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
@@ -2252,7 +2253,7 @@ export default function InterviewPage() {
           <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {transcript.map(entry => (
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? 'ALEX' : 'YOU'}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? INTERVIEWER_NAME.toUpperCase() : 'YOU'}</span>
                 <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}
