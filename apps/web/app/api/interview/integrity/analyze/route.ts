@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { detectLatencyAnomaly } from '@/lib/screen/integrity/latency'
 import { analyzePaste } from '@/lib/screen/integrity/paste'
 import { analyzeAiAssist } from '@/lib/screen/integrity/ai-assist'
+import { analyzeCadence } from '@/lib/screen/integrity/cadence'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -68,7 +69,10 @@ export async function POST(req: NextRequest) {
       { enabled: aiAssistEnabled },
     )
 
-    const flags = [latencyFlag, pasteFlag, aiFlag].filter((f): f is NonNullable<typeof f> => f !== null)
+    // Read-aloud cadence — cheap text heuristic, spoken answers only (corroborating).
+    const cadenceFlag = analyzeCadence({ answer, spoken: body.spoken === true })
+
+    const flags = [latencyFlag, pasteFlag, aiFlag, cadenceFlag].filter((f): f is NonNullable<typeof f> => f !== null)
     if (flags.length > 0) {
       await prisma.interviewIntegrityEvent.createMany({
         data: flags.map((f) => ({

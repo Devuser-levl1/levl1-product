@@ -35,6 +35,14 @@ const FOCUS_LOSS_DEDUP_MS = 350 // collapse the blur+visibility double-fire of O
 // Head-yaw proxy: nose horizontal position within the face. |ratio-0.5| beyond
 // this = head clearly turned off-axis. 0.5 is centred; ~0.20 ≈ a real turn, not a glance.
 const YAW_OFF_RATIO = 0.20
+// Reading-gaze (corroborating, anti-overlay): when the head is facing forward but the
+// EYES sweep horizontally back and forth repeatedly, that resembles reading lines of
+// on-screen text. Conservative: needs many direction reversals across a sustained
+// window. Experimental — weight-light, escalates only via co-occurrence.
+const GAZE_HISTORY = 14            // ~5.6s of samples at 400ms
+const READING_MIN_REVERSALS = 5   // L↔R direction changes within the window
+const READING_DEV = 0.06          // min horizontal eye deviation to count as a sweep
+const READING_THROTTLE = 20000
 // CDN-pinned MediaPipe (overridable so it can be self-hosted / version-bumped via env).
 const MP_VERSION = process.env.NEXT_PUBLIC_MEDIAPIPE_VERSION ?? '0.10.18'
 const MP_BUNDLE = process.env.NEXT_PUBLIC_MEDIAPIPE_BUNDLE ?? `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/vision_bundle.mjs`
@@ -52,6 +60,7 @@ export class IntegrityMonitorClient {
   private noFaceSince: number | null = null
   private gazeAwaySince: number | null = null
   private lastFocusLossAt = 0
+  private gazeHist: number[] = []  // recent horizontal eye-gaze ratios (reading detector)
 
   constructor(opts: IntegrityClientOptions) { this.opts = opts }
 
@@ -92,7 +101,10 @@ export class IntegrityMonitorClient {
       if (Ctor) { try { this.nativeDetector = new Ctor({ fastMode: true, maxDetectedFaces: 3 }) } catch { this.nativeDetector = null } }
     }
     if (this.running && this.faceDetectionAvailable) {
-      this.timers.push(setInterval(() => { void this.checkFace() }, this.opts.faceIntervalMs ?? 700))
+      // Finer cadence when MediaPipe is active (needed for the reading-gaze sweep
+      // detector); the native fallback can't do gaze so it stays coarse.
+      const interval = this.opts.faceIntervalMs ?? (this.mp ? 400 : 700)
+      this.timers.push(setInterval(() => { void this.checkFace() }, interval))
     }
   }
 
@@ -145,12 +157,13 @@ export class IntegrityMonitorClient {
 
     let faceCount: number
     let yawRatio: number | null = null  // nose position within face width (0..1), null if N/A
+    let eyeGaze: number | null = null   // horizontal iris position within the eye (0..1)
     try {
       if (this.mp) {
         const res = this.mp.detectForVideo(v, performance.now())
         const faces = res.faceLandmarks ?? []
         faceCount = faces.length
-        if (faceCount === 1) yawRatio = noseYawRatio(faces[0])
+        if (faceCount === 1) { yawRatio = noseYawRatio(faces[0]); eyeGaze = eyeGazeRatio(faces[0]) }
       } else if (this.nativeDetector) {
         const faces = await this.nativeDetector.detect(v)
         faceCount = faces.length
@@ -186,8 +199,34 @@ export class IntegrityMonitorClient {
       if (now - this.gazeAwaySince >= GAZE_AWAY_MS) {
         this.emit('gaze_away', { durationMs: now - this.gazeAwaySince, confidence: 0.7, detail: 'Sustained head turn away from screen', throttleMs: GAZE_AWAY_MS })
       }
+      this.gazeHist = []  // head turned → not reading the screen; reset the sweep history
     } else {
       this.gazeAwaySince = null  // recovered / brief glance → reset, never flagged
+      // Reading-gaze: head forward but eyes sweeping horizontally (reading lines).
+      if (eyeGaze !== null) this.detectReadingGaze(eyeGaze)
+    }
+  }
+
+  // Corroborating, conservative: a sustained horizontal eye-sweep pattern (many
+  // L↔R direction reversals while the head faces forward) resembles reading text.
+  private detectReadingGaze(gaze: number) {
+    this.gazeHist.push(gaze)
+    if (this.gazeHist.length > GAZE_HISTORY) this.gazeHist.shift()
+    if (this.gazeHist.length < GAZE_HISTORY) return
+
+    // Count significant direction reversals across the window.
+    let reversals = 0
+    let prevDir = 0
+    for (let i = 1; i < this.gazeHist.length; i++) {
+      const d = this.gazeHist[i] - this.gazeHist[i - 1]
+      if (Math.abs(d) < READING_DEV) continue
+      const dir = d > 0 ? 1 : -1
+      if (prevDir !== 0 && dir !== prevDir) reversals++
+      prevDir = dir
+    }
+    if (reversals >= READING_MIN_REVERSALS) {
+      this.emit('reading_gaze', { confidence: 0.6, detail: `Eyes swept side-to-side ${reversals} times while facing forward — consistent with reading on-screen text.`, throttleMs: READING_THROTTLE })
+      this.gazeHist = []  // avoid immediate re-fire
     }
   }
 
@@ -215,4 +254,20 @@ function noseYawRatio(lm: MpLandmark[]): number | null {
   const width = right.x - left.x
   if (Math.abs(width) < 1e-3) return null
   return (nose.x - left.x) / width
+}
+
+// Horizontal iris position within each eye (0 = looking to one side, 1 = the
+// other; ~0.5 centred), averaged across both eyes. Needs the 478-point mesh
+// (468-477 are iris points); returns null on the 468-point model. Used only to
+// track eye SWEEPS over time, not a single-frame verdict.
+function eyeGazeRatio(lm: MpLandmark[]): number | null {
+  if (lm.length < 478) return null
+  const lIris = lm[468], lOut = lm[33], lIn = lm[133]    // left eye: outer, inner corners
+  const rIris = lm[473], rIn = lm[362], rOut = lm[263]   // right eye: inner, outer corners
+  if (!lIris || !lOut || !lIn || !rIris || !rIn || !rOut) return null
+  const lw = lIn.x - lOut.x, rw = rOut.x - rIn.x
+  if (Math.abs(lw) < 1e-3 || Math.abs(rw) < 1e-3) return null
+  const lr = (lIris.x - lOut.x) / lw
+  const rr = (rIris.x - rIn.x) / rw
+  return (lr + rr) / 2
 }

@@ -39,11 +39,12 @@ export async function analyzeAiAssist(input: AiAssistInput, opts: { enabled: boo
   if (answer.length < MIN_ANSWER_CHARS) return null
 
   const client = new Anthropic({ apiKey })
-  const prompt = `You are an integrity analyst for a live technical screening. Judge whether the ANSWER below is likely LLM-generated or LLM-assisted, on the balance of these tells:
+  const prompt = `You are an integrity analyst for a live technical screening. Invisible overlay assistants (interview-copilot tools) feed a candidate a fully-formed answer to READ while they appear to think — they leave no tab-switch and nothing on screen-share, so the answer TEXT is the main signal. Judge whether the ANSWER below is likely LLM-generated or read off such an assistant, on the balance of these tells:
 - Over-structured boilerplate / textbook framing inconsistent with live, spoken problem-solving.
-- Uncharacteristic completeness or polish vs. the candidate's own BASELINE (their earlier conversational answers this session).
+- Reads like written prose delivered verbatim: a long, perfectly-ordered answer with NONE of the hesitation, false starts, filler, or self-correction natural to a SPOKEN reply — it sounds READ, not recalled.
+- Uncharacteristic completeness or polish vs. the candidate's own BASELINE (their earlier conversational answers this session) — a sudden capability/eloquence jump.
 - Generic framing inconsistent with their STATED EXPERIENCE.
-Be conservative: natural competence is NOT a tell. Only raise likelihood for genuine LLM-pattern signals.
+Be conservative: natural competence and a genuinely articulate candidate are NOT tells. Only raise likelihood for genuine LLM-pattern / read-aloud signals. No single tell is conclusive.
 
 QUESTION: ${input.questionText ?? '(not provided)'}
 STATED EXPERIENCE: ${input.statedExperience ?? '(not provided)'}

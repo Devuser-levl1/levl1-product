@@ -47,8 +47,10 @@ const MIN_CONFIDENCE = 0.6
 // Families — co-occurrence ACROSS families is what escalates (not repeats of one).
 const FAMILY: Record<string, 'camera' | 'focus' | 'content' | 'audio'> = {
   gaze_away: 'camera', no_face: 'camera', multiple_faces: 'camera', object_in_frame: 'camera',
+  reading_gaze: 'camera',  // corroborating CV signal (anti-overlay)
   tab_switch: 'focus', window_blur: 'focus', screen_share_drop: 'focus', fullscreen_exit: 'focus',
   ai_assisted_answer: 'content', latency_anomaly: 'content', paste_anomaly: 'content', combined_anomaly: 'content',
+  read_aloud_cadence: 'content',  // corroborating delivery signal (anti-overlay)
   second_voice: 'audio',
 }
 const CO_WINDOW_MS = 90_000

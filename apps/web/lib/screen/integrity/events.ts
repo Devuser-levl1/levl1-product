@@ -17,6 +17,9 @@ export const INTEGRITY_EVENT_TYPES = [
   'latency_anomaly',    // off-platform-lookup latency pattern
   'paste_anomaly',      // large pre-formed block pasted into the editor
   'combined_anomaly',   // co-occurring weak signals escalated together
+  // ── Anti-overlay corroborating signals (Build 02-B) ──
+  'reading_gaze',       // left↔right saccade signature consistent with reading on-screen text
+  'read_aloud_cadence', // flat, disfluency-free delivery consistent with reading an answer aloud
   // ── Post-interview audio diarization (Scribe v2 batch) ──
   'second_voice',       // a second/whispering speaker detected in the recording
 ] as const
@@ -52,6 +55,8 @@ export const INTEGRITY_LABELS: Record<IntegrityEventType, string> = {
   latency_anomaly: 'Unusual answer-timing pattern',
   paste_anomaly: 'Large block pasted into editor',
   combined_anomaly: 'Multiple integrity signals co-occurred',
+  reading_gaze: 'Eye movement consistent with reading on-screen text',
+  read_aloud_cadence: 'Delivery sounds read aloud rather than spontaneous',
   second_voice: 'A second voice was heard in the recording',
 }
 

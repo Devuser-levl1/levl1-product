@@ -430,10 +430,12 @@ export default function InterviewPage() {
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
   const firstKeystrokeRef = useRef<number | null>(null) // first editor input time
+  const speechStartedAtRef = useRef<number | null>(null) // first SPOKEN word of this turn (overlay-on-voice latency)
   const pasteStatsRef = useRef<{ largest: number; total: number; count: number; typed: number }>({ largest: 0, total: 0, count: 0, typed: 0 })
   const resetAnswerTelemetry = useCallback(() => {
     questionStartRef.current = Date.now()
     firstKeystrokeRef.current = null
+    speechStartedAtRef.current = null
     pasteStatsRef.current = { largest: 0, total: 0, count: 0, typed: 0 }
     codeContentRef.current = ''
   }, [])
@@ -714,6 +716,7 @@ export default function InterviewPage() {
         setLiveTranscript(text)
         if (text) {
           hasSpokenRef.current = true
+          if (speechStartedAtRef.current === null) speechStartedAtRef.current = Date.now()
           setListeningHint('')
           clearSilenceTimers()
           const captureTimer = setTimeout(() => captureNow(liveTranscriptRef.current), RESPONSE_ENDPOINT_MS)
@@ -743,7 +746,7 @@ export default function InterviewPage() {
           if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
           liveTranscriptRef.current = text
           setLiveTranscript(text)
-          if (text) { hasSpokenRef.current = true; setListeningHint(''); clearSilenceTimers() }
+          if (text) { hasSpokenRef.current = true; if (speechStartedAtRef.current === null) speechStartedAtRef.current = Date.now(); setListeningHint(''); clearSilenceTimers() }
         },
         onUtteranceEnd: (text) => captureNow(text),
       }, {
@@ -1793,11 +1796,17 @@ export default function InterviewPage() {
   const runIntegrityAnalysis = useCallback((answer: string, questionText: string, difficulty: string | null) => {
     if (!answer || answer.trim().length < 40) return
     const baseline = transcriptRef.current.filter((t) => t.speaker === 'candidate').slice(0, 4).map((t) => t.text).join('\n').slice(0, 1500)
-    const idleBeforeAnswerMs = firstKeystrokeRef.current ? firstKeystrokeRef.current - questionStartRef.current : null
+    // Anti-overlay latency: the gap from the question being shown to the answer
+    // STARTING. For typed answers that's the first keystroke; for SPOKEN answers
+    // (the overlay-on-voice case) it's the first spoken word — previously null, so
+    // the "long silence → sudden complete answer" pattern never fired on voice.
+    const spoken = !codeContentRef.current.trim()
+    const answerStartedAt = firstKeystrokeRef.current ?? speechStartedAtRef.current
+    const idleBeforeAnswerMs = answerStartedAt ? answerStartedAt - questionStartRef.current : null
     fetch('/api/interview/integrity/analyze', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        interviewId, questionText, questionDifficulty: difficulty, answer, baseline,
+        interviewId, questionText, questionDifficulty: difficulty, answer, baseline, spoken,
         latency: { timeToFirstKeystrokeMs: idleBeforeAnswerMs, idleBeforeAnswerMs },
         paste: pasteStatsRef.current,
       }),
