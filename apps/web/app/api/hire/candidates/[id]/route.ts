@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
+import { writeAudit } from '@/lib/hire/audit'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
@@ -83,7 +84,16 @@ export const DELETE = withHireAuth(async (req, ctx, params) => {
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let reason = ''
-  try { const b = await req.json(); reason = b?.reason ?? '' } catch { /* no body */ }
+  try { const b = await req.json(); reason = typeof b?.reason === 'string' ? b.reason.trim() : '' } catch { /* no body */ }
+  if (!reason) return NextResponse.json({ error: 'A deletion reason is required' }, { status: 400 })
+
+  // Audit FIRST — the HireAuditLog row has no FK to the candidate, so it survives
+  // the deletion below (this is the permanent record of who deleted whom & why).
+  await writeAudit({
+    tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'delete',
+    candidateId: candidate.id, candidateName: candidate.name, jobId: candidate.jobId,
+    fromStage: candidate.currentStage, reason,
+  })
 
   await prisma.hireCandidateActivity.deleteMany({ where: { candidateId: candidate.id } })
   await prisma.hireInterview.deleteMany({ where: { candidateId: candidate.id } })

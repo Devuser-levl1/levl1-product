@@ -846,6 +846,10 @@ model HireCandidate {
   interviewScore   Int?       // synced from Interviews product
   source           String?    // LinkedIn, Naukri, Referral, Direct
   emailOptOut      Boolean    @default(false)
+  // Rejection lifecycle — set when moved to the Rejected swimlane; cleared on re-activation.
+  rejectedReason   String?    @db.Text
+  rejectedAt       DateTime?
+  rejectedBy       String?    // actor name snapshot (who rejected)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -878,12 +882,34 @@ model HireCandidateActivity {
   id          String        @id @default(cuid())
   candidateId String
   candidate   HireCandidate @relation(fields: [candidateId], references: [id])
-  type        String        // stage_change | note | email_sent | interview_scheduled | ai_scored
+  type        String        // stage_change | note | email_sent | interview_scheduled | ai_scored | reject
   note        String?       @db.Text
   fromStage   String?
   toStage     String?
   userId      String?
   createdAt   DateTime      @default(now())
+}
+
+// Tenant-scoped audit trail for candidate lifecycle actions (stage_move, reject,
+// delete). Deliberately NO relation to HireCandidate — candidateId is a plain
+// scalar so a delete audit survives the candidate's removal.
+model HireAuditLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  actorUserId   String?
+  actorName     String?  // actor name snapshot at action time
+  action        String   // stage_move | reject | delete
+  candidateId   String?
+  candidateName String
+  jobId         String?
+  fromStage     String?
+  toStage       String?
+  reason        String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, candidateId])
+  @@index([tenantId, createdAt])
 }
 
 model HireClient {

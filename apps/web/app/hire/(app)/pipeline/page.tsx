@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { KanbanBoard, KanbanCandidate, KanbanStage } from '@/components/hire/pipeline/KanbanBoard'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { BulkResumeUpload } from '@/components/hire/bulk-resume-upload'
+import { ReasonModal } from '@/components/hire/pipeline/ReasonModal'
+import { REJECT_REASONS, DELETE_REASONS } from '@/lib/hire/lifecycle'
 
 interface JobPipeline { id: string; title: string; stages: KanbanStage[]; totalCandidates: number }
 
@@ -12,6 +14,8 @@ export default function PipelinePage() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [showBulk, setShowBulk] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [rejectFor, setRejectFor] = useState<KanbanCandidate | null>(null)
+  const [deleteFor, setDeleteFor] = useState<KanbanCandidate | null>(null)
 
   const load = useCallback(() => {
     fetch('/api/hire/pipeline').then((r) => (r.ok ? r.json() : [])).then((data: JobPipeline[]) => {
@@ -39,6 +43,20 @@ export default function PipelinePage() {
     }))
     await fetch('/api/hire/pipeline/move', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId, toStage }) }).catch(() => {})
   }, [])
+
+  const submitReject = useCallback(async (reason: string) => {
+    if (!rejectFor) return
+    const res = await fetch('/api/hire/pipeline/reject', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: rejectFor.id, reason }) })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error ?? 'Failed to reject') }
+    setRejectFor(null); load()
+  }, [rejectFor, load])
+
+  const submitDelete = useCallback(async (reason: string) => {
+    if (!deleteFor) return
+    const res = await fetch(`/api/hire/candidates/${deleteFor.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error ?? 'Failed to delete') }
+    setDeleteFor(null); load()
+  }, [deleteFor, load])
 
   // Keyboard shortcuts: Esc closes slide-over, ←/→ switch job tabs
   useEffect(() => {
@@ -85,7 +103,33 @@ export default function PipelinePage() {
       )}
 
       {selectedJob && (
-        <KanbanBoard stages={selectedJob.stages} jobId={selectedJob.id} onMove={handleMove} onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
+        <KanbanBoard stages={selectedJob.stages} jobId={selectedJob.id} onMove={handleMove}
+          onReject={(c) => setRejectFor(c)} onDelete={(c) => setDeleteFor(c)}
+          onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
+      )}
+
+      {rejectFor && (
+        <ReasonModal
+          title={`Reject ${rejectFor.name}`}
+          description="Moves the candidate to the Rejected swimlane. A reason is required and is recorded in the audit log."
+          presets={REJECT_REASONS as readonly string[]}
+          confirmLabel="Reject candidate"
+          danger
+          onClose={() => setRejectFor(null)}
+          onConfirm={submitReject}
+        />
+      )}
+
+      {deleteFor && (
+        <ReasonModal
+          title={`Delete ${deleteFor.name}`}
+          description="Permanently removes the candidate and their interviews. A reason is required and is logged in the audit trail."
+          presets={DELETE_REASONS as readonly string[]}
+          confirmLabel="Delete permanently"
+          danger
+          onClose={() => setDeleteFor(null)}
+          onConfirm={submitDelete}
+        />
       )}
 
       {selectedCandidateId && (

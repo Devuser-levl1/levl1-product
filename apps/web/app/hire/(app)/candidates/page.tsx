@@ -196,7 +196,7 @@ function DeleteModal({ candidate, onCancel, onConfirm }: { candidate: Cand; onCa
     <input style={{ ...inp, width: '100%', boxSizing: 'border-box', marginBottom: 12 }} placeholder="Reason (e.g. duplicate, withdrew)" value={reason} onChange={(e) => setReason(e.target.value)} />
     <div style={{ display: 'flex', gap: 8 }}>
       <button onClick={onCancel} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-      <button onClick={() => onConfirm(reason)} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#DC2626', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+      <button onClick={() => onConfirm(reason.trim())} disabled={!reason.trim()} title={reason.trim() ? '' : 'A reason is required'} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: reason.trim() ? '#DC2626' : '#E2E8F0', color: reason.trim() ? '#fff' : '#94A3B8', fontWeight: 700, cursor: reason.trim() ? 'pointer' : 'default' }}>Delete</button>
     </div>
   </Overlay>
 }
