@@ -918,6 +918,49 @@ model HireAuditLog {
   @@index([tenantId, createdAt])
 }
 
+// ── Platform (owner/staff) CRM — Levl1's OWN client-acquisition pipeline ─────
+// NOT tenant-scoped: this is platform-global, visible only to staff. A won lead
+// can be provisioned into a real HireTenant (convertedTenantId).
+model PlatformLead {
+  id                String   @id @default(cuid())
+  company           String
+  contactName       String?
+  email             String?
+  phone             String?
+  source            String?  // Referral | Inbound | Outbound | LinkedIn | Event | Other
+  type              String?  // AGENCY | CORPORATE (intended tenant type)
+  stage             String   @default("New") // New | Contacted | Demo | Proposal | Won | Lost
+  estValue          Float?   // estimated deal value
+  notes             String?  @db.Text
+  ownerUserId       String?  // HireUser id of the staff owner
+  ownerName         String?  // snapshot
+  convertedTenantId String?  // set once provisioned into a HireTenant
+  wonAt             DateTime?
+  lostReason        String?
+  lastContactedAt   DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  activities PlatformLeadActivity[]
+
+  @@index([stage])
+  @@index([ownerUserId])
+}
+
+model PlatformLeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      PlatformLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String   // note | stage_change | provisioned | created
+  note      String?  @db.Text
+  fromStage String?
+  toStage   String?
+  actorName String?
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
 model HireClient {
   id        String     @id @default(cuid())
   tenantId  String

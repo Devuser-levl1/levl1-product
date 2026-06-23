@@ -35,6 +35,8 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
   const [ready, setReady] = useState(false)
   // Levl1 SSO entitlements (Phase 4) — gates the Interviews launcher.
   const [entInterviews, setEntInterviews] = useState<boolean | null>(null)
+  // Platform-staff link — only shown to allowlisted Levl1 staff.
+  const [isStaff, setIsStaff] = useState(false)
 
   // Auth guard — redirect to login when there is no valid Hire JWT.
   useEffect(() => {
@@ -57,6 +59,11 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setEntInterviews(!!d?.entitlements?.interviews))
       .catch(() => setEntInterviews(false))
+  }, [])
+
+  // Staff-only platform console link.
+  useEffect(() => {
+    fetch('/api/platform/me').then((r) => setIsStaff(r.ok)).catch(() => setIsStaff(false))
   }, [])
 
   async function logout() {
@@ -121,6 +128,11 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
               <a href="/contact" title="Add Levl1 Interviews to your account"
                 style={{ fontSize: 12.5, fontWeight: 600, color: '#64748B', textDecoration: 'none', border: '1px dashed #CBD5E1', borderRadius: 8, padding: '6px 12px' }}>
                 + Add Levl1 Screen
+              </a>
+            )}
+            {isStaff && (
+              <a href="/platform/usage" title="Levl1 platform owner console" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#6D28D9,#7C3AED)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>
+                ◆ Platform <span style={{ fontSize: 11 }}>↗</span>
               </a>
             )}
             <span style={{ fontSize: 13, color: '#475569' }}>{me!.user.name}</span>
