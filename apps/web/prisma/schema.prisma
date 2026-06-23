@@ -890,25 +890,30 @@ model HireCandidateActivity {
   createdAt   DateTime      @default(now())
 }
 
-// Tenant-scoped audit trail for candidate lifecycle actions (stage_move, reject,
-// delete). Deliberately NO relation to HireCandidate — candidateId is a plain
-// scalar so a delete audit survives the candidate's removal.
+// Tenant-scoped audit trail for significant actions across modules (candidates,
+// jobs, deals, rubric, team). Deliberately NO relation to any model — target ids
+// are plain scalars so a delete audit survives the target's removal.
 model HireAuditLog {
   id            String   @id @default(cuid())
   tenantId      String
   actorUserId   String?
   actorName     String?  // actor name snapshot at action time
-  action        String   // stage_move | reject | delete
-  candidateId   String?
-  candidateName String
+  action        String   // candidate_create | reject | delete | stage_move | job_create | job_update | job_delete | rubric_change | deal_create | deal_update | deal_delete | team_member_invite
+  targetType    String?  // candidate | job | deal | rubric | team_member
+  targetId      String?
+  targetName    String?  // target label snapshot (e.g. candidate/job/deal name)
+  candidateId   String?  // legacy candidate-specific mirror (kept for back-compat)
+  candidateName String?
   jobId         String?
   fromStage     String?
   toStage       String?
   reason        String?  @db.Text
+  meta          Json?    // extra context (changed fields, value deltas, role, …)
   createdAt     DateTime @default(now())
 
   @@index([tenantId])
-  @@index([tenantId, candidateId])
+  @@index([tenantId, actorUserId])
+  @@index([tenantId, action])
   @@index([tenantId, createdAt])
 }
 

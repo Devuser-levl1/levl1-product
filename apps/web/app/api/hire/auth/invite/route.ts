@@ -5,6 +5,7 @@ import { signPurposeToken } from '@/lib/hire/auth'
 import { sendHireEmail } from '@/lib/hire/email'
 import { inviteTeamMemberEmail } from '@/emails/hire/invite-team-member'
 import { checkAllowance } from '@/lib/hire/usage'
+import { logAudit } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,8 @@ export const POST = withHireAuth(async (req, ctx) => {
     subject: `You've been invited to ${tenant?.name ?? 'Levl1 Hire'}`,
     html: inviteTeamMemberEmail({ inviterName: 'Your team', tenantName: tenant?.name ?? 'Levl1 Hire', inviteUrl }),
   }).catch((e) => console.error('[hire/invite] email failed:', e))
+
+  await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'team_member_invite', targetType: 'team_member', targetId: user.id, targetName: user.email, meta: { role: user.role, name } })
 
   return NextResponse.json({ id: user.id, email: user.email, role: user.role, status: 'invited' }, { status: 201 })
 })

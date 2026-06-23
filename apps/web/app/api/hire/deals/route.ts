@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,5 +25,6 @@ export const POST = withHireAuth(async (req, ctx) => {
       probability: Number(body.probability ?? 10),
     },
   })
+  await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'deal_create', targetType: 'deal', targetId: deal.id, targetName: deal.title, meta: { value: deal.value, stage: deal.stage } })
   return NextResponse.json(deal, { status: 201 })
 })

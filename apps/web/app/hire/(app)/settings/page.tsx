@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { H } from '@/components/ui/hire-tokens'
 import { PageHeader, Card } from '@/components/ui/hire-kit'
+import { AuditSettingsCard } from '@/components/hire/audit-settings-card'
 
 export default function HireSettings() {
   const items: [string, string, string][] = [
@@ -22,6 +23,7 @@ export default function HireSettings() {
             </Card>
           </Link>
         ))}
+        <AuditSettingsCard />
       </div>
       <style>{`@media (max-width:640px){ .set-grid{ grid-template-columns:1fr !important; } }`}</style>
     </div>

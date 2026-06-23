@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
+import { writeAudit } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,6 +105,12 @@ export const POST = withHireAuth(async (req, ctx) => {
     })
   }
   await incrementUsage(ctx.tenantId, 'candidate')
+
+  await writeAudit({
+    tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'candidate_create',
+    candidateId: candidate.id, candidateName: candidate.name, jobId: candidate.jobId,
+    reason: `Added via ${body.source || 'manual entry'}`,
+  })
 
   return NextResponse.json(candidate, { status: 201 })
 })

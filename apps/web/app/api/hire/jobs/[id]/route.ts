@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,12 +77,23 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   }
 
   const job = await prisma.hireJob.update({ where: { id: existing.id }, data })
+
+  // Rubric edits get their own audit entry; everything else is a job_update.
+  if ('rubric' in body) {
+    await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'rubric_change', targetType: 'rubric', targetId: job.id, targetName: job.title })
+  }
+  const nonRubricFields = Object.keys(data).filter((k) => k !== 'rubric')
+  if (nonRubricFields.length > 0) {
+    await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_update', targetType: 'job', targetId: job.id, targetName: job.title, meta: { fields: nonRubricFields } })
+  }
+
   return NextResponse.json(job)
 })
 
 export const DELETE = withHireAuth(async (_req, ctx, params) => {
   const existing = await prisma.hireJob.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_delete', targetType: 'job', targetId: existing.id, targetName: existing.title })
   // Detach candidates, then delete the job.
   await prisma.hireCandidate.updateMany({ where: { jobId: existing.id }, data: { jobId: null } })
   await prisma.hireJob.delete({ where: { id: existing.id } })

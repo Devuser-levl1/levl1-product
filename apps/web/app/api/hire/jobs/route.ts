@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { checkAllowance } from '@/lib/hire/usage'
+import { logAudit } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,5 +51,11 @@ export const POST = withHireAuth(async (req, ctx) => {
       aiGenerated: body.aiGenerated === true,
     },
   })
+
+  await logAudit({
+    tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_create',
+    targetType: 'job', targetId: job.id, targetName: job.title,
+  })
+
   return NextResponse.json(job, { status: 201 })
 })
