@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import {
   avg, computeFunnel, computeSourceEffectiveness, computeTimeInStage, computeScoreBuckets,
   computeRecruiterActivity, computeWeeklyTrend, computeDealMetrics, computeAvgTimeToHire,
+  computeDropOff, computePredictions,
 } from '@/lib/hire/analytics'
 
 export const dynamic = 'force-dynamic'
@@ -34,14 +35,28 @@ export const GET = withHireAuth(async (req, ctx) => {
 
   const candidateWhere = { tenantId: ctx.tenantId, ...(jobId ? { jobId } : {}), createdAt: { gte: from, lte: to } }
 
+  // Previous equal-length window → period-over-period deltas.
+  const span = Math.max(1, to.getTime() - from.getTime())
+  const prevFrom = new Date(from.getTime() - span)
+  const prevTo = from
+  const prevWhere = { tenantId: ctx.tenantId, ...(jobId ? { jobId } : {}), createdAt: { gte: prevFrom, lte: prevTo } }
+
   const [totalCandidates, candidates, jobs, activities, deals, hires, users] = await Promise.all([
     prisma.hireCandidate.count({ where: candidateWhere }),
     prisma.hireCandidate.findMany({ where: candidateWhere, select: { id: true, currentStage: true, aiScore: true, interviewScore: true, source: true, createdAt: true, jobId: true } }),
-    prisma.hireJob.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true, title: true, status: true, stages: true } }),
+    prisma.hireJob.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true, title: true, status: true, stages: true, createdAt: true } }),
     prisma.hireCandidateActivity.findMany({ where: { candidate: { tenantId: ctx.tenantId }, createdAt: { gte: from, lte: to } }, select: { id: true, type: true, fromStage: true, toStage: true, userId: true, createdAt: true, candidateId: true } }),
     prisma.hireDeal.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true, value: true, stage: true, closedAt: true, createdAt: true } }),
     prisma.hireCandidate.findMany({ where: { tenantId: ctx.tenantId, currentStage: { in: ['Hired', 'Offer'] }, updatedAt: { gte: from, lte: to } }, select: { id: true, createdAt: true, updatedAt: true } }),
     prisma.hireUser.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true, name: true } }),
+  ])
+
+  // Extra queries for deltas, drop-off reasons and predictions.
+  const [prevCandidates, prevHiresCount, rejectRows, allActiveCands] = await Promise.all([
+    prisma.hireCandidate.findMany({ where: prevWhere, select: { aiScore: true } }),
+    prisma.hireCandidate.count({ where: { tenantId: ctx.tenantId, currentStage: { in: ['Hired', 'Offer'] }, updatedAt: { gte: prevFrom, lte: prevTo } } }),
+    prisma.hireAuditLog.findMany({ where: { tenantId: ctx.tenantId, action: 'reject', createdAt: { gte: from, lte: to } }, select: { fromStage: true, reason: true } }),
+    prisma.hireCandidate.findMany({ where: { tenantId: ctx.tenantId }, select: { jobId: true, currentStage: true } }),
   ])
 
   const userName: Record<string, string> = {}
@@ -49,6 +64,24 @@ export const GET = withHireAuth(async (req, ctx) => {
 
   const dealMetrics = computeDealMetrics(deals)
   const recruiterActivity = computeRecruiterActivity(activities).map((r) => ({ ...r, name: userName[r.userId] ?? 'Unknown' }))
+
+  // Period-over-period deltas.
+  const pct = (cur: number, prev: number): number | null => (prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null)
+  const deltas = {
+    totalCandidates: pct(totalCandidates, prevCandidates.length),
+    avgAiScore: { cur: avg(candidates.map((c) => c.aiScore)), prev: avg(prevCandidates.map((c) => c.aiScore)) },
+    hires: pct(hires.length, prevHiresCount),
+  }
+
+  // Drop-off reasons (from reject audit rows) + predictions (time-to-fill / risk).
+  const dropOff = computeDropOff(rejectRows, totalCandidates)
+  const candsByJob = new Map<string, { currentStage: string }[]>()
+  for (const c of allActiveCands) {
+    if (!c.jobId) continue
+    if (!candsByJob.has(c.jobId)) candsByJob.set(c.jobId, [])
+    candsByJob.get(c.jobId)!.push({ currentStage: c.currentStage })
+  }
+  const predictions = computePredictions(jobs, candsByJob, computeAvgTimeToHire(hires))
 
   const data = {
     summary: {
@@ -69,6 +102,9 @@ export const GET = withHireAuth(async (req, ctx) => {
     trend: computeWeeklyTrend(candidates),
     dealMetrics,
     teamSize: users.length,
+    deltas,
+    dropOff,
+    predictions,
   }
 
   console.log('[api/hire/analytics] ok tenant=%s candidates=%d', ctx.tenantId, totalCandidates)

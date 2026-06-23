@@ -10,7 +10,7 @@ export function avg(nums: (number | null | undefined)[]): number | null {
   return valid.length ? Math.round(valid.reduce((a, b) => a + b, 0) / valid.length) : null
 }
 
-function canonicalStage(stage: string): 'Sourced' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Other' {
+export function canonicalStage(stage: string): 'Sourced' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Other' {
   const s = (stage || '').toLowerCase()
   if (s.includes('sourc')) return 'Sourced'
   if (s.includes('screen')) return 'Screening'
@@ -123,4 +123,56 @@ export function computeAvgTimeToHire(hires: AnaHire[]): number | null {
   if (!hires.length) return null
   const days = hires.map((h) => (+new Date(h.updatedAt) - +new Date(h.createdAt)) / 86400000)
   return Math.round(days.reduce((a, b) => a + b, 0) / days.length)
+}
+
+// Drop-off reasons by stage — from reject audit rows (fromStage + reason). Powers
+// "X% rejected at Screening — top reason: skills mismatch."
+export interface RejectRow { fromStage: string | null; reason: string | null }
+export function computeDropOff(rows: RejectRow[], totalEntered: number) {
+  const byStage: Record<string, { stage: string; count: number; reasons: Record<string, number> }> = {}
+  for (const r of rows) {
+    const stage = canonicalStage(r.fromStage || 'Other')
+    byStage[stage] ??= { stage, count: 0, reasons: {} }
+    byStage[stage].count++
+    const reason = (r.reason || 'Unspecified').trim() || 'Unspecified'
+    byStage[stage].reasons[reason] = (byStage[stage].reasons[reason] || 0) + 1
+  }
+  const stages = Object.values(byStage).map((s) => {
+    const sorted = Object.entries(s.reasons).sort((a, b) => b[1] - a[1])
+    return {
+      stage: s.stage,
+      count: s.count,
+      pctOfRejections: 0, // filled below
+      topReason: sorted[0]?.[0] ?? null,
+      topReasonCount: sorted[0]?.[1] ?? 0,
+      reasons: sorted.map(([reason, count]) => ({ reason, count })),
+    }
+  }).sort((a, b) => b.count - a.count)
+  const totalRejected = rows.length
+  stages.forEach((s) => { s.pctOfRejections = totalRejected ? Math.round((s.count / totalRejected) * 100) : 0 })
+  return { totalRejected, rejectionRate: totalEntered ? Math.round((totalRejected / totalEntered) * 100) : 0, stages }
+}
+
+// Lightweight predictive element — estimated time-to-fill per open role + risk,
+// from current velocity (historical avg time-to-hire as the baseline).
+export interface PredJob { id: string; title: string; status: string; createdAt: Date }
+export function computePredictions(jobs: PredJob[], candsByJob: Map<string, { currentStage: string }[]>, avgTimeToFill: number | null) {
+  const baseline = avgTimeToFill && avgTimeToFill > 0 ? avgTimeToFill : 30
+  const now = Date.now()
+  const rows = jobs.filter((j) => j.status === 'ACTIVE').map((j) => {
+    const cs = candsByJob.get(j.id) ?? []
+    const daysOpen = Math.round((now - +new Date(j.createdAt)) / 86400000)
+    const near = cs.some((c) => /(offer|hire)/i.test(c.currentStage))
+    const advanced = cs.some((c) => /(interview|offer|hire|round|technical|assess)/i.test(c.currentStage))
+    let risk: 'on_track' | 'at_risk' | 'stalled' = 'on_track'
+    if (cs.length === 0 && daysOpen > 7) risk = 'stalled'
+    else if (daysOpen > baseline && !near) risk = 'at_risk'
+    let est: number | null
+    if (near) est = Math.max(1, Math.round(baseline * 0.25))
+    else if (advanced) est = Math.max(1, Math.round(baseline - daysOpen))
+    else est = cs.length ? Math.round(baseline) : null
+    return { id: j.id, title: j.title, daysOpen, candidates: cs.length, risk, estDaysToFill: est }
+  })
+  const order = { stalled: 0, at_risk: 1, on_track: 2 }
+  return { baselineDays: Math.round(baseline), jobs: rows.sort((a, b) => order[a.risk] - order[b.risk]) }
 }

@@ -73,6 +73,20 @@ export function AskLevl1Drawer() {
     setMsgs((m) => [...m, { id: nextId(), role: 'assistant', text: 'Cancelled — nothing was changed.' }])
   }
 
+  // Let other parts of the app (e.g. the dashboard "Ask Levl1" bar) open the
+  // drawer and optionally fire a question: window.dispatchEvent(new CustomEvent('levl1:ask', { detail: { question } })).
+  const askRef = useRef(ask)
+  askRef.current = ask
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const q = (e as CustomEvent<{ question?: string }>).detail?.question
+      setOpen(true)
+      if (q) askRef.current(q)
+    }
+    window.addEventListener('levl1:ask', handler)
+    return () => window.removeEventListener('levl1:ask', handler)
+  }, [])
+
   return (
     <>
       {/* Floating launcher — available across the whole Hire app. */}
