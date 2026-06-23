@@ -3,9 +3,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core'
 import { INDUSTRIES, DEAL_STAGES, STAGE_PROBABILITY } from '@/lib/hire/constants'
+import { DealModal, type DealLike } from '@/components/hire/deal-modal'
 
 interface Client { id: string; name: string; industry: string | null; website: string | null; contacts: unknown[]; jobs: { id: string; title: string }[]; deals: { id: string; value: number; stage: string }[]; _count: { contacts: number; deals: number; jobs: number } }
-interface Deal { id: string; title: string; value: number; stage: string; probability: number; client: { id: string; name: string } }
+interface Deal extends DealLike { client: { id: string; name: string } }
 interface Grouped { stage: string; deals: Deal[]; totalValue: number }
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
@@ -17,6 +18,7 @@ export default function CrmPage() {
   const [grouped, setGrouped] = useState<Grouped[]>([])
   const [showClient, setShowClient] = useState(false)
   const [showDeal, setShowDeal] = useState(false)
+  const [editDeal, setEditDeal] = useState<Deal | null>(null)
 
   const loadClients = useCallback(() => { fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d)).catch(() => {}) }, [])
   const loadDeals = useCallback(() => { fetch('/api/hire/crm/deals').then((r) => (r.ok ? r.json() : null)).then((d) => d?.grouped && setGrouped(d.grouped)).catch(() => {}) }, [])
@@ -41,10 +43,11 @@ export default function CrmPage() {
         ))}
       </div>
 
-      {tab === 'clients' ? <ClientsTab clients={clients} reload={loadClients} /> : <DealsTab grouped={grouped} reload={loadDeals} />}
+      {tab === 'clients' ? <ClientsTab clients={clients} reload={loadClients} /> : <DealsTab grouped={grouped} reload={loadDeals} onEdit={setEditDeal} />}
 
       {showClient && <AddClientModal onClose={() => setShowClient(false)} onSaved={() => { setShowClient(false); loadClients() }} />}
-      {showDeal && <AddDealModal clients={clients} onClose={() => setShowDeal(false)} onSaved={() => { setShowDeal(false); loadDeals() }} />}
+      {showDeal && <DealModal clients={clients} onClose={() => setShowDeal(false)} onSaved={() => { setShowDeal(false); loadDeals() }} />}
+      {editDeal && <DealModal deal={editDeal} clients={clients} onClose={() => setEditDeal(null)} onSaved={() => { setEditDeal(null); loadDeals() }} />}
     </div>
   )
 }
@@ -92,7 +95,7 @@ function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void
   )
 }
 
-function DealsTab({ grouped, reload }: { grouped: Grouped[]; reload: () => void }) {
+function DealsTab({ grouped, reload, onEdit }: { grouped: Grouped[]; reload: () => void; onEdit: (d: Deal) => void }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const openTotal = grouped.filter((g) => g.stage !== 'Closed Won' && g.stage !== 'Closed Lost').reduce((s, g) => s + g.totalValue, 0)
   const wonTotal = grouped.find((g) => g.stage === 'Closed Won')?.totalValue ?? 0
@@ -115,35 +118,39 @@ function DealsTab({ grouped, reload }: { grouped: Grouped[]; reload: () => void 
       </div>
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16 }}>
-          {grouped.map((g) => <DealColumn key={g.stage} group={g} />)}
+          {grouped.map((g) => <DealColumn key={g.stage} group={g} onEdit={onEdit} />)}
         </div>
       </DndContext>
     </div>
   )
 }
 
-function DealColumn({ group }: { group: Grouped }) {
+function DealColumn({ group, onEdit }: { group: Grouped; onEdit: (d: Deal) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.stage })
   return (
     <div ref={setNodeRef} style={{ width: 220, flexShrink: 0, background: isOver ? '#F1F5F9' : '#F8FAFC', border: isOver ? '1px dashed #6D28D9' : '1px solid #E2E8F0', borderRadius: 10, padding: '12px 10px', minHeight: 200 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{group.stage}</div>
       <div style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>{inr(group.totalValue)}</div>
-      {group.deals.map((d) => <DealCard key={d.id} deal={d} />)}
+      {group.deals.map((d) => <DealCard key={d.id} deal={d} onEdit={onEdit} />)}
       {group.deals.length === 0 && <div style={{ fontSize: 12, color: '#64748B', textAlign: 'center', paddingTop: 20 }}>—</div>}
     </div>
   )
 }
 
-function DealCard({ deal }: { deal: Deal }) {
+function DealCard({ deal, onEdit }: { deal: Deal; onEdit: (d: Deal) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id })
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', marginBottom: 8, cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <div ref={setNodeRef} {...listeners} {...attributes} onClick={() => onEdit(deal)} title="Click to edit"
+      style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', marginBottom: 8, cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{deal.client.name}</div>
       <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{deal.title}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: '#6D28D9' }}>{inr(deal.value)}</span>
         <span style={{ fontSize: 11, color: '#475569' }}>{deal.probability}%</span>
       </div>
+      {deal.jobs && deal.jobs.length > 0 && (
+        <div style={{ fontSize: 10.5, color: '#7C3AED', marginTop: 5 }}>🔗 {deal.jobs.length} linked job{deal.jobs.length > 1 ? 's' : ''}</div>
+      )}
     </div>
   )
 }
@@ -181,30 +188,3 @@ function AddClientModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   </Overlay>
 }
 
-function AddDealModal({ clients, onClose, onSaved }: { clients: Client[]; onClose: () => void; onSaved: () => void }) {
-  const [f, setF] = useState({ title: '', clientId: '', value: '', stage: 'Discovery', probability: 10, notes: '' })
-  const [saving, setSaving] = useState(false); const [err, setErr] = useState('')
-  const set = (k: string, v: string | number) => setF((p) => ({ ...p, [k]: v }))
-  async function save() {
-    if (!f.title || !f.clientId) { setErr('Title and client required'); return }
-    setSaving(true)
-    const res = await fetch('/api/hire/crm/deals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, value: Number(f.value) || 0 }) })
-    setSaving(false); if (res.ok) onSaved(); else setErr((await res.json()).error ?? 'Failed')
-  }
-  return <Overlay onClose={onClose}>
-    <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>New Deal</div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <input style={inp} placeholder="Deal title" value={f.title} onChange={(e) => set('title', e.target.value)} />
-      <select style={inp} value={f.clientId} onChange={(e) => set('clientId', e.target.value)}><option value="">Select client</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-      <input style={inp} type="number" placeholder="Value (₹)" value={f.value} onChange={(e) => set('value', e.target.value)} />
-      <select style={inp} value={f.stage} onChange={(e) => setF((p) => ({ ...p, stage: e.target.value, probability: STAGE_PROBABILITY[e.target.value] }))}>{DEAL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-      <div style={{ fontSize: 12, color: '#475569' }}>Probability: {f.probability}%</div>
-      <textarea style={{ ...inp, minHeight: 70 }} placeholder="Notes" value={f.notes} onChange={(e) => set('notes', e.target.value)} />
-      {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Creating…' : 'Create Deal'}</button>
-      </div>
-    </div>
-  </Overlay>
-}

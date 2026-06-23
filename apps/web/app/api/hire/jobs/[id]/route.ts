@@ -11,6 +11,7 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
     include: {
       candidates: { select: { id: true, name: true, email: true, currentStage: true, aiScore: true, aiRecommendation: true, createdAt: true } },
       client: true,
+      deals: { select: { id: true, title: true, value: true, stage: true, probability: true } },
     },
   })
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 })

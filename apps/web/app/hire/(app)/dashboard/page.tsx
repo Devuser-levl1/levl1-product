@@ -21,8 +21,10 @@ export default function HireDashboard() {
   const router = useRouter()
   const [h, setH] = useState<Home | null>(null)
   const [name, setName] = useState<string>('')
+  const [pool, setPool] = useState<{ total: number; addedThisMonth: number; addedPrevMonth: number; bySource: { source: string; count: number }[] } | null>(null)
 
   useEffect(() => { fetch('/api/hire/dashboard/home').then((r) => (r.ok ? r.json() : null)).then(setH).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/hire/talent-pool/stats').then((r) => (r.ok ? r.json() : null)).then(setPool).catch(() => {}) }, [])
   useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setName(d?.user?.name?.split(' ')[0] ?? '')).catch(() => {}) }, [])
 
   const greeting = (() => { const hr = new Date().getHours(); return hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening' })()
@@ -73,6 +75,50 @@ export default function HireDashboard() {
                 })}
               </div>
             </div>
+          </div>
+
+          {/* Talent pool growth */}
+          <div style={{ ...card, marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+              <div style={label}>🌱 Talent pool</div>
+              <button onClick={go('/hire/talent-pool')} style={linkBtn}>View pool →</button>
+            </div>
+            {!pool ? <Skeleton /> : (
+              <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>{pool.total}</div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>total candidates</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 30, fontWeight: 800, color: '#6D28D9', lineHeight: 1 }}>+{pool.addedThisMonth}</div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                    added this month
+                    {pool.addedPrevMonth > 0 && (
+                      <span style={{ color: pool.addedThisMonth >= pool.addedPrevMonth ? '#059669' : '#D97706', fontWeight: 700 }}>
+                        {' '}{pool.addedThisMonth >= pool.addedPrevMonth ? '▲' : '▼'} {Math.round(((pool.addedThisMonth - pool.addedPrevMonth) / pool.addedPrevMonth) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontSize: 11.5, color: '#94A3B8', marginBottom: 6 }}>By source</div>
+                  {pool.bySource.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No candidates yet.</div> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {pool.bySource.slice(0, 5).map((s, i) => {
+                        const max = Math.max(...pool.bySource.map((x) => x.count), 1)
+                        return (
+                          <div key={s.source} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 12, color: '#64748B', width: 78, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.source}</span>
+                            <div style={{ flex: 1, height: 7, borderRadius: 5, background: '#F1F5F9', overflow: 'hidden' }}><div style={{ width: `${(s.count / max) * 100}%`, height: '100%', background: funnelColor(i) }} /></div>
+                            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', width: 26, textAlign: 'right' }}>{s.count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Top AI matches */}

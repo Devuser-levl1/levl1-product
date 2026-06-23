@@ -766,6 +766,7 @@ model HireJob {
 
   candidates  HireCandidate[]
   postings    JobPosting[]
+  deals       HireDeal[]    @relation("DealJobs")
 
   @@index([tenantId])
 }
@@ -974,6 +975,16 @@ model HireDeal {
   probability Int        @default(10)
   closedAt    DateTime?
   notes       String?    @db.Text
+  // Structured deal economics — when present, `value` is auto-computed:
+  // value = positions × billRate × hoursPerWeek × weeks(duration).
+  positions    Int?
+  billRate     Float?    // per hour
+  hoursPerWeek Float?
+  durationValue Float?
+  durationUnit String?   // 'weeks' | 'months'
+  margin       Float?    // optional gross-margin %
+  // Optional, bidirectional links to the jobs this deal staffs.
+  jobs        HireJob[]  @relation("DealJobs")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 

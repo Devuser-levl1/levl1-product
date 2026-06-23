@@ -9,7 +9,7 @@ import { TopMatches } from '@/components/hire/top-matches'
 import { RubricEditor, RubricItem } from '@/components/hire/rubric-editor'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
-interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null }
+interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null; deals?: { id: string; title: string; value: number; stage: string; probability: number }[] }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
 const TABS = ['Overview', 'Pipeline', 'Top Matches', 'Candidates', 'Activity', 'Distribute', 'Settings'] as const
@@ -93,6 +93,20 @@ function Overview({ job, reload }: { job: Job; reload: () => void }) {
         <Info label="Location" value={job.location ?? '—'} />
         <Info label="Client" value={job.client?.name ?? '—'} />
       </div>
+      {(job.deals?.length ?? 0) > 0 && (
+        <div style={card}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Linked deals · {job.deals!.length}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {job.deals!.map((d) => (
+              <a key={d.id} href="/hire/crm" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', border: '1px solid #F1F5F9', borderRadius: 10, padding: '10px 12px' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', flex: 1 }}>{d.title}</span>
+                <span style={{ fontSize: 11, color: '#64748B' }}>{d.stage}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>₹{Math.round(d.value).toLocaleString('en-IN')}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={card}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Pipeline · {job.candidates.length} candidates</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

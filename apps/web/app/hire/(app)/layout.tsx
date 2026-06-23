@@ -3,23 +3,29 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
+import {
+  LayoutDashboard, Briefcase, Users, KanbanSquare, Search, Database,
+  CalendarDays, Building2, BarChart3, Megaphone, Settings as SettingsIcon,
+  type LucideIcon,
+} from 'lucide-react'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
   tenant: { id: string; name: string; plan: string; trialEndsAt: string | null; trialActive: boolean }
 }
 
-const NAV = [
-  { label: 'Dashboard', href: '/hire/dashboard' },
-  { label: 'Jobs', href: '/hire/jobs' },
-  { label: 'Candidates', href: '/hire/candidates' },
-  { label: 'Pipeline', href: '/hire/pipeline' },
-  { label: 'Sourcing', href: '/hire/sourcing' },
-  { label: 'Interviews', href: '/hire/interviews' },
-  { label: 'CRM', href: '/hire/crm' },
-  { label: 'Analytics', href: '/hire/analytics' },
-  { label: 'Campaigns', href: '/hire/campaigns' },
-  { label: 'Settings', href: '/hire/settings' },
+const NAV: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: 'Dashboard', href: '/hire/dashboard', icon: LayoutDashboard },
+  { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
+  { label: 'Candidates', href: '/hire/candidates', icon: Users },
+  { label: 'Talent Pool', href: '/hire/talent-pool', icon: Database },
+  { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
+  { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
+  { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
+  { label: 'CRM', href: '/hire/crm', icon: Building2 },
+  { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
+  { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone },
+  { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
 ]
 
 export default function HireLayout({ children }: { children: React.ReactNode }) {
@@ -77,11 +83,13 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV.map((item) => {
             const active = pathname === item.href
+            const Icon = item.icon
             return (
               <a
                 key={item.href}
                 href={item.href}
                 style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
                   color: active ? '#fff' : '#94A3B8',
                   background: active ? 'rgba(124,58,237,0.22)' : 'transparent',
                   boxShadow: active ? 'inset 2px 0 0 #A78BFA' : 'none',
@@ -89,6 +97,7 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
                   textDecoration: 'none', padding: '9px 12px', borderRadius: 8, fontSize: 13.5, transition: 'background .15s ease',
                 }}
               >
+                <Icon size={17} strokeWidth={active ? 2.4 : 2} style={{ flexShrink: 0, color: active ? '#C4B5FD' : '#94A3B8' }} />
                 {item.label}
               </a>
             )

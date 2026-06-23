@@ -3,13 +3,17 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { DEAL_STAGES } from '@/lib/hire/constants'
 import { logAudit } from '@/lib/hire/audit'
+import { parseEconomics, validJobIds } from '@/lib/hire/deal-input'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = withHireAuth(async (_req, ctx) => {
   const deals = await prisma.hireDeal.findMany({
     where: { tenantId: ctx.tenantId },
-    include: { client: { select: { id: true, name: true, logoUrl: true } } },
+    include: {
+      client: { select: { id: true, name: true, logoUrl: true } },
+      jobs: { select: { id: true, title: true } },
+    },
     orderBy: [{ stage: 'asc' }, { value: 'desc' }],
   })
   const grouped = DEAL_STAGES.map((stage) => {
@@ -26,16 +30,23 @@ export const POST = withHireAuth(async (req, ctx) => {
   const client = await prisma.hireClient.findFirst({ where: { id: body.clientId, tenantId: ctx.tenantId } })
   if (!client) return NextResponse.json({ error: 'Invalid client' }, { status: 400 })
 
+  // When structured economics are supplied they drive `value`; else accept value as-is.
+  const { fields, computedValue } = parseEconomics(body)
+  const jobIds = await validJobIds(ctx.tenantId, body.jobIds)
+
   const deal = await prisma.hireDeal.create({
     data: {
       tenantId: ctx.tenantId,
       clientId: body.clientId,
       title: String(body.title),
-      value: Number(body.value) || 0,
+      value: computedValue ?? (Number(body.value) || 0),
       stage: body.stage || 'Discovery',
       probability: Number(body.probability) || 10,
       notes: body.notes || null,
+      ...fields,
+      ...(jobIds.length ? { jobs: { connect: jobIds.map((id) => ({ id })) } } : {}),
     },
+    include: { jobs: { select: { id: true, title: true } } },
   })
   await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'deal_create', targetType: 'deal', targetId: deal.id, targetName: deal.title, meta: { value: deal.value, stage: deal.stage, client: client.name } })
   return NextResponse.json(deal, { status: 201 })
