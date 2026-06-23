@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { poolSkillSource } from '@/lib/hire/skills'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,8 @@ export const GET = withHireAuth(async (_req, ctx) => {
   }
 
   const rows = candidates.map((c) => {
-    const skillsArr = (Array.isArray(c.topSkills) && c.topSkills.length ? c.topSkills : (Array.isArray(c.skills) ? c.skills : [])) as string[]
+    // Prefer the concise raw skills (clean tags) over the descriptive top-skill phrases.
+    const skillsArr = poolSkillSource(c.skills, c.topSkills)
     const assoc = jobsByCand.get(c.id) ?? new Set<string>()
     if (c.jobId) assoc.add(c.jobId)
     const associatedJobs = Array.from(assoc).map((id) => ({ id, title: jobTitle.get(id) ?? 'Unknown job' }))

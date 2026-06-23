@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
+import { skillChip } from '@/lib/hire/skills'
 
 interface Row {
   id: string; name: string; email: string | null; currentTitle: string | null; currentCompany: string | null
@@ -127,7 +128,7 @@ export default function TalentPoolPage() {
                   <td style={{ padding: '10px 12px', color: '#334155' }}>{r.currentTitle ?? '—'}{r.currentCompany ? <span style={{ color: '#94A3B8' }}> · {r.currentCompany}</span> : null}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 230 }}>
-                      {r.topSkills.length ? r.topSkills.slice(0, 4).map((s) => <span key={s} style={{ fontSize: 10.5, background: '#F1F5F9', color: '#475569', padding: '2px 7px', borderRadius: 100 }}>{s}</span>) : <span style={{ color: '#CBD5E1' }}>—</span>}
+                      {r.topSkills.length ? r.topSkills.slice(0, 4).map((s) => { const chip = skillChip(s); return <span key={s} title={chip.full} style={{ fontSize: 10.5, background: '#F1F5F9', color: '#475569', padding: '2px 7px', borderRadius: 100, whiteSpace: 'nowrap' }}>{chip.label}</span> }) : <span style={{ color: '#CBD5E1' }}>—</span>}
                     </div>
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}><span style={{ fontWeight: 800, color: scoreColor(r.bestScore) }}>{r.bestScore ?? '—'}</span></td>
