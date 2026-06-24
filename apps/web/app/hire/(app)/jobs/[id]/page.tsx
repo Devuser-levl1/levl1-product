@@ -7,12 +7,13 @@ import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { DistributePanel } from '@/components/hire/distribute-panel'
 import { TopMatches } from '@/components/hire/top-matches'
 import { RubricEditor, RubricItem } from '@/components/hire/rubric-editor'
+import { SourcingTab } from '@/components/hire/sourcing-tab'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null; deals?: { id: string; title: string; value: number; stage: string; probability: number }[] }
 
 const lakh = (n: number) => `₹${(n / 100000).toFixed(0)}L`
-const TABS = ['Overview', 'Pipeline', 'Top Matches', 'Candidates', 'Activity', 'Distribute', 'Settings'] as const
+const TABS = ['Overview', 'Pipeline', 'Top Matches', 'Candidates', 'Sourcing', 'Activity', 'Distribute', 'Settings'] as const
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 24, color: '#475569', fontSize: 14 }
 const ghostBtn: React.CSSProperties = { padding: '10px 16px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }
 
@@ -48,6 +49,7 @@ export default function JobDetailPage() {
       {tab === 'Overview' && <Overview job={job} reload={load} />}
       {tab === 'Top Matches' && <TopMatches jobId={job.id} jobTitle={job.title} onChanged={load} />}
       {tab === 'Candidates' && <Candidates job={job} applyUrl={applyUrl} reload={load} />}
+      {tab === 'Sourcing' && <SourcingTab job={job} />}
       {tab === 'Activity' && <JobActivity jobId={job.id} />}
       {tab === 'Pipeline' && <PipelineTab jobId={job.id} />}
       {tab === 'Distribute' && <DistributePanel jobId={job.id} />}
