@@ -302,6 +302,22 @@ export default function HireLoginPage() {
               Sign in here →
             </Link>
           </p>
+
+          {/* Staff note */}
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: 12,
+              color: "#94A3B8",
+              marginTop: 16,
+              borderTop: "1px solid #F1F5F9",
+              paddingTop: 16,
+              lineHeight: 1.6,
+            }}
+          >
+            <strong style={{ color: "#64748B" }}>Levl1 staff:</strong> sign in here to reach the
+            Platform console (usage ledger &amp; client CRM) once you&apos;re in.
+          </p>
         </div>
       </div>
 
