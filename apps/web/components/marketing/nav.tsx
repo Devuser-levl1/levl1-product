@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { T } from './ui'
 
 // Non-product top-level links. Hire/Interviews live under the Products dropdown.
-const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
+// NOTE: Pricing is intentionally hidden from nav until pricing is finalised —
+// the /pricing route still works if visited directly.
+const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap']]
 
 const PRODUCTS: { name: string; href: string; desc: string }[] = [
   { name: 'Levl1 Hire', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
@@ -81,7 +83,7 @@ export function MarketingNav() {
             </AnimatePresence>
           </div>
 
-          {/* Roadmap, Pricing */}
+          {/* Roadmap (Pricing hidden until finalised) */}
           {LINKS.filter(([, h]) => h !== '/').map(([l, h]) => {
             const active = isActive(pathname, h)
             return <Link key={h} href={h} onClick={samePage(h)} aria-current={active ? 'page' : undefined} className="mk-navlink" style={{ fontSize: 14.5, fontWeight: active ? 700 : 500, color: active ? T.purple : '#334155', textDecoration: 'none', padding: '8px 12px', borderRadius: 8, background: active ? 'rgba(109,40,217,0.08)' : 'transparent' }}>{l}</Link>
@@ -119,7 +121,6 @@ export function MarketingNav() {
                 ['Hire', '/hire'],
                 ['Interviews', '/interviews'],
                 ['Roadmap', '/roadmap'],
-                ['Pricing', '/pricing'],
                 ['Sign in · Levl1 Hire', '/hire/login'],
                 ['Sign in · Levl1 Interviews', '/interviews/login'],
                 onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
