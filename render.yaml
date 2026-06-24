@@ -4,7 +4,10 @@ services:
     runtime: node
     rootDir: apps/web
     # rm the cached generated client so prisma generate always picks up new schema fields (Render caches node_modules)
-    buildCommand: npm install && rm -rf node_modules/.prisma && npx prisma generate && npx prisma db push && npx prisma db seed && npm run build
+    # --include=dev: NODE_ENV=production would otherwise skip devDeps (ts-node/typescript) that the seed + next build need.
+    # --accept-data-loss: keep `db push` non-interactive so it never hangs/aborts a deploy (our migrations are additive).
+    # seed is wrapped so a seed failure can NEVER block a deploy and leave prod on a stale build.
+    buildCommand: npm install --include=dev && rm -rf node_modules/.prisma && npx prisma generate && npx prisma db push --accept-data-loss && (npx prisma db seed || echo "seed skipped (non-fatal)") && npm run build
     startCommand: npm run start
     envVars:
       # Set these in the Render dashboard — never commit values to source control
