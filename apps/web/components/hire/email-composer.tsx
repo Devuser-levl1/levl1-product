@@ -21,10 +21,14 @@ export function EmailComposer({ candidateId, onClose, onSent }: { candidateId: s
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState('')
+  const [mailbox, setMailbox] = useState<{ email: string } | null>(null)
+  const [useMailbox, setUseMailbox] = useState(false)
 
   useEffect(() => {
     fetch(`/api/hire/candidates/${candidateId}/email`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setCtx(d) }).catch(() => {})
     fetch('/api/hire/email-templates').then((r) => (r.ok ? r.json() : null)).then((d) => setTemplates(d?.templates ?? [])).catch(() => {})
+    // Offer "send from my mailbox" only when one is connected.
+    fetch('/api/hire/mailbox').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.connection?.status === 'connected') { setMailbox({ email: d.connection.email }); setUseMailbox(true) } }).catch(() => {})
   }, [candidateId])
 
   function applyTemplate(id: string) {
@@ -37,7 +41,7 @@ export function EmailComposer({ candidateId, onClose, onSent }: { candidateId: s
     if (!subject.trim() || !body.trim()) { setMsg('Add a subject and message.'); return }
     setSending(true); setMsg('')
     try {
-      const res = await fetch(`/api/hire/candidates/${candidateId}/email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject, body, templateId: templateId || undefined }) })
+      const res = await fetch(`/api/hire/candidates/${candidateId}/email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject, body, templateId: templateId || undefined, via: useMailbox && mailbox ? 'mailbox' : undefined }) })
       const d = await res.json().catch(() => ({}))
       if (res.ok) { onSent(); onClose() } else setMsg(d.error ?? 'Failed to send.')
     } finally { setSending(false) }
@@ -79,6 +83,13 @@ export function EmailComposer({ candidateId, onClose, onSent }: { candidateId: s
               <div style={{ padding: '12px', fontSize: 13, color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{fill(body, ctx) || '(empty)'}</div>
             </div>
           </div>
+        )}
+
+        {mailbox && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 12.5, color: '#475569', cursor: 'pointer' }}>
+            <input type="checkbox" checked={useMailbox} onChange={(e) => setUseMailbox(e.target.checked)} />
+            Send from my mailbox (<strong>{mailbox.email}</strong>){!useMailbox ? ' — otherwise sent via Levl1' : ''}
+          </label>
         )}
 
         {msg && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 10 }}>{msg}</div>}

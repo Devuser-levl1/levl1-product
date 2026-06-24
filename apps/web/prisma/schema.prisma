@@ -947,6 +947,52 @@ model PlatformLead {
   @@index([ownerUserId])
 }
 
+// ── Hire mailbox (inbound + outbound email) — recruiter connects their own
+// business mailbox. IMAP/SMTP first; OAuth providers slot in behind the same
+// connector interface later. Secrets are AES-256-GCM encrypted (never plaintext).
+model MailboxConnection {
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String
+  provider     String   // "imap" (google/microsoft later)
+  email        String
+  imapHost     String?
+  imapPort     Int?
+  smtpHost     String?
+  smtpPort     Int?
+  credentials  String?  @db.Text   // AES-256-GCM via encryptJson; never plaintext
+  status       String   @default("pending") // pending | connected | error
+  lastError    String?
+  lastSyncedAt DateTime?
+  lastSeenUid  Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, email])
+  @@index([tenantId])
+}
+
+model MailboxMessage {
+  id                String   @id @default(cuid())
+  connectionId      String
+  tenantId          String
+  uid               Int
+  fromAddr          String
+  fromName          String?
+  subject           String
+  snippet           String
+  bodyText          String   @db.Text
+  receivedAt        DateTime
+  isJobSpec         Boolean  @default(false)
+  jobSpecConfidence Int?
+  status            String   @default("new") // new | archived | drafted
+  createdPositionId String?
+  createdAt         DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([connectionId])
+}
+
 model PlatformLeadActivity {
   id        String   @id @default(cuid())
   leadId    String
