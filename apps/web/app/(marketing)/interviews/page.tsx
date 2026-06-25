@@ -6,9 +6,9 @@ import { ScorecardMock, ApprovalMock, InterviewRoomMock, VerificationMock } from
 import { DemoGallery } from '@/components/screen/demo/DemoGallery'
 
 export const metadata: Metadata = {
-  title: 'Levl1 Screen — Autonomous AI voice interviews',
+  title: 'Levl1 Interviews — Autonomous AI voice interviews',
   description: 'Structured 18-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.',
-  openGraph: { title: 'Levl1 Screen', description: 'First-round interviews, done for you.' },
+  openGraph: { title: 'Levl1 Interviews', description: 'First-round interviews, done for you.' },
 }
 
 const CAPS: [string, string, React.ReactNode][] = [
@@ -26,7 +26,7 @@ const ROI: [string, string][] = [
   ['A fraction of the cost of a human first-round', 'Available 24/7, at scale.'],
 ]
 
-export default function ScreenMarketing() {
+export default function InterviewsMarketing() {
   return (
     <div>
       {/* HERO */}
@@ -35,7 +35,7 @@ export default function ScreenMarketing() {
         <Container style={{ position: 'relative' }}>
           <div className="mk-grid-2" style={{ alignItems: 'center', gap: 48 }}>
             <div>
-              <Reveal><Eyebrow color={T.indigo}>Levl1 Screen · Autonomous AI voice interviews</Eyebrow></Reveal>
+              <Reveal><Eyebrow color={T.indigo}>Levl1 Interviews · Autonomous AI voice interviews</Eyebrow></Reveal>
               <Reveal delay={0.1}><h1 className="mk-h1">First-round interviews, <GradientText>done for you.</GradientText></h1></Reveal>
               <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 540, margin: '20px 0 28px' }}>Structured 18-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.</p></Reveal>
               <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Button href="#try-live" variant="ghost">See it in action ↓</Button></div></Reveal>
@@ -49,7 +49,7 @@ export default function ScreenMarketing() {
       <section className="mk-section"><Container>
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
           <Reveal><h2 className="mk-h2">The first round is your worst bottleneck.</h2></Reveal>
-          <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Senior interviewers don&apos;t scale, great candidates drop off while they wait, and unstructured interviews are inconsistent and hard to defend. Levl1 Screen removes the bottleneck without lowering the bar.</p></Reveal>
+          <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Senior interviewers don&apos;t scale, great candidates drop off while they wait, and unstructured interviews are inconsistent and hard to defend. Levl1 Interviews removes the bottleneck without lowering the bar.</p></Reveal>
         </div>
       </Container></section>
 
@@ -72,7 +72,7 @@ export default function ScreenMarketing() {
           </div>
           <div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 24, borderTop: `3px solid ${T.indigo}` }}>
             <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 8 }}>Plugs into your stack</div>
-            <p style={{ fontSize: 14.5, color: T.slate, lineHeight: 1.6 }}>Use Levl1 Screen on its own, or connect it to Levl1 Hire and other ATSs — pull candidates in, push results back. ATS-agnostic by design.</p>
+            <p style={{ fontSize: 14.5, color: T.slate, lineHeight: 1.6 }}>Use Levl1 Interviews on its own, or connect it to Levl1 Hire and other ATSs — pull candidates in, push results back. ATS-agnostic by design.</p>
           </div>
         </div></Reveal>
       </Container></section>

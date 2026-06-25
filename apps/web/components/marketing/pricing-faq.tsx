@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { T } from './tokens'
 
 const FAQ: [string, string][] = [
-  ['Are interviews included in Hire?', 'No — Levl1 Screen is a separate product you can add anytime. Use either on its own.'],
+  ['Are interviews included in Hire?', 'No — Levl1 Interviews is a separate product you can add anytime. Use either on its own.'],
   ['Why don’t you show prices?', 'Pricing depends on your team size, volume, and which products you use. We tailor a plan to fit — reach out and we’ll be quick and transparent.'],
-  ['Can I use Levl1 Screen with my existing ATS?', 'Yes — it’s ATS-agnostic.'],
+  ['Can I use Levl1 Interviews with my existing ATS?', 'Yes — it’s ATS-agnostic.'],
   ['How fast can we start?', 'Most teams are live the same day.'],
   ['Is my data secure?', 'Encrypted in transit and at rest; tenant-isolated; enterprise data residency available.'],
 ]

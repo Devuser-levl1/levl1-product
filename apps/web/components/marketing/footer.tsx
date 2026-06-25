@@ -13,7 +13,7 @@ export function MarketingFooter() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: `linear-gradient(135deg, ${T.purple}, ${T.blue})`, transform: 'rotate(45deg)' }} /><span style={{ fontWeight: 800, fontSize: 18, color: '#fff' }}>Levl1</span></div>
             <div style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 260, color: '#A9B0D6' }}>The AI hiring &amp; evaluation platform for modern talent teams worldwide.</div>
           </div>
-          {col('Products', [['Hire', '/hire'], ['Screen', '/interviews']])}
+          {col('Products', [['Hire', '/hire'], ['Interviews', '/interviews']])}
           {col('Company', [['Roadmap', '/roadmap'], ['Contact', '/contact'], ['Security', '/security']])}
           {col('Legal', [['Privacy', '/privacy'], ['Terms', '/terms'], ['Cookies', '/cookies']])}
           <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Get started</div><Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', display: 'inline-block' }}>Book a demo</Link></div>

@@ -10,11 +10,11 @@ const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], [
 
 const PRODUCTS: { name: string; href: string; desc: string }[] = [
   { name: 'Levl1 Hire', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
-  { name: 'Levl1 Screen', href: '/interviews', desc: 'Autonomous AI voice interviews with evidence-based scorecards, at scale.' },
+  { name: 'Levl1 Interviews', href: '/interviews', desc: 'Autonomous AI voice interviews with evidence-based scorecards, at scale.' },
 ]
 const SIGN_IN_OPTIONS: { name: string; href: string; desc: string }[] = [
   { name: 'Levl1 Hire', href: '/hire/login', desc: 'Recruiters & Levl1 staff — your hiring workspace & platform console.' },
-  { name: 'Levl1 Screen', href: '/interviews/login', desc: 'Manage AI interviews, candidates & scorecards.' },
+  { name: 'Levl1 Interviews', href: '/interviews/login', desc: 'Manage AI interviews, candidates & scorecards.' },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -117,11 +117,11 @@ export function MarketingNav() {
               {([
                 ['Platform', '/'],
                 ['Hire', '/hire'],
-                ['Screen', '/interviews'],
+                ['Interviews', '/interviews'],
                 ['Roadmap', '/roadmap'],
                 ['Pricing', '/pricing'],
                 ['Sign in · Levl1 Hire', '/hire/login'],
-                ['Sign in · Levl1 Screen', '/interviews/login'],
+                ['Sign in · Levl1 Interviews', '/interviews/login'],
                 onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
               ] as [string, string][]).map(([l, h]) => {
                 const active = isActive(pathname, h)

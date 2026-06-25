@@ -38,7 +38,7 @@ export function PricingClient() {
       <Reveal>
         <div style={{ textAlign: 'center', marginBottom: 8 }}><Eyebrow>Pricing</Eyebrow></div>
         <h1 className="mk-h2" style={{ textAlign: 'center' }}>Pricing that fits how you hire.</h1>
-        <p style={{ textAlign: 'center', color: T.slate, margin: '12px auto 0', fontSize: 16, maxWidth: 620 }}>Levl1 Hire and Levl1 Screen are priced separately — use one or both. Tell us about your team and we&apos;ll tailor a plan.</p>
+        <p style={{ textAlign: 'center', color: T.slate, margin: '12px auto 0', fontSize: 16, maxWidth: 620 }}>Levl1 Hire and Levl1 Interviews are priced separately — use one or both. Tell us about your team and we&apos;ll tailor a plan.</p>
       </Reveal>
 
       {/* Levl1 Hire (violet) */}
@@ -50,9 +50,9 @@ export function PricingClient() {
         {HIRE_TIERS.map((t, i) => <Reveal key={t.name} delay={i * 0.08}><TierCard t={t} accent={T.purple} /></Reveal>)}
       </div>
 
-      {/* Levl1 Screen (indigo) */}
+      {/* Levl1 Interviews (indigo) */}
       <Reveal><div style={{ margin: '52px 0 6px', display: 'flex', alignItems: 'baseline', gap: 12 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.indigo }}>Levl1 Screen</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.indigo }}>Levl1 Interviews</h2>
         <span style={{ fontSize: 14, color: T.slate }}>Pay for the screening you run — standalone or alongside Hire.</span>
       </div></Reveal>
       <div className="mk-grid-2" style={{ marginTop: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', display: 'grid', gap: 16 }}>

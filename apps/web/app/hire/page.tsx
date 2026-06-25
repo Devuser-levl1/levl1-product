@@ -32,7 +32,7 @@ const COMPARE: [string, string, string, string][] = [
   ['Sourcing', 'Manual board searches', 'Limited / none', 'AI boolean search-strings + bring-your-own-board posting'],
   ['Assistant', 'None', 'Chatbot that answers', 'Agentic — proposes & executes actions, you approve'],
   ['CRM & deals', 'A separate tool', 'Rarely included', 'Built-in CRM + deal economics, linked to jobs'],
-  ['First-round interviews', 'Schedule humans', 'Add-on or none', 'Autonomous AI voice interviews (Levl1 Screen)'],
+  ['First-round interviews', 'Schedule humans', 'Add-on or none', 'Autonomous AI voice interviews (Levl1 Interviews)'],
   ['Team oversight', 'Spreadsheets', 'Basic dashboards', 'Manager oversight, ageing & drag-drop assignment'],
   ['Inbound email', 'Manual triage', 'Not handled', 'Connected mailbox — job specs become draft positions'],
   ['Setup', 'Weeks of configuration', 'Weeks + training', 'Live the same day'],
@@ -59,7 +59,7 @@ export default function HireMarketing() {
             <div className="mk-grid-2" style={{ alignItems: 'center', gap: 48 }}>
               <div>
                 <Reveal><Eyebrow color={T.violet}>Levl1 Hire · AI-native ATS + CRM</Eyebrow></Reveal>
-                <Reveal delay={0.1}><h1 className="mk-h1">Your entire hiring pipeline. <GradientText>Intelligent by default.</GradientText></h1></Reveal>
+                <Reveal delay={0.1}><h1 className="mk-h1">Your entire pipeline. <GradientText>Thinking for itself.</GradientText></h1></Reveal>
                 <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 520, margin: '20px 0 28px' }}>Source, score, match, and place candidates faster — with a built-in CRM to run clients and deals, and AI that does the manual work so your recruiters don&apos;t.</p></Reveal>
                 <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button></div></Reveal>
               </div>
@@ -68,11 +68,11 @@ export default function HireMarketing() {
           </Container>
         </section>
 
-        {/* PROBLEM */}
+        {/* THE TURN */}
         <section className="mk-section"><Container>
-          <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
             <Reveal><h2 className="mk-h2">Legacy ATS tools are heavy, manual, and barely intelligent.</h2></Reveal>
-            <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Recruiters drown in CV triage, pipelines live in spreadsheets, and “AI” means a keyword filter. Levl1 Hire rebuilds the ATS around intelligence.</p></Reveal>
+            <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Recruiters drown in CV triage, pipelines live in spreadsheets, and “AI” means a keyword filter. <strong style={{ color: T.ink }}>Levl1 Hire rebuilds the ATS around intelligence</strong> — every step does work for you.</p></Reveal>
           </div>
         </Container></section>
 
@@ -91,7 +91,7 @@ export default function HireMarketing() {
 
         {/* SCREEN PLUG-IN */}
         <section className="mk-section"><Container>
-          <Reveal><div style={{ textAlign: 'center', marginBottom: 28 }}><Eyebrow color={T.violet}>One click to AI screening</Eyebrow><h2 className="mk-h2">Plugs into Levl1 Screen.</h2><p style={{ fontSize: 16, color: T.slate, maxWidth: 560, margin: '14px auto 0' }}>Trigger an autonomous AI interview from any candidate. The evidence-based score syncs straight back into the pipeline.</p></div></Reveal>
+          <Reveal><div style={{ textAlign: 'center', marginBottom: 28 }}><Eyebrow color={T.violet}>One click to AI screening</Eyebrow><h2 className="mk-h2">Plugs into Levl1 Interviews.</h2><p style={{ fontSize: 16, color: T.slate, maxWidth: 560, margin: '14px auto 0' }}>Trigger an autonomous AI interview from any candidate. The evidence-based score syncs straight back into the pipeline.</p></div></Reveal>
           <Reveal><div style={{ maxWidth: 560, margin: '0 auto' }}><ScorecardMock /></div></Reveal>
         </Container></section>
 

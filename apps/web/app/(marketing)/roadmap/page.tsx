@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Container, Reveal, Eyebrow } from '@/components/marketing/ui'
 import { T } from '@/components/marketing/tokens'
 
-export const metadata: Metadata = { title: 'Levl1 Roadmap — Hire & Screen', description: 'We build in the open. What’s shipping, what’s in progress, and where Levl1 is going. Timelines are indicative.' }
+export const metadata: Metadata = { title: 'Levl1 Roadmap — Hire & Interviews', description: 'We build in the open. What’s shipping, what’s in progress, and where Levl1 is going. Timelines are indicative.' }
 
 type Status = 'Shipping now' | 'In progress' | 'Planned'
 const PILL: Record<Status, { bg: string; fg: string }> = {
@@ -44,7 +44,7 @@ export default function Roadmap() {
       <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}><Eyebrow>Roadmap</Eyebrow><h1 className="mk-h2">Where Levl1 is headed.</h1><p style={{ fontSize: 16, color: T.slate, marginTop: 12, maxWidth: 640, marginInline: 'auto' }}>We build in the open. Here&apos;s what&apos;s shipping, what&apos;s in progress, and where we&apos;re going. Timelines are indicative and evolve with customer feedback.</p></div></Reveal>
       <div className="mk-grid-2" style={{ gap: 40 }}>
         <Col title="LEVL1 HIRE" accent={T.violet} groups={HIRE} />
-        <Col title="LEVL1 SCREEN" accent={T.indigo} groups={SCREEN} />
+        <Col title="LEVL1 INTERVIEWS" accent={T.indigo} groups={SCREEN} />
       </div>
 
       {/* The vision */}
