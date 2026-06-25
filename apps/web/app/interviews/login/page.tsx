@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Logo } from '@/components/marketing/logo'
 
 const INDIGO = '#4F46E5'
 const VIOLET = '#7C3AED'
@@ -48,10 +49,10 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg,#F5F7FF,#fff)', fontFamily: 'var(--font-sans)', padding: 24 }}>
       <div style={{ width: 420, maxWidth: '100%', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 18, padding: 32, boxShadow: '0 24px 60px rgba(79,70,229,0.10)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 22 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg,${INDIGO},${VIOLET})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={15} color="#fff" fill="#fff" /></div>
-          <span style={{ fontSize: 17, fontWeight: 800, color: INDIGO }}>Levl1 <span style={{ color: VIOLET }}>Interviews</span></span>
-        </div>
+        <Link href="/interviews" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, marginBottom: 22, textDecoration: 'none' }}>
+          <Logo variant="black" height={26} priority />
+          <span style={{ fontSize: 15, fontWeight: 800, color: INDIGO }}>Interviews</span>
+        </Link>
 
         <h1 style={{ fontSize: 23, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>Sign in</h1>
         <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 22px' }}>

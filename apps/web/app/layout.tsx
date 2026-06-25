@@ -9,11 +9,6 @@ export const metadata: Metadata = {
   description:
     "Voice AI L1 interviews for tech and product roles. Built for recruitment agencies and enterprises.",
   manifest: "/manifest.json",
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/apple-icon.png",
-  },
   openGraph: {
     title: "Levl1 — The AI hiring & interview platform",
     description:
@@ -49,7 +44,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         {/* Cashfree Payment SDK */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />

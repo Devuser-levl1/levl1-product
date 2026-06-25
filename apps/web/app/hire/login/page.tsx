@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Zap, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { Logo } from "@/components/marketing/logo";
 
 export default function HireLoginPage() {
   const router = useRouter();
@@ -74,31 +75,17 @@ export default function HireLoginPage() {
               marginBottom: 48,
             }}
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background:
-                  "linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(124,58,237,0.25)",
-              }}
-            >
-              <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
-            </div>
+            <Logo variant="black" height={28} priority />
             <span
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: 700,
                 color: "#7C3AED",
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.01em",
               }}
             >
-              Levl1 Hire
+              Hire
             </span>
           </Link>
 
