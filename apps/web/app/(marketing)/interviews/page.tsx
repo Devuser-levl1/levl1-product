@@ -7,12 +7,12 @@ import { DemoGallery } from '@/components/screen/demo/DemoGallery'
 
 export const metadata: Metadata = {
   title: 'Levl1 Screen — Autonomous AI voice interviews',
-  description: 'Structured 30-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.',
+  description: 'Structured 18-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.',
   openGraph: { title: 'Levl1 Screen', description: 'First-round interviews, done for you.' },
 }
 
 const CAPS: [string, string, React.ReactNode][] = [
-  ['Autonomous voice interviews', 'A natural, 30-minute spoken interview that adapts to the candidate — with a live code editor and a whiteboard for technical depth. It probes like a senior interviewer, not a form.', <InterviewRoomMock key="a" />],
+  ['Autonomous voice interviews', 'A natural, 18-minute spoken interview that adapts to the candidate — with a live code editor and a whiteboard for technical depth. It probes like a senior interviewer, not a form.', <InterviewRoomMock key="a" />],
   ['Questions your team approves', 'Your tech lead and HR approve the question bank; you set the bar. AI conducts and evaluates; humans decide. It never auto-rejects. Single-approver by default — light for small teams, with dual approval available.', <ApprovalMock key="b" />],
   ['Evidence-based reports', 'Every score is tied to what the candidate actually said. Ranked, white-labeled reports that read like a great panelist’s notes — so hiring managers advance candidates without re-screening.', <ScorecardMock key="c" />],
   ['Identity & integrity', 'Email verification, webcam capture, and integrity signals on every interview — flagged for human review, never auto-failed. Trust built in.', <VerificationMock key="d" />],
@@ -37,7 +37,7 @@ export default function ScreenMarketing() {
             <div>
               <Reveal><Eyebrow color={T.indigo}>Levl1 Screen · Autonomous AI voice interviews</Eyebrow></Reveal>
               <Reveal delay={0.1}><h1 className="mk-h1">First-round interviews, <GradientText>done for you.</GradientText></h1></Reveal>
-              <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 540, margin: '20px 0 28px' }}>Structured 30-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.</p></Reveal>
+              <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 540, margin: '20px 0 28px' }}>Structured 18-minute AI voice interviews — technical, behavioral, and culture-fit — with questions your team approves and reports your stakeholders trust. Evaluate every candidate, not just the lucky few. Works standalone or on top of any ATS.</p></Reveal>
               <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Button href="#try-live" variant="ghost">See it in action ↓</Button></div></Reveal>
             </div>
             <Reveal delay={0.2}><InterviewRoomMock /></Reveal>
