@@ -6,9 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { T } from './ui'
 
 // Non-product top-level links. Hire/Interviews live under the Products dropdown.
-// NOTE: Pricing is intentionally hidden from nav until pricing is finalised —
-// the /pricing route still works if visited directly.
-const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap']]
+const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
 
 const PRODUCTS: { name: string; href: string; desc: string }[] = [
   { name: 'Levl1 Hire', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
@@ -121,6 +119,7 @@ export function MarketingNav() {
                 ['Hire', '/hire'],
                 ['Screen', '/interviews'],
                 ['Roadmap', '/roadmap'],
+                ['Pricing', '/pricing'],
                 ['Sign in · Levl1 Hire', '/hire/login'],
                 ['Sign in · Levl1 Screen', '/interviews/login'],
                 onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
