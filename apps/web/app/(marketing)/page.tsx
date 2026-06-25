@@ -34,7 +34,6 @@ export default function Home() {
                 <motion.span initial={reduce ? {} : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} style={{ display: 'block' }}>Recruiting runs on guesswork and grunt work.</motion.span>
                 <motion.span initial={reduce ? {} : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.55 }} style={{ display: 'inline-block', position: 'relative' }}>
                   <GradientText>Levl1 runs on intelligence.</GradientText>
-                  <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.6, delay: 1.0, ease: [0.22, 1, 0.36, 1] }} style={{ position: 'absolute', left: 0, right: 0, bottom: 2, height: 4, borderRadius: 3, background: `linear-gradient(90deg, ${T.violet}, ${T.indigo})`, transformOrigin: 'left' }} />
                 </motion.span>
               </h1>
               <Reveal delay={0.8}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 560, margin: '22px 0 24px' }}>Levl1 reads every résumé, scores every candidate, and interviews them for you — so your team spends its hours on people, not paperwork.</p></Reveal>
