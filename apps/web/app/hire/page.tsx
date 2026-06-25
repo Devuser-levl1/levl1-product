@@ -3,21 +3,33 @@ import Link from 'next/link'
 import { MarketingNav } from '@/components/marketing/nav'
 import { MarketingFooter } from '@/components/marketing/footer'
 import { CookieBanner } from '@/components/marketing/cookie-banner'
-import { Container, Reveal, Button, Eyebrow, GradientText } from '@/components/marketing/ui'
+import { Container, Reveal, Stagger, StaggerItem, Button, Eyebrow, GradientText } from '@/components/marketing/ui'
 import { T } from '@/components/marketing/tokens'
-import { KanbanMock, ScorecardMock, DealPipelineMock, ApplyFormMock } from '@/components/marketing/mocks'
+import { KanbanMock, ScorecardMock, DealPipelineMock } from '@/components/marketing/mocks'
 
 export const metadata: Metadata = {
-  title: 'Levl1 Hire — AI-powered ATS + CRM for global talent teams',
-  description: 'Source, score and move candidates through a pipeline that is intelligent by default, with a built-in CRM for clients and deals. For agencies and enterprise teams worldwide.',
-  openGraph: { title: 'Levl1 Hire — ATS + CRM', description: 'The hiring pipeline that thinks with you.' },
+  title: 'Levl1 Hire — AI-native ATS + CRM',
+  description: 'Your entire hiring pipeline, intelligent by default. Source, score, match and place candidates faster — with a built-in CRM and AI that does the manual work.',
+  openGraph: { title: 'Levl1 Hire — AI-native ATS + CRM', description: 'Your entire hiring pipeline. Intelligent by default.' },
 }
 
-const FEATURES: [string, string, React.ReactNode][] = [
-  ['AI resume scoring', 'Every applicant scored 0–100 in seconds, with a skills match and a clear recommendation — so the best candidates surface immediately.', <ScorecardMock key="a" />],
-  ['Smart pipelines', 'Custom stages, drag-and-drop, and bulk actions. Conversion stats per stage tell you where candidates stall.', <KanbanMock key="b" />],
-  ['Built-in CRM', 'Track clients, contacts and a deal pipeline with revenue forecasting — your whole business in one place.', <DealPipelineMock key="c" />],
-  ['Public apply pages', 'Branded apply links that score every applicant the moment they submit. No copy-paste, no delay.', <ApplyFormMock key="d" />],
+const CAPS: [string, string][] = [
+  ['AI Job-Brief Generator', 'Type a role and a nudge — “senior .NET, Azure” — and Levl1 writes a deep, role-specific JD: responsibilities, must-haves, nice-to-haves, screening criteria. Tailored, not generic — in seconds.'],
+  ['Weighted Screening Rubric', 'Define what matters per role — skills, weights, must-haves vs nice-to-haves. The AI scores every candidate against your rubric, not a black box. Change a weight, re-score instantly.'],
+  ['AI Résumé Scoring & Matching', 'Every candidate scored 0–100 the moment they arrive — matched skills, missing skills, and the reasoning. Best-fit candidates ranked per role. Even scanned and image-based résumés are read correctly.'],
+  ['“Ask Levl1” — agentic assistant', 'A copilot that acts, not just answers. “Find five candidates for this role and add them to the pipeline.” “Draft outreach to my shortlist.” It proposes; you approve; it executes.'],
+  ['Pipeline + CRM in one', 'Drag-and-drop pipelines, reject/audit workflows, a full client & contact CRM, and deal economics that calculate contract value (positions × rate × hours × duration) and link deals to jobs.'],
+  ['Team management for managers', 'A manager’s-eye view: who’s working on what, position ageing, workload balance, and drag-and-drop job assignment across the team. Role-based access from recruiter to manager to admin.'],
+  ['Sourcing, intelligently', 'AI-generated, board-optimized search strings (Naukri boolean, LinkedIn/Indeed queries) from each job’s rubric — plus connectors to post and source through your own board accounts.'],
+  ['Built-in email', 'Connect your business mailbox, read inbound job specs (AI drafts the position for you), and reach out to candidates from your own address — without leaving Levl1.'],
+]
+
+const ROI: [string, string][] = [
+  ['Cut first-round screening time dramatically', 'AI triages every CV so recruiters skip manual reading.'],
+  ['Run more roles per recruiter', 'Automation and ranking multiply each recruiter’s capacity.'],
+  ['Faster, defensible shortlists', 'Evidence-backed scoring your clients trust the first time.'],
+  ['Live in minutes, not weeks', 'No implementation project, no heavy training. Lean by design.'],
+  ['One platform, not five tools', 'ATS, CRM, sourcing, and screening in one, replacing a stack.'],
 ]
 
 export default function HireMarketing() {
@@ -25,44 +37,69 @@ export default function HireMarketing() {
     <div className="mk-wrap" style={{ background: '#fff' }}>
       <MarketingNav />
       <main>
+        {/* HERO */}
         <section style={{ position: 'relative', overflow: 'hidden', paddingTop: 150, paddingBottom: 80, background: 'linear-gradient(180deg,#FAF5FF,#fff)' }}>
           <div className="mk-blob" style={{ width: 420, height: 420, background: '#C4B5FD', top: -120, right: -80 }} />
           <Container style={{ position: 'relative' }}>
             <div className="mk-grid-2" style={{ alignItems: 'center', gap: 48 }}>
               <div>
-                <Reveal><Eyebrow color={T.violet}>Levl1 Hire · Applicant tracking + CRM</Eyebrow></Reveal>
-                <Reveal delay={0.1}><h1 className="mk-h1">The hiring pipeline that <GradientText>thinks with you.</GradientText></h1></Reveal>
-                <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 500, margin: '20px 0 28px' }}>Source, score, and move candidates through a pipeline that&apos;s intelligent by default — with a built-in CRM to manage clients and deals. For agencies and enterprise teams.</p></Reveal>
-                <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Button href="/hire/signup" variant="ghost">Start free</Button></div></Reveal>
+                <Reveal><Eyebrow color={T.violet}>Levl1 Hire · AI-native ATS + CRM</Eyebrow></Reveal>
+                <Reveal delay={0.1}><h1 className="mk-h1">Your entire hiring pipeline. <GradientText>Intelligent by default.</GradientText></h1></Reveal>
+                <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 520, margin: '20px 0 28px' }}>Source, score, match, and place candidates faster — with a built-in CRM to run clients and deals, and AI that does the manual work so your recruiters don&apos;t.</p></Reveal>
+                <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button></div></Reveal>
               </div>
               <Reveal delay={0.2}><KanbanMock /></Reveal>
             </div>
           </Container>
         </section>
 
+        {/* PROBLEM */}
         <section className="mk-section"><Container>
-          {FEATURES.map(([title, body, mock], i) => (
-            <Reveal key={i}><div className={`mk-feat ${i % 2 ? 'mk-feat-rev' : ''}`} style={{ margin: '40px 0' }}>
-              <div style={{ order: i % 2 ? 2 : 1 }}><div style={{ fontSize: 13, fontWeight: 800, color: T.violet }}>{String(i + 1).padStart(2, '0')}</div><h3 style={{ fontSize: 26, fontWeight: 800, margin: '8px 0 12px' }}>{title}</h3><p style={{ fontSize: 16, color: T.slate, lineHeight: 1.65 }}>{body}</p></div>
-              <div style={{ order: i % 2 ? 1 : 2 }}>{mock}</div>
-            </div></Reveal>
-          ))}
+          <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+            <Reveal><h2 className="mk-h2">Legacy ATS tools are heavy, manual, and barely intelligent.</h2></Reveal>
+            <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Recruiters drown in CV triage, pipelines live in spreadsheets, and “AI” means a keyword filter. Levl1 Hire rebuilds the ATS around intelligence.</p></Reveal>
+          </div>
         </Container></section>
 
+        {/* CORE CAPABILITIES */}
         <section className="mk-section" style={{ background: T.mist }}><Container>
-          <Reveal><div style={{ textAlign: 'center', marginBottom: 32 }}><Eyebrow color={T.violet}>One click to AI screening</Eyebrow><h2 className="mk-h2">Plugs into Levl1 Interviews.</h2><p style={{ fontSize: 16, color: T.slate, maxWidth: 560, margin: '14px auto 0' }}>Trigger an autonomous AI interview from any candidate. The evidence-based score syncs straight back into the pipeline.</p></div></Reveal>
+          <Reveal><div style={{ textAlign: 'center', marginBottom: 40 }}><Eyebrow color={T.violet}>Core capabilities</Eyebrow><h2 className="mk-h2">Everything a modern hiring team runs on.</h2></div></Reveal>
+          <Stagger gap={0.06}><div className="mk-grid-2">
+            {CAPS.map(([t, b]) => (
+              <StaggerItem key={t}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 24, height: '100%', borderTop: `3px solid ${T.violet}` }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: T.ink, marginBottom: 8 }}>{t}</div>
+                <p style={{ fontSize: 14.5, color: T.slate, lineHeight: 1.6 }}>{b}</p>
+              </div></StaggerItem>
+            ))}
+          </div></Stagger>
+        </Container></section>
+
+        {/* SCREEN PLUG-IN */}
+        <section className="mk-section"><Container>
+          <Reveal><div style={{ textAlign: 'center', marginBottom: 28 }}><Eyebrow color={T.violet}>One click to AI screening</Eyebrow><h2 className="mk-h2">Plugs into Levl1 Screen.</h2><p style={{ fontSize: 16, color: T.slate, maxWidth: 560, margin: '14px auto 0' }}>Trigger an autonomous AI interview from any candidate. The evidence-based score syncs straight back into the pipeline.</p></div></Reveal>
           <Reveal><div style={{ maxWidth: 560, margin: '0 auto' }}><ScorecardMock /></div></Reveal>
         </Container></section>
 
-        <section className="mk-section"><Container style={{ maxWidth: 900 }}>
-          <Reveal><h2 className="mk-h2" style={{ textAlign: 'center', marginBottom: 28 }}>Why not a spreadsheet — or a legacy ATS?</h2></Reveal>
-          <Reveal><div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 16, overflow: 'hidden', minWidth: 560, boxShadow: '0 20px 40px -25px rgba(30,27,75,0.25)' }}>
-            <thead><tr style={{ background: T.ink, color: '#fff' }}>{['', 'Spreadsheets', 'Legacy ATS', 'Levl1 Hire'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '14px 16px', fontSize: 13 }}>{h}</th>)}</tr></thead>
-            <tbody>{[['Intelligence', 'None', 'Add-on', 'AI scoring, every applicant'], ['Speed', 'Manual', 'Slow rollout', 'Live in minutes'], ['Cost', 'Hidden in time', 'Per-seat, steep', 'Flat, transparent'], ['Scale', 'Breaks fast', 'Enterprise-heavy', 'Agencies → enterprise']].map((r) => (
-              <tr key={r[0]} style={{ borderTop: '1px solid #EEF0FA' }}><td style={{ padding: '13px 16px', fontWeight: 700, fontSize: 13.5 }}>{r[0]}</td><td style={{ padding: '13px 16px', fontSize: 13.5, color: '#64748B' }}>{r[1]}</td><td style={{ padding: '13px 16px', fontSize: 13.5, color: '#64748B' }}>{r[2]}</td><td style={{ padding: '13px 16px', fontSize: 13.5, color: '#0F172A', fontWeight: 600 }}>{r[3]}</td></tr>
-            ))}</tbody>
-          </table></div></Reveal>
-          <div style={{ textAlign: 'center', marginTop: 32 }}><Button href="/hire/signup">Start free</Button> <Link href="/contact" style={{ marginLeft: 10, fontSize: 15, fontWeight: 600, color: T.violet }}>Book a demo →</Link></div>
+        {/* ROI */}
+        <section className="mk-section" style={{ background: T.mist }}><Container>
+          <Reveal><div style={{ textAlign: 'center', marginBottom: 36 }}><Eyebrow color={T.violet}>The outcome</Eyebrow><h2 className="mk-h2">What changes when the busywork is gone.</h2></div></Reveal>
+          <div className="mk-grid-2" style={{ alignItems: 'center', gap: 40 }}>
+            <Reveal><DealPipelineMock /></Reveal>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {ROI.map(([t, b]) => (
+                <Reveal key={t}><div style={{ display: 'flex', gap: 12 }}>
+                  <span style={{ color: T.violet, fontWeight: 800, fontSize: 16 }}>✓</span>
+                  <div><div style={{ fontSize: 15.5, fontWeight: 700, color: T.ink }}>{t}</div><div style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.5 }}>{b}</div></div>
+                </div></Reveal>
+              ))}
+            </div>
+          </div>
+        </Container></section>
+
+        {/* CTA */}
+        <section className="mk-section"><Container style={{ textAlign: 'center' }}>
+          <Reveal><h2 className="mk-h2" style={{ marginBottom: 22 }}>See Levl1 Hire on your own roles.</h2>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Link href="/pricing" style={{ fontSize: 15, fontWeight: 600, color: T.violet, padding: '13px 24px', borderRadius: 12, border: `1px solid ${T.violet}33`, textDecoration: 'none' }}>See pricing</Link></div></Reveal>
         </Container></section>
       </main>
       <MarketingFooter />

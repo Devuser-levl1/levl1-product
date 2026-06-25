@@ -1,111 +1,64 @@
 'use client'
-import { Container, Reveal, Stagger, StaggerItem, CountUp, Button, Eyebrow, GradientText, T } from '@/components/marketing/ui'
-import { KanbanMock, ScorecardMock, InterviewRoomMock, DealPipelineMock, CandidateProfileMock, IntegrationCardMock } from '@/components/marketing/mocks'
-import { motion, useReducedMotion } from 'framer-motion'
+import { Container, Reveal, Stagger, StaggerItem, Button, Eyebrow, GradientText, T } from '@/components/marketing/ui'
+import { KanbanMock, ScorecardMock, InterviewRoomMock, CandidateProfileMock } from '@/components/marketing/mocks'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 
-const ROI: [number, string, string, string][] = [
-  [90, '', '%', 'less time on first-round screening'],
-  [5, '<', ' days', 'from open role to ranked shortlist'],
-  [3, '', 'x', 'more candidates evaluated per recruiter'],
-  [100, '', '%', 'candidates assessed on one objective rubric'],
+// Three pillars — what Levl1 actually does.
+const PILLARS: [string, string, string, React.ReactNode][] = [
+  ['Understand every candidate, instantly.', 'AI reads and scores every résumé the moment it arrives — even scanned or image PDFs — against a rubric you control. No more manual triage.', T.violet, <CandidateProfileMock key="a" />],
+  ['Interview at scale, fairly.', 'Autonomous AI voice interviews run first rounds 24/7 — structured, consistent, evidence-backed — using questions your team approves. Every candidate gets a fair shot; your seniors only meet the best.', T.indigo, <InterviewRoomMock key="b" />],
+  ['Run the whole pipeline, intelligently.', 'A complete ATS + CRM with AI matching, agentic actions, sourcing, and a manager’s-eye view of the whole team — lean where legacy tools are bloated.', T.purple, <KanbanMock key="c" />],
 ]
 
-// product tag: HIRE (violet) / INTERVIEWS (indigo) / PLATFORM (purple)
-const WHY: [string, string, string, string, React.ReactNode][] = [
-  ['HIRE', T.violet, 'Intelligent pipelines', 'AI scores every applicant the moment they land and surfaces the best instantly — so your pipeline ranks itself.', <KanbanMock key="a" />],
-  ['INTERVIEWS', T.indigo, 'Autonomous AI interviews', 'Structured 30-minute voice interviews across technical, scenario, behavioral and EQ — run at scale, on demand.', <InterviewRoomMock key="b" />],
-  ['HIRE', T.violet, 'Built-in CRM & deals', 'Manage clients, contacts and a revenue pipeline right alongside hiring — your whole business in one view.', <DealPipelineMock key="c" />],
-  ['INTERVIEWS', T.indigo, 'Evidence-based reports', 'Ranked shortlists where every score is tied to the transcript. Nothing inferred, nothing fabricated.', <ScorecardMock key="d" />],
-  ['HIRE', T.violet, 'Smart candidate management', 'Bulk import, AI extraction from résumés, source tracking and full activity timelines for every candidate.', <CandidateProfileMock key="e" />],
-  ['PLATFORM', T.purple, 'Connect them when you want', 'Run each product standalone — or link them, so an interview can be triggered from a pipeline card and the score flows back. Entirely optional.', <IntegrationCardMock key="f" />],
+const WHY: [string, string][] = [
+  ['A real AI platform — not an ATS with a few AI buttons.', 'Intelligence runs through every step.'],
+  ['You stay in control.', 'AI proposes; humans approve. Always.'],
+  ['Reads what others can’t.', 'Scanned résumés, image PDFs, messy data — handled.'],
+  ['Lean by design.', 'The power of legacy suites without the bloat and the six-week onboarding.'],
+  ['Works with your stack.', 'ATS-agnostic; screening plugs into what you already run.'],
 ]
 
 export default function Home() {
-  const reduce = useReducedMotion()
-  const words = ['Two', 'products.', 'One', 'mission:']
   return (
     <div>
       {/* HERO */}
-      <section style={{ position: 'relative', overflow: 'hidden', paddingTop: 148, paddingBottom: 84, background: 'linear-gradient(180deg,#F5F7FF, #fff)' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', paddingTop: 148, paddingBottom: 72, background: 'linear-gradient(180deg,#F5F7FF, #fff)' }}>
         <div className="mk-blob" style={{ width: 460, height: 460, background: '#A78BFA', top: -120, left: -80 }} />
         <div className="mk-blob" style={{ width: 420, height: 420, background: '#60A5FA', top: -60, right: -100, animationDelay: '4s' }} />
-        <div className="mk-blob" style={{ width: 300, height: 300, background: '#C4B5FD', bottom: -120, left: '40%', animationDelay: '8s' }} />
         <Container style={{ position: 'relative' }}>
           <div className="mk-grid-2" style={{ alignItems: 'center', gap: 48 }}>
             <div>
-              <Reveal><Eyebrow>The AI-native hiring &amp; evaluation platform</Eyebrow></Reveal>
-              <h1 className="mk-h1">
-                <motion.span initial="h" animate="s" variants={{ s: { transition: { staggerChildren: 0.07 } } }} style={{ display: 'inline' }}>
-                  {words.map((w, i) => <motion.span key={i} variants={reduce ? {} : { h: { opacity: 0, y: 24 }, s: { opacity: 1, y: 0 } }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} style={{ display: 'inline-block', marginRight: 13 }}>{w}</motion.span>)}
-                </motion.span>
-                <br /><GradientText>hire the right people, faster.</GradientText>
-              </h1>
-              <Reveal delay={0.3}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 540, margin: '22px 0 26px' }}>Levl1 Hire runs your entire pipeline as an AI-powered ATS and CRM. Levl1 Interviews evaluates candidates with autonomous AI voice interviews. Use either on its own — or connect them for a seamless flow from sourcing to shortlist.</p></Reveal>
-              <Reveal delay={0.4}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Button href="#how" variant="ghost">See how it works ↓</Button></div></Reveal>
+              <Reveal><Eyebrow>The AI hiring &amp; screening platform</Eyebrow></Reveal>
+              <Reveal delay={0.1}><h1 className="mk-h1">Hiring is still mostly manual. <GradientText>We changed that.</GradientText></h1></Reveal>
+              <Reveal delay={0.3}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 560, margin: '22px 0 26px' }}>Levl1 reads résumés, scores candidates, runs first-round interviews, and drafts your jobs — so your team spends its time on people, not paperwork. One intelligent platform for recruitment agencies and in-house talent teams.</p></Reveal>
+              <Reveal delay={0.4}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="#how">See Levl1 in action</Button><Button href="/contact" variant="ghost">Book a demo</Button></div></Reveal>
             </div>
-            {/* Two distinct, side-by-side product cards (not layered) */}
             <Reveal delay={0.2}><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', color: T.violet, marginBottom: 6 }}>LEVL1 HIRE</div><KanbanMock /></div>
-              <div><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', color: T.indigo, marginBottom: 6 }}>LEVL1 INTERVIEWS</div><ScorecardMock /></div>
+              <div><div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', color: T.indigo, marginBottom: 6 }}>LEVL1 SCREEN</div><ScorecardMock /></div>
             </div></Reveal>
           </div>
-
-          {/* ROI fact-bar */}
-          <Reveal delay={0.5}>
-            <div className="mk-grid-2" style={{ gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginTop: 56, background: '#fff', border: '1px solid #E7E9F5', borderRadius: 18, padding: '22px 20px', boxShadow: '0 24px 50px -30px rgba(30,27,75,0.3)' }}>
-              {ROI.map(([n, pre, suf, label], i) => (
-                <div key={i} style={{ textAlign: 'center' }}><div style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 800, color: T.ink }}><CountUp to={n} prefix={pre} suffix={suf} /></div><div style={{ fontSize: 12.5, color: T.slate, marginTop: 4, lineHeight: 1.35 }}>{label}</div></div>
-              ))}
-            </div>
-            <div style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8', marginTop: 12 }}>Indicative outcomes based on replacing manual first-round screening.</div>
-          </Reveal>
-
-          <motion.div animate={reduce ? {} : { y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.6 }} style={{ textAlign: 'center', marginTop: 40, fontSize: 22, color: '#94A3B8' }}>⌄</motion.div>
         </Container>
       </section>
 
-      {/* TWO PRODUCTS */}
+      {/* THE HOOK */}
       <section className="mk-section"><Container>
-        <Reveal><div style={{ textAlign: 'center', marginBottom: 48 }}><Eyebrow>One platform, two products</Eyebrow><h2 className="mk-h2">Each delivers on its own.</h2></div></Reveal>
-        <div className="mk-grid-2">
-          <Reveal><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.violet}`, height: '100%' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.1em' }}>LEVL1 HIRE</div>
-            <h3 style={{ fontSize: 22, fontWeight: 800, margin: '8px 0 8px' }}>The hiring platform you run on.</h3>
-            <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.6, marginBottom: 18 }}>An AI-powered ATS and CRM: jobs, AI-scored candidates, drag-and-drop pipelines, clients and deals — your day-to-day hiring, end to end.</p>
-            <div style={{ marginBottom: 16 }}><KanbanMock /></div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.violet, marginBottom: 12 }}>✓ Use Levl1 Hire standalone</div>
-            <Link href="/hire" style={{ fontSize: 15, fontWeight: 700, color: T.violet, textDecoration: 'none' }}>Explore Hire →</Link>
-          </div></Reveal>
-          <Reveal delay={0.1}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.indigo}`, height: '100%' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: T.indigo, letterSpacing: '0.1em' }}>LEVL1 INTERVIEWS</div>
-            <h3 style={{ fontSize: 22, fontWeight: 800, margin: '8px 0 8px' }}>Autonomous first-round interviews that stand on their own.</h3>
-            <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.6, marginBottom: 18 }}>30-min AI voice interviews · human-approved questions · identity verified · ranked, evidence-based reports — a complete evaluation engine.</p>
-            <div style={{ marginBottom: 16 }}><ScorecardMock /></div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.indigo, marginBottom: 12 }}>✓ Use Levl1 Interviews standalone</div>
-            <Link href="/interviews" style={{ fontSize: 15, fontWeight: 700, color: T.indigo, textDecoration: 'none' }}>Explore Interviews →</Link>
-          </div></Reveal>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <Reveal><h2 className="mk-h2" style={{ textAlign: 'center' }}>The first round is where hiring breaks.</h2></Reveal>
+          <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.75, marginTop: 22 }}>A recruiter opens 200 résumés for one role. Two days of reading. Gut-feel shortlisting. The best candidate accepts another offer before anyone calls them. The client re-screens everything anyway. Multiply that across every open role, every week.</p></Reveal>
+          <Reveal delay={0.15}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.75, marginTop: 16 }}>That&apos;s not a people problem — it&apos;s a tooling problem. Every other industry handed its repetitive work to software. Recruitment got dashboards and called it innovation.</p></Reveal>
+          <Reveal delay={0.2}><p style={{ fontSize: 19, fontWeight: 800, color: T.ink, lineHeight: 1.5, marginTop: 22, textAlign: 'center' }}>Levl1 is different: <GradientText>the AI does the work, your team makes the decisions.</GradientText></p></Reveal>
         </div>
-        <Reveal><div style={{ textAlign: 'center', marginTop: 24, fontSize: 15, fontWeight: 600, color: T.purple }}>Better together — connect them when you&apos;re ready.</div></Reveal>
       </Container></section>
 
-      {/* HOW IT WORKS */}
+      {/* THREE PILLARS */}
       <section id="how" className="mk-section" style={{ background: T.mist }}><Container>
-        <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}><Eyebrow>How it works</Eyebrow><h2 className="mk-h2">From open role to confident hire.</h2></div></Reveal>
-        <Stagger><div className="mk-grid-2" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-          {[['01', 'Open roles & source', 'Branded apply pages + import.'], ['02', 'AI-screen at scale', 'Every candidate evaluated.'], ['03', 'Ranked shortlists', 'Evidence-based, not gut feel.'], ['04', 'Place with confidence', 'Move fast, with the proof.']].map(([n, t, d]) => (
-            <StaggerItem key={n}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 22, height: '100%' }}><div style={{ fontSize: 13, fontWeight: 800, color: T.purple }}>{n}</div><div style={{ fontSize: 16, fontWeight: 800, margin: '8px 0 6px' }}>{t}</div><div style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.5 }}>{d}</div></div></StaggerItem>
-          ))}
-        </div></Stagger>
-      </Container></section>
-
-      {/* WHY LEVL1 — balanced, product-tagged feature rows */}
-      <section className="mk-section"><Container>
-        <Reveal><div style={{ textAlign: 'center', marginBottom: 50 }}><Eyebrow>Why Levl1</Eyebrow><h2 className="mk-h2">Two products that are powerful alone — and seamless together.</h2></div></Reveal>
-        {WHY.map(([tag, accent, title, body, mock], i) => (
+        <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}><Eyebrow>What Levl1 actually does</Eyebrow><h2 className="mk-h2">Three things, done intelligently.</h2></div></Reveal>
+        {PILLARS.map(([title, body, accent, mock], i) => (
           <Reveal key={i}><div className={`mk-feat ${i % 2 ? 'mk-feat-rev' : ''}`} style={{ margin: '44px 0' }}>
             <div style={{ order: i % 2 ? 2 : 1 }}>
-              <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', color: accent, background: `${accent}14`, borderRadius: 99, padding: '4px 11px', marginBottom: 12 }}>{tag}</span>
+              <span style={{ display: 'inline-block', fontSize: 13, fontWeight: 800, color: accent, marginBottom: 10 }}>{`0${i + 1}`}</span>
               <h3 style={{ fontSize: 26, fontWeight: 800, marginBottom: 12 }}>{title}</h3>
               <p style={{ fontSize: 16, color: T.slate, lineHeight: 1.65 }}>{body}</p>
             </div>
@@ -114,92 +67,55 @@ export default function Home() {
         ))}
       </Container></section>
 
-      {/* BETTER TOGETHER */}
+      {/* TWO PRODUCTS STRIP */}
+      <section className="mk-section"><Container>
+        <Reveal><div style={{ textAlign: 'center', marginBottom: 40 }}><Eyebrow>One platform, two products</Eyebrow><h2 className="mk-h2">Use either on its own. Use both, and they work as one.</h2></div></Reveal>
+        <div className="mk-grid-2">
+          <Reveal><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.violet}`, height: '100%' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.1em' }}>LEVL1 HIRE</div>
+            <h3 style={{ fontSize: 21, fontWeight: 800, margin: '8px 0' }}>AI-native ATS + CRM.</h3>
+            <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.6, marginBottom: 18 }}>Source, score, match, and place — with intelligence built in.</p>
+            <Link href="/hire" style={{ fontSize: 15, fontWeight: 700, color: T.violet, textDecoration: 'none' }}>Explore Hire →</Link>
+          </div></Reveal>
+          <Reveal delay={0.1}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.indigo}`, height: '100%' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.indigo, letterSpacing: '0.1em' }}>LEVL1 SCREEN</div>
+            <h3 style={{ fontSize: 21, fontWeight: 800, margin: '8px 0' }}>Autonomous AI voice interviews.</h3>
+            <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.6, marginBottom: 18 }}>Plug into Levl1 Hire or any ATS you already use.</p>
+            <Link href="/interviews" style={{ fontSize: 15, fontWeight: 700, color: T.indigo, textDecoration: 'none' }}>Explore Screen →</Link>
+          </div></Reveal>
+        </div>
+        <Reveal><div style={{ textAlign: 'center', marginTop: 22, fontSize: 15, fontWeight: 600, color: T.purple }}>Use either on its own. Use both, and they work as one.</div></Reveal>
+      </Container></section>
+
+      {/* WHY LEVL1 */}
       <section className="mk-section" style={{ background: T.mist }}><Container>
-        <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}>
-          <Eyebrow>Better together</Eyebrow>
-          <h2 className="mk-h2">Two products. One unfair advantage when combined.</h2>
-          <p style={{ fontSize: 16, color: T.slate, maxWidth: 700, margin: '14px auto 0', lineHeight: 1.6 }}>Use Levl1 Hire to run your pipeline. Use Levl1 Interviews to evaluate at scale. Connect them, and every candidate flows from sourced to scored to shortlisted — automatically.</p>
-        </div></Reveal>
-
-        {/* 1 + 1 = 3 flow */}
-        <Reveal>
-          <div className="bt-flow" style={{ display: 'flex', alignItems: 'stretch', gap: 12, justifyContent: 'center' }}>
-            <div className="bt-panel mk-card" style={{ flex: 1, background: '#fff', border: '1px solid #E7E9F5', borderRadius: 18, padding: 20, borderTop: `4px solid ${T.violet}` }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.08em' }}>LEVL1 HIRE</div>
-              <p style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55, margin: '8px 0 14px' }}>Source, track, and manage candidates in an AI-powered ATS + CRM.</p>
-              <KanbanMock />
-            </div>
-            <Sign reduce={reduce}>+</Sign>
-            <div className="bt-panel mk-card" style={{ flex: 1, background: '#fff', border: '1px solid #E7E9F5', borderRadius: 18, padding: 20, borderTop: `4px solid ${T.indigo}` }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: T.indigo, letterSpacing: '0.08em' }}>LEVL1 INTERVIEWS</div>
-              <p style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55, margin: '8px 0 14px' }}>Auto-screen candidates with autonomous AI voice interviews.</p>
-              <ScorecardMock />
-            </div>
-            <Sign reduce={reduce}>=</Sign>
-            <div className="bt-panel bt-combined" style={{ flex: 1.25, borderRadius: 18, padding: 24, color: '#fff', position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${T.violet}, ${T.indigo})`, boxShadow: `0 30px 60px -20px ${T.indigo}80` }}>
-              <div className="mk-blob" style={{ width: 220, height: 220, background: '#fff', opacity: 0.16, top: -60, right: -50 }} />
-              <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', opacity: 0.85 }}>HIRE + INTERVIEWS</div>
-                <div style={{ fontSize: 22, fontWeight: 800, margin: '8px 0 10px', lineHeight: 1.2 }}>One seamless hiring engine</div>
-                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.92)' }}>Trigger an interview from any pipeline card. Scores sync back instantly. Shortlist with evidence — without leaving Hire.</p>
-                <div style={{ marginTop: 16 }}><IntegrationCardMock /></div>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* combined-value points */}
-        <Stagger gap={0.1}><div className="mk-grid-3" style={{ marginTop: 40 }}>
-          {[
-            ['Trigger & sync', 'Start an AI interview from a candidate card; the score and report flow straight back into the pipeline.'],
-            ['One source of truth', 'Résumé scores and interview scores live on the same candidate record.'],
-            ['Auto-advance', 'Let strong interview results move candidates forward automatically — you stay in control.'],
-          ].map(([t, b]) => (
+        <Reveal><div style={{ textAlign: 'center', marginBottom: 40 }}><Eyebrow>Why Levl1</Eyebrow><h2 className="mk-h2">Built like an AI product, not a bolt-on.</h2></div></Reveal>
+        <Stagger gap={0.08}><div className="mk-grid-3">
+          {WHY.map(([t, b]) => (
             <StaggerItem key={t}><div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 22, height: '100%' }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: `linear-gradient(135deg, ${T.violet}, ${T.indigo})`, marginBottom: 12 }} />
-              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{t}</div>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(135deg, ${T.violet}, ${T.indigo})`, marginBottom: 12 }} />
+              <div style={{ fontSize: 15.5, fontWeight: 800, marginBottom: 6, lineHeight: 1.35 }}>{t}</div>
               <div style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.55 }}>{b}</div>
             </div></StaggerItem>
           ))}
         </div></Stagger>
-
-        {/* flexibility callout */}
-        <Reveal><div style={{ marginTop: 32, background: '#fff', border: '1px dashed #C9CEE8', borderRadius: 14, padding: '18px 22px', fontSize: 14.5, color: T.slate, lineHeight: 1.6, textAlign: 'center' }}>
-          <strong style={{ color: T.ink }}>Already have an ATS?</strong> Levl1 Interviews works standalone and integrates with your existing stack. <strong style={{ color: T.ink }}>Just need a pipeline?</strong> Levl1 Hire stands on its own. <strong style={{ color: T.ink }}>Want the full engine?</strong> Use both.
-        </div></Reveal>
-
-        {/* CTA row */}
-        <Reveal><div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 28 }}>
-          <Button href="/hire" variant="ghost">Explore Hire</Button>
-          <Button href="/interviews" variant="ghost">Explore Interviews</Button>
-          <Button href="/contact">See them together — book a demo</Button>
-        </div></Reveal>
       </Container></section>
 
       {/* ENTERPRISE STRIP */}
       <section style={{ background: T.ink, padding: '72px 0' }}><Container style={{ textAlign: 'center' }}>
         <Reveal><h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 800, color: '#fff', marginBottom: 8 }}>Built for scale and security.</h2>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginTop: 20 }}>
-          {['SSO-ready', 'Role-based access', 'Data isolation', 'Audit trails', 'GDPR-aligned', 'Global-ready'].map((x) => <span key={x} style={{ fontSize: 13.5, fontWeight: 600, color: '#C7CCEA', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 99, padding: '8px 16px' }}>{x}</span>)}
+          {['SSO-ready', 'Role-based access', 'Tenant data isolation', 'Audit trails', 'Encrypted at rest', 'Data residency'].map((x) => <span key={x} style={{ fontSize: 13.5, fontWeight: 600, color: '#C7CCEA', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 99, padding: '8px 16px' }}>{x}</span>)}
         </div></Reveal>
       </Container></section>
 
-      {/* BIG CTA */}
+      {/* CLOSING CTA */}
       <section className="mk-section" style={{ position: 'relative', overflow: 'hidden', textAlign: 'center', background: 'linear-gradient(120deg,#6D28D9,#4F46E5 55%,#2563EB)' }}>
         <Container style={{ position: 'relative' }}>
-          <Reveal><h2 style={{ fontSize: 'clamp(30px,4.5vw,52px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>See Levl1 on your own roles.</h2>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26, flexWrap: 'wrap' }}><Button href="/contact" variant="light">Book a demo</Button><Link href="/pricing" style={{ fontSize: 15, fontWeight: 600, color: '#fff', padding: '13px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.4)', textDecoration: 'none' }}>View pricing</Link></div></Reveal>
+          <Reveal><h2 style={{ fontSize: 'clamp(28px,4.2vw,48px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', maxWidth: 760, marginInline: 'auto' }}>See what hiring feels like when the busywork is gone.</h2>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26, flexWrap: 'wrap' }}><Button href="/contact" variant="light">Book a demo</Button><Link href="/contact" style={{ fontSize: 15, fontWeight: 600, color: '#fff', padding: '13px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.4)', textDecoration: 'none' }}>Talk to us</Link></div></Reveal>
         </Container>
       </section>
-    </div>
-  )
-}
-
-function Sign({ children, reduce }: { children: React.ReactNode; reduce: boolean | null }) {
-  return (
-    <div className="bt-sign" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: '0 2px' }}>
-      <motion.span animate={reduce ? {} : { scale: [1, 1.22, 1], opacity: [0.65, 1, 0.65] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }} style={{ fontSize: 30, fontWeight: 800, color: '#8B5CF6', display: 'inline-block' }}>{children}</motion.span>
     </div>
   )
 }
