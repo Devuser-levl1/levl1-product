@@ -7,6 +7,7 @@ export default function HireSettings() {
   const items: [string, string, string][] = [
     ['Billing & plan', 'Manage your plan, usage and invoices.', '/hire/settings/billing'],
     ['Job Boards', 'Connect LinkedIn, Indeed, Naukri & more for one-click posting.', '/hire/settings/job-boards'],
+    ['Integrations · Job Boards', 'Connect your own Naukri / Indeed accounts (LinkedIn via extension) — your credits, your subscription, plus AI.', '/hire/settings/integrations'],
     ['Email Templates', 'Reusable templates with {{name}}, {{job}}, {{company}} tokens for 1:1 outreach.', '/hire/settings/email-templates'],
     ['Email / Mailbox', 'Connect your business mailbox (IMAP/SMTP) to pull job-spec emails & send from your own address.', '/hire/settings/mailbox'],
     ['Career Page', 'A branded public page listing your open roles, on your logo & colour.', '/hire/settings/career-page'],
