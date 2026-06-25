@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { REJECTED_STAGE } from '@/lib/hire/audit'
+import { assigneeScope } from '@/lib/hire/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,7 @@ export const GET = withHireAuth(async (req, ctx) => {
   const jobId = new URL(req.url).searchParams.get('jobId')
 
   const jobs = await prisma.hireJob.findMany({
-    where: { tenantId: ctx.tenantId, status: 'ACTIVE', ...(jobId ? { id: jobId } : {}) },
+    where: { tenantId: ctx.tenantId, status: 'ACTIVE', ...assigneeScope(ctx.role, ctx.userId), ...(jobId ? { id: jobId } : {}) },
     include: {
       candidates: {
         orderBy: [{ aiScore: 'desc' }, { createdAt: 'asc' }],

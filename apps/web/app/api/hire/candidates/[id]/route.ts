@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
-import { writeAudit } from '@/lib/hire/audit'
+import { writeAudit, logAudit } from '@/lib/hire/audit'
+import { isManagerPlus } from '@/lib/hire/roles'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
@@ -55,6 +56,13 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   // Attaching a previously-jobless candidate to a job → trigger JD scoring.
   const attachingToJob = body.jobId !== undefined && body.jobId && body.jobId !== existing.jobId
 
+  // Reassignment — managers/admins only.
+  let reassignTo: string | null | undefined
+  if ('assigneeId' in body) {
+    if (!isManagerPlus(ctx.role)) return NextResponse.json({ error: 'Only managers can reassign candidates.' }, { status: 403 })
+    reassignTo = body.assigneeId || null
+  }
+
   const candidate = await prisma.hireCandidate.update({
     where: { id: existing.id },
     data: {
@@ -67,8 +75,13 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
       currentStage: body.currentStage ?? existing.currentStage,
       source: body.source ?? existing.source,
       ...(body.jobId !== undefined ? { jobId: body.jobId || null } : {}),
+      ...(reassignTo !== undefined ? { assigneeId: reassignTo } : {}),
     },
   })
+
+  if (reassignTo !== undefined && reassignTo !== existing.assigneeId) {
+    await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'candidate_reassign', targetType: 'candidate', targetId: candidate.id, targetName: candidate.name, meta: { from: existing.assigneeId, to: reassignTo } })
+  }
 
   // Score now that there's a JD to score against (deferred from a jobless import).
   if (attachingToJob && candidate.resumeText) {

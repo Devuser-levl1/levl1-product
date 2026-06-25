@@ -721,6 +721,7 @@ model HireUser {
 
 enum HireRole {
   ADMIN
+  MANAGER
   RECRUITER
   VIEWER
 }
@@ -737,6 +738,7 @@ model HireJob {
   salaryMax   Int?
   stages      Json          // string[] — custom pipeline stages per job
   status      HireJobStatus @default(ACTIVE)
+  assigneeId  String?       // HireUser who owns this job (defaults to creator)
   aiAutoAdvance        Boolean @default(false)
   aiAutoAdvanceThreshold Int   @default(75)
   aiAutoAdvanceStage   String?
@@ -841,6 +843,7 @@ model HireCandidate {
   skills           Json?      // string[] — full skills list from résumé extraction
   topSkills        Json?      // string[] — the most job-relevant skills surfaced by AI scoring
   currentStage     String     @default("Sourced")
+  assigneeId       String?    // HireUser who owns this candidate (defaults to creator)
   aiScore          Int?       // 0-100
   aiSummary        String?    @db.Text
   aiRecommendation String?    // strong_yes | yes | maybe | no

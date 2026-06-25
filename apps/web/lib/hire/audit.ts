@@ -7,7 +7,7 @@ export type AuditAction =
   | 'stage_move' | 'reject' | 'delete' | 'candidate_create'
   | 'job_create' | 'job_update' | 'job_delete' | 'rubric_change'
   | 'deal_create' | 'deal_update' | 'deal_delete'
-  | 'team_member_invite'
+  | 'team_member_invite' | 'job_reassign' | 'candidate_reassign'
 
 export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member'
 
@@ -104,6 +104,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   deal_update: 'Deal updated',
   deal_delete: 'Deal deleted',
   team_member_invite: 'Team member invited',
+  job_reassign: 'Job reassigned',
+  candidate_reassign: 'Candidate reassigned',
 }
 
 // Lifecycle constants (reason presets, Rejected stage name) live in a client-safe

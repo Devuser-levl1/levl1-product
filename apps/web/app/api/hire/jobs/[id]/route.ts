@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
+import { isManagerPlus } from '@/lib/hire/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,13 +78,33 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
     data.stages = body.stages
   }
 
+  // Reassignment — managers/admins only. Logs a distinct audit entry + notifies.
+  let reassigned: { from: string | null; to: string | null } | null = null
+  if ('assigneeId' in body) {
+    if (!isManagerPlus(ctx.role)) return NextResponse.json({ error: 'Only managers can reassign jobs.' }, { status: 403 })
+    const to = body.assigneeId || null
+    if (to !== existing.assigneeId) { data.assigneeId = to; reassigned = { from: existing.assigneeId, to } }
+  }
+
   const job = await prisma.hireJob.update({ where: { id: existing.id }, data })
+
+  if (reassigned) {
+    const names = await prisma.hireUser.findMany({ where: { tenantId: ctx.tenantId, id: { in: [reassigned.from, reassigned.to].filter(Boolean) as string[] } }, select: { id: true, name: true, email: true } })
+    const nm = (id: string | null) => (id ? names.find((u) => u.id === id)?.name ?? 'someone' : 'Unassigned')
+    await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_reassign', targetType: 'job', targetId: job.id, targetName: job.title, reason: `Reassigned from ${nm(reassigned.from)} to ${nm(reassigned.to)}`, meta: { from: reassigned.from, to: reassigned.to } })
+    // Notify the new assignee (best-effort).
+    const toUser = names.find((u) => u.id === reassigned!.to)
+    if (toUser?.email) {
+      const { sendHireEmail } = await import('@/lib/hire/email')
+      sendHireEmail({ to: toUser.email, subject: `A job was assigned to you: ${job.title}`, html: `<p>${job.title} has been assigned to you in Levl1 Hire.</p>` }).catch(() => {})
+    }
+  }
 
   // Rubric edits get their own audit entry; everything else is a job_update.
   if ('rubric' in body) {
     await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'rubric_change', targetType: 'rubric', targetId: job.id, targetName: job.title })
   }
-  const nonRubricFields = Object.keys(data).filter((k) => k !== 'rubric')
+  const nonRubricFields = Object.keys(data).filter((k) => k !== 'rubric' && k !== 'assigneeId')
   if (nonRubricFields.length > 0) {
     await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_update', targetType: 'job', targetId: job.id, targetName: job.title, meta: { fields: nonRubricFields } })
   }

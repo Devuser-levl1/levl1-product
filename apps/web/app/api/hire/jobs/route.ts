@@ -3,14 +3,16 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { checkAllowance } from '@/lib/hire/usage'
 import { logAudit } from '@/lib/hire/audit'
+import { assigneeScope } from '@/lib/hire/roles'
 
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_STAGES = ['Sourced', 'Screening', 'Interview', 'Technical Round', 'HR Round', 'Offer', 'Hired']
 
 export const GET = withHireAuth(async (_req, ctx) => {
+  // Recruiters see only jobs assigned to them (or still unassigned); managers/admins see all.
   const jobs = await prisma.hireJob.findMany({
-    where: { tenantId: ctx.tenantId },
+    where: { tenantId: ctx.tenantId, ...assigneeScope(ctx.role, ctx.userId) },
     include: {
       _count: { select: { candidates: true } },
       client: { select: { id: true, name: true } },
@@ -43,6 +45,8 @@ export const POST = withHireAuth(async (req, ctx) => {
       stages,
       status: 'ACTIVE',
       clientId: body.clientId || null,
+      assigneeId: ctx.userId, // default the assignee to the creator
+
       // AI job-brief structured fields (P0-1) — power matching + scoring later.
       mustHaveSkills: arr(body.mustHaveSkills),
       niceToHaveSkills: arr(body.niceToHaveSkills),

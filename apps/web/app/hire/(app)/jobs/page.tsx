@@ -2,12 +2,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface Job { id: string; title: string; department: string | null; status: string; createdAt: string; _count: { candidates: number }; client: { id: string; name: string } | null }
+interface Job { id: string; title: string; department: string | null; status: string; createdAt: string; assigneeId: string | null; _count: { candidates: number }; client: { id: string; name: string } | null }
 const STATUS_COLORS: Record<string, string> = { ACTIVE: '#10B981', PAUSED: '#F59E0B', CLOSED: '#475569' }
 
 export default function JobsListPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>([])
+  const [team, setTeam] = useState<Record<string, string>>({})
   const [filter, setFilter] = useState('ALL')
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
@@ -15,6 +16,7 @@ export default function JobsListPage() {
     fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setJobs(d)).catch(() => {})
   }, [])
   useEffect(() => { load() }, [load])
+  useEffect(() => { fetch('/api/hire/team').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setTeam(Object.fromEntries(d.map((u: { id: string; name: string }) => [u.id, u.name])))).catch(() => {}) }, [])
 
   async function patch(id: string, body: Record<string, unknown>) {
     await fetch(`/api/hire/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -56,7 +58,7 @@ export default function JobsListPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_COLORS[j.status], background: `${STATUS_COLORS[j.status]}1A`, padding: '2px 8px', borderRadius: 100 }}>{j.status.charAt(0) + j.status.slice(1).toLowerCase()}</span>
               </div>
               <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[j.client?.name, j.department].filter(Boolean).join(' · ') || '—'}</div>
-              <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{j._count.candidates} candidate{j._count.candidates !== 1 ? 's' : ''} · Created {new Date(j.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{j._count.candidates} candidate{j._count.candidates !== 1 ? 's' : ''} · Created {new Date(j.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {j.assigneeId ? `Owner: ${team[j.assigneeId] ?? '…'}` : 'Unassigned'}</div>
             </div>
             <button onClick={() => router.push(`/hire/jobs/${j.id}`)} style={ghost}>View</button>
             <button onClick={() => router.push(`/hire/jobs/${j.id}?tab=settings`)} style={ghost}>Edit</button>
