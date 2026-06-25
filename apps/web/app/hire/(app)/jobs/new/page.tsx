@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { StagesEditor } from '@/components/hire/stages-editor'
+import { ClientPicker } from '@/components/hire/client-picker'
 import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
 
 const DEFAULT_STAGES = ['Sourced', 'Screening', 'Interview', 'Technical Round', 'HR Round', 'Offer', 'Hired']
@@ -30,7 +31,6 @@ export default function NewJobPage() {
   const [stages, setStages] = useState<string[]>(DEFAULT_STAGES)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([])
   const [clientId, setClientId] = useState('')
   const [jdMode, setJdMode] = useState<'paste' | 'upload'>('paste')
   const [jdParsing, setJdParsing] = useState(false)
@@ -94,7 +94,6 @@ export default function NewJobPage() {
   }
 
   useEffect(() => {
-    fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))).catch(() => {})
     const pre = new URLSearchParams(window.location.search).get('clientId')
     if (pre) setClientId(pre)
   }, [])
@@ -186,10 +185,7 @@ export default function NewJobPage() {
             </div>
             <div>
               <label style={label}>Client (optional)</label>
-              <select style={inp} value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                <option value="">No client</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <ClientPicker value={clientId} onChange={(id) => setClientId(id)} />
             </div>
             <div>
               <label style={label}>Job Description</label>

@@ -8,6 +8,7 @@ import { DistributePanel } from '@/components/hire/distribute-panel'
 import { TopMatches } from '@/components/hire/top-matches'
 import { RubricEditor, RubricItem } from '@/components/hire/rubric-editor'
 import { SourcingTab } from '@/components/hire/sourcing-tab'
+import { ClientPicker } from '@/components/hire/client-picker'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null; deals?: { id: string; title: string; value: number; stage: string; probability: number }[] }
@@ -208,9 +209,10 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
   const [autoAdv, setAutoAdv] = useState(!!j.aiAutoAdvance)
   const [autoThresh, setAutoThresh] = useState(j.aiAutoAdvanceThreshold ?? 75)
   const [autoStage, setAutoStage] = useState(j.aiAutoAdvanceStage ?? '')
+  const [clientId, setClientId] = useState(job.client?.id ?? '')
 
   async function save() {
-    const res = await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, stages, aiAutoAdvance: autoAdv, aiAutoAdvanceThreshold: autoThresh, aiAutoAdvanceStage: autoStage || null }) })
+    const res = await fetch(`/api/hire/jobs/${job.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, stages, clientId: clientId || null, aiAutoAdvance: autoAdv, aiAutoAdvanceThreshold: autoThresh, aiAutoAdvanceStage: autoStage || null }) })
     const d = await res.json()
     setMsg(res.ok ? 'Saved.' : (d.error ?? 'Save failed')); if (res.ok) reload()
   }
@@ -221,6 +223,7 @@ function Settings({ job, reload, onDeleted }: { job: Job; reload: () => void; on
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, ...card }}>
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Title</div><input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box' }} /></div>
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Description</div><textarea value={description} onChange={(e) => setDescription(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, width: '100%', boxSizing: 'border-box', minHeight: 120 }} /></div>
+      <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Client</div><ClientPicker value={clientId} onChange={(id) => setClientId(id)} /></div>
       <div><div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Pipeline Stages</div><StagesEditor stages={stages} onChange={setStages} /></div>
       <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 14 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', cursor: 'pointer' }}>
