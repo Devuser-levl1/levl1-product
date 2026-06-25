@@ -996,6 +996,26 @@ model BoardConnection {
   @@index([tenantId])
 }
 
+// Where a Levl1 job has been posted, per board. BYOB — always under the
+// recruiter's own connected account, never a Levl1-owned one.
+model BoardPosting {
+  id            String   @id @default(cuid())
+  tenantId      String
+  jobId         String
+  provider      String   // "naukri" | "indeed"
+  externalRefId String?
+  postingUrl    String?
+  status        String   @default("pending") // pending | posted | failed
+  errorMsg      String?
+  postedAt      DateTime?
+  lastSyncedAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([jobId, provider])
+  @@index([tenantId])
+}
+
 model MailboxMessage {
   id                String   @id @default(cuid())
   connectionId      String

@@ -20,7 +20,7 @@ export function getConnector(provider: string): BoardConnector | null {
 export function boardCatalog() {
   return BOARD_PROVIDERS.map((p) => {
     const c = REGISTRY[p]
-    return { provider: c.provider, label: c.label, authType: c.authType, capabilities: c.capabilities, credFields: c.credFields }
+    return { provider: c.provider, label: c.label, authType: c.authType, capabilities: c.capabilities, credFields: c.credFields, postingExtraFields: c.postingExtraFields ?? [] }
   })
 }
 

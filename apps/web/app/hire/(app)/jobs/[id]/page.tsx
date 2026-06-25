@@ -9,6 +9,7 @@ import { TopMatches } from '@/components/hire/top-matches'
 import { RubricEditor, RubricItem } from '@/components/hire/rubric-editor'
 import { SourcingTab } from '@/components/hire/sourcing-tab'
 import { ClientPicker } from '@/components/hire/client-picker'
+import { PostToBoards } from '@/components/hire/post-to-boards'
 
 interface Candidate { id: string; name: string; email: string; currentStage: string; aiScore: number | null; aiRecommendation: string | null; createdAt: string }
 interface Job { id: string; title: string; description: string; department: string | null; location: string | null; salaryMin: number | null; salaryMax: number | null; status: string; stages: string[]; applySlug: string; client: { id: string; name: string } | null; candidates: Candidate[]; mustHaveSkills?: string[]; niceToHaveSkills?: string[]; screeningCriteria?: string[]; interviewFocus?: string[]; aiGenerated?: boolean; rubric?: RubricItem[] | null; deals?: { id: string; title: string; value: number; stage: string; probability: number }[] }
@@ -63,6 +64,7 @@ function Overview({ job, reload }: { job: Job; reload: () => void }) {
   const perStage = job.stages.map((s) => ({ stage: s, count: job.candidates.filter((c) => c.currentStage === s).length }))
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PostToBoards jobId={job.id} />
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</div>

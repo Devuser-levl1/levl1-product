@@ -13,6 +13,6 @@ export const linkedinConnector: BoardConnector = {
   async testConnection(_cfg: BoardCfg) {
     return { ok: true }
   },
-  async postJob() { return NOT_IMPLEMENTED },
+  // No postJob — LinkedIn is sourcing-only (extension); posting is excluded.
   async search() { return NOT_IMPLEMENTED },
 }
