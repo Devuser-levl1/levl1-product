@@ -7,23 +7,45 @@ const FIRST_SYNC_LIMIT = 30
 const BODY_MAX = 20_000
 const SNIPPET_MAX = 200
 
+// Universal TLS rule derived from the PORT — no per-provider code:
+//   465 → implicit SSL/TLS (secure)            993 → implicit SSL/TLS (IMAP)
+//   587 → STARTTLS (secure:false, requireTLS)  143 → STARTTLS (IMAP)
+// Works for any host (Hostinger, GoDaddy, Zoho, cPanel, O365, Gmail, …).
 function makeImap(cfg: MailboxCfg): ImapFlow {
   return new ImapFlow({
     host: cfg.imapHost,
     port: cfg.imapPort,
-    secure: cfg.imapPort === 993,
+    secure: cfg.imapPort === 993, // 143 → imapflow negotiates STARTTLS
     auth: { user: cfg.email, pass: cfg.password },
     logger: false, // never let the IMAP lib log credentials
   })
 }
 
 function makeSmtp(cfg: MailboxCfg) {
+  const secure = cfg.smtpPort === 465
   return nodemailer.createTransport({
     host: cfg.smtpHost,
     port: cfg.smtpPort,
-    secure: cfg.smtpPort === 465,
+    secure, // 465 → implicit SSL
+    requireTLS: !secure, // 587/others → upgrade via STARTTLS
     auth: { user: cfg.email, pass: cfg.password },
   })
+}
+
+// Host-agnostic error classification: blocked/timeout vs auth vs TLS handshake.
+function classifyError(e: unknown, stage: 'IMAP' | 'SMTP'): string {
+  const raw = (e instanceof Error ? e.message : String(e)) + ' ' + ((e as { code?: string })?.code ?? '')
+  const m = raw.toLowerCase()
+  if (/etimedout|timed? ?out|econnrefused|enotfound|ehostunreach|enetunreach|econnreset|dns/.test(m)) {
+    return `${stage}: connection blocked or timed out — check the host/port and that your network/firewall allows outbound mail.`
+  }
+  if (/auth|login|credential|535|password|invalid user|535-|authenticationfailed|invalid login/.test(m)) {
+    return `${stage}: authentication rejected — check the email and password (use an app password if your provider requires one).`
+  }
+  if (/tls|ssl|handshake|certificate|self.?signed|wrong version|ssl routines|epROTO|unable to verify/.test(m)) {
+    return `${stage}: TLS handshake error — the port's encryption mode may be wrong (use 465 for SSL, or 587/STARTTLS).`
+  }
+  return `${stage}: ${raw.replace(/\s+/g, ' ').trim().slice(0, 160)}`
 }
 
 function stripHtml(html: string): string {
@@ -90,7 +112,7 @@ export const imapConnector: MailboxConnector = {
     try {
       await client.connect()
     } catch (e) {
-      return { ok: false, error: `IMAP login failed: ${cleanErr(e)}` }
+      return { ok: false, error: classifyError(e, 'IMAP') }
     } finally {
       try { await client.logout() } catch { /* ignore */ }
     }
@@ -99,7 +121,7 @@ export const imapConnector: MailboxConnector = {
       const smtp = makeSmtp(cfg)
       await smtp.verify()
     } catch (e) {
-      return { ok: false, error: `SMTP auth failed: ${cleanErr(e)}` }
+      return { ok: false, error: classifyError(e, 'SMTP') }
     }
     return { ok: true }
   },

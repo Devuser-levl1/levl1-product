@@ -3,7 +3,17 @@ import { useEffect, useState, useCallback } from 'react'
 
 interface Conn { id: string; email: string; provider: string; imapHost: string | null; imapPort: number | null; smtpHost: string | null; smtpPort: number | null; status: string; lastError: string | null; lastSyncedAt: string | null }
 
-const HOSTINGER = { imapHost: 'imap.hostinger.com', imapPort: 993, smtpHost: 'smtp.hostinger.com', smtpPort: 465 }
+// Common provider presets — selecting one pre-fills host/port (fully editable).
+// Default is Custom; these are conveniences, not per-provider logic.
+const PRESETS: Record<string, { label: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number }> = {
+  custom: { label: 'Custom', imapHost: '', imapPort: 993, smtpHost: '', smtpPort: 587 },
+  hostinger: { label: 'Hostinger', imapHost: 'imap.hostinger.com', imapPort: 993, smtpHost: 'smtp.hostinger.com', smtpPort: 587 },
+  godaddy: { label: 'GoDaddy', imapHost: 'imap.secureserver.net', imapPort: 993, smtpHost: 'smtpout.secureserver.net', smtpPort: 587 },
+  zoho: { label: 'Zoho', imapHost: 'imap.zoho.com', imapPort: 993, smtpHost: 'smtp.zoho.com', smtpPort: 587 },
+  cpanel: { label: 'cPanel (mail.yourdomain)', imapHost: 'mail.yourdomain.com', imapPort: 993, smtpHost: 'mail.yourdomain.com', smtpPort: 587 },
+  office365: { label: 'Outlook / Office 365', imapHost: 'outlook.office365.com', imapPort: 993, smtpHost: 'smtp.office365.com', smtpPort: 587 },
+  gmail: { label: 'Gmail / Workspace', imapHost: 'imap.gmail.com', imapPort: 993, smtpHost: 'smtp.gmail.com', smtpPort: 587 },
+}
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff', width: '100%', boxSizing: 'border-box' }
 const lbl: React.CSSProperties = { fontSize: 11.5, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 4 }
 
@@ -26,35 +36,50 @@ export default function MailboxSettingsPage() {
   )
 }
 
+function tlsLabel(port: string): string {
+  const p = Number(port)
+  if (p === 465 || p === 993) return 'SSL/TLS'
+  if (p === 587 || p === 143) return 'STARTTLS'
+  return 'auto'
+}
+
 function ConnectForm({ existing, onConnected }: { existing: Conn | null; onConnected: () => void }) {
-  const [f, setF] = useState({ email: existing?.email ?? '', imapHost: existing?.imapHost ?? HOSTINGER.imapHost, imapPort: String(existing?.imapPort ?? HOSTINGER.imapPort), smtpHost: existing?.smtpHost ?? HOSTINGER.smtpHost, smtpPort: String(existing?.smtpPort ?? HOSTINGER.smtpPort), password: '' })
+  const [provider, setProvider] = useState('custom')
+  const [f, setF] = useState({ email: existing?.email ?? '', imapHost: existing?.imapHost ?? PRESETS.hostinger.imapHost, imapPort: String(existing?.imapPort ?? PRESETS.hostinger.imapPort), smtpHost: existing?.smtpHost ?? PRESETS.hostinger.smtpHost, smtpPort: String(existing?.smtpPort ?? PRESETS.hostinger.smtpPort), password: '' })
   const [busy, setBusy] = useState(false); const [err, setErr] = useState('')
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }))
+  function pickProvider(key: string) {
+    setProvider(key)
+    if (key === 'custom') return
+    const p = PRESETS[key]
+    setF((prev) => ({ ...prev, imapHost: p.imapHost, imapPort: String(p.imapPort), smtpHost: p.smtpHost, smtpPort: String(p.smtpPort) }))
+  }
   async function connect() {
     setBusy(true); setErr('')
-    const res = await fetch('/api/hire/mailbox/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, imapPort: Number(f.imapPort), smtpPort: Number(f.smtpPort) }) })
+    const res = await fetch('/api/hire/mailbox/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password, imapHost: f.imapHost, smtpHost: f.smtpHost, imapPort: Number(f.imapPort), smtpPort: Number(f.smtpPort) }) })
     setBusy(false)
     if (res.ok) onConnected(); else setErr((await res.json().catch(() => ({}))).error ?? 'Could not connect')
   }
   return (
     <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }}>
       <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Connect a mailbox (IMAP / SMTP)</div>
-      <div style={{ fontSize: 12.5, color: '#64748B', marginBottom: 16 }}>Use a business email. Create an app password in your mail provider. Defaults are pre-filled for Hostinger.</div>
+      <div style={{ fontSize: 12.5, color: '#64748B', marginBottom: 16 }}>Works with any email host. Pick a provider to pre-fill host/port, or enter your own — every field is editable.</div>
       {existing?.status === 'error' && existing.lastError && <div style={{ fontSize: 12.5, color: '#B45309', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '8px 10px', marginBottom: 12 }}>Last attempt failed: {existing.lastError}</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div><label style={lbl}>Provider (pre-fills host/port — editable)</label><select style={inp} value={provider} onChange={(e) => pickProvider(e.target.value)}>{Object.entries(PRESETS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
         <div><label style={lbl}>Business email</label><input style={inp} value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="you@yourcompany.com" /></div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 2 }}><label style={lbl}>IMAP host</label><input style={inp} value={f.imapHost} onChange={(e) => set('imapHost', e.target.value)} /></div>
-          <div style={{ flex: 1 }}><label style={lbl}>IMAP port</label><input style={inp} value={f.imapPort} onChange={(e) => set('imapPort', e.target.value)} /></div>
+          <div style={{ flex: 2 }}><label style={lbl}>IMAP host</label><input style={inp} value={f.imapHost} onChange={(e) => set('imapHost', e.target.value)} placeholder="imap.yourhost.com" /></div>
+          <div style={{ flex: 1 }}><label style={lbl}>IMAP port</label><input style={inp} value={f.imapPort} onChange={(e) => set('imapPort', e.target.value)} /><div style={{ fontSize: 10.5, color: '#94A3B8', marginTop: 3 }}>{tlsLabel(f.imapPort)}</div></div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 2 }}><label style={lbl}>SMTP host</label><input style={inp} value={f.smtpHost} onChange={(e) => set('smtpHost', e.target.value)} /></div>
-          <div style={{ flex: 1 }}><label style={lbl}>SMTP port</label><input style={inp} value={f.smtpPort} onChange={(e) => set('smtpPort', e.target.value)} /></div>
+          <div style={{ flex: 2 }}><label style={lbl}>SMTP host</label><input style={inp} value={f.smtpHost} onChange={(e) => set('smtpHost', e.target.value)} placeholder="smtp.yourhost.com" /></div>
+          <div style={{ flex: 1 }}><label style={lbl}>SMTP port</label><input style={inp} value={f.smtpPort} onChange={(e) => set('smtpPort', e.target.value)} /><div style={{ fontSize: 10.5, color: '#94A3B8', marginTop: 3 }}>{tlsLabel(f.smtpPort)}</div></div>
         </div>
-        <div><label style={lbl}>App password</label><input style={inp} type="password" value={f.password} onChange={(e) => set('password', e.target.value)} placeholder="App-specific password" autoComplete="new-password" /></div>
+        <div><label style={lbl}>Password</label><input style={inp} type="password" value={f.password} onChange={(e) => set('password', e.target.value)} placeholder="Mailbox password" autoComplete="new-password" /><div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Use your mailbox password, or an app password if your provider requires one (e.g. Gmail, Outlook with 2FA).</div></div>
         {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
         <button onClick={connect} disabled={busy} style={{ alignSelf: 'flex-start', padding: '9px 18px', borderRadius: 9, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>{busy ? 'Testing connection…' : 'Connect & test'}</button>
-        <div style={{ fontSize: 11.5, color: '#94A3B8' }}>🔒 Your password is verified, then encrypted at rest (AES-256-GCM). It is never stored in plain text, never shown again, and never sent back to the browser.</div>
+        <div style={{ fontSize: 11.5, color: '#94A3B8' }}>🔒 Verified, then encrypted at rest (AES-256-GCM). Encryption mode is derived from the port (465/993 = SSL, 587/143 = STARTTLS). Your password is never stored in plain text, shown again, or sent back to the browser.</div>
       </div>
     </div>
   )
