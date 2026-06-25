@@ -101,6 +101,16 @@ export default function Home() {
         </div></Stagger>
       </Container></section>
 
+      {/* COMPARISON HOOK */}
+      <section className="mk-section"><Container>
+        <Reveal><div style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: '32px 28px', textAlign: 'center', boxShadow: '0 24px 50px -34px rgba(30,27,75,0.3)' }}>
+          <Eyebrow>See the difference</Eyebrow>
+          <h2 className="mk-h2" style={{ margin: '8px 0 10px' }}>Still on a traditional ATS — or one with bolt-on AI?</h2>
+          <p style={{ fontSize: 16, color: T.slate, maxWidth: 600, margin: '0 auto 22px', lineHeight: 1.6 }}>See exactly how Levl1 Hire compares, feature for feature, to a traditional ATS and an ATS with AI add-ons.</p>
+          <Button href="/hire#compare">Compare Levl1 Hire →</Button>
+        </div></Reveal>
+      </Container></section>
+
       {/* ENTERPRISE STRIP */}
       <section style={{ background: T.ink, padding: '72px 0' }}><Container style={{ textAlign: 'center' }}>
         <Reveal><h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 800, color: '#fff', marginBottom: 8 }}>Built for scale and security.</h2>

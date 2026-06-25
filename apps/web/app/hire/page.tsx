@@ -24,6 +24,21 @@ const CAPS: [string, string][] = [
   ['Built-in email', 'Connect your business mailbox, read inbound job specs (AI drafts the position for you), and reach out to candidates from your own address — without leaving Levl1.'],
 ]
 
+// Generic, vendor-neutral comparison: [feature, traditional ATS, ATS + AI add-ons, Levl1 Hire]
+const COMPARE: [string, string, string, string][] = [
+  ['Résumé screening', 'Manual reading & keyword filters', 'AI scoring as a paid add-on, generic', 'AI scoring on your rubric — every CV, incl. scanned & image PDFs'],
+  ['Scoring transparency', 'None — gut feel', 'Black-box score', 'Explainable, rubric-weighted, re-scorable'],
+  ['Job descriptions', 'Copy-paste templates', 'Generic AI text', 'Role-specific AI brief from a one-line nudge'],
+  ['Sourcing', 'Manual board searches', 'Limited / none', 'AI boolean search-strings + bring-your-own-board posting'],
+  ['Assistant', 'None', 'Chatbot that answers', 'Agentic — proposes & executes actions, you approve'],
+  ['CRM & deals', 'A separate tool', 'Rarely included', 'Built-in CRM + deal economics, linked to jobs'],
+  ['First-round interviews', 'Schedule humans', 'Add-on or none', 'Autonomous AI voice interviews (Levl1 Screen)'],
+  ['Team oversight', 'Spreadsheets', 'Basic dashboards', 'Manager oversight, ageing & drag-drop assignment'],
+  ['Inbound email', 'Manual triage', 'Not handled', 'Connected mailbox — job specs become draft positions'],
+  ['Setup', 'Weeks of configuration', 'Weeks + training', 'Live the same day'],
+  ['Pricing model', 'Per seat — climbs as you grow', 'Per seat + AI add-ons', 'Tailored to your team — talk to us'],
+]
+
 const ROI: [string, string][] = [
   ['Cut first-round screening time dramatically', 'AI triages every CV so recruiters skip manual reading.'],
   ['Run more roles per recruiter', 'Automation and ranking multiply each recruiter’s capacity.'],
@@ -94,6 +109,31 @@ export default function HireMarketing() {
               ))}
             </div>
           </div>
+        </Container></section>
+
+        {/* COMPARISON */}
+        <section id="compare" className="mk-section" style={{ scrollMarginTop: 90 }}><Container style={{ maxWidth: 960 }}>
+          <Reveal><div style={{ textAlign: 'center', marginBottom: 28 }}><Eyebrow color={T.violet}>How we compare</Eyebrow><h2 className="mk-h2">A real AI platform — not an ATS with a few AI buttons.</h2><p style={{ fontSize: 15.5, color: T.slate, maxWidth: 600, margin: '12px auto 0' }}>Feature-for-feature against a traditional ATS and an ATS with bolt-on AI tools.</p></div></Reveal>
+          <Reveal><div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 16, overflow: 'hidden', minWidth: 720, border: '1px solid #E7E9F5' }}>
+              <thead><tr style={{ background: T.ink, color: '#fff' }}>
+                {['', 'Traditional ATS', 'ATS + AI add-ons', 'Levl1 Hire'].map((h, i) => (
+                  <th key={h} style={{ textAlign: 'left', padding: '14px 16px', fontSize: 13, fontWeight: 700, background: i === 3 ? T.violet : 'transparent', width: i === 0 ? '20%' : '26.6%' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {COMPARE.map((row) => (
+                  <tr key={row[0]} style={{ borderTop: '1px solid #EEF0FA' }}>
+                    <td style={{ padding: '13px 16px', fontWeight: 700, fontSize: 13.5, color: '#0F172A' }}>{row[0]}</td>
+                    <td style={{ padding: '13px 16px', fontSize: 13.5, color: '#64748B' }}>{row[1]}</td>
+                    <td style={{ padding: '13px 16px', fontSize: 13.5, color: '#64748B' }}>{row[2]}</td>
+                    <td style={{ padding: '13px 16px', fontSize: 13.5, color: '#0F172A', fontWeight: 600, background: 'rgba(109,40,217,0.05)' }}>{row[3]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div></Reveal>
+          <div style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8', marginTop: 10 }}>Illustrative of common market categories — no specific vendors.</div>
         </Container></section>
 
         {/* CTA */}
