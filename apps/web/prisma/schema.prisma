@@ -1009,6 +1009,7 @@ model MailboxMessage {
   receivedAt        DateTime
   isJobSpec         Boolean  @default(false)
   jobSpecConfidence Int?
+  isRead            Boolean  @default(false)
   status            String   @default("new") // new | archived | drafted
   createdPositionId String?
   createdAt         DateTime @default(now())

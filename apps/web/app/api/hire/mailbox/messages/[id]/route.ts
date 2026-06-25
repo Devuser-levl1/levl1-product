@@ -26,6 +26,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   const body = await req.json().catch(() => ({}))
   const data: Record<string, unknown> = {}
   if (body.status === 'archived' || body.status === 'drafted' || body.status === 'new') data.status = body.status
+  if (typeof body.isRead === 'boolean') data.isRead = body.isRead
   if (typeof body.createdPositionId === 'string') data.createdPositionId = body.createdPositionId
   const updated = await prisma.mailboxMessage.update({ where: { id: msg.id }, data })
   return NextResponse.json({ ok: true, status: updated.status, createdPositionId: updated.createdPositionId })

@@ -14,7 +14,7 @@ export const GET = withHireAuth(async (req, ctx) => {
     where: { connectionId: conn.id, tenantId: ctx.tenantId, ...(filter === 'jobspec' ? { isJobSpec: true } : {}) },
     orderBy: { receivedAt: 'desc' },
     take: 100,
-    select: { id: true, fromAddr: true, fromName: true, subject: true, snippet: true, receivedAt: true, isJobSpec: true, jobSpecConfidence: true, status: true, createdPositionId: true },
+    select: { id: true, fromAddr: true, fromName: true, subject: true, snippet: true, receivedAt: true, isJobSpec: true, jobSpecConfidence: true, isRead: true, status: true, createdPositionId: true },
   })
   return NextResponse.json({ messages })
 })
