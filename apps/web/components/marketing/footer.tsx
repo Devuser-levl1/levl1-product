@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { T } from './tokens'
+import { Logo } from './logo'
 
 export function MarketingFooter() {
   const col = (title: string, links: [string, string][]) => (
@@ -10,7 +11,7 @@ export function MarketingFooter() {
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '64px 24px 36px' }}>
         <div className="mk-foot" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1.2fr', gap: 36 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}><span style={{ width: 24, height: 24, borderRadius: 7, background: `linear-gradient(135deg, ${T.purple}, ${T.blue})`, transform: 'rotate(45deg)' }} /><span style={{ fontWeight: 800, fontSize: 18, color: '#fff' }}>Levl1</span></div>
+            <div style={{ marginBottom: 14 }}><Logo variant="white" height={26} /></div>
             <div style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 260, color: '#A9B0D6' }}>The AI hiring &amp; evaluation platform for modern talent teams worldwide.</div>
           </div>
           {col('Products', [['Hire', '/hire'], ['Interviews', '/interviews']])}

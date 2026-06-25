@@ -4,10 +4,29 @@ import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegistrar } from "@/components/layout/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://levl1.io"),
   title: "Levl1 — AI Interview Platform",
   description:
     "Voice AI L1 interviews for tech and product roles. Built for recruitment agencies and enterprises.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
+  },
+  openGraph: {
+    title: "Levl1 — The AI hiring & interview platform",
+    description:
+      "Levl1 reads every résumé, scores every candidate, and interviews them for you.",
+    siteName: "Levl1",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Levl1 — The AI hiring & interview platform",
+    description:
+      "Levl1 reads every résumé, scores every candidate, and interviews them for you.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         {/* Cashfree Payment SDK */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />

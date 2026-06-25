@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { T } from './ui'
+import { Logo, LogoIcon } from './logo'
 
 // Non-product top-level links. Hire/Interviews live under the Products dropdown.
 const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
@@ -48,9 +49,8 @@ export function MarketingNav() {
   return (
     <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, transition: 'all .3s ease', background: solid ? 'rgba(255,255,255,0.8)' : 'transparent', backdropFilter: solid ? 'blur(16px)' : 'none', borderBottom: solid ? '1px solid rgba(15,16,32,0.08)' : '1px solid transparent' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 24px', height: solid ? 60 : 72, display: 'flex', alignItems: 'center', gap: 20, transition: 'height .3s ease' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
-          <span style={{ width: 26, height: 26, borderRadius: 8, background: `linear-gradient(135deg, ${T.purple}, ${T.blue})`, transform: 'rotate(45deg)' }} />
-          <span style={{ fontWeight: 800, fontSize: 19, color: T.ink, letterSpacing: '-0.01em' }}>Levl1</span>
+        <Link href="/" aria-label="Levl1 home" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', padding: '4px 2px' }}>
+          <Logo variant="black" height={26} priority />
         </Link>
         <nav className="mk-desk" style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 14 }}>
           {/* Platform */}
@@ -112,7 +112,10 @@ export function MarketingNav() {
       <AnimatePresence>
         {open && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: T.ink, zIndex: 200, padding: 24, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-            <button onClick={() => setOpen(false)} aria-label="Close" style={{ alignSelf: 'flex-end', background: 'none', border: 'none', fontSize: 26, color: '#fff', cursor: 'pointer' }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <LogoIcon size={32} />
+              <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', fontSize: 26, color: '#fff', cursor: 'pointer' }}>×</button>
+            </div>
             <motion.nav initial="h" animate="s" variants={{ s: { transition: { staggerChildren: 0.05 } } }} style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 20 }}>
               {([
                 ['Platform', '/'],
