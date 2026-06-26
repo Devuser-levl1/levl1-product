@@ -6,7 +6,7 @@ interface ProposalItem { id: string; name: string; detail?: string; sub?: string
 interface Proposal { actionType: string; title: string; note?: string; items: ProposalItem[]; payload: Record<string, unknown> }
 interface Msg { id: number; role: 'user' | 'assistant'; text?: string; proposal?: Proposal; status?: 'pending' | 'approved' | 'cancelled' }
 
-const CHIPS = ['Top candidates this week', 'Pipeline summary', 'Find 5 candidates for a job and add to pipeline', 'Move candidates scoring 80+ to Screening']
+const CHIPS = ['Top candidates this week', 'Pipeline summary', 'How do I create a screening rubric?', 'Find 5 candidates for a job and add to pipeline']
 const OPEN_KEY = 'levl1.ask.open'
 
 export function AskLevl1Drawer() {

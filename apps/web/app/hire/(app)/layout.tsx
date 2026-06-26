@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
 import {
   LayoutDashboard, Briefcase, Users, KanbanSquare, Search, Database,
-  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, Settings as SettingsIcon,
+  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { can, type Capability } from '@/lib/hire/permissions'
@@ -31,6 +31,7 @@ const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability }[]
   { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar' },
   { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
   { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone },
+  { label: 'Help', href: '/hire/help', icon: HelpCircle },
   { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
 ]
 
@@ -141,6 +142,9 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
                 ◆ Platform <span style={{ fontSize: 11 }}>↗</span>
               </a>
             )}
+            <a href="/hire/help" title="Help & guides" aria-label="Help" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, color: '#64748B', border: '1px solid #E2E8F0', textDecoration: 'none' }}>
+              <HelpCircle size={17} />
+            </a>
             <span style={{ fontSize: 13, color: '#475569' }}>{me!.user.name}</span>
             <button onClick={logout} style={{ fontSize: 13, color: '#64748B', background: 'none', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
               Log out

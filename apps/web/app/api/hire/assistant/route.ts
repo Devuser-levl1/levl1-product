@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { CLAUDE_MODEL } from '@/lib/ai/model'
 import { TOOLS, TOOL_BY_NAME } from '@/lib/mcp/tools'
 import { resolveAddToPipeline, resolveBulkStageMove, resolveDraftOutreach, ResolveResult } from '@/lib/hire/agent'
+import { searchHelp } from '@/lib/hire/help-content'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -17,15 +18,25 @@ export const maxDuration = 60
 // approval does /api/hire/assistant/execute apply + log the change.
 
 const SYSTEM = `You are Levl1, an agentic assistant embedded in a recruiter's Levl1 Hire ATS.
-You can ANSWER questions about the recruiter's data (read-only tools) and PROPOSE actions (propose_* tools).
+You do THREE things: (1) ANSWER questions about the recruiter's data (read-only tools), (2) PROPOSE actions (propose_* tools), and (3) GUIDE the user on how to use Levl1 (search_help tool).
 Rules:
-- Ground every answer in tool results. Never invent candidates, jobs, scores.
+- Ground every answer in tool results. Never invent candidates, jobs, scores, or product steps.
 - Discover ids with list_jobs before acting on a job. Never ask the user for ids — look them up.
 - For any side-effecting request (add candidates to a pipeline, move candidates between stages, send/draft outreach), call the matching propose_* tool. NEVER claim you did it — proposing shows the user an approval card; they approve or cancel.
-- Read-only questions: answer directly, concisely, with names + scores. This renders in a narrow chat panel.
+- For HOW-TO / guidance questions ("how do I…", "where do I…", "how does … work"), call search_help and answer ONLY from what it returns: give the concise steps and end by pointing to the screen, e.g. "Go to Team → Client assignments". Do NOT invent steps the help didn't give.
+- Read-only data questions: answer directly, concisely, with names + scores. This renders in a narrow chat panel.
 - When the user says "this job"/"here" and a current job context is given, use that jobId.`
 
-const READONLY_TOOLS: Anthropic.Tool[] = TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema as Anthropic.Tool.InputSchema }))
+const HELP_TOOL: Anthropic.Tool = {
+  name: 'search_help',
+  description: 'Search the Levl1 Hire help guide for how-to / guidance answers (how to use a feature, where to find something). Returns matching help articles with steps and the screen to go to. Use this for any "how do I…", "where do I…", or "how does X work" question.',
+  input_schema: { type: 'object', properties: { query: { type: 'string', description: 'The user\'s how-to question or feature keywords.' } }, required: ['query'] },
+}
+
+const READONLY_TOOLS: Anthropic.Tool[] = [
+  ...TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema as Anthropic.Tool.InputSchema })),
+  HELP_TOOL,
+]
 
 const ACTION_TOOLS: Anthropic.Tool[] = [
   {
@@ -110,10 +121,17 @@ export const POST = withHireAuth(async (req, ctx) => {
       messages.push({ role: 'assistant', content: resp.content })
       const results: Anthropic.ToolResultBlockParam[] = []
       for (const tu of toolUses) {
-        const tool = TOOL_BY_NAME.get(tu.name)
         toolsUsed.push(tu.name)
         try {
-          const out = tool ? await tool.run(ctx.tenantId, (tu.input ?? {}) as Record<string, unknown>) : { error: `Unknown tool ${tu.name}` }
+          let out: unknown
+          if (tu.name === 'search_help') {
+            // How-to knowledge source — same content that powers /hire/help.
+            const articles = searchHelp(String((tu.input as { query?: string })?.query ?? ''), 5)
+            out = articles.map((a) => ({ title: a.title, what: a.what, steps: a.steps, goTo: a.screen.label, href: a.screen.href }))
+          } else {
+            const tool = TOOL_BY_NAME.get(tu.name)
+            out = tool ? await tool.run(ctx.tenantId, (tu.input ?? {}) as Record<string, unknown>) : { error: `Unknown tool ${tu.name}` }
+          }
           results.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out).slice(0, 12000) })
         } catch (e) {
           results.push({ type: 'tool_result', tool_use_id: tu.id, content: `Error: ${e instanceof Error ? e.message : 'failed'}`, is_error: true })
