@@ -637,6 +637,10 @@ model HireTenant {
   currentPeriodEnd         DateTime?
   gettingStarted           Json?
 
+  // Accounts Receivable defaults (per-invoice values override these).
+  arDueCycleDays         Int @default(30) // default invoice payment window
+  arReminderIntervalDays Int @default(7)  // days between automatic overdue reminders
+
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -650,6 +654,7 @@ model HireTenant {
   apiKeys         ApiKey[]
   webhookEndpoints WebhookEndpoint[]
   jobBoardConnectors JobBoardConnector[]
+  invoices        HireInvoice[]
 }
 
 // ── Public API + outbound webhooks (Build 0) ───────────────────────────────
@@ -1068,6 +1073,7 @@ model HireClient {
   contacts  HireContact[]
   deals     HireDeal[]
   jobs      HireJob[]
+  invoices  HireInvoice[]
 
   @@index([tenantId])
 }
@@ -1122,9 +1128,65 @@ model HireDeal {
   margin       Float?    // optional gross-margin %
   // Optional, bidirectional links to the jobs this deal staffs.
   jobs        HireJob[]  @relation("DealJobs")
+  invoices    HireInvoice[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  @@index([tenantId])
+}
+
+// ── Accounts Receivable ─────────────────────────────────────────────────────
+// Invoices raised against a client (optionally tied to a CRM deal). Drives the
+// AR dashboard (ageing, days overdue) and automatic overdue reminders.
+model HireInvoice {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    HireTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    HireClient @relation(fields: [clientId], references: [id])
+  dealId    String?
+  deal      HireDeal?  @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  number    String?    // optional human invoice number / ref
+  amount    Float                       // total invoiced
+  amountPaid Float     @default(0)       // supports partial payments
+  currency  String     @default("INR")
+
+  sentDate  DateTime   @default(now())  // when the invoice was sent
+  dueDate   DateTime                    // payment due
+  dueCycleDays Int     @default(30)     // window used to derive dueDate (configurable)
+
+  status    String     @default("pending") // pending | partial | paid
+  paidAt    DateTime?
+
+  // Automatic reminders.
+  reminderIntervalDays Int      @default(7) // days between overdue reminders
+  lastReminderAt       DateTime?            // last automatic follow-up sent
+  remindersOn          Boolean  @default(true)
+
+  notes     String?    @db.Text
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  reminders HireInvoiceReminder[]
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([dealId])
+}
+
+// Audit log: one row per automatic reminder actually sent.
+model HireInvoiceReminder {
+  id          String      @id @default(cuid())
+  invoiceId   String
+  invoice     HireInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenantId    String
+  sentTo      String
+  daysOverdue Int
+  channel     String      @default("email")
+  sentAt      DateTime    @default(now())
+
+  @@index([invoiceId])
   @@index([tenantId])
 }
 

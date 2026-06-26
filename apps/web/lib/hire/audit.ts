@@ -7,9 +7,10 @@ export type AuditAction =
   | 'stage_move' | 'reject' | 'delete' | 'candidate_create'
   | 'job_create' | 'job_update' | 'job_delete' | 'rubric_change'
   | 'deal_create' | 'deal_update' | 'deal_delete'
+  | 'invoice_create' | 'invoice_paid' | 'invoice_delete'
   | 'team_member_invite' | 'job_reassign' | 'candidate_reassign'
 
-export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member'
+export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice'
 
 /** Resolve a Hire user's display name for an actor-name snapshot. */
 export async function resolveActorName(userId?: string | null): Promise<string | null> {
@@ -103,6 +104,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   deal_create: 'Deal created',
   deal_update: 'Deal updated',
   deal_delete: 'Deal deleted',
+  invoice_create: 'Invoice created',
+  invoice_paid: 'Invoice paid',
+  invoice_delete: 'Invoice deleted',
   team_member_invite: 'Team member invited',
   job_reassign: 'Job reassigned',
   candidate_reassign: 'Candidate reassigned',

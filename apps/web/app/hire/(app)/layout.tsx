@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
 import {
   LayoutDashboard, Briefcase, Users, KanbanSquare, Search, Database,
-  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Settings as SettingsIcon,
+  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -25,6 +25,7 @@ const NAV: { label: string; href: string; icon: LucideIcon; managerOnly?: boolea
   { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
   { label: 'Team', href: '/hire/team', icon: Network, managerOnly: true },
   { label: 'CRM', href: '/hire/crm', icon: Building2 },
+  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt },
   { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
   { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone },
   { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
