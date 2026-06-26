@@ -31,6 +31,7 @@ export default function NewJobPage() {
   const [stages, setStages] = useState<string[]>(DEFAULT_STAGES)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [limitMsg, setLimitMsg] = useState('')
   const [clientId, setClientId] = useState('')
   const [jdMode, setJdMode] = useState<'paste' | 'upload'>('paste')
   const [jdParsing, setJdParsing] = useState(false)
@@ -98,6 +99,15 @@ export default function NewJobPage() {
     if (pre) setClientId(pre)
   }, [])
 
+  // Proactively surface the trial/plan job allowance so the limit is never a surprise.
+  useEffect(() => {
+    fetch('/api/hire/billing/status').then((r) => (r.ok ? r.json() : null)).then((s) => {
+      if (s && s.usage.activeJobs >= s.limits.activeJobs) {
+        setLimitMsg(`You've reached your ${s.trialActive ? 'trial ' : ''}limit of ${s.limits.activeJobs} jobs. Upgrade to add more.`)
+      }
+    }).catch(() => {})
+  }, [])
+
   async function save() {
     if (!form.title.trim() || !form.description.trim()) { setError('Title and description are required'); return }
     setSaving(true); setError('')
@@ -117,7 +127,12 @@ export default function NewJobPage() {
         }),
       })
       const d = await res.json()
-      if (!res.ok) { setError(d.error ?? 'Could not create job'); setSaving(false); return }
+      if (!res.ok) {
+        // Soft, friendly handling for plan/trial limits — not a hard red error.
+        if (res.status === 402 || d.upgrade) { setLimitMsg(d.message ?? "You've reached your trial limit of jobs. Upgrade to add more.") }
+        else { setError(d.message ?? d.error ?? 'Could not create job') }
+        setSaving(false); return
+      }
       router.push(`/hire/jobs/${d.id}`)
     } catch { setError('Something went wrong'); setSaving(false) }
   }
@@ -125,6 +140,13 @@ export default function NewJobPage() {
   return (
     <div style={{ maxWidth: 720 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 18px' }}>Create New Job</h1>
+
+      {limitMsg && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 18 }}>
+          <span style={{ fontSize: 13.5, color: '#92400E' }}>{limitMsg}</span>
+          <a href="/hire/settings/billing" style={{ marginLeft: 'auto', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 700, color: '#6D28D9', textDecoration: 'none' }}>Upgrade →</a>
+        </div>
+      )}
 
       {/* ── AI Generator panel (hero) ── */}
       <div style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%)', borderRadius: 14, padding: 2, marginBottom: 18 }}>

@@ -14,4 +14,4 @@ export const HIRE_PLANS = {
 
 export type HirePlanId = keyof typeof HIRE_PLANS
 
-export const TRIAL_LIMITS = { recruiters: 2, activeJobs: 2, candidatesPerMonth: 50, aiInterviewsPerMonth: 5, trialDays: 14 }
+export const TRIAL_LIMITS = { recruiters: 2, activeJobs: 5, candidatesPerMonth: 50, aiInterviewsPerMonth: 5, trialDays: 14 }

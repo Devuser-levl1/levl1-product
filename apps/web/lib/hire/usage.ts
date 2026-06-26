@@ -55,7 +55,12 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
     return { allowed: false, reason: 'candidate_limit', message: `You've reached ${limits.candidatesPerMonth} candidates this month.` }
   if (kind === 'job') {
     const activeJobs = await prisma.hireJob.count({ where: { tenantId, status: 'ACTIVE' } })
-    if (activeJobs >= limits.activeJobs) return { allowed: false, reason: 'job_limit', message: `Your plan allows ${limits.activeJobs} active jobs.` }
+    if (activeJobs >= limits.activeJobs) {
+      const message = tenant.trialActive
+        ? `You've reached your trial limit of ${limits.activeJobs} jobs. Upgrade to add more.`
+        : `Your plan allows ${limits.activeJobs} active jobs.`
+      return { allowed: false, reason: 'job_limit', message }
+    }
   }
   if (kind === 'seat') {
     const seats = await prisma.hireUser.count({ where: { tenantId } })

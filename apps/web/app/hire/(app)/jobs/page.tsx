@@ -3,12 +3,14 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Job { id: string; title: string; department: string | null; status: string; createdAt: string; assigneeId: string | null; _count: { candidates: number }; client: { id: string; name: string } | null }
+interface Usage { trialActive: boolean; limits: { activeJobs: number }; usage: { activeJobs: number } }
 const STATUS_COLORS: Record<string, string> = { ACTIVE: '#10B981', PAUSED: '#F59E0B', CLOSED: '#475569' }
 
 export default function JobsListPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>([])
   const [team, setTeam] = useState<Record<string, string>>({})
+  const [usage, setUsage] = useState<Usage | null>(null)
   const [filter, setFilter] = useState('ALL')
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
@@ -17,6 +19,9 @@ export default function JobsListPage() {
   }, [])
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/hire/team').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setTeam(Object.fromEntries(d.map((u: { id: string; name: string }) => [u.id, u.name])))).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/hire/billing/status').then((r) => (r.ok ? r.json() : null)).then(setUsage).catch(() => {}) }, [jobs.length])
+
+  const atLimit = usage ? usage.usage.activeJobs >= usage.limits.activeJobs : false
 
   async function patch(id: string, body: Record<string, unknown>) {
     await fetch(`/api/hire/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -35,10 +40,24 @@ export default function JobsListPage() {
 
   return (
     <div style={{ maxWidth: 860 }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Jobs</h1>
+        {usage && (
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: atLimit ? '#B45309' : '#64748B', background: atLimit ? 'rgba(245,158,11,0.12)' : '#F1F5F9', borderRadius: 100, padding: '4px 11px' }}>
+            Jobs: {usage.usage.activeJobs} of {usage.limits.activeJobs} used{usage.trialActive ? ' (trial)' : ''}
+          </span>
+        )}
         <button onClick={() => router.push('/hire/jobs/new')} style={{ marginLeft: 'auto', padding: '10px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>+ New Job</button>
       </div>
+
+      {atLimit && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+          <span style={{ fontSize: 13.5, color: '#92400E' }}>
+            You&apos;ve reached your {usage?.trialActive ? 'trial ' : ''}limit of {usage?.limits.activeJobs} jobs.
+          </span>
+          <a href="/hire/settings/billing" style={{ marginLeft: 'auto', fontSize: 13.5, fontWeight: 700, color: '#6D28D9', textDecoration: 'none' }}>Upgrade to add more →</a>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(['ALL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const).map((s) => (

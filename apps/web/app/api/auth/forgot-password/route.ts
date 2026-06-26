@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       data:  { resetPasswordToken: resetToken, resetPasswordExpiry: resetExpiry },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
     const resetUrl = `${appUrl}/reset-password/${resetToken}`
 
     if (process.env.RESEND_API_KEY) {
