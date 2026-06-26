@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { getScopes, requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
+// Scoped: recruiters see only their assigned clients; managers/admins see all.
+// (Used by client pickers across roles, so scoped rather than blocked.)
 export const GET = withHireAuth(async (_req, ctx) => {
+  const { client: clientWhere } = await getScopes(ctx)
   const clients = await prisma.hireClient.findMany({
-    where: { tenantId: ctx.tenantId },
+    where: { tenantId: ctx.tenantId, ...clientWhere },
     include: {
       contacts: true,
       deals: { where: { stage: { not: 'Closed Lost' } }, select: { id: true, value: true, stage: true } },
@@ -18,7 +22,9 @@ export const GET = withHireAuth(async (_req, ctx) => {
   return NextResponse.json(clients)
 })
 
+// Creating clients is a manager/admin action (recruiters work within assigned clients).
 export const POST = withHireAuth(async (req, ctx) => {
+  const denied = requireCap(ctx, 'assignClients'); if (denied) return denied
   const body = await req.json()
   if (!body.name) return NextResponse.json({ error: 'Company name is required' }, { status: 400 })
 

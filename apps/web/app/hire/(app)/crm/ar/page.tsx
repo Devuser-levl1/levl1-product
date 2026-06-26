@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NewInvoiceModal } from '@/components/hire/new-invoice-modal'
+import { can } from '@/lib/hire/permissions'
 
 interface Invoice {
   id: string; number: string | null; amount: number; amountPaid: number; currency: string
@@ -37,6 +38,9 @@ export default function ARPage() {
   const [showNew, setShowNew] = useState(false)
   const [tab, setTab] = useState<'open' | 'overdue' | 'paid'>('open')
   const [busy, setBusy] = useState<string | null>(null)
+  const [allowed, setAllowed] = useState<boolean | null>(null)
+
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(can(d?.user?.role, 'ar'))).catch(() => setAllowed(false)) }, [])
 
   const load = useCallback(() => {
     Promise.all([
@@ -63,7 +67,13 @@ export default function ARPage() {
     setBusy(null); load()
   }
 
-  if (!loaded) return <div style={{ color: '#475569' }}>Loading…</div>
+  if (allowed === false) return (
+    <div style={{ maxWidth: 520, padding: '32px 0' }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A' }}>Access restricted</div>
+      <div style={{ fontSize: 13.5, color: '#64748B', marginTop: 6 }}>Accounts Receivable is available to admins.</div>
+    </div>
+  )
+  if (!loaded || allowed === null) return <div style={{ color: '#475569' }}>Loading…</div>
 
   return (
     <div style={{ maxWidth: 1080 }}>

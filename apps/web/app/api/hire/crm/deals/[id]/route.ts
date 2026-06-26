@@ -3,13 +3,15 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
 import { parseEconomics, validJobIds } from '@/lib/hire/deal-input'
+import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
 const ECON_KEYS = ['positions', 'billRate', 'hoursPerWeek', 'durationValue', 'durationUnit', 'margin']
 
-// Deals are fully editable at ANY stage.
+// Deals are fully editable at ANY stage. Admin-only (Deals capability).
 export const PATCH = withHireAuth(async (req, ctx, params) => {
+  const denied = requireCap(ctx, 'deals'); if (denied) return denied
   const existing = await prisma.hireDeal.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const body = await req.json()
@@ -60,6 +62,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
 })
 
 export const DELETE = withHireAuth(async (_req, ctx, params) => {
+  const denied = requireCap(ctx, 'deals'); if (denied) return denied
   const existing = await prisma.hireDeal.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'deal_delete', targetType: 'deal', targetId: existing.id, targetName: existing.title })

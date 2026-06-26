@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 import { writeAudit } from '@/lib/hire/audit'
-import { assigneeScope } from '@/lib/hire/roles'
+import { getScopes } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,9 +25,11 @@ export const GET = withHireAuth(async (req, ctx) => {
       { email: { contains: search, mode: 'insensitive' } },
     ]
   }
-  // Recruiters see only their own (or unassigned) candidates; managers/admins all.
+  // Recruiters see candidates assigned to them, candidates whose job belongs to
+  // their assigned clients, or unassigned/job-less ones; managers/admins all.
   // AND-wrapped so it composes with the search OR above.
-  where.AND = [assigneeScope(ctx.role, ctx.userId) as Prisma.HireCandidateWhereInput]
+  const { candidate: candidateWhere } = await getScopes(ctx)
+  where.AND = [candidateWhere as Prisma.HireCandidateWhereInput]
 
   const [candidates, total] = await Promise.all([
     prisma.hireCandidate.findMany({

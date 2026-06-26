@@ -3,11 +3,14 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
 import { deriveStatus } from '@/lib/hire/ar'
+import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
+// Accounts Receivable is an Admin-only capability.
 // GET /api/hire/crm/invoices — all invoices for this tenant (newest first).
 export const GET = withHireAuth(async (_req, ctx) => {
+  const denied = requireCap(ctx, 'ar'); if (denied) return denied
   const invoices = await prisma.hireInvoice.findMany({
     where: { tenantId: ctx.tenantId },
     include: {

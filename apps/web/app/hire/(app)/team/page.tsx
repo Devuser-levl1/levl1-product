@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core'
 import { VIZ, CountUp } from '@/components/hire/viz'
 import { ROLE_LABEL } from '@/lib/hire/roles'
+import { ClientAssignments } from '@/components/hire/client-assignments'
 
 interface Member { id: string; name: string; email: string; role: string; activeJobs: number; candidatesInProgress: number; totalCandidates: number; placements: number; avgTimeToFill: number | null; activity30d: number; stalledJobs: number }
 interface JobRow { id: string; title: string; assigneeId: string | null; daysOpen: number; pipelineCount: number; lastActivityAt: string; daysSinceActivity: number; stalled: boolean; ageSeverity: string; topStage: string | null }
@@ -15,7 +16,7 @@ export default function TeamPage() {
   const [role, setRole] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [data, setData] = useState<Oversight | null>(null)
-  const [tab, setTab] = useState<'oversight' | 'board'>('oversight')
+  const [tab, setTab] = useState<'oversight' | 'board' | 'clients'>('oversight')
   const [member, setMember] = useState<string | null>(null)
 
   useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => { setRole(d?.user?.role ?? null); setReady(true) }).catch(() => setReady(true)) }, [])
@@ -38,10 +39,10 @@ export default function TeamPage() {
       <div style={{ fontSize: 13.5, color: VIZ.slate, marginBottom: 16 }}>Oversight of who&apos;s working on what, ageing positions, and workload — drag jobs to reassign.</div>
 
       <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${VIZ.line}`, marginBottom: 16 }}>
-        {([['oversight', 'Oversight'], ['board', 'Assignment board']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', fontSize: 13.5, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === k ? VIZ.primary : 'transparent'), color: tab === k ? VIZ.primary : '#64748B', cursor: 'pointer' }}>{l}</button>)}
+        {([['oversight', 'Oversight'], ['board', 'Assignment board'], ['clients', 'Client assignments']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', fontSize: 13.5, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === k ? VIZ.primary : 'transparent'), color: tab === k ? VIZ.primary : '#64748B', cursor: 'pointer' }}>{l}</button>)}
       </div>
 
-      {!data ? <div style={{ color: '#475569' }}>Loading…</div> : tab === 'oversight' ? (
+      {tab === 'clients' ? <ClientAssignments /> : !data ? <div style={{ color: '#475569' }}>Loading…</div> : tab === 'oversight' ? (
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 16 }}>

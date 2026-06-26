@@ -8,13 +8,16 @@ import {
   CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
+import { can, type Capability } from '@/lib/hire/permissions'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
   tenant: { id: string; name: string; plan: string; trialEndsAt: string | null; trialActive: boolean }
 }
 
-const NAV: { label: string; href: string; icon: LucideIcon; managerOnly?: boolean }[] = [
+// `cap` gates the item by role capability (see lib/hire/permissions). Items
+// without a cap are visible to every role (data is still scoped per-recruiter).
+const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability }[] = [
   { label: 'Dashboard', href: '/hire/dashboard', icon: LayoutDashboard },
   { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
@@ -23,9 +26,9 @@ const NAV: { label: string; href: string; icon: LucideIcon; managerOnly?: boolea
   { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
   { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
   { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
-  { label: 'Team', href: '/hire/team', icon: Network, managerOnly: true },
-  { label: 'CRM', href: '/hire/crm', icon: Building2 },
-  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt },
+  { label: 'Team', href: '/hire/team', icon: Network, cap: 'team' },
+  { label: 'CRM', href: '/hire/crm', icon: Building2, cap: 'crm' },
+  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar' },
   { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
   { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone },
   { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
@@ -91,7 +94,7 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
           <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>Levl1 <span style={{ color: '#A78BFA' }}>Hire</span></span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV.filter((item) => !item.managerOnly || me!.user.role === 'ADMIN' || me!.user.role === 'MANAGER').map((item) => {
+          {NAV.filter((item) => !item.cap || can(me!.user.role, item.cap)).map((item) => {
             const active = pathname === item.href
             const Icon = item.icon
             return (

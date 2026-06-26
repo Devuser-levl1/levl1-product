@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
 import { writeAudit, logAudit } from '@/lib/hire/audit'
 import { isManagerPlus } from '@/lib/hire/roles'
+import { canAccessCandidate } from '@/lib/hire/scope'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
@@ -14,6 +15,8 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
     include: { job: true, activities: { orderBy: { createdAt: 'desc' }, take: 50 } },
   })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  // Recruiters can only open a candidate for their assigned client / direct assignment.
+  if (!(await canAccessCandidate(ctx, candidate))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // The candidate's score is JOB-RELATIVE and lives in the canonical HireMatch
   // row (the same row the Candidates list + Top Matches read). The aiScore/etc.
@@ -42,8 +45,9 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
 })
 
 export const PATCH = withHireAuth(async (req, ctx, params) => {
-  const existing = await prisma.hireCandidate.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
+  const existing = await prisma.hireCandidate.findFirst({ where: { id: params.id, tenantId: ctx.tenantId }, include: { job: { select: { clientId: true } } } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessCandidate(ctx, existing))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
 
@@ -93,8 +97,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
 })
 
 export const DELETE = withHireAuth(async (req, ctx, params) => {
-  const candidate = await prisma.hireCandidate.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
+  const candidate = await prisma.hireCandidate.findFirst({ where: { id: params.id, tenantId: ctx.tenantId }, include: { job: { select: { clientId: true } } } })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessCandidate(ctx, candidate))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let reason = ''
   try { const b = await req.json(); reason = typeof b?.reason === 'string' ? b.reason.trim() : '' } catch { /* no body */ }

@@ -3,16 +3,18 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { checkAllowance } from '@/lib/hire/usage'
 import { logAudit } from '@/lib/hire/audit'
-import { assigneeScope } from '@/lib/hire/roles'
+import { getScopes } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_STAGES = ['Sourced', 'Screening', 'Interview', 'Technical Round', 'HR Round', 'Offer', 'Hired']
 
 export const GET = withHireAuth(async (_req, ctx) => {
-  // Recruiters see only jobs assigned to them (or still unassigned); managers/admins see all.
+  // Recruiters see jobs assigned to them, jobs for their assigned clients, or
+  // unassigned clientless jobs; managers/admins see all.
+  const { job: jobWhere } = await getScopes(ctx)
   const jobs = await prisma.hireJob.findMany({
-    where: { tenantId: ctx.tenantId, ...assigneeScope(ctx.role, ctx.userId) },
+    where: { tenantId: ctx.tenantId, ...jobWhere },
     include: {
       _count: { select: { candidates: true } },
       client: { select: { id: true, name: true } },

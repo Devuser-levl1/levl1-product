@@ -2,15 +2,17 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { REJECTED_STAGE } from '@/lib/hire/audit'
-import { assigneeScope } from '@/lib/hire/roles'
+import { getScopes } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = withHireAuth(async (req, ctx) => {
   const jobId = new URL(req.url).searchParams.get('jobId')
 
+  // Pipeline is per-job; recruiters only see their assigned clients' jobs.
+  const { job: jobWhere } = await getScopes(ctx)
   const jobs = await prisma.hireJob.findMany({
-    where: { tenantId: ctx.tenantId, status: 'ACTIVE', ...assigneeScope(ctx.role, ctx.userId), ...(jobId ? { id: jobId } : {}) },
+    where: { tenantId: ctx.tenantId, status: 'ACTIVE', ...jobWhere, ...(jobId ? { id: jobId } : {}) },
     include: {
       candidates: {
         orderBy: [{ aiScore: 'desc' }, { createdAt: 'asc' }],

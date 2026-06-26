@@ -720,6 +720,9 @@ model HireUser {
   lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
 
+  // Clients this recruiter is assigned to (drives scoped visibility).
+  assignedClients HireClient[] @relation("ClientRecruiters")
+
   @@unique([tenantId, email])
   @@index([tenantId])
 }
@@ -1074,6 +1077,8 @@ model HireClient {
   deals     HireDeal[]
   jobs      HireJob[]
   invoices  HireInvoice[]
+  // Recruiters assigned to this client (many-to-many).
+  recruiters HireUser[] @relation("ClientRecruiters")
 
   @@index([tenantId])
 }

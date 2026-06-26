@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { canAccessClient, requireCap } from '@/lib/hire/scope'
+import { can } from '@/lib/hire/permissions'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
+  // Recruiters may only open a client they're assigned to (no direct-URL access to others).
+  if (!(await canAccessClient(ctx, params.id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const showDeals = can(ctx.role, 'deals')
   const client = await prisma.hireClient.findFirst({
     where: { id: params.id, tenantId: ctx.tenantId },
     include: {
       contacts: { include: { activities: { orderBy: { createdAt: 'desc' }, take: 20 } }, orderBy: { createdAt: 'asc' } },
-      deals: { orderBy: { createdAt: 'desc' } },
+      ...(showDeals ? { deals: { orderBy: { createdAt: 'desc' as const } } } : {}),
       jobs: { include: { _count: { select: { candidates: true } } }, orderBy: { createdAt: 'desc' } },
+      recruiters: { select: { id: true, name: true, email: true } },
     },
   })
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -18,6 +24,7 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
 })
 
 export const PATCH = withHireAuth(async (req, ctx, params) => {
+  const denied = requireCap(ctx, 'assignClients'); if (denied) return denied
   const existing = await prisma.hireClient.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const body = await req.json()
@@ -34,6 +41,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
 })
 
 export const DELETE = withHireAuth(async (_req, ctx, params) => {
+  const denied = requireCap(ctx, 'crm'); if (denied) return denied
   const existing = await prisma.hireClient.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

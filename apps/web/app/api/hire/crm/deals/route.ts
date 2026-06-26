@@ -4,10 +4,13 @@ import { prisma } from '@/lib/prisma'
 import { DEAL_STAGES } from '@/lib/hire/constants'
 import { logAudit } from '@/lib/hire/audit'
 import { parseEconomics, validJobIds } from '@/lib/hire/deal-input'
+import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
+// Deals are an Admin-only capability (CRM/Deals). Recruiters & managers are denied.
 export const GET = withHireAuth(async (_req, ctx) => {
+  const denied = requireCap(ctx, 'deals'); if (denied) return denied
   const deals = await prisma.hireDeal.findMany({
     where: { tenantId: ctx.tenantId },
     include: {
@@ -24,6 +27,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
 })
 
 export const POST = withHireAuth(async (req, ctx) => {
+  const denied = requireCap(ctx, 'deals'); if (denied) return denied
   const body = await req.json()
   if (!body.clientId || !body.title) return NextResponse.json({ error: 'Client and title are required' }, { status: 400 })
   // Ensure the client belongs to this tenant

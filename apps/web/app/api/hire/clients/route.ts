@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { getScopes, requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = withHireAuth(async (_req, ctx) => {
+  const { client: clientWhere } = await getScopes(ctx)
   const clients = await prisma.hireClient.findMany({
-    where: { tenantId: ctx.tenantId },
+    where: { tenantId: ctx.tenantId, ...clientWhere },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(clients)
 })
 
 export const POST = withHireAuth(async (req, ctx) => {
+  const denied = requireCap(ctx, 'assignClients'); if (denied) return denied
   const body = await req.json()
   const client = await prisma.hireClient.create({
     data: {

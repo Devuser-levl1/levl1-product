@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { maybeAutoEmail } from '@/lib/hire/auto-email'
 import { writeAudit, REJECTED_STAGE } from '@/lib/hire/audit'
+import { canAccessCandidate } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +16,9 @@ export const PATCH = withHireAuth(async (req, ctx) => {
     return NextResponse.json({ error: 'Use the reject endpoint (a reason is required)' }, { status: 400 })
   }
 
-  const candidate = await prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId: ctx.tenantId } })
+  const candidate = await prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId: ctx.tenantId }, include: { job: { select: { clientId: true } } } })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessCandidate(ctx, candidate))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const fromStage = candidate.currentStage
   if (fromStage === toStage) return NextResponse.json({ success: true, fromStage, toStage })

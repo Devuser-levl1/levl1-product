@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
 import { deriveStatus } from '@/lib/hire/ar'
+import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +11,9 @@ async function owned(tenantId: string, id: string) {
   return prisma.hireInvoice.findFirst({ where: { id, tenantId } })
 }
 
-// GET — one invoice incl. client/deal + reminder log.
+// AR is Admin-only. GET — one invoice incl. client/deal + reminder log.
 export const GET = withHireAuth(async (_req, ctx, params) => {
+  const denied = requireCap(ctx, 'ar'); if (denied) return denied
   const inv = await prisma.hireInvoice.findFirst({
     where: { id: params.id, tenantId: ctx.tenantId },
     include: { client: { select: { id: true, name: true } }, deal: { select: { id: true, title: true } }, reminders: { orderBy: { sentAt: 'desc' } } },
@@ -23,6 +25,7 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
 // PATCH — record a payment (mark paid / partial), toggle reminders, or edit fields.
 // `markPaid: true` is a convenience that settles the full balance and stops reminders.
 export const PATCH = withHireAuth(async (req, ctx, params) => {
+  const denied = requireCap(ctx, 'ar'); if (denied) return denied
   const inv = await owned(ctx.tenantId, params.id)
   if (!inv) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const body = await req.json().catch(() => ({}))
@@ -59,6 +62,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
 
 // DELETE — remove an invoice (reminders cascade).
 export const DELETE = withHireAuth(async (_req, ctx, params) => {
+  const denied = requireCap(ctx, 'ar'); if (denied) return denied
   const inv = await owned(ctx.tenantId, params.id)
   if (!inv) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   await prisma.hireInvoice.delete({ where: { id: inv.id } })

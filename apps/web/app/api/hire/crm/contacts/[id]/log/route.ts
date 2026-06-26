@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
 const TYPES = ['call', 'email', 'meeting', 'note']
 
 export const POST = withHireAuth(async (req, ctx, params) => {
+  const denied = requireCap(ctx, 'crm'); if (denied) return denied
   const contact = await prisma.hireContact.findFirst({ where: { id: params.id, client: { tenantId: ctx.tenantId } } })
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
 import { isManagerPlus } from '@/lib/hire/roles'
+import { canAccessJob } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,12 +17,15 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
     },
   })
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  // Recruiters can only open a job for their assigned client / direct assignment.
+  if (!(await canAccessJob(ctx, job))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(job)
 })
 
 export const PATCH = withHireAuth(async (req, ctx, params) => {
   const existing = await prisma.hireJob.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessJob(ctx, existing))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
   const data: Record<string, unknown> = {}
@@ -115,6 +119,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
 export const DELETE = withHireAuth(async (_req, ctx, params) => {
   const existing = await prisma.hireJob.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessJob(ctx, existing))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'job_delete', targetType: 'job', targetId: existing.id, targetName: existing.title })
   // Detach candidates, then delete the job.
   await prisma.hireCandidate.updateMany({ where: { jobId: existing.id }, data: { jobId: null } })

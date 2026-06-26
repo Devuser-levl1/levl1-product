@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { writeAudit, REJECTED_STAGE } from '@/lib/hire/audit'
+import { canAccessCandidate } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,9 @@ export const PATCH = withHireAuth(async (req, ctx) => {
   const trimmed = typeof reason === 'string' ? reason.trim() : ''
   if (!trimmed) return NextResponse.json({ error: 'A rejection reason is required' }, { status: 400 })
 
-  const candidate = await prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId: ctx.tenantId } })
+  const candidate = await prisma.hireCandidate.findFirst({ where: { id: candidateId, tenantId: ctx.tenantId }, include: { job: { select: { clientId: true } } } })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!(await canAccessCandidate(ctx, candidate))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const fromStage = candidate.currentStage
   const actorName = await writeAudit({

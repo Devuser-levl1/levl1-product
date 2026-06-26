@@ -2,16 +2,15 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { AUDIT_ACTION_LABELS } from '@/lib/hire/audit'
+import { requireCap } from '@/lib/hire/scope'
 import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
-// Admin-only, tenant-scoped audit trail. Filterable by actor, action and date
+// Manager/Admin, tenant-scoped audit trail. Filterable by actor, action and date
 // range; `?format=csv` streams an export.
 export const GET = withHireAuth(async (req, ctx) => {
-  if (ctx.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Admins only' }, { status: 403 })
-  }
+  const denied = requireCap(ctx, 'audit'); if (denied) return denied
 
   const sp = new URL(req.url).searchParams
   const actorUserId = sp.get('user')
