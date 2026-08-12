@@ -14,7 +14,7 @@ export async function resolveCallerEmail(req: NextRequest): Promise<string | nul
   }
   const ivw = getSessionFromRequest(req)
   if (ivw?.email) return ivw.email.toLowerCase()
-  const hire = getHireContext(req)
+  const hire = await getHireContext(req)
   if (hire) {
     const hu = await prisma.hireUser.findUnique({ where: { id: hire.userId }, select: { email: true } })
     if (hu?.email) return hu.email.toLowerCase()

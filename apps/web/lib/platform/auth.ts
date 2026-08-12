@@ -20,7 +20,7 @@ export interface PlatformContext { userId: string; email: string; name: string }
 
 /** Resolve platform-staff context from a valid Hire session + email allowlist. */
 export async function getPlatformContext(req: NextRequest): Promise<PlatformContext | null> {
-  const ctx = getHireContext(req)
+  const ctx = await getHireContext(req)
   if (!ctx) return null
   const u = await prisma.hireUser.findUnique({ where: { id: ctx.userId }, select: { email: true, name: true } }).catch(() => null)
   if (!u || !isStaffEmail(u.email)) return null

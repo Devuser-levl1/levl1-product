@@ -34,7 +34,10 @@ export function TeamMembers({ isAdmin }: { isAdmin: boolean }) {
     setBusy(null)
     if (!res.ok) { setNote(d.error ?? 'Could not change role'); return }
     setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, role } : x)))
-    setNote(`${m.name || m.email} is now ${ROLE_LABEL[role] ?? role}.`)
+    // Server authorization reads the role live from the DB, so this is effective
+    // immediately on their next request — no re-login needed (they may need to
+    // refresh their tab to see newly-available menus).
+    setNote(`${m.name || m.email} is now ${ROLE_LABEL[role] ?? role} — effective immediately (they may need to refresh their tab for new menus).`)
   }
 
   if (!loaded) return <div style={{ color: '#475569' }}>Loading…</div>

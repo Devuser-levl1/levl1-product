@@ -46,37 +46,53 @@ function verifyHireToken(token: string): HireTokenPayload | null {
   return payload
 }
 
-export function getHireContext(req: NextRequest): HireContext | null {
+/**
+ * Resolve the Hire auth context. The token is used ONLY to authenticate the
+ * user (signature-verified userId); the ROLE and TENANT are then loaded LIVE
+ * from the HireUser record — never trusted from the token, which is a stale
+ * snapshot from mint time. Benefits:
+ *   - a role change (e.g. RECRUITER → ADMIN) takes effect on the next request
+ *     with no re-login;
+ *   - a tampered token can't escalate — role is keyed on the authenticated
+ *     userId in the DB;
+ *   - a removed user (no row) loses access immediately.
+ */
+export async function getHireContext(req: NextRequest): Promise<HireContext | null> {
   try {
-    // 1. Unified Levl1 SSO session — preferred when present. Resolves the Hire
-    //    context from the namespaced fields and ENFORCES the Hire entitlement:
-    //    a Levl1 account not entitled to Hire gets no Hire access.
+    let userId: string | null = null
+
+    // 1. Unified Levl1 SSO session — preferred when present. ENFORCES the Hire
+    //    entitlement: a Levl1 account not entitled to Hire gets no Hire access.
     const unifiedToken = req.cookies.get(SESSION_COOKIE)?.value
       ?? (req.headers.get('authorization')?.startsWith('Bearer ') ? req.headers.get('authorization')!.slice(7) : null)
     if (unifiedToken) {
       const u = verifyLevlSession(unifiedToken)
       if (u && u.ent && u.hireTenantId && u.hireUserId) {
         if (!u.ent.hire) return null // explicitly not entitled to Hire
-        return { userId: u.hireUserId, tenantId: u.hireTenantId, role: u.hireRole ?? 'recruiter' }
+        userId = u.hireUserId
       }
       // A unified token present but without Hire context falls through to legacy.
     }
 
     // 2. Legacy hire_token (Authorization Bearer or cookie) — kept for transition.
-    const authHeader = req.headers.get('authorization')
-    let token: string | null = null
-    if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7)
-    if (!token) token = req.cookies.get('hire_token')?.value ?? null
-    if (!token) return null
-
-    const payload = verifyHireToken(token)
-    if (!payload?.tenantId || !payload?.userId) return null
-
-    return {
-      userId: payload.userId,
-      tenantId: payload.tenantId,
-      role: payload.role ?? 'recruiter',
+    if (!userId) {
+      const authHeader = req.headers.get('authorization')
+      let token: string | null = null
+      if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7)
+      if (!token) token = req.cookies.get('hire_token')?.value ?? null
+      if (token) {
+        const payload = verifyHireToken(token)
+        if (payload?.userId) userId = payload.userId
+      }
     }
+
+    if (!userId) return null
+
+    // Source of truth: current role + tenant from the live HireUser row.
+    const hu = await prisma.hireUser.findUnique({ where: { id: userId }, select: { role: true, tenantId: true } })
+    if (!hu) return null // user removed / unknown → no access
+
+    return { userId, tenantId: hu.tenantId, role: hu.role }
   } catch {
     return null
   }
@@ -107,7 +123,7 @@ export function withHireAuth(
   handler: (req: NextRequest, ctx: HireContext, params: Record<string, string>) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, context: { params?: NextRouteParams } = {}) => {
-    const hireCtx = getHireContext(req)
+    const hireCtx = await getHireContext(req)
     if (!hireCtx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
