@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { signPurposeToken } from '@/lib/hire/auth'
 import { sendHireEmail } from '@/lib/hire/email'
 import { inviteTeamMemberEmail } from '@/emails/hire/invite-team-member'
+import { trialEndDate, emailDomain } from '@/lib/hire/trial-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,9 +27,14 @@ export const POST = withPlatformAuth(async (req, ctx, params) => {
   }
 
   // Create tenant + admin (no password yet — they set it via the invite link).
-  const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  // Standardized trial length + one-trial-per-domain, same as self-serve signup.
+  const trialEndsAt = trialEndDate()
+  const domain = emailDomain(adminEmail)
+  // Only claim the domain if it isn't already tied to another trial (avoids a
+  // unique-constraint failure when provisioning a domain that self-signed-up).
+  const domainFree = domain ? !(await prisma.hireTenant.findUnique({ where: { trialDomain: domain }, select: { id: true } })) : false
   const tenant = await prisma.hireTenant.create({
-    data: { name: tenantName, type: tenantType, trialEndsAt, users: { create: { name: adminName, email: adminEmail, role: 'ADMIN' } } },
+    data: { name: tenantName, type: tenantType, trialEndsAt, ...(domainFree ? { trialDomain: domain } : {}), users: { create: { name: adminName, email: adminEmail, role: 'ADMIN' } } },
     include: { users: true },
   })
   const admin = tenant.users[0]

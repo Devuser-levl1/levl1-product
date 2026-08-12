@@ -162,8 +162,8 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
 }
 
 // Hire billing status. Interviews are a SEPARATE product now — the Hire trial
-// banner must NOT reference AI-interview counts. We surface the 14-day Hire
-// trial (days left from trialEndsAt) and, optionally, monthly candidate usage.
+// banner must NOT reference AI-interview counts. We surface the standardized
+// Hire trial (days left from trialEndsAt) and, optionally, candidate usage.
 interface BillingStatus {
   trialActive: boolean
   trialDaysLeft: number | null

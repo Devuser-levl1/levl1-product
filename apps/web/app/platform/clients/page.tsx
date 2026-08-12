@@ -201,7 +201,7 @@ function ProvisionModal({ lead, onClose, onDone }: { lead: Lead; onClose: () => 
   return (
     <Overlay onClose={onClose} width={440} z={90}>
       <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Provision Levl1 tenant</div>
-      <div style={{ fontSize: 13, color: VIZ.slate, marginBottom: 14, lineHeight: 1.5 }}>Creates a real Hire workspace and emails the admin a set-up link (14-day trial).</div>
+      <div style={{ fontSize: 13, color: VIZ.slate, marginBottom: 14, lineHeight: 1.5 }}>Creates a real Hire workspace and emails the admin a set-up link (21-day trial).</div>
       {done ? <div style={{ fontSize: 14, fontWeight: 700, color: VIZ.good, padding: '16px 0' }}>✓ Provisioned — invite sent to {f.adminEmail}</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div><label style={lbl}>Workspace name</label><input style={inp} value={f.tenantName} onChange={(e) => set('tenantName', e.target.value)} /></div>
