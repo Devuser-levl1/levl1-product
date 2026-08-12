@@ -14,4 +14,5 @@ export const HIRE_PLANS = {
 
 export type HirePlanId = keyof typeof HIRE_PLANS
 
-export const TRIAL_LIMITS = { recruiters: 2, activeJobs: 5, candidatesPerMonth: 50, aiInterviewsPerMonth: 5, trialDays: 14 }
+// Standardized trial limits live in ONE server-side config (env-tunable).
+export { TRIAL_LIMITS } from './trial-config'

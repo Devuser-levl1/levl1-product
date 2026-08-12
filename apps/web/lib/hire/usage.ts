@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { HIRE_PLANS, TRIAL_LIMITS, PlanLimits } from './plans'
+import { TRIAL_CONFIG } from './trial-config'
 
 interface TenantLike {
   id: string
@@ -42,7 +43,7 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
 
   if (tenant.trialActive && tenant.trialEndsAt && new Date() > tenant.trialEndsAt) {
     await prisma.hireTenant.update({ where: { id: tenantId }, data: { trialActive: false } })
-    return { allowed: false, reason: 'trial_expired', message: 'Your 14-day trial has ended. Upgrade to continue.' }
+    return { allowed: false, reason: 'trial_expired', message: `Your ${TRIAL_CONFIG.days}-day trial has ended — your data is safe and view-only. Upgrade to add more.` }
   }
   if (!tenant.trialActive) {
     const graceOk = tenant.subscriptionStatus === 'past_due' && tenant.currentPeriodEnd && Date.now() < tenant.currentPeriodEnd.getTime() + 3 * 86400000
@@ -51,8 +52,12 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
     }
   }
 
-  if (kind === 'candidate' && tenant.usageCandidatesThisMonth >= limits.candidatesPerMonth)
-    return { allowed: false, reason: 'candidate_limit', message: `You've reached ${limits.candidatesPerMonth} candidates this month.` }
+  if (kind === 'candidate' && tenant.usageCandidatesThisMonth >= limits.candidatesPerMonth) {
+    const message = tenant.trialActive
+      ? `You've reached your trial limit of ${limits.candidatesPerMonth} candidates. Upgrade to add more.`
+      : `You've reached ${limits.candidatesPerMonth} candidates this month.`
+    return { allowed: false, reason: 'candidate_limit', message }
+  }
   if (kind === 'job') {
     const activeJobs = await prisma.hireJob.count({ where: { tenantId, status: 'ACTIVE' } })
     if (activeJobs >= limits.activeJobs) {
@@ -64,7 +69,12 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
   }
   if (kind === 'seat') {
     const seats = await prisma.hireUser.count({ where: { tenantId } })
-    if (seats >= limits.recruiters) return { allowed: false, reason: 'seat_limit', message: `Your plan allows ${limits.recruiters} recruiter seats.` }
+    if (seats >= limits.recruiters) {
+      const message = tenant.trialActive
+        ? `You've reached your trial limit of ${limits.recruiters} recruiter seats. Upgrade to add more.`
+        : `Your plan allows ${limits.recruiters} recruiter seats.`
+      return { allowed: false, reason: 'seat_limit', message }
+    }
   }
   return { allowed: true }
 }

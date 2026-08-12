@@ -25,6 +25,8 @@ export default function CandidatesPage() {
   const [wall, setWall] = useState<string | null>(null)
   const [menu, setMenu] = useState<string | null>(null)
   const [deleteFor, setDeleteFor] = useState<Cand | null>(null)
+  const [usage, setUsage] = useState<{ trialActive: boolean; limits: { candidatesPerMonth: number }; usage: { candidates: number } } | null>(null)
+  useEffect(() => { fetch('/api/hire/billing/status').then((r) => (r.ok ? r.json() : null)).then(setUsage).catch(() => {}) }, [showAdd, showImport])
 
   const load = useCallback(() => {
     const qs = new URLSearchParams()
@@ -57,6 +59,11 @@ export default function CandidatesPage() {
     <div style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Candidates</h1>
+        {usage && (() => { const at = usage.usage.candidates >= usage.limits.candidatesPerMonth; return (
+          <span style={{ marginLeft: 12, fontSize: 12.5, fontWeight: 600, color: at ? '#B45309' : '#64748B', background: at ? 'rgba(245,158,11,0.12)' : '#F1F5F9', borderRadius: 100, padding: '4px 11px' }}>
+            Candidates: {usage.usage.candidates} of {usage.limits.candidatesPerMonth} used{usage.trialActive ? ' (trial)' : ''}
+          </span>
+        )})()}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button onClick={() => setShowImport(true)} style={{ ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>⬆ Import</button>
           <button onClick={() => setShowAdd(true)} style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Candidate</button>

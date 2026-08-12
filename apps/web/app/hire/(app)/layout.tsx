@@ -168,6 +168,7 @@ interface BillingStatus {
   trialActive: boolean
   trialDaysLeft: number | null
   subscriptionStatus: string | null
+  readOnly?: boolean
   usage: { candidates: number }
   limits: { candidatesPerMonth: number }
 }
@@ -176,15 +177,21 @@ function TrialBanner({ tenant }: { tenant: Me['tenant'] }) {
   useEffect(() => {
     fetch('/api/hire/billing/status')
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        console.log('[hire/trial-banner] billing status:', d)
-        setBs(d)
-      })
+      .then((d) => setBs(d))
       .catch((e) => console.error('[hire/trial-banner] billing status failed:', e))
   }, [])
 
+  // Trial ended, no plan → read-only. Prominent, friendly (never a hard error).
+  if (bs?.readOnly) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#7C3AED', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.28)', borderRadius: 100, padding: '6px 14px' }}>
+        <span>Trial ended · your data is safe &amp; view-only</span>
+        <a href="/hire/settings/billing" style={{ color: '#6D28D9', textDecoration: 'underline' }}>Upgrade to continue</a>
+      </div>
+    )
+  }
+
   if (!bs) {
-    // Before the status loads, fall back to the tenant flag from /auth/me.
     if (!tenant.trialActive) return <div />
   } else if (!bs.trialActive) {
     // On a paid plan — show a soft past_due note if needed, else nothing.
@@ -201,7 +208,7 @@ function TrialBanner({ tenant }: { tenant: Me['tenant'] }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color, background: bg, border: `1px solid ${color}33`, borderRadius: 100, padding: '6px 14px' }}>
-      <span>Trial: {days} day{days !== 1 ? 's' : ''} left{bs ? ` · ${bs.usage.candidates} of ${bs.limits.candidatesPerMonth} candidates this month` : ''}</span>
+      <span>Trial: {days} day{days !== 1 ? 's' : ''} left{bs ? ` · ${bs.usage.candidates} of ${bs.limits.candidatesPerMonth} candidates used` : ''}</span>
       <a href="/hire/settings/billing" style={{ color, textDecoration: 'underline' }}>Upgrade now</a>
     </div>
   )

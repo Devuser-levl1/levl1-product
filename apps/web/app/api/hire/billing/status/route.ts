@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { getLimits } from '@/lib/hire/usage'
 import { HIRE_PLANS, HirePlanId } from '@/lib/hire/plans'
+import { isReadOnly, trialExpired, trialDaysLeft as daysLeft } from '@/lib/hire/trial-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,8 @@ export const GET = withHireAuth(async (_req, ctx) => {
   const limits = getLimits(tenant)
   const activeJobs = await prisma.hireJob.count({ where: { tenantId: ctx.tenantId, status: 'ACTIVE' } })
   const seats = await prisma.hireUser.count({ where: { tenantId: ctx.tenantId } })
-  const trialDaysLeft = tenant.trialActive && tenant.trialEndsAt ? Math.max(0, Math.ceil((tenant.trialEndsAt.getTime() - Date.now()) / 86400000)) : null
+  const trialDaysLeft = tenant.trialActive && tenant.trialEndsAt ? daysLeft(tenant.trialEndsAt) : null
+  const readOnly = isReadOnly(tenant)
   const history = await prisma.hireBillingEvent.findMany({ where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' }, take: 10 })
 
   return NextResponse.json({
@@ -27,6 +29,8 @@ export const GET = withHireAuth(async (_req, ctx) => {
     planName: HIRE_PLANS[tenant.plan as HirePlanId]?.name ?? 'Trial',
     trialActive: tenant.trialActive,
     trialDaysLeft,
+    trialExpired: trialExpired(tenant),
+    readOnly,
     subscriptionStatus: tenant.subscriptionStatus,
     currentPeriodEnd: tenant.currentPeriodEnd?.toISOString() ?? null,
     limits,

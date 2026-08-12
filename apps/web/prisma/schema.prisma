@@ -627,6 +627,8 @@ model HireTenant {
   // Trial
   trialEndsAt DateTime?
   trialActive Boolean        @default(true)
+  // Business email domain that opened this trial — enforces one trial per domain.
+  trialDomain String?        @unique
 
   // Cashfree billing
   cashfreeCustomerId   String?
