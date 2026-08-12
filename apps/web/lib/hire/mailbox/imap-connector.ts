@@ -1,6 +1,7 @@
 import { ImapFlow, type FetchMessageObject } from 'imapflow'
 import nodemailer from 'nodemailer'
 import type { MailboxConnector, MailboxCfg, NormalizedMessage, SendInput } from './types'
+import { sanitizeMessage } from './sanitize'
 
 // First-sync cap so connecting a years-old mailbox doesn't pull thousands.
 const FIRST_SYNC_LIMIT = 30
@@ -144,7 +145,9 @@ export const imapConnector: MailboxConnector = {
           const from = env?.from?.[0]
           const bodyText = await fetchBodyText(client, uid, msg.bodyStructure as unknown as BodyNode)
           const snippetSrc = bodyText || env?.subject || ''
-          messages.push({
+          // Scrub null bytes / invalid UTF-8 / lone surrogates from EVERY text
+          // field here so nothing malformed can reach Postgres (error 22021).
+          messages.push(sanitizeMessage({
             uid,
             fromAddr: from?.address ?? '',
             fromName: from?.name || undefined,
@@ -152,7 +155,7 @@ export const imapConnector: MailboxConnector = {
             snippet: snippetSrc.replace(/\s+/g, ' ').slice(0, SNIPPET_MAX),
             bodyText,
             receivedAt: env?.date ?? new Date(),
-          })
+          }))
           if (uid > lastUid) lastUid = uid
         }
       } finally {

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getConnector } from './index'
 import { decryptMailboxSecret } from './crypto'
 import { classifyJobSpec } from './classify'
+import { sanitizeMessage } from './sanitize'
 import type { MailboxCfg } from './types'
 
 interface ConnLike {
@@ -37,19 +38,31 @@ export async function syncConnection(conn: ConnLike): Promise<{ newCount: number
       : new Set<number>()
 
     let newCount = 0
-    for (const m of messages) {
-      if (existing.has(m.uid)) continue
-      const verdict = await classifyJobSpec(m.subject, m.bodyText)
-      await prisma.mailboxMessage.create({
-        data: {
-          connectionId: conn.id, tenantId: conn.tenantId, uid: m.uid,
-          fromAddr: m.fromAddr, fromName: m.fromName ?? null, subject: m.subject,
-          snippet: m.snippet, bodyText: m.bodyText, receivedAt: m.receivedAt,
-          isJobSpec: verdict.isJobSpec, jobSpecConfidence: verdict.confidence,
-        },
-      })
-      newCount++
+    let skipped = 0
+    for (const raw of messages) {
+      if (existing.has(raw.uid)) continue
+      // Defensive re-sanitize (belt-and-suspenders — the connector already did
+      // this) so no null byte / invalid UTF-8 can ever reach Postgres.
+      const m = sanitizeMessage(raw)
+      // Per-message guard: one malformed email must never fail the whole batch.
+      try {
+        const verdict = await classifyJobSpec(m.subject, m.bodyText)
+        await prisma.mailboxMessage.create({
+          data: {
+            connectionId: conn.id, tenantId: conn.tenantId, uid: m.uid,
+            fromAddr: m.fromAddr, fromName: m.fromName ?? null, subject: m.subject,
+            snippet: m.snippet, bodyText: m.bodyText, receivedAt: m.receivedAt,
+            isJobSpec: verdict.isJobSpec, jobSpecConfidence: verdict.confidence,
+          },
+        })
+        newCount++
+      } catch (err) {
+        skipped++
+        const reason = (err instanceof Error ? err.message : String(err)).replace(/\s+/g, ' ').slice(0, 200)
+        console.error(`[hire/mailbox/sync] skipped uid ${raw.uid} for ${conn.email}: ${reason}`)
+      }
     }
+    if (skipped) console.warn(`[hire/mailbox/sync] ${conn.email}: ${skipped} message(s) skipped, ${newCount} stored`)
 
     await prisma.mailboxConnection.update({
       where: { id: conn.id },
