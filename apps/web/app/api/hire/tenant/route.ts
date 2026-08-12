@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { isAdmin } from '@/lib/hire/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
 
 // Update company details during onboarding / settings (admins only).
 export const PATCH = withHireAuth(async (req, ctx) => {
-  if (ctx.role !== 'ADMIN') return NextResponse.json({ error: 'Only admins can edit company details' }, { status: 403 })
+  if (!isAdmin(ctx.role)) return NextResponse.json({ error: 'Only admins can edit company details' }, { status: 403 })
   const body = await req.json()
   const data: Record<string, unknown> = {}
   if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim()

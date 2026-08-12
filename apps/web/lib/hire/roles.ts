@@ -69,4 +69,15 @@ export function candidateScope(role: string | null | undefined, userId: string, 
   }
 }
 
+// The definitive, assignable Hire role set (order = seniority, high → low).
+export const HIRE_ROLES: HireRoleName[] = ['ADMIN', 'MANAGER', 'RECRUITER', 'VIEWER']
+
+// Short one-liner describing each role (shown in dropdowns / member management).
+export const ROLE_DESCRIPTION: Record<HireRoleName, string> = {
+  ADMIN: 'Everything — settings, billing, CRM, AR, deals',
+  MANAGER: 'Team oversight + job/client assignment (no billing/settings)',
+  RECRUITER: 'Own assigned work only',
+  VIEWER: 'Read-only',
+}
+
 export const ROLE_LABEL: Record<string, string> = { ADMIN: 'Admin', MANAGER: 'Manager', RECRUITER: 'Recruiter', VIEWER: 'Viewer' }

@@ -6,18 +6,21 @@ import { sendHireEmail } from '@/lib/hire/email'
 import { inviteTeamMemberEmail } from '@/emails/hire/invite-team-member'
 import { checkAllowance } from '@/lib/hire/usage'
 import { logAudit } from '@/lib/hire/audit'
+import { isAdmin } from '@/lib/hire/permissions'
+import { HIRE_ROLES } from '@/lib/hire/roles'
 
 export const dynamic = 'force-dynamic'
 
 // Invite a team member (admins only) — emails a signed accept link.
 export const POST = withHireAuth(async (req, ctx) => {
-  if (ctx.role !== 'ADMIN') {
+  if (!isAdmin(ctx.role)) {
     return NextResponse.json({ error: 'Only admins can invite' }, { status: 403 })
   }
   const body = await req.json()
   const name = String(body.name ?? '').trim()
   const email = String(body.email ?? '').trim().toLowerCase()
-  const role = ['ADMIN', 'RECRUITER', 'VIEWER'].includes(body.role) ? body.role : 'RECRUITER'
+  // Full role set — MANAGER is assignable (was previously missing).
+  const role = HIRE_ROLES.includes(body.role) ? body.role : 'RECRUITER'
   if (!name || !email) return NextResponse.json({ error: 'Name and email required' }, { status: 400 })
 
   const existing = await prisma.hireUser.findFirst({ where: { tenantId: ctx.tenantId, email } })
