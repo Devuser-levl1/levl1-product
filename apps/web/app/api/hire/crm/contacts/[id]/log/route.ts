@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 const TYPES = ['call', 'email', 'meeting', 'note']
 
 export const POST = withHireAuth(async (req, ctx, params) => {
-  const denied = requireCap(ctx, 'crm'); if (denied) return denied
+  const denied = requireCap(ctx, 'manageClients'); if (denied) return denied
   const contact = await prisma.hireContact.findFirst({ where: { id: params.id, client: { tenantId: ctx.tenantId } } })
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

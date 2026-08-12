@@ -12,6 +12,7 @@ export function ClientPicker({ value, onChange }: { value: string; onChange: (id
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
   const boxRef = useRef<HTMLDivElement>(null)
 
   const load = () => fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d.map((c: ClientLite) => ({ id: c.id, name: c.name })))).catch(() => {})
@@ -29,10 +30,12 @@ export function ClientPicker({ value, onChange }: { value: string; onChange: (id
   async function createClient() {
     const name = newName.trim()
     if (!name) return
-    setBusy(true)
+    setBusy(true); setErr('')
     const res = await fetch('/api/hire/crm/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
     setBusy(false)
-    if (res.ok) { const c = await res.json(); await load(); onChange(c.id, c.name); setCreating(false); setNewName(''); setOpen(false) }
+    const d = await res.json().catch(() => ({}))
+    if (res.ok) { await load(); onChange(d.id, d.name); setCreating(false); setNewName(''); setErr(''); setOpen(false) }
+    else setErr(d.message ?? d.error ?? 'Could not create client.') // surface the real reason (permission / validation / trial)
   }
 
   const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff', width: '100%', boxSizing: 'border-box' }
@@ -53,9 +56,12 @@ export function ClientPicker({ value, onChange }: { value: string; onChange: (id
             {!creating ? (
               <button type="button" onClick={() => { setCreating(true); setNewName(q) }} style={{ ...rowBtn(false), color: '#6D28D9', fontWeight: 700 }}>+ Add new client</button>
             ) : (
-              <div style={{ display: 'flex', gap: 6, padding: '2px' }}>
-                <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createClient() } }} placeholder="New client name" style={{ ...inp, flex: 1 }} />
-                <button type="button" onClick={createClient} disabled={busy || !newName.trim()} style={{ padding: '0 12px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>{busy ? '…' : 'Add'}</button>
+              <div>
+                <div style={{ display: 'flex', gap: 6, padding: '2px' }}>
+                  <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createClient() } }} placeholder="New client name" style={{ ...inp, flex: 1 }} />
+                  <button type="button" onClick={createClient} disabled={busy || !newName.trim()} style={{ padding: '0 12px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>{busy ? '…' : 'Add'}</button>
+                </div>
+                {err && <div style={{ fontSize: 12, color: '#DC2626', padding: '4px 4px 0' }}>{err}</div>}
               </div>
             )}
           </div>

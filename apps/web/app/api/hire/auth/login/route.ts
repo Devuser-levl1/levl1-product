@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // transition.
     try {
       const account = await linkHireLogin(email, user.id, user.tenantId)
-      const unified = signLevlSession(unifiedPayloadFor(account, user.name))
+      const unified = signLevlSession(await unifiedPayloadFor(account, user.name))
       res.cookies.set(SESSION_COOKIE, unified, {
         httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: SESSION_MAX_AGE,
       })

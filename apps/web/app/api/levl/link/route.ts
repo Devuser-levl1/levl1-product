@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     entitlements: { hire: account.entHire, interviews: account.entInterviews },
   })
   // Re-issue the unified session reflecting the newly merged entitlements.
-  const unified = signLevlSession(unifiedPayloadFor(account, name))
+  const unified = signLevlSession(await unifiedPayloadFor(account, name))
   res.cookies.set(SESSION_COOKIE, unified, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: SESSION_MAX_AGE })
   return res
 }

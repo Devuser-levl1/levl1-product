@@ -24,7 +24,7 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
 })
 
 export const PATCH = withHireAuth(async (req, ctx, params) => {
-  const denied = requireCap(ctx, 'assignClients'); if (denied) return denied
+  const denied = requireCap(ctx, 'manageClients'); if (denied) return denied
   const existing = await prisma.hireClient.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const body = await req.json()

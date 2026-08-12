@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Same minting path as the retired password login.
     const account = await linkInterviewsLogin(user.email, user.id, user.agencyId)
-    const token = signLevlSession(unifiedPayloadFor(account, user.name))
+    const token = signLevlSession(await unifiedPayloadFor(account, user.name))
 
     const now = new Date()
     const trialDaysLeft = user.agency.trialExpiresAt

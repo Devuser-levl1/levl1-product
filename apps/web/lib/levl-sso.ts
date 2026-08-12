@@ -83,8 +83,18 @@ interface LevlAccountRow {
   entHire: boolean; entInterviews: boolean
 }
 
-/** Build the unified session payload from an account, gating each context by its entitlement. */
-export function unifiedPayloadFor(account: LevlAccountRow, name: string): UnifiedSession {
+/**
+ * Build the unified session payload from an account, gating each context by its
+ * entitlement. The Hire role is resolved from the DB (the HireUser's actual
+ * role) so capability checks work — hardcoding it dropped every admin/manager
+ * to recruiter and silently failed all their capability-gated actions.
+ */
+export async function unifiedPayloadFor(account: LevlAccountRow, name: string): Promise<UnifiedSession> {
+  let hireRole = 'RECRUITER'
+  if (account.entHire && account.hireUserId) {
+    const u = await prisma.hireUser.findUnique({ where: { id: account.hireUserId }, select: { role: true } }).catch(() => null)
+    if (u?.role) hireRole = u.role
+  }
   return {
     email: account.email,
     name,
@@ -92,7 +102,7 @@ export function unifiedPayloadFor(account: LevlAccountRow, name: string): Unifie
       ? { userId: account.interviewsUserId, agencyId: account.agencyId, role: 'recruiter' }
       : {}),
     ...(account.entHire && account.hireUserId && account.hireTenantId
-      ? { hireUserId: account.hireUserId, hireTenantId: account.hireTenantId, hireRole: 'recruiter' }
+      ? { hireUserId: account.hireUserId, hireTenantId: account.hireTenantId, hireRole }
       : {}),
     ent: { hire: account.entHire, interviews: account.entInterviews },
   }

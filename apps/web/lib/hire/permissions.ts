@@ -10,12 +10,13 @@
 export type HireRoleName = 'ADMIN' | 'MANAGER' | 'RECRUITER' | 'VIEWER'
 
 export type Capability =
-  | 'crm'            // CRM (clients + deals pipeline) nav + APIs
+  | 'crm'            // CRM nav + deals pipeline (admin)
+  | 'manageClients'  // CREATE / EDIT client + contact records
   | 'deals'          // deal records
   | 'ar'             // Accounts Receivable (invoices)
   | 'oversight'      // manager oversight dashboard
   | 'team'           // team management
-  | 'assignClients'  // assign recruiters to clients
+  | 'assignClients'  // assign RECRUITERS to clients (distinct from creating a client)
   | 'audit'          // audit log
   | 'billing'        // billing + plan
   | 'settingsAdmin'  // tenant-wide settings (career page, integrations, etc.)
@@ -35,11 +36,16 @@ export function normalizeRole(role?: string | null): HireRoleName {
 //   MANAGER  — team + assignment + oversight + audit; sees all clients;
 //              NOT CRM/AR/Deals (per spec)
 //   RECRUITER/VIEWER — own assigned work only; no CRM/AR/Deals/oversight
-const ALL: Capability[] = ['crm', 'deals', 'ar', 'oversight', 'team', 'assignClients', 'audit', 'billing', 'settingsAdmin', 'viewAllClients']
+const ALL: Capability[] = ['crm', 'manageClients', 'deals', 'ar', 'oversight', 'team', 'assignClients', 'audit', 'billing', 'settingsAdmin', 'viewAllClients']
 
 export const ROLE_CAPABILITIES: Record<HireRoleName, Capability[]> = {
   ADMIN: ALL,
-  MANAGER: ['oversight', 'team', 'assignClients', 'audit', 'viewAllClients'],
+  // Managers run the team: oversee, assign recruiters to clients, AND create/
+  // edit the client records themselves — but NOT deals/AR/billing/settings.
+  MANAGER: ['manageClients', 'oversight', 'team', 'assignClients', 'audit', 'viewAllClients'],
+  // Recruiters & viewers have no admin/manager capabilities. Their day-to-day
+  // work (candidates, jobs for assigned clients) is NOT capability-gated — it's
+  // scoped by client assignment (see lib/hire/scope), so [] is correct here.
   RECRUITER: [],
   VIEWER: [],
 }
