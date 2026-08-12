@@ -9,7 +9,7 @@ export type AuditAction =
   | 'deal_create' | 'deal_update' | 'deal_delete'
   | 'invoice_create' | 'invoice_paid' | 'invoice_delete'
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove'
-  | 'job_reassign' | 'candidate_reassign'
+  | 'job_reassign' | 'candidate_reassign' | 'password_change' | 'password_reset'
 
 export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice'
 
@@ -111,6 +111,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   team_member_invite: 'Team member invited',
   team_member_role_change: 'Member role changed',
   team_member_remove: 'Team member removed',
+  password_change: 'Password changed',
+  password_reset: 'Password reset',
   job_reassign: 'Job reassigned',
   candidate_reassign: 'Candidate reassigned',
 }

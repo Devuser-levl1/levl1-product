@@ -160,7 +160,7 @@ export default function HireLoginPage() {
                   Password
                 </label>
                 <a
-                  href="/forgot-password"
+                  href="/hire/forgot-password"
                   style={{ fontSize: 12, color: "#7C3AED", fontWeight: 500, textDecoration: "none" }}
                 >
                   Forgot password?

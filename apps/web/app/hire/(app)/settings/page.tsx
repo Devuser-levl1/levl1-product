@@ -5,6 +5,7 @@ import { AuditSettingsCard } from '@/components/hire/audit-settings-card'
 
 export default function HireSettings() {
   const items: [string, string, string][] = [
+    ['Account', 'Your profile (name, email) and change your password.', '/hire/settings/account'],
     ['Billing & plan', 'Manage your plan, usage and invoices.', '/hire/settings/billing'],
     ['Job Boards', 'Connect LinkedIn, Indeed, Naukri & more for one-click posting.', '/hire/settings/job-boards'],
     ['Integrations · Job Boards', 'Connect your own Naukri / Indeed accounts (LinkedIn via extension) — your credits, your subscription, plus AI.', '/hire/settings/integrations'],
