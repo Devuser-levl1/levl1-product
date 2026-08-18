@@ -1042,13 +1042,64 @@ model MailboxMessage {
   receivedAt        DateTime
   isJobSpec         Boolean  @default(false)
   jobSpecConfidence Int?
+  // Résumé detection (agentic résumé-intake workflow).
+  isResume          Boolean  @default(false)
+  resumeConfidence  Int?
   isRead            Boolean  @default(false)
   status            String   @default("new") // new | archived | drafted
   createdPositionId String?
   createdAt         DateTime @default(now())
 
+  attachments       MailboxAttachment[]
+
   @@index([tenantId])
   @@index([connectionId])
+}
+
+// Résumé-like attachments captured during mailbox sync (bytes stored so the
+// agent can parse them on approval without re-connecting to IMAP).
+model MailboxAttachment {
+  id           String         @id @default(cuid())
+  messageId    String
+  message      MailboxMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  tenantId     String
+  filename     String
+  mimeType     String
+  sizeBytes    Int
+  contentBase64 String        @db.Text
+  isResume     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+
+  @@index([messageId])
+  @@index([tenantId])
+}
+
+// ── Agent substrate ─────────────────────────────────────────────────────────
+// Generic 'agent proposes → human approves/rejects → tools execute → logged'
+// record. Reusable by ANY agent workflow (résumé-intake is the first). The
+// executor for `type` runs the tool chain only after approval.
+model HireAgentProposal {
+  id               String   @id @default(cuid())
+  tenantId         String
+  type             String   // e.g. 'resume_intake' — selects the executor
+  agent            String   @default("Levl1 Agent")
+  status           String   @default("pending") // pending | approved | rejected | executed | failed
+  title            String
+  summary          String?  @db.Text
+  payload          Json     // agent-defined: the suggested action + context
+  options          Json?    // choosable options rendered on the approval card
+  sourceType       String?  // e.g. 'mailbox_message'
+  sourceId         String?  // e.g. the MailboxMessage id
+  createdByUserId  String?  // recruiter it was surfaced to (assignee), if any
+  resolvedByUserId String?  // who approved/rejected
+  chosenOption     Json?    // the option the human picked
+  result           Json?    // execution result
+  error            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([sourceType, sourceId])
 }
 
 model PlatformLeadActivity {

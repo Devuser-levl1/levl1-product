@@ -10,8 +10,9 @@ export type AuditAction =
   | 'invoice_create' | 'invoice_paid' | 'invoice_delete'
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove'
   | 'job_reassign' | 'candidate_reassign' | 'password_change' | 'password_reset'
+  | 'agent_execute'
 
-export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice'
+export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice' | 'agent'
 
 /** Resolve a Hire user's display name for an actor-name snapshot. */
 export async function resolveActorName(userId?: string | null): Promise<string | null> {
@@ -23,6 +24,8 @@ export async function resolveActorName(userId?: string | null): Promise<string |
 interface LogAuditInput {
   tenantId: string
   actorUserId?: string | null
+  /** Overrides the resolved actor name — e.g. 'Levl1 Agent (approved by Jane)'. */
+  actorName?: string | null
   action: AuditAction
   targetType?: AuditTargetType | null
   targetId?: string | null
@@ -39,7 +42,7 @@ interface LogAuditInput {
  * block the action. Returns the resolved actor name.
  */
 export async function logAudit(input: LogAuditInput): Promise<string | null> {
-  const actorName = await resolveActorName(input.actorUserId)
+  const actorName = input.actorName ?? await resolveActorName(input.actorUserId)
   try {
     await prisma.hireAuditLog.create({
       data: {
@@ -113,6 +116,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   team_member_remove: 'Team member removed',
   password_change: 'Password changed',
   password_reset: 'Password reset',
+  agent_execute: 'Agent action executed',
   job_reassign: 'Job reassigned',
   candidate_reassign: 'Candidate reassigned',
 }

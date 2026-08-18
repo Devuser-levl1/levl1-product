@@ -12,6 +12,13 @@ export interface MailboxCfg {
   smtpPort: number
 }
 
+export interface NormalizedAttachment {
+  filename: string
+  mime: string
+  size: number
+  contentBase64: string
+}
+
 export interface NormalizedMessage {
   uid: number
   fromAddr: string
@@ -20,6 +27,8 @@ export interface NormalizedMessage {
   snippet: string
   bodyText: string
   receivedAt: Date
+  /** Résumé-like attachments (pdf/docx/image) downloaded during sync. */
+  attachments?: NormalizedAttachment[]
 }
 
 export interface SendInput {

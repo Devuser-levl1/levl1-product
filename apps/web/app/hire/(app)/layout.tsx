@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
 import {
   LayoutDashboard, Briefcase, Users, KanbanSquare, Search, Database,
-  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Settings as SettingsIcon,
+  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Sparkles, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { can, type Capability } from '@/lib/hire/permissions'
@@ -22,6 +22,7 @@ const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability }[]
   { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
   { label: 'Inbox', href: '/hire/inbox', icon: Mail },
+  { label: 'Agent', href: '/hire/agent', icon: Sparkles },
   { label: 'Talent Pool', href: '/hire/talent-pool', icon: Database },
   { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
   { label: 'Sourcing', href: '/hire/sourcing', icon: Search },

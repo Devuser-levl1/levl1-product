@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { getConnector } from './index'
 import { decryptMailboxSecret } from './crypto'
-import { classifyJobSpec } from './classify'
+import { classifyJobSpec, classifyResume } from './classify'
 import { sanitizeMessage } from './sanitize'
+import { buildResumeProposal } from '@/lib/hire/agent/resume-intake'
 import type { MailboxCfg } from './types'
 
 interface ConnLike {
-  id: string; tenantId: string; provider: string; email: string
+  id: string; tenantId: string; provider: string; email: string; userId?: string | null
   imapHost: string | null; imapPort: number | null; smtpHost: string | null; smtpPort: number | null
   credentials: string | null; lastSeenUid: number | null
 }
@@ -46,16 +47,33 @@ export async function syncConnection(conn: ConnLike): Promise<{ newCount: number
       const m = sanitizeMessage(raw)
       // Per-message guard: one malformed email must never fail the whole batch.
       try {
+        const attachments = raw.attachments ?? []
         const verdict = await classifyJobSpec(m.subject, m.bodyText)
-        await prisma.mailboxMessage.create({
+        const resume = classifyResume(m.subject, m.bodyText, attachments.map((a) => a.filename))
+        const stored = await prisma.mailboxMessage.create({
           data: {
             connectionId: conn.id, tenantId: conn.tenantId, uid: m.uid,
             fromAddr: m.fromAddr, fromName: m.fromName ?? null, subject: m.subject,
             snippet: m.snippet, bodyText: m.bodyText, receivedAt: m.receivedAt,
             isJobSpec: verdict.isJobSpec, jobSpecConfidence: verdict.confidence,
+            isResume: resume.isResume, resumeConfidence: resume.confidence,
+            attachments: attachments.length
+              ? { create: attachments.map((a) => ({ tenantId: conn.tenantId, filename: a.filename, mimeType: a.mime, sizeBytes: a.size, contentBase64: a.contentBase64, isResume: resume.isResume })) }
+              : undefined,
           },
+          include: { attachments: { select: { id: true, isResume: true } } },
         })
         newCount++
+
+        // Agentic résumé intake: one approval proposal per résumé attachment.
+        if (resume.isResume) {
+          for (const att of stored.attachments.filter((a) => a.isResume)) {
+            await buildResumeProposal({
+              tenantId: conn.tenantId, attachmentId: att.id, messageId: stored.id,
+              fromName: m.fromName ?? null, fromAddr: m.fromAddr, assigneeUserId: conn.userId ?? null,
+            }).catch((e) => console.error('[hire/mailbox/sync] resume proposal failed:', e instanceof Error ? e.message : e))
+          }
+        }
       } catch (err) {
         skipped++
         const reason = (err instanceof Error ? err.message : String(err)).replace(/\s+/g, ' ').slice(0, 200)

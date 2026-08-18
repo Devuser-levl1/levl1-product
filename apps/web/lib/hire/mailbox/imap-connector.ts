@@ -104,6 +104,46 @@ async function fetchBodyText(client: ImapFlow, uid: number, bodyStructure: BodyN
   }
 }
 
+// ── Résumé-attachment capture (agentic résumé-intake workflow) ──────────────
+interface AttNode { part?: string; type?: string; encoding?: string; size?: number; disposition?: string; dispositionParameters?: { filename?: string }; parameters?: { name?: string }; childNodes?: AttNode[] }
+const RESUME_EXT = /\.(pdf|docx?|png|jpe?g|webp)$/i
+const ATTACH_MAX_BYTES = 8 * 1024 * 1024 // skip anything larger than 8MB
+
+// Walk the bodyStructure and collect résumé-like attachment leaf parts.
+function findAttachmentParts(node: AttNode | undefined): { part: string; type: string; encoding?: string; filename: string; size: number }[] {
+  const out: { part: string; type: string; encoding?: string; filename: string; size: number }[] = []
+  const visit = (n: AttNode) => {
+    if (n.childNodes && n.childNodes.length) { n.childNodes.forEach(visit); return }
+    const filename = n.dispositionParameters?.filename || n.parameters?.name || ''
+    const isAttachment = (n.disposition || '').toLowerCase() === 'attachment' || !!filename
+    if (isAttachment && filename && RESUME_EXT.test(filename)) {
+      out.push({ part: n.part || '1', type: (n.type || 'application/octet-stream').toLowerCase(), encoding: n.encoding, filename, size: n.size ?? 0 })
+    }
+  }
+  visit(node ?? {})
+  return out
+}
+
+async function fetchResumeAttachments(client: ImapFlow, uid: number, bodyStructure: AttNode | undefined): Promise<{ filename: string; mime: string; size: number; contentBase64: string }[]> {
+  const parts = findAttachmentParts(bodyStructure)
+  const out: { filename: string; mime: string; size: number; contentBase64: string }[] = []
+  for (const p of parts) {
+    if (p.size && p.size > ATTACH_MAX_BYTES) continue
+    try {
+      const dl = await client.download(String(uid), p.part, { uid: true })
+      if (!dl?.content) continue
+      const raw = await streamToBuffer(dl.content)
+      // Attachment content is typically base64/qp transfer-encoded → decode to bytes.
+      const bytes = (p.encoding || '').toLowerCase() === 'base64' ? Buffer.from(raw.toString('utf8'), 'base64') : raw
+      if (bytes.length > ATTACH_MAX_BYTES || bytes.length < 32) continue
+      out.push({ filename: p.filename, mime: p.type, size: bytes.length, contentBase64: bytes.toString('base64') })
+    } catch (e) {
+      console.warn('[hire/mailbox] attachment download failed for uid', uid, p.filename, '-', e instanceof Error ? e.message : e)
+    }
+  }
+  return out
+}
+
 export const imapConnector: MailboxConnector = {
   provider: 'imap',
 
@@ -144,18 +184,22 @@ export const imapConnector: MailboxConnector = {
           const env = msg.envelope
           const from = env?.from?.[0]
           const bodyText = await fetchBodyText(client, uid, msg.bodyStructure as unknown as BodyNode)
+          const attachments = await fetchResumeAttachments(client, uid, msg.bodyStructure as unknown as AttNode)
           const snippetSrc = bodyText || env?.subject || ''
           // Scrub null bytes / invalid UTF-8 / lone surrogates from EVERY text
           // field here so nothing malformed can reach Postgres (error 22021).
-          messages.push(sanitizeMessage({
-            uid,
-            fromAddr: from?.address ?? '',
-            fromName: from?.name || undefined,
-            subject: env?.subject ?? '(no subject)',
-            snippet: snippetSrc.replace(/\s+/g, ' ').slice(0, SNIPPET_MAX),
-            bodyText,
-            receivedAt: env?.date ?? new Date(),
-          }))
+          messages.push({
+            ...sanitizeMessage({
+              uid,
+              fromAddr: from?.address ?? '',
+              fromName: from?.name || undefined,
+              subject: env?.subject ?? '(no subject)',
+              snippet: snippetSrc.replace(/\s+/g, ' ').slice(0, SNIPPET_MAX),
+              bodyText,
+              receivedAt: env?.date ?? new Date(),
+            }),
+            ...(attachments.length ? { attachments } : {}),
+          })
           if (uid > lastUid) lastUid = uid
         }
       } finally {

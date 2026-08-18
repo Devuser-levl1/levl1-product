@@ -26,3 +26,26 @@ export async function classifyJobSpec(subject: string, body: string): Promise<Jo
     return { isJobSpec: false, confidence: 0 }
   }
 }
+
+export interface ResumeVerdict { isResume: boolean; confidence: number }
+
+// Résumé detection — heuristic (no AI needed, robust + cheap). A message is a
+// résumé if it carries a résumé-like attachment (pdf/docx/image), with higher
+// confidence when the filename or body signals a CV/application.
+const RESUME_FILE = /\.(pdf|docx?|png|jpe?g|webp)$/i
+const RESUME_NAME_HINT = /\b(resume|résumé|cv|curriculum\s*vitae)\b/i
+const RESUME_BODY_HINT = /\b(resume|résumé|\bcv\b|curriculum vitae|applying for|application for|please find (my|attached)|my (resume|cv)|attached is my|candidate for|years of experience)\b/i
+
+export function classifyResume(subject: string, body: string, attachmentFilenames: string[]): ResumeVerdict {
+  const resumeFiles = attachmentFilenames.filter((n) => RESUME_FILE.test(n))
+  if (resumeFiles.length === 0) {
+    // Body-only résumé (pasted CV) — weak signal, needs strong body hints.
+    return RESUME_BODY_HINT.test(`${subject}\n${body}`) && /experience|education|skills/i.test(body)
+      ? { isResume: true, confidence: 55 }
+      : { isResume: false, confidence: 0 }
+  }
+  let confidence = 70
+  if (resumeFiles.some((n) => RESUME_NAME_HINT.test(n))) confidence += 20
+  if (RESUME_BODY_HINT.test(`${subject}\n${body}`)) confidence += 10
+  return { isResume: true, confidence: Math.min(100, confidence) }
+}
