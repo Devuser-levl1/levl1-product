@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "db:clear": "node scripts/clear-seed-data.js"
+    "db:clear": "node scripts/clear-seed-data.js",
+    "seed:demo": "SEED_DEMO=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' TS_NODE_TRANSPILE_ONLY=1 ts-node scripts/seed-demo.ts",
+    "seed:demo:bootstrap": "SEED_DEMO=true SEED_DEMO_BOOTSTRAP=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' TS_NODE_TRANSPILE_ONLY=1 ts-node scripts/seed-demo.ts",
+    "seed:demo:reset": "npm run seed:demo",
+    "seed:demo:wipe": "SEED_DEMO=true SEED_DEMO_RESET_ONLY=true TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' TS_NODE_TRANSPILE_ONLY=1 ts-node scripts/seed-demo.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
