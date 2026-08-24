@@ -176,6 +176,14 @@ async function main() {
   console.log(`   Users in tenant: ${allUsers.length} — all @levl1.io ✓`)
   console.log(`   Every insert/delete below is scoped to this tenantId ONLY.\n`)
 
+  // ── Put the demo tenant on a paid plan (OFF trial) so no trial banner/limit
+  //    shows during demos. Scoped to DEMO_TENANT_ID only. ──────────────────────
+  await prisma.hireTenant.update({
+    where: { id: DEMO_TENANT_ID },
+    data: { plan: 'GROWTH', trialActive: false, subscriptionStatus: 'active', currentPeriodEnd: new Date(now + 365 * DAY), trialEndsAt: null, usageCandidatesThisMonth: 0, usageResetAt: new Date() },
+  })
+  console.log('💳 Demo tenant set to GROWTH plan (active subscription, OFF trial).')
+
   // ── STEP 3: WIPE (scoped) — children first, respecting FKs ─────────────────
   // NOTE: every where-clause is scoped to DEMO_TENANT_ID (directly or via a
   // tenant-scoped relation). There is intentionally NO unscoped deleteMany.
