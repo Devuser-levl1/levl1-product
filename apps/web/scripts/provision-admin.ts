@@ -96,7 +96,7 @@ async function main() {
   const email = (process.env.PROVISION_EMAIL ?? '').trim().toLowerCase()
   if (!email) die('PROVISION_EMAIL is required (or set PROVISION_DEMO=true).')
   const role = (process.env.PROVISION_ROLE ?? 'ADMIN').toUpperCase()
-  if (!VALID_ROLES.has(role)) die(`PROVISION_ROLE must be one of ${[...VALID_ROLES].join(', ')}.`)
+  if (!VALID_ROLES.has(role)) die(`PROVISION_ROLE must be one of ${Array.from(VALID_ROLES).join(', ')}.`)
   const name = process.env.PROVISION_NAME ?? ''
 
   // Resolve the EXISTING tenant (never create one).
