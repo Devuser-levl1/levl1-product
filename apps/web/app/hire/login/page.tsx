@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { Logo } from "@/components/marketing/logo";
+import { ContactHelpdesk } from "@/components/ui/ContactHelpdesk";
 
 export default function HireLoginPage() {
   const router = useRouter();
@@ -305,6 +306,11 @@ export default function HireLoginPage() {
             <strong style={{ color: "#64748B" }}>Levl1 staff:</strong> sign in here to reach the
             Platform console (usage ledger &amp; client CRM) once you&apos;re in.
           </p>
+
+          {/* Helpdesk */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}>
+            <ContactHelpdesk tone="light" />
+          </div>
         </div>
       </div>
 

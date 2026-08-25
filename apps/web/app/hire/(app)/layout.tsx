@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { can, type Capability } from '@/lib/hire/permissions'
+import { ContactHelpdesk } from '@/components/ui/ContactHelpdesk'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
@@ -118,6 +119,11 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
             )
           })}
         </nav>
+
+        {/* Persistent helpdesk — reachable from anywhere in the app */}
+        <div style={{ marginTop: 'auto', paddingTop: 14 }}>
+          <ContactHelpdesk tone="sidebar" defaultEmail={me!.user.email} />
+        </div>
       </aside>
 
       {/* Main */}

@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 interface SupportModalProps {
   open:    boolean
   onClose: () => void
+  /** Pre-fill the reporter's email (e.g. the signed-in user). Defaults to empty. */
+  defaultEmail?: string
 }
 
 const ISSUE_TYPES = [
@@ -31,11 +33,11 @@ const INPUT_STYLE: React.CSSProperties = {
   transition:   'border-color 0.15s',
 }
 
-export function SupportModal({ open, onClose }: SupportModalProps) {
+export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalProps) {
   const [issueType,    setIssueType]    = useState('')
   const [subject,      setSubject]      = useState('')
   const [description,  setDescription]  = useState('')
-  const [userEmail,    setUserEmail]    = useState('abma3005@gmail.com')
+  const [userEmail,    setUserEmail]    = useState(defaultEmail)
   const [fileName,     setFileName]     = useState('')
   const [sending,      setSending]      = useState(false)
 
