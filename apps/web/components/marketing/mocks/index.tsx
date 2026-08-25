@@ -16,7 +16,7 @@ export function KanbanMock() {
     ['Offer', [{ n: 'Tom Becker', r: 'Eng Manager', s: 88, src: 'Referral' }]],
   ]
   return (
-    <Chrome title="Levl1 Hire — Pipeline">
+    <Chrome title="HirePilot — Pipeline">
       <div style={{ display: 'flex', gap: 10, padding: 14, background: '#F7F8FD', overflowX: 'auto' }}>
         {cols.map(([name, cards], ci) => (
           <div key={name} style={{ minWidth: 150, flex: 1, background: '#fff', border: '1px solid #EEF0FA', borderRadius: 10, padding: 8 }}>
@@ -127,7 +127,7 @@ export function VerificationMock() {
 export function DealPipelineMock() {
   const cols: [string, { c: string; v: string }[]][] = [['Discovery', [{ c: 'Northwind', v: '$24k' }]], ['Proposal', [{ c: 'Acme Global', v: '$48k' }]], ['Negotiation', [{ c: 'Vertex', v: '$72k' }]]]
   return (
-    <Chrome title="Levl1 Hire — CRM deals">
+    <Chrome title="HirePilot — CRM deals">
       <div style={{ display: 'flex', gap: 10, padding: 14, background: '#F7F8FD' }}>
         {cols.map(([name, deals]) => (
           <div key={name} style={{ flex: 1, background: '#fff', border: '1px solid #EEF0FA', borderRadius: 10, padding: 9 }}>
@@ -157,7 +157,7 @@ export function ApplyFormMock() {
 
 export function CandidateProfileMock() {
   return (
-    <Chrome title="Levl1 Hire — Candidate">
+    <Chrome title="HirePilot — Candidate">
       <div style={{ padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 99, background: `linear-gradient(135deg,${T.violet},${T.blue})`, color: '#fff', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>AM</div>
@@ -176,7 +176,7 @@ export function CandidateProfileMock() {
 
 export function IntegrationCardMock() {
   return (
-    <Chrome title="Levl1 Hire — Pipeline card">
+    <Chrome title="HirePilot — Pipeline card">
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Priya Nair</div>
         <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Staff Engineer · Interview stage</div>

@@ -8,7 +8,7 @@ import { trialEndDate, emailDomain } from '@/lib/hire/trial-config'
 
 export const dynamic = 'force-dynamic'
 
-// Provision a real Levl1 Hire tenant from a won lead: create the tenant + an
+// Provision a real HirePilot tenant from a won lead: create the tenant + an
 // admin user (invited, sets their own password via the accept link) and mark the
 // lead converted. Idempotent-ish: refuses if already converted.
 export const POST = withPlatformAuth(async (req, ctx, params) => {
@@ -45,7 +45,7 @@ export const POST = withPlatformAuth(async (req, ctx, params) => {
   const inviteUrl = `${appUrl}/hire/accept-invite/${token}`
   await sendHireEmail({
     to: adminEmail,
-    subject: `Welcome to Levl1 Hire — ${tenantName}`,
+    subject: `Welcome to HirePilot — ${tenantName}`,
     html: inviteTeamMemberEmail({ inviterName: ctx.name || 'The Levl1 team', tenantName, inviteUrl }),
   }).catch((e) => console.error('[platform/provision] invite email failed:', e))
 

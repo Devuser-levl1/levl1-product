@@ -85,7 +85,7 @@ export default function HireLoginPage() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Hire
+              HirePilot
             </span>
           </Link>
 
@@ -101,7 +101,7 @@ export default function HireLoginPage() {
               marginBottom: 8,
             }}
           >
-            Sign in to Levl1 Hire
+            Sign in to HirePilot
           </h1>
           <p
             style={{
@@ -385,7 +385,7 @@ export default function HireLoginPage() {
             }}
           >
             &ldquo;Our whole pipeline — sourcing, scoring, and client deals — finally
-            lives in one place. Levl1 Hire paid for itself in the first month.&rdquo;
+            lives in one place. HirePilot paid for itself in the first month.&rdquo;
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

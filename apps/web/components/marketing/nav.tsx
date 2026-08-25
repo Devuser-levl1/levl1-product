@@ -10,11 +10,11 @@ import { Logo, LogoIcon } from './logo'
 const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
 
 const PRODUCTS: { name: string; href: string; desc: string }[] = [
-  { name: 'Levl1 Hire', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
+  { name: 'HirePilot', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
   { name: 'Levl1 Interviews', href: '/interviews', desc: 'Autonomous AI voice interviews with evidence-based scorecards, at scale.' },
 ]
 const SIGN_IN_OPTIONS: { name: string; href: string; desc: string }[] = [
-  { name: 'Levl1 Hire', href: '/hire/login', desc: 'Recruiters & Levl1 staff — your hiring workspace & platform console.' },
+  { name: 'HirePilot', href: '/hire/login', desc: 'Recruiters & Levl1 staff — your hiring workspace & platform console.' },
   { name: 'Levl1 Interviews', href: '/interviews/login', desc: 'Manage AI interviews, candidates & scorecards.' },
 ]
 
@@ -123,7 +123,7 @@ export function MarketingNav() {
                 ['Interviews', '/interviews'],
                 ['Roadmap', '/roadmap'],
                 ['Pricing', '/pricing'],
-                ['Sign in · Levl1 Hire', '/hire/login'],
+                ['Sign in · HirePilot', '/hire/login'],
                 ['Sign in · Levl1 Interviews', '/interviews/login'],
                 onHire ? ['Start free', '/hire/signup'] : ['Book a demo', '/contact'],
               ] as [string, string][]).map(([l, h]) => {

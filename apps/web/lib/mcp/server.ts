@@ -26,7 +26,7 @@ async function handleOne(tenantId: string, apiKeyId: string, req: RpcRequest): P
         protocolVersion: (req.params?.protocolVersion as string) || DEFAULT_PROTOCOL,
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: 'Read-only access to this Levl1 Hire account. Call list_jobs first to discover jobs, then search_candidates / pipeline_summary / recent_activity. All data is scoped to your API key.',
+        instructions: 'Read-only access to this HirePilot account. Call list_jobs first to discover jobs, then search_candidates / pipeline_summary / recent_activity. All data is scoped to your API key.',
       })
 
     case 'ping':

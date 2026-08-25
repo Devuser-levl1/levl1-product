@@ -172,9 +172,9 @@ export default function Header() {
 
         {/* Levl1 SSO — reciprocal launcher to Hire when entitled to both (Phase 5) */}
         {entHire && (
-          <a href="/hire/dashboard" target="_blank" rel="noopener" title="Open Levl1 Hire — you're already signed in"
+          <a href="/hire/dashboard" target="_blank" rel="noopener" title="Open HirePilot — you're already signed in"
             style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#4F46E5", background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.22)", borderRadius: 8, padding: "6px 12px", textDecoration: "none" }}>
-            <span style={{ color: "#4F46E5" }}>◆</span> Levl1 Hire <span style={{ fontSize: 11 }}>↗</span>
+            <span style={{ color: "#4F46E5" }}>◆</span> HirePilot <span style={{ fontSize: 11 }}>↗</span>
           </a>
         )}
 

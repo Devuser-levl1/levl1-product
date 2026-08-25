@@ -2,7 +2,7 @@
 import React from 'react'
 import { H } from './hire-tokens'
 
-// ── Levl1 Hire shared UI kit ───────────────────────────────────────────────
+// ── HirePilot shared UI kit ───────────────────────────────────────────────
 // One design system across the whole platform. Hire's accent is brand VIOLET
 // (#6D28D9 / #7C3AED) — distinct from the Interviews indigo — but the layout,
 // radii, shadows, type scale, spacing and interaction patterns are identical.

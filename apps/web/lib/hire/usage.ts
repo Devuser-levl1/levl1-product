@@ -48,7 +48,7 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
   if (!tenant.trialActive) {
     const graceOk = tenant.subscriptionStatus === 'past_due' && tenant.currentPeriodEnd && Date.now() < tenant.currentPeriodEnd.getTime() + 3 * 86400000
     if (tenant.subscriptionStatus !== 'active' && !graceOk) {
-      return { allowed: false, reason: 'no_subscription', message: 'Choose a plan to continue using Levl1 Hire.' }
+      return { allowed: false, reason: 'no_subscription', message: 'Choose a plan to continue using HirePilot.' }
     }
   }
 

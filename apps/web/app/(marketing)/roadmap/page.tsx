@@ -43,7 +43,7 @@ export default function Roadmap() {
     <section className="mk-section" style={{ paddingTop: 130 }}><Container>
       <Reveal><div style={{ textAlign: 'center', marginBottom: 44 }}><Eyebrow>Roadmap</Eyebrow><h1 className="mk-h2">Where Levl1 is headed.</h1><p style={{ fontSize: 16, color: T.slate, marginTop: 12, maxWidth: 640, marginInline: 'auto' }}>We build in the open. Here&apos;s what&apos;s shipping, what&apos;s in progress, and where we&apos;re going. Timelines are indicative and evolve with customer feedback.</p></div></Reveal>
       <div className="mk-grid-2" style={{ gap: 40 }}>
-        <Col title="LEVL1 HIRE" accent={T.violet} groups={HIRE} />
+        <Col title="HIREPILOT" accent={T.violet} groups={HIRE} />
         <Col title="LEVL1 INTERVIEWS" accent={T.indigo} groups={SCREEN} />
       </div>
 

@@ -19,7 +19,7 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' && !isNaN
 export const TOOLS: McpTool[] = [
   {
     name: 'list_jobs',
-    description: 'List the open jobs in this Levl1 Hire account with per-stage candidate counts. Use this first to discover job ids and titles before searching candidates or summarizing a pipeline.',
+    description: 'List the open jobs in this HirePilot account with per-stage candidate counts. Use this first to discover job ids and titles before searching candidates or summarizing a pipeline.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     run: (tenantId) => q.listJobs(tenantId),
   },

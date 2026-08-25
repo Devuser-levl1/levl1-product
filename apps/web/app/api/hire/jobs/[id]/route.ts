@@ -100,7 +100,7 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
     const toUser = names.find((u) => u.id === reassigned!.to)
     if (toUser?.email) {
       const { sendHireEmail } = await import('@/lib/hire/email')
-      sendHireEmail({ to: toUser.email, subject: `A job was assigned to you: ${job.title}`, html: `<p>${job.title} has been assigned to you in Levl1 Hire.</p>` }).catch(() => {})
+      sendHireEmail({ to: toUser.email, subject: `A job was assigned to you: ${job.title}`, html: `<p>${job.title} has been assigned to you in HirePilot.</p>` }).catch(() => {})
     }
   }
 

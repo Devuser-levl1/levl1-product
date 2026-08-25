@@ -85,11 +85,11 @@ export default function Home() {
         <Reveal><div style={{ textAlign: 'center', marginBottom: 40 }}><Eyebrow>Two products. One intelligence.</Eyebrow><h2 className="mk-h2">Two engines. One platform.</h2></div></Reveal>
         <div className="mk-grid-2" style={{ position: 'relative' }}>
           <motion.div initial={reduce ? {} : { opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.violet}` }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.1em' }}>LEVL1 HIRE</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.violet, letterSpacing: '0.1em' }}>HIREPILOT</div>
             <h3 style={{ fontSize: 21, fontWeight: 800, margin: '8px 0' }}>AI-native ATS + CRM.</h3>
             <p style={{ fontSize: 15, color: T.slate, lineHeight: 1.6, marginBottom: 16 }}>Source, score, match, place — intelligence built in.</p>
             <div style={{ marginBottom: 16 }}><KanbanMock /></div>
-            <Link href="/hire" style={{ fontSize: 15, fontWeight: 700, color: T.violet, textDecoration: 'none' }}>Explore Levl1 Hire →</Link>
+            <Link href="/hire" style={{ fontSize: 15, fontWeight: 700, color: T.violet, textDecoration: 'none' }}>Explore HirePilot →</Link>
           </motion.div>
           <motion.div initial={reduce ? {} : { opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 20, padding: 28, borderTop: `4px solid ${T.indigo}` }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: T.indigo, letterSpacing: '0.1em' }}>LEVL1 INTERVIEWS</div>

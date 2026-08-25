@@ -2,8 +2,8 @@ import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { AtsConnector, ConnectorContext, NormalizedJob, NormalizedCandidate } from './types'
 
-// ── Levl1 Hire connector (Phase 3 — built first) ───────────────────────────
-// The "customer owns both products" flow. Levl1 Hire and Interviews share one
+// ── HirePilot connector (Phase 3 — built first) ───────────────────────────
+// The "customer owns both products" flow. HirePilot and Interviews share one
 // app + database, so once the account link is established (here: a scoped Hire
 // API key from Hire's Settings → Developers, validated to a tenantId) we read
 // Hire's jobs + candidates directly via Prisma — fully controlled, no HTTP hop.

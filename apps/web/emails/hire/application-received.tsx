@@ -7,7 +7,7 @@ export function applicationReceivedCandidateEmail(opts: { candidateName: string;
       <strong>${opts.jobTitle}</strong> at <strong>${opts.company}</strong>.
       The hiring team will review it and be in touch.
     </p>
-    <p style="color:#94A3B8;font-size:12px;margin-top:20px">Powered by Levl1 Hire</p>
+    <p style="color:#94A3B8;font-size:12px;margin-top:20px">Powered by HirePilot</p>
   </div></body></html>`
 }
 

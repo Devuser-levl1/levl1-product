@@ -39,7 +39,7 @@ export const POST = withHireAuth(async (req, ctx) => {
         return_url: `${appUrl}/hire/settings/billing?order_id={order_id}&plan=${planId}`,
         notify_url: `${appUrl}/api/hire/billing/webhook`,
       },
-      order_note: `Levl1 Hire ${plan.name}`,
+      order_note: `HirePilot ${plan.name}`,
       order_tags: { product: 'hire', planId },
     })
     return NextResponse.json({ orderId: resp.data.order_id, paymentSessionId: resp.data.payment_session_id, planId, amount: plan.price / 100, planName: plan.name })

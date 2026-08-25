@@ -51,7 +51,7 @@ export default function AccountPage() {
         <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>Product access</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#334155' }}>Levl1 Hire</span>
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#334155' }}>HirePilot</span>
             <span style={pill(me.entitlements.hire)}>{me.entitlements.hire ? 'Active' : 'Not connected'}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

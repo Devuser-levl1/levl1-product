@@ -16,7 +16,7 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
   const sample = { name: me.name, email: me.email, job: 'Senior Engineer', company: 'Acme Corp' }
   await sendEmail({
     to: me.email,
-    from: `${tenant?.name ?? 'Levl1 Hire'} via Levl1 <${process.env.FROM_EMAIL ?? 'noreply@mail.levl1.io'}>`,
+    from: `${tenant?.name ?? 'HirePilot'} via Levl1 <${process.env.FROM_EMAIL ?? 'noreply@mail.levl1.io'}>`,
     subject: `[TEST] ${personalize(campaign.subject, sample)}`,
     html: `<div style="font-family:Inter,system-ui,sans-serif;color:#0F172A">${personalize(campaign.body, sample)}<p style="font-size:11px;color:#94A3B8;margin-top:20px">This is a test send with sample tokens filled.</p></div>`,
   })

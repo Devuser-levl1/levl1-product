@@ -14,7 +14,7 @@ export default function AdminHire() {
 
   return (
     <Shell>
-      <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 16px' }}>Levl1 Hire — Tenants</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 16px' }}>HirePilot — Tenants</h1>
       <Card>
         <Table head={['Agency', 'Type', 'Plan', 'Trial', 'Usage (cand/int)', 'Users/Jobs', 'Joined', 'Actions']}>
           {list.map((t) => (

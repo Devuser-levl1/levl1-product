@@ -17,7 +17,7 @@ export const maxDuration = 60
 // PROPOSAL (it does NOT execute). The panel renders an approval card; only on
 // approval does /api/hire/assistant/execute apply + log the change.
 
-const SYSTEM = `You are Levl1, an agentic assistant embedded in a recruiter's Levl1 Hire ATS.
+const SYSTEM = `You are Levl1, an agentic assistant embedded in a recruiter's HirePilot ATS.
 You do THREE things: (1) ANSWER questions about the recruiter's data (read-only tools), (2) PROPOSE actions (propose_* tools), and (3) GUIDE the user on how to use Levl1 (search_help tool).
 Rules:
 - Ground every answer in tool results. Never invent candidates, jobs, scores, or product steps.
@@ -29,7 +29,7 @@ Rules:
 
 const HELP_TOOL: Anthropic.Tool = {
   name: 'search_help',
-  description: 'Search the Levl1 Hire help guide for how-to / guidance answers (how to use a feature, where to find something). Returns matching help articles with steps and the screen to go to. Use this for any "how do I…", "where do I…", or "how does X work" question.',
+  description: 'Search the HirePilot help guide for how-to / guidance answers (how to use a feature, where to find something). Returns matching help articles with steps and the screen to go to. Use this for any "how do I…", "where do I…", or "how does X work" question.',
   input_schema: { type: 'object', properties: { query: { type: 'string', description: 'The user\'s how-to question or feature keywords.' } }, required: ['query'] },
 }
 

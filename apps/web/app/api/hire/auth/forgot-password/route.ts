@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     const hasPassword = !!user.passwordHash
     const heading = hasPassword ? 'Reset your password' : 'Set your password'
     const intro = hasPassword
-      ? `we received a request to reset your Levl1 Hire password. Click below to set a new one.`
-      : `set a password for your Levl1 Hire account to sign in. Click below to choose one.`
+      ? `we received a request to reset your HirePilot password. Click below to set a new one.`
+      : `set a password for your HirePilot account to sign in. Click below to choose one.`
 
     if (!process.env.RESEND_API_KEY) {
       // A real misconfiguration for a valid user — make it LOUD, not a silent no-op.
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     try {
       const { id } = await sendHireEmail({
         to: user.email,
-        subject: `${heading} — ${user.tenant?.name ?? 'Levl1 Hire'}`,
+        subject: `${heading} — ${user.tenant?.name ?? 'HirePilot'}`,
         html: `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#0F172A">
   <div style="max-width:480px;margin:24px auto;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
     <div style="background:linear-gradient(135deg,#6D28D9,#7C3AED);padding:24px 28px;color:#fff;font-size:18px;font-weight:800">${heading}</div>

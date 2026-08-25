@@ -8,9 +8,9 @@ import { T } from '@/components/marketing/tokens'
 import { KanbanMock, ScorecardMock, DealPipelineMock } from '@/components/marketing/mocks'
 
 export const metadata: Metadata = {
-  title: 'Levl1 Hire — AI-native ATS + CRM',
+  title: 'HirePilot — AI-native ATS + CRM',
   description: 'Your entire hiring pipeline, intelligent by default. Source, score, match and place candidates faster — with a built-in CRM and AI that does the manual work.',
-  openGraph: { title: 'Levl1 Hire — AI-native ATS + CRM', description: 'Your entire hiring pipeline. Intelligent by default.' },
+  openGraph: { title: 'HirePilot — AI-native ATS + CRM', description: 'Your entire hiring pipeline. Intelligent by default.' },
 }
 
 const CAPS: [string, string][] = [
@@ -24,7 +24,7 @@ const CAPS: [string, string][] = [
   ['Built-in email', 'Connect your business mailbox, read inbound job specs (AI drafts the position for you), and reach out to candidates from your own address — without leaving Levl1.'],
 ]
 
-// Generic, vendor-neutral comparison: [feature, traditional ATS, ATS + AI add-ons, Levl1 Hire]
+// Generic, vendor-neutral comparison: [feature, traditional ATS, ATS + AI add-ons, HirePilot]
 const COMPARE: [string, string, string, string][] = [
   ['Résumé screening', 'Manual reading & keyword filters', 'AI scoring as a paid add-on, generic', 'AI scoring on your rubric — every CV, incl. scanned & image PDFs'],
   ['Scoring transparency', 'None — gut feel', 'Black-box score', 'Explainable, rubric-weighted, re-scorable'],
@@ -58,7 +58,7 @@ export default function HireMarketing() {
           <Container style={{ position: 'relative' }}>
             <div className="mk-grid-2" style={{ alignItems: 'center', gap: 48 }}>
               <div>
-                <Reveal><Eyebrow color={T.violet}>Levl1 Hire · AI-native ATS + CRM</Eyebrow></Reveal>
+                <Reveal><Eyebrow color={T.violet}>HirePilot · AI-native ATS + CRM</Eyebrow></Reveal>
                 <Reveal delay={0.1}><h1 className="mk-h1">Your entire pipeline. <GradientText>Thinking for itself.</GradientText></h1></Reveal>
                 <Reveal delay={0.2}><p style={{ fontSize: 18, color: T.slate, lineHeight: 1.6, maxWidth: 520, margin: '20px 0 28px' }}>Source, score, match, and place candidates faster — with a built-in CRM to run clients and deals, and AI that does the manual work so your recruiters don&apos;t.</p></Reveal>
                 <Reveal delay={0.3}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button></div></Reveal>
@@ -72,7 +72,7 @@ export default function HireMarketing() {
         <section className="mk-section"><Container>
           <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
             <Reveal><h2 className="mk-h2">Legacy ATS tools are heavy, manual, and barely intelligent.</h2></Reveal>
-            <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Recruiters drown in CV triage, pipelines live in spreadsheets, and “AI” means a keyword filter. <strong style={{ color: T.ink }}>Levl1 Hire rebuilds the ATS around intelligence</strong> — every step does work for you.</p></Reveal>
+            <Reveal delay={0.1}><p style={{ fontSize: 17, color: T.slate, lineHeight: 1.7, marginTop: 18 }}>Recruiters drown in CV triage, pipelines live in spreadsheets, and “AI” means a keyword filter. <strong style={{ color: T.ink }}>HirePilot rebuilds the ATS around intelligence</strong> — every step does work for you.</p></Reveal>
           </div>
         </Container></section>
 
@@ -117,7 +117,7 @@ export default function HireMarketing() {
           <Reveal><div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 16, overflow: 'hidden', minWidth: 720, border: '1px solid #E7E9F5' }}>
               <thead><tr style={{ background: T.ink, color: '#fff' }}>
-                {['', 'Traditional ATS', 'ATS + AI add-ons', 'Levl1 Hire'].map((h, i) => (
+                {['', 'Traditional ATS', 'ATS + AI add-ons', 'HirePilot'].map((h, i) => (
                   <th key={h} style={{ textAlign: 'left', padding: '14px 16px', fontSize: 13, fontWeight: 700, background: i === 3 ? T.violet : 'transparent', width: i === 0 ? '20%' : '26.6%' }}>{h}</th>
                 ))}
               </tr></thead>
@@ -138,7 +138,7 @@ export default function HireMarketing() {
 
         {/* CTA */}
         <section className="mk-section"><Container style={{ textAlign: 'center' }}>
-          <Reveal><h2 className="mk-h2" style={{ marginBottom: 22 }}>See Levl1 Hire on your own roles.</h2>
+          <Reveal><h2 className="mk-h2" style={{ marginBottom: 22 }}>See HirePilot on your own roles.</h2>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}><Button href="/contact">Book a demo</Button><Link href="/pricing" style={{ fontSize: 15, fontWeight: 600, color: T.violet, padding: '13px 24px', borderRadius: 12, border: `1px solid ${T.violet}33`, textDecoration: 'none' }}>See pricing</Link></div></Reveal>
         </Container></section>
       </main>

@@ -18,7 +18,7 @@ const FACTORIES: Record<AtsProvider, Factory | null> = {
 }
 
 export const PROVIDERS: ProviderMeta[] = [
-  { provider: 'levl1_hire', label: 'Levl1 Hire', authType: 'api_key', implemented: true,
+  { provider: 'levl1_hire', label: 'HirePilot', authType: 'api_key', implemented: true,
     credentialFields: [{ key: 'hireApiKey', label: 'Hire API key', type: 'password' }] },
   { provider: 'greenhouse', label: 'Greenhouse', authType: 'api_key', implemented: true,
     credentialFields: [{ key: 'apiKey', label: 'Harvest API key', type: 'password' }] },

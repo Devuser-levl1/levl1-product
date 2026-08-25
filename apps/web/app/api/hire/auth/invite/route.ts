@@ -38,8 +38,8 @@ export const POST = withHireAuth(async (req, ctx) => {
 
   await sendHireEmail({
     to: email,
-    subject: `You've been invited to ${tenant?.name ?? 'Levl1 Hire'}`,
-    html: inviteTeamMemberEmail({ inviterName: 'Your team', tenantName: tenant?.name ?? 'Levl1 Hire', inviteUrl }),
+    subject: `You've been invited to ${tenant?.name ?? 'HirePilot'}`,
+    html: inviteTeamMemberEmail({ inviterName: 'Your team', tenantName: tenant?.name ?? 'HirePilot', inviteUrl }),
   }).catch((e) => console.error('[hire/invite] email failed:', e))
 
   await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'team_member_invite', targetType: 'team_member', targetId: user.id, targetName: user.email, meta: { role: user.role, name } })

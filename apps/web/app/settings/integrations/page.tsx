@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 
-// Interviews app — "Integrations". Connect an external ATS (or Levl1 Hire),
+// Interviews app — "Integrations". Connect an external ATS (or HirePilot),
 // fetch jobs + candidates into Interviews, run a sync, see last-synced status.
 
 interface CredField { key: string; label: string; type?: string }
@@ -58,7 +58,7 @@ export default function IntegrationsPage() {
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Integrations</h1>
-      <p style={{ fontSize: 13, color: '#475569', margin: '0 0 24px' }}>Connect your ATS (or Levl1 Hire) to pull jobs and candidates into Interviews, then generate questions and run screening interviews.</p>
+      <p style={{ fontSize: 13, color: '#475569', margin: '0 0 24px' }}>Connect your ATS (or HirePilot) to pull jobs and candidates into Interviews, then generate questions and run screening interviews.</p>
       {err && <div style={{ ...card, borderColor: '#FECACA', color: '#DC2626', fontSize: 13 }}>{err}</div>}
 
       {providers.map((p) => (
@@ -94,7 +94,7 @@ export default function IntegrationsPage() {
                 <button style={btn} onClick={() => connect(p)} disabled={busy === 'connect-' + p.provider}>{busy === 'connect-' + p.provider ? 'Validating…' : 'Connect & validate'}</button>
                 <button style={ghost} onClick={() => setOpenFor(null)}>Cancel</button>
               </div>
-              {p.provider === 'levl1_hire' && <div style={{ fontSize: 11.5, color: '#64748B' }}>Generate a key in Levl1 Hire → Settings → Developers, then paste it here.</div>}
+              {p.provider === 'levl1_hire' && <div style={{ fontSize: 11.5, color: '#64748B' }}>Generate a key in HirePilot → Settings → Developers, then paste it here.</div>}
             </div>
           )}
 

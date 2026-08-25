@@ -72,7 +72,7 @@ export default function InterviewsMarketing() {
           </div>
           <div className="mk-card" style={{ background: '#fff', border: '1px solid #E7E9F5', borderRadius: 16, padding: 24, borderTop: `3px solid ${T.indigo}` }}>
             <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 8 }}>Plugs into your stack</div>
-            <p style={{ fontSize: 14.5, color: T.slate, lineHeight: 1.6 }}>Use Levl1 Interviews on its own, or connect it to Levl1 Hire and other ATSs — pull candidates in, push results back. ATS-agnostic by design.</p>
+            <p style={{ fontSize: 14.5, color: T.slate, lineHeight: 1.6 }}>Use Levl1 Interviews on its own, or connect it to HirePilot and other ATSs — pull candidates in, push results back. ATS-agnostic by design.</p>
           </div>
         </div></Reveal>
       </Container></section>

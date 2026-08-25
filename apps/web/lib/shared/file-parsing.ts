@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Shared file-parsing module used by BOTH Levl1 Interviews and Levl1 Hire.
+// Shared file-parsing module used by BOTH Levl1 Interviews and HirePilot.
 // This consolidates the parsing logic that previously lived in
 // lib/parseResume.ts (extractTextFromFile), app/api/extract-resume (resume →
 // candidate fields via Claude) and app/api/positions/parse-jd (JD → structured

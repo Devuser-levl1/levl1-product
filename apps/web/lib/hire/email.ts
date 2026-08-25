@@ -23,7 +23,7 @@ export async function sendHireInterviewEmails(
     prisma.hireTenant.findUnique({ where: { id: ctx.tenantId } }),
     prisma.hireUser.findUnique({ where: { id: ctx.userId } }).catch(() => null),
   ])
-  const tenantName = tenant?.name ?? 'Levl1 Hire'
+  const tenantName = tenant?.name ?? 'HirePilot'
   const from = `${tenantName} via Levl1 <${process.env.FROM_EMAIL ?? 'noreply@mail.levl1.io'}>`
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
   const whenStr = fmtIST(new Date(interview.scheduledAt))

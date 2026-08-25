@@ -180,6 +180,6 @@ function invoiceReminderEmail(o: {
       If payment is already on its way, please disregard this note. Otherwise we&apos;d appreciate
       settlement at your earliest convenience.
     </p>
-    <p style="color:#94A3B8;font-size:12px;margin-top:20px">${o.tenantName} · Powered by Levl1 Hire</p>
+    <p style="color:#94A3B8;font-size:12px;margin-top:20px">${o.tenantName} · Powered by HirePilot</p>
   </div></body></html>`
 }

@@ -63,7 +63,7 @@ export default function ApplyPage() {
             <button type="submit" disabled={submitting} style={{ padding: '13px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: 14, cursor: submitting ? 'default' : 'pointer' }}>{submitting ? 'Submitting…' : 'Submit Application'}</button>
           </form>
         )}
-        <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: 12, marginTop: 20 }}>Powered by Levl1 Hire</div>
+        <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: 12, marginTop: 20 }}>Powered by HirePilot</div>
       </div>
     </div>
   )

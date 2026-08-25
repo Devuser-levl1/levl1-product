@@ -76,7 +76,7 @@ export const POST = withHireAuth(async (req, ctx, params) => {
 
   if (via === 'resend') {
     // from: "<Tenant> via Levl1 <…>"; replyTo: the recruiter so replies reach them.
-    const from = agencyFromAddress({ name: tenant?.name ?? 'Levl1 Hire' })
+    const from = agencyFromAddress({ name: tenant?.name ?? 'HirePilot' })
     try {
       await sendHireEmail({ to: c.email, subject, html, from, replyTo: user?.email })
     } catch (e) {

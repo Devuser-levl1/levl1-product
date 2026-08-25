@@ -38,12 +38,12 @@ export function PricingClient() {
       <Reveal>
         <div style={{ textAlign: 'center', marginBottom: 8 }}><Eyebrow>Pricing</Eyebrow></div>
         <h1 className="mk-h2" style={{ textAlign: 'center' }}>Pricing that fits how you hire.</h1>
-        <p style={{ textAlign: 'center', color: T.slate, margin: '12px auto 0', fontSize: 16, maxWidth: 620 }}>Levl1 Hire and Levl1 Interviews are priced separately — use one or both. Tell us about your team and we&apos;ll tailor a plan.</p>
+        <p style={{ textAlign: 'center', color: T.slate, margin: '12px auto 0', fontSize: 16, maxWidth: 620 }}>HirePilot and Levl1 Interviews are priced separately — use one or both. Tell us about your team and we&apos;ll tailor a plan.</p>
       </Reveal>
 
-      {/* Levl1 Hire (violet) */}
+      {/* HirePilot (violet) */}
       <Reveal><div style={{ margin: '44px 0 6px', display: 'flex', alignItems: 'baseline', gap: 12 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.purple }}>Levl1 Hire</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.purple }}>HirePilot</h2>
         <span style={{ fontSize: 14, color: T.slate }}>Run your entire hiring pipeline. Flat, predictable pricing — never per outcome.</span>
       </div></Reveal>
       <div className="mk-grid-3" style={{ marginTop: 18 }}>

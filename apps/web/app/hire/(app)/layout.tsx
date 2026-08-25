@@ -91,9 +91,9 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
       {/* Sidebar */}
       <aside style={{ width: 224, background: '#0F172A', color: 'white', padding: '22px 14px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 28, padding: '0 6px' }}>
-          <span style={{ width: 26, height: 26, borderRadius: 8, background: 'linear-gradient(135deg, #6D28D9, #7C3AED)', transform: 'rotate(45deg)', flexShrink: 0 }} />
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>Levl1 <span style={{ color: '#A78BFA' }}>Hire</span></span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 28, padding: '0 6px' }}>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Hire<span style={{ color: '#A78BFA' }}>Pilot</span></span>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#64748B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>by Levl1</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV.filter((item) => !item.cap || can(me!.user.role, item.cap)).map((item) => {

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (!domain) return NextResponse.json({ error: 'Enter a valid work email address.' }, { status: 400 })
     const existingDomain = await prisma.hireTenant.findUnique({ where: { trialDomain: domain }, select: { id: true } })
     if (existingDomain) {
-      return NextResponse.json({ error: `A Levl1 Hire trial already exists for ${domain}. Ask your admin to invite you, or contact sales to extend.` }, { status: 409 })
+      return NextResponse.json({ error: `A HirePilot trial already exists for ${domain}. Ask your admin to invite you, or contact sales to extend.` }, { status: 409 })
     }
 
     const passwordHash = await hashPassword(password)
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     // Unique-constraint race on trialDomain → same friendly one-trial-per-domain message.
     if (err && typeof err === 'object' && (err as { code?: string }).code === 'P2002') {
-      return NextResponse.json({ error: 'A Levl1 Hire trial already exists for this email domain. Ask your admin to invite you, or contact sales.' }, { status: 409 })
+      return NextResponse.json({ error: 'A HirePilot trial already exists for this email domain. Ask your admin to invite you, or contact sales.' }, { status: 409 })
     }
     const msg = err instanceof Error ? err.message : 'Signup failed'
     console.error('[hire/signup] error:', msg)

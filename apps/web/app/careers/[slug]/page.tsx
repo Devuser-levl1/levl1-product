@@ -74,7 +74,7 @@ export default async function CareerPage({ params }: { params: { slug: string } 
       </main>
 
       <footer style={{ textAlign: 'center', padding: '24px', fontSize: 12, color: '#94A3B8' }}>
-        Powered by <a href="https://levl1.io" style={{ color: '#94A3B8' }}>Levl1 Hire</a>
+        Powered by <a href="https://levl1.io" style={{ color: '#94A3B8' }}>HirePilot</a>
       </footer>
     </div>
   )

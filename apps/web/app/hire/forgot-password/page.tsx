@@ -22,7 +22,7 @@ export default function HireForgotPassword() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg,#F5F3FF,#fff)', padding: 24, fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div style={{ width: 420, maxWidth: '100%', background: '#fff', border: '1px solid #E9E7F5', borderRadius: 18, padding: 32, boxShadow: '0 24px 60px rgba(109,40,217,0.10)' }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#6D28D9', marginBottom: 18 }}>Levl1 Hire</div>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#6D28D9', marginBottom: 18 }}>HirePilot</div>
         {sent ? (
           <>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Check your email</h1>
