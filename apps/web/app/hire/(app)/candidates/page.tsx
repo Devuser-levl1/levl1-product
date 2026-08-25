@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
+import { BulkEmailModal } from '@/components/hire/bulk-email-modal'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
@@ -20,6 +21,8 @@ export default function CandidatesPage() {
   const [stage, setStage] = useState('')
   const [band, setBand] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  const [sel, setSel] = useState<Set<string>>(new Set())
+  const [bulkEmail, setBulkEmail] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [wall, setWall] = useState<string | null>(null)
@@ -49,6 +52,19 @@ export default function CandidatesPage() {
     return true
   })
 
+  const allShownSelected = shown.length > 0 && shown.every((c) => sel.has(c.id))
+  function toggleSel(id: string) {
+    setSel((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+  }
+  function toggleAllShown() {
+    setSel((prev) => {
+      const next = new Set(prev)
+      if (allShownSelected) shown.forEach((c) => next.delete(c.id))
+      else shown.forEach((c) => next.add(c.id))
+      return next
+    })
+  }
+
   async function del(reason: string) {
     if (!deleteFor) return
     await fetch(`/api/hire/candidates/${deleteFor.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) })
@@ -77,12 +93,28 @@ export default function CandidatesPage() {
         <select value={band} onChange={(e) => setBand(e.target.value)} style={inp}><option value="">All scores</option><option value="80">80+</option><option value="60">60–79</option><option value="lt60">&lt;60</option><option value="none">Not scored</option></select>
       </div>
 
-      <div style={{ fontSize: 13, color: '#475569', marginBottom: 10 }}>{shown.length} of {total} candidate{total !== 1 ? 's' : ''}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, minHeight: 34 }}>
+        {shown.length > 0 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+            <input type="checkbox" checked={allShownSelected} onChange={toggleAllShown} style={{ width: 15, height: 15, accentColor: '#6D28D9', cursor: 'pointer' }} />
+            Select all in view
+          </label>
+        )}
+        <div style={{ fontSize: 13, color: '#475569' }}>{shown.length} of {total} candidate{total !== 1 ? 's' : ''}</div>
+        {sel.size > 0 && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{sel.size} selected</span>
+            <button onClick={() => setSel(new Set())} style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+            <button onClick={() => setBulkEmail(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>✉ Send email</button>
+          </div>
+        )}
+      </div>
 
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14 }}>
         {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No candidates found.</div>}
         {shown.map((c, i) => (
-          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: i < shown.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: i < shown.length - 1 ? '1px solid #F1F5F9' : 'none', background: sel.has(c.id) ? 'rgba(109,40,217,0.03)' : 'transparent' }}>
+            <input type="checkbox" checked={sel.has(c.id)} onChange={() => toggleSel(c.id)} aria-label={`Select ${c.name}`} style={{ width: 15, height: 15, accentColor: '#6D28D9', cursor: 'pointer', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setSelected(c.id)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}</span>
@@ -115,6 +147,7 @@ export default function CandidatesPage() {
       {showImport && <ImportModal jobs={jobs} onClose={() => setShowImport(false)} onDone={() => { load() }} />}
       {wall && <HireUpgradeWall message={wall} onClose={() => setWall(null)} />}
       {deleteFor && <DeleteModal candidate={deleteFor} onCancel={() => setDeleteFor(null)} onConfirm={del} />}
+      {bulkEmail && <BulkEmailModal candidateIds={Array.from(sel)} onClose={() => setBulkEmail(false)} onSent={load} />}
     </div>
   )
 }

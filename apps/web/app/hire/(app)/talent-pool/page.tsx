@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
+import { BulkEmailModal } from '@/components/hire/bulk-email-modal'
 import { skillChip } from '@/lib/hire/skills'
 
 interface Row {
@@ -26,6 +27,8 @@ export default function TalentPoolPage() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
+  const [sel, setSel] = useState<Set<string>>(new Set())
+  const [bulkEmail, setBulkEmail] = useState(false)
   const [search, setSearch] = useState('')
   const [source, setSource] = useState('')
   const [status, setStatus] = useState('')
@@ -72,6 +75,10 @@ export default function TalentPoolPage() {
     return [...out].sort(cmp)
   }, [rows, search, source, status, sort, dir])
 
+  const allShownSelected = view.length > 0 && view.every((r) => sel.has(r.id))
+  function toggleSel(id: string) { setSel((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next }) }
+  function toggleAllShown() { setSel((prev) => { const next = new Set(prev); if (allShownSelected) view.forEach((r) => next.delete(r.id)); else view.forEach((r) => next.add(r.id)); return next }) }
+
   const toggleSort = (k: SortKey) => { if (sort === k) setDir((d) => (d === 'asc' ? 'desc' : 'asc')); else { setSort(k); setDir(k === 'name' || k === 'title' ? 'asc' : 'desc') } }
   const Arrow = ({ k }: { k: SortKey }) => sort === k ? <span style={{ color: '#6D28D9' }}>{dir === 'asc' ? ' ↑' : ' ↓'}</span> : null
   const Th = ({ k, children, right }: { k: SortKey; children: React.ReactNode; right?: boolean }) => (
@@ -84,7 +91,16 @@ export default function TalentPoolPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Talent Pool</h1>
         <span style={{ fontSize: 13, color: '#64748B' }}>Every candidate you’ve ever processed — your growing talent database.</span>
       </div>
-      <div style={{ fontSize: 12.5, color: '#94A3B8', marginBottom: 16 }}>{view.length} of {rows.length} candidates</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, minHeight: 30 }}>
+        <span style={{ fontSize: 12.5, color: '#94A3B8' }}>{view.length} of {rows.length} candidates</span>
+        {sel.size > 0 && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{sel.size} selected</span>
+            <button onClick={() => setSel(new Set())} style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+            <button onClick={() => setBulkEmail(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>✉ Send email</button>
+          </div>
+        )}
+      </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
         <input style={{ ...inp, minWidth: 260, flex: '0 1 320px' }} placeholder="Search name, title, company, skill, job…" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -103,6 +119,7 @@ export default function TalentPoolPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F8FAFC' }}>
+              <th style={{ padding: '10px 12px', width: 34 }}><input type="checkbox" checked={allShownSelected} onChange={toggleAllShown} aria-label="Select all in view" style={{ width: 15, height: 15, accentColor: '#6D28D9', cursor: 'pointer' }} /></th>
               <Th k="name">Name</Th>
               <Th k="title">Title / Company</Th>
               <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', textAlign: 'left' }}>Top skills</th>
@@ -118,9 +135,12 @@ export default function TalentPoolPage() {
             {view.map((r) => {
               const tone = TONE[r.statusTone] ?? TONE.pool
               return (
-                <tr key={r.id} onClick={() => setSelected(r.id)} style={{ borderTop: '1px solid #F1F5F9', cursor: 'pointer' }}
+                <tr key={r.id} onClick={() => setSelected(r.id)} style={{ borderTop: '1px solid #F1F5F9', cursor: 'pointer', background: sel.has(r.id) ? 'rgba(109,40,217,0.03)' : 'transparent' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFF' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+                  onMouseLeave={(e) => { e.currentTarget.style.background = sel.has(r.id) ? 'rgba(109,40,217,0.03)' : 'transparent' }}>
+                  <td style={{ padding: '10px 12px' }} onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggleSel(r.id)} aria-label={`Select ${r.name}`} style={{ width: 15, height: 15, accentColor: '#6D28D9', cursor: 'pointer' }} />
+                  </td>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ fontWeight: 700, color: '#0F172A' }}>{r.name}</div>
                     {r.email && <div style={{ fontSize: 11.5, color: '#94A3B8' }}>{r.email}</div>}
@@ -140,14 +160,15 @@ export default function TalentPoolPage() {
                 </tr>
               )
             })}
-            {view.length === 0 && !loading && <tr><td colSpan={9} style={{ padding: 36, textAlign: 'center', color: '#94A3B8' }}>No candidates match these filters.</td></tr>}
-            {loading && <tr><td colSpan={9} style={{ padding: 36, textAlign: 'center', color: '#94A3B8' }}>Loading talent pool…</td></tr>}
+            {view.length === 0 && !loading && <tr><td colSpan={10} style={{ padding: 36, textAlign: 'center', color: '#94A3B8' }}>No candidates match these filters.</td></tr>}
+            {loading && <tr><td colSpan={10} style={{ padding: 36, textAlign: 'center', color: '#94A3B8' }}>Loading talent pool…</td></tr>}
           </tbody>
         </table>
       </div>
       <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 10 }}>Tip: open a candidate to find & attach them to a new open job (rediscovery).</div>
 
       {selected && <CandidateSlideOver candidateId={selected} onClose={() => setSelected(null)} onChanged={load} />}
+      {bulkEmail && <BulkEmailModal candidateIds={Array.from(sel)} onClose={() => setBulkEmail(false)} onSent={load} />}
     </div>
   )
 }
