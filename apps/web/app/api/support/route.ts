@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
           Authorization: `Bearer ${resendKey}`,
         },
         body: JSON.stringify({
-          from: 'Levl1 Support <support@levl1.app>',
-          to: ['support@levl1.app'],
+          from: 'Levl1 Support <support@levl1.io>',
+          to: ['support@levl1.io'],
           subject: `[Ticket #${ticket.ticketNumber}] ${issueType}: ${subject}`,
           html: `<p><strong>From:</strong> ${userEmail}</p>
                  <p><strong>Type:</strong> ${issueType}</p>
