@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 interface JobLite {
   id: string; title: string; location: string | null
@@ -64,6 +64,16 @@ export function SourcingTab({ job }: { job: JobLite }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [genKey, setGenKey] = useState(0) // forces fresh CopyBox state on regenerate
+  const [genSig, setGenSig] = useState('') // inputs snapshot at last generation
+
+  // Signature of the current inputs — when it drifts from what was last
+  // generated, the shown strings are stale and a regenerate will reflect the
+  // new inputs (we don't auto-fire — each generation is an AI call).
+  const inputSig = useMemo(
+    () => JSON.stringify({ mustHave, niceTo, exclude, extra, location, expMin, expMax }),
+    [mustHave, niceTo, exclude, extra, location, expMin, expMax],
+  )
+  const stale = boards != null && inputSig !== genSig
 
   async function generate() {
     setBusy(true); setErr('')
@@ -74,7 +84,7 @@ export function SourcingTab({ job }: { job: JobLite }) {
       })
       const d = await res.json()
       if (!res.ok) { setErr(d.error ?? 'Failed to generate'); return }
-      setBoards(d.boards); setGenKey((k) => k + 1)
+      setBoards(d.boards); setGenKey((k) => k + 1); setGenSig(inputSig)
     } catch { setErr('Network error — please try again.') } finally { setBusy(false) }
   }
 
@@ -101,9 +111,10 @@ export function SourcingTab({ job }: { job: JobLite }) {
           <div><label style={lbl}>Experience max (yrs)</label><input style={{ ...inp, width: '100%' }} type="number" value={expMax} onChange={(e) => setExpMax(e.target.value)} placeholder="6" /></div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
-          <button onClick={generate} disabled={busy} style={{ padding: '9px 18px', borderRadius: 9, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: busy ? 'default' : 'pointer' }}>
+          <button onClick={generate} disabled={busy} style={{ padding: '9px 18px', borderRadius: 9, border: 'none', background: stale ? '#B45309' : '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: busy ? 'default' : 'pointer' }}>
             {busy ? 'Generating…' : boards ? '↻ Regenerate' : '✨ Generate search strings'}
           </button>
+          {stale && !busy && <span style={{ fontSize: 12.5, color: '#B45309', fontWeight: 600 }}>Inputs changed — regenerate to update the strings.</span>}
           {err && <span style={{ color: '#DC2626', fontSize: 13 }}>{err}</span>}
         </div>
       </div>
