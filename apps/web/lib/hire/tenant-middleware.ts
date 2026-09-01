@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { verifyLevlSession, SESSION_COOKIE } from '@/lib/levl-sso'
 import { prisma } from '@/lib/prisma'
 import { isReadOnly, TRIAL_CONFIG } from '@/lib/hire/trial-config'
+import { isAgencyOnlyApi, type BusinessType } from '@/lib/hire/business-type'
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'levl1-dev-secret-change-in-production-please'
@@ -11,6 +12,7 @@ export interface HireContext {
   userId: string
   tenantId: string
   role: string
+  businessType: BusinessType
 }
 
 interface HireTokenPayload {
@@ -89,10 +91,13 @@ export async function getHireContext(req: NextRequest): Promise<HireContext | nu
     if (!userId) return null
 
     // Source of truth: current role + tenant from the live HireUser row.
-    const hu = await prisma.hireUser.findUnique({ where: { id: userId }, select: { role: true, tenantId: true } })
+    const hu = await prisma.hireUser.findUnique({
+      where: { id: userId },
+      select: { role: true, tenantId: true, tenant: { select: { businessType: true } } },
+    })
     if (!hu) return null // user removed / unknown → no access
 
-    return { userId, tenantId: hu.tenantId, role: hu.role }
+    return { userId, tenantId: hu.tenantId, role: hu.role, businessType: hu.tenant.businessType as BusinessType }
   } catch {
     return null
   }
@@ -132,6 +137,13 @@ export function withHireAuth(
       flat[k] = Array.isArray(v) ? v[0] : v
     }
     try {
+      // Business-type gate: ENTERPRISE tenants have no CRM / Receivables /
+      // candidate nurturing. Blocks the underlying API (all methods, incl.
+      // direct GETs) — not just the hidden UI. Tenant-scoped via businessType.
+      if (hireCtx.businessType === 'ENTERPRISE' && isAgencyOnlyApi(req.nextUrl.pathname)) {
+        return NextResponse.json({ error: 'Not available on your plan — this is an agency-only feature.' }, { status: 403 })
+      }
+
       // Read-only enforcement: once the trial has ended (and no active plan),
       // the tenant can view everything but cannot create/add/change. Data is
       // never deleted — writes are simply refused with a friendly, soft message.

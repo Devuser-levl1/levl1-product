@@ -21,6 +21,8 @@ export const POST = withPlatformAuth(async (req, ctx, params) => {
   const adminName = String(body.adminName ?? lead.contactName ?? '').trim()
   const adminEmail = String(body.adminEmail ?? lead.email ?? '').trim().toLowerCase()
   const tenantType = (body.type ?? lead.type) === 'CORPORATE' ? 'CORPORATE' : 'AGENCY'
+  // Business type set at provisioning — ENTERPRISE hides agency-only surfaces.
+  const businessType = body.businessType === 'ENTERPRISE' ? 'ENTERPRISE' : 'AGENCY'
 
   if (!tenantName || !adminName || !adminEmail) {
     return NextResponse.json({ error: 'Company name, admin name and admin email are required to provision.' }, { status: 400 })
@@ -34,7 +36,7 @@ export const POST = withPlatformAuth(async (req, ctx, params) => {
   // unique-constraint failure when provisioning a domain that self-signed-up).
   const domainFree = domain ? !(await prisma.hireTenant.findUnique({ where: { trialDomain: domain }, select: { id: true } })) : false
   const tenant = await prisma.hireTenant.create({
-    data: { name: tenantName, type: tenantType, trialEndsAt, ...(domainFree ? { trialDomain: domain } : {}), users: { create: { name: adminName, email: adminEmail, role: 'ADMIN' } } },
+    data: { name: tenantName, type: tenantType, businessType, trialEndsAt, ...(domainFree ? { trialDomain: domain } : {}), users: { create: { name: adminName, email: adminEmail, role: 'ADMIN' } } },
     include: { users: true },
   })
   const admin = tenant.users[0]

@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
     const email = String(body.email ?? '').trim().toLowerCase()
     const password = String(body.password ?? '')
     const tenantType = body.tenantType === 'CORPORATE' ? 'CORPORATE' : 'AGENCY'
+    // Business type chosen at onboarding — ENTERPRISE (in-house HR) hides
+    // agency-only surfaces; defaults to AGENCY.
+    const businessType = body.businessType === 'ENTERPRISE' ? 'ENTERPRISE' : 'AGENCY'
 
     if (!tenantName || !name || !email || password.length < 8) {
       return NextResponse.json({ error: 'All fields are required; password must be 8+ characters' }, { status: 400 })
@@ -33,6 +36,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: tenantName,
         type: tenantType,
+        businessType,
         trialEndsAt,
         trialDomain: domain,
         users: { create: { name, email, passwordHash, role: 'ADMIN' } },

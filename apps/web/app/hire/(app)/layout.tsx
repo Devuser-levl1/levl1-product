@@ -10,15 +10,18 @@ import {
 } from 'lucide-react'
 import { can, type Capability } from '@/lib/hire/permissions'
 import { ContactHelpdesk } from '@/components/ui/ContactHelpdesk'
+import { isAgencyOnlyPage, type BusinessType } from '@/lib/hire/business-type'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
-  tenant: { id: string; name: string; plan: string; trialEndsAt: string | null; trialActive: boolean }
+  tenant: { id: string; name: string; plan: string; trialEndsAt: string | null; trialActive: boolean; businessType: BusinessType }
 }
 
 // `cap` gates the item by role capability (see lib/hire/permissions). Items
 // without a cap are visible to every role (data is still scoped per-recruiter).
-const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability }[] = [
+// `agencyOnly` hides the item for ENTERPRISE tenants (CRM / Receivables /
+// candidate nurturing) — the matching APIs are gated in withHireAuth.
+const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability; agencyOnly?: boolean }[] = [
   { label: 'Dashboard', href: '/hire/dashboard', icon: LayoutDashboard },
   { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
@@ -29,10 +32,10 @@ const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability }[]
   { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
   { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
   { label: 'Team', href: '/hire/team', icon: Network, cap: 'team' },
-  { label: 'CRM', href: '/hire/crm', icon: Building2, cap: 'crm' },
-  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar' },
+  { label: 'CRM', href: '/hire/crm', icon: Building2, cap: 'crm', agencyOnly: true },
+  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar', agencyOnly: true },
   { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
-  { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone },
+  { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone, agencyOnly: true },
   { label: 'Help', href: '/hire/help', icon: HelpCircle },
   { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
 ]
@@ -61,6 +64,14 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
       })
       .catch(() => router.replace('/hire/login'))
   }, [router])
+
+  // Business-type guard: an ENTERPRISE tenant reaching an agency-only page by
+  // direct URL is bounced to the dashboard (the APIs are already 403-gated).
+  useEffect(() => {
+    if (me?.tenant.businessType === 'ENTERPRISE' && isAgencyOnlyPage(pathname)) {
+      router.replace('/hire/dashboard')
+    }
+  }, [me, pathname, router])
 
   // Read cross-product entitlements to decide launcher vs upsell.
   useEffect(() => {
@@ -97,7 +108,7 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
           <span style={{ fontSize: 10.5, fontWeight: 600, color: '#64748B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>by Levl1</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV.filter((item) => !item.cap || can(me!.user.role, item.cap)).map((item) => {
+          {NAV.filter((item) => (!item.cap || can(me!.user.role, item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')).map((item) => {
             const active = pathname === item.href
             const Icon = item.icon
             return (

@@ -13,7 +13,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
   return NextResponse.json({
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
     tenant: {
-      id: user.tenant.id, name: user.tenant.name, type: user.tenant.type,
+      id: user.tenant.id, name: user.tenant.name, type: user.tenant.type, businessType: user.tenant.businessType,
       plan: user.tenant.plan, trialEndsAt: user.tenant.trialEndsAt, trialActive: user.tenant.trialActive,
     },
   })

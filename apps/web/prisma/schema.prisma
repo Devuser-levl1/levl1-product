@@ -613,6 +613,9 @@ model HireTenant {
   id          String         @id @default(cuid())
   name        String
   type        HireTenantType
+  // Business type gates agency-only surfaces (CRM, Receivables, candidate
+  // nurturing/Campaigns). ENTERPRISE = in-house HR; AGENCY = staffing firm.
+  businessType HireBusinessType @default(AGENCY)
   plan        HirePlan       @default(STARTER)
   domain      String?        @unique
   logoUrl     String?
@@ -701,6 +704,14 @@ model WebhookDelivery {
 enum HireTenantType {
   AGENCY
   CORPORATE
+}
+
+// Business type — controls which product surfaces a tenant sees. AGENCY (staffing
+// firm) sees everything; ENTERPRISE (in-house HR) has no CRM / Receivables /
+// candidate nurturing. Distinct from the legacy `type` field.
+enum HireBusinessType {
+  AGENCY
+  ENTERPRISE
 }
 
 enum HirePlan {
