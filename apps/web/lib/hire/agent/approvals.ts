@@ -45,7 +45,7 @@ export async function createProposal(input: ProposalInput): Promise<HireAgentPro
     data: {
       tenantId: input.tenantId,
       type: input.type,
-      agent: input.agent ?? 'Levl1 Agent',
+      agent: input.agent ?? 'Lev',
       status: 'pending',
       title: input.title,
       summary: input.summary ?? null,
@@ -67,7 +67,7 @@ async function loadPending(tenantId: string, id: string): Promise<HireAgentPropo
  * Approve a proposal and run its executor. The tool chain runs ONLY here, with
  * ctx.proposalId set so consequential tools are unlocked. On success the
  * proposal is marked executed and a single 'agent_execute' audit row attributes
- * it to 'Levl1 Agent (approved by <user>)'.
+ * it to 'Lev (approved by <user>)'.
  */
 export async function approveProposal(
   tenantId: string,
@@ -89,7 +89,7 @@ export async function approveProposal(
     const { summary, result } = await exec(toolCtx, proposal, chosenOption)
     await prisma.hireAgentProposal.update({ where: { id }, data: { status: 'executed', result: result as object } })
     await logAudit({
-      tenantId, actorUserId: ctx.userId, actorName: `Levl1 Agent (approved by ${ctx.approvedByName})`,
+      tenantId, actorUserId: ctx.userId, actorName: `Lev (approved by ${ctx.approvedByName})`,
       action: 'agent_execute', targetType: 'agent', targetId: id, targetName: proposal.title,
       meta: { proposalId: id, type: proposal.type, summary, ...result },
     })

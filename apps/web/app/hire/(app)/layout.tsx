@@ -21,12 +21,14 @@ interface Me {
 // without a cap are visible to every role (data is still scoped per-recruiter).
 // `agencyOnly` hides the item for ENTERPRISE tenants (CRM / Receivables /
 // candidate nurturing) — the matching APIs are gated in withHireAuth.
-const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability; agencyOnly?: boolean }[] = [
+const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability; agencyOnly?: boolean; openLev?: boolean }[] = [
   { label: 'Dashboard', href: '/hire/dashboard', icon: LayoutDashboard },
   { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
   { label: 'Inbox', href: '/hire/inbox', icon: Mail },
-  { label: 'Agent', href: '/hire/agent', icon: Sparkles },
+  // Lev — the Levl1 platform AI agent. Opens the slide-out assistant panel
+  // (does not navigate). Distinct gradient treatment (light-on-dark).
+  { label: 'Lev', href: '/hire/agent', icon: Sparkles, openLev: true },
   { label: 'Talent Pool', href: '/hire/talent-pool', icon: Database },
   { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
   { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
@@ -111,6 +113,34 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
           {NAV.filter((item) => (!item.cap || can(me!.user.role, item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')).map((item) => {
             const active = pathname === item.href
             const Icon = item.icon
+
+            // Lev — opens the slide-out assistant (no navigation) and wears a
+            // light violet→indigo gradient wordmark so it glows on the dark nav.
+            if (item.openLev) {
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => window.dispatchEvent(new CustomEvent('levl1:ask'))}
+                  aria-label="Open Lev"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    padding: '9px 12px', borderRadius: 8, fontSize: 14, fontFamily: 'inherit',
+                    fontWeight: 800, textAlign: 'left', transition: 'background .15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.14)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <Icon size={17} strokeWidth={2.4} style={{ flexShrink: 0, color: '#C4B5FD' }} />
+                  <span style={{
+                    background: 'linear-gradient(90deg, #C4B5FD 0%, #A5B4FC 100%)',
+                    WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+                    letterSpacing: '0.01em',
+                  }}>{item.label}</span>
+                </button>
+              )
+            }
+
             return (
               <a
                 key={item.href}

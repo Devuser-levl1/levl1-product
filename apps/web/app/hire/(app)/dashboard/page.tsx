@@ -43,12 +43,12 @@ export default function HireDashboard() {
       <h1 style={{ fontSize: 24, fontWeight: 800, color: VIZ.ink, margin: '0 0 4px' }}>{greeting}{name ? `, ${name}` : ''}.</h1>
       <div style={{ fontSize: 15, color: VIZ.slate, marginBottom: 20 }}>Here&apos;s what needs you today.</div>
 
-      {/* ── Ask Levl1 bar ── */}
+      {/* ── Ask Lev bar ── */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'linear-gradient(135deg, #faf5ff, #f5f3ff)', border: `1px solid ${VIZ.primarySoft}`, borderRadius: 14, padding: '10px 12px', marginBottom: 18 }}>
         <span style={{ fontSize: 18 }}>✦</span>
         <input
           value={ask} onChange={(e) => setAsk(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendAsk(ask) }}
-          placeholder="Ask Levl1 — e.g. “top candidates this week”, “move 80+ scorers to Screening”"
+          placeholder="Ask Lev — e.g. “top candidates this week”, “move 80+ scorers to Screening”"
           style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 14, color: VIZ.ink, outline: 'none' }}
         />
         <button onClick={() => sendAsk(ask)} style={{ padding: '8px 16px', borderRadius: 9, border: 'none', background: VIZ.primary, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Ask</button>

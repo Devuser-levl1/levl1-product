@@ -28,7 +28,7 @@ function HelpInner() {
   return (
     <div style={{ maxWidth: 820 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Help &amp; guides</h1>
-      <div style={{ fontSize: 13.5, color: '#64748B', marginBottom: 16 }}>Short how-tos for every feature. Tip: you can also ask the Ask Levl1 panel &ldquo;how do I…&rdquo;.</div>
+      <div style={{ fontSize: 13.5, color: '#64748B', marginBottom: 16 }}>Short how-tos for every feature. Tip: you can also ask the Lev panel &ldquo;how do I…&rdquo;.</div>
 
       <input
         value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search help — e.g. rubric, accounts receivable, assign recruiter…"
@@ -37,7 +37,7 @@ function HelpInner() {
 
       {results ? (
         results.length === 0
-          ? <div style={{ color: '#64748B', fontSize: 14 }}>No matches. Try another term, or ask the Ask Levl1 panel.</div>
+          ? <div style={{ color: '#64748B', fontSize: 14 }}>No matches. Try another term, or ask the Lev panel.</div>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{results.map((a) => <Card key={a.id} a={a} open={open === a.id} onToggle={() => setOpen(open === a.id ? null : a.id)} />)}</div>
       ) : (
         HELP_CATEGORIES.map((cat) => {

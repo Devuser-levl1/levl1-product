@@ -10,15 +10,15 @@ import { searchHelp } from '@/lib/hire/help-content'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// ── "Ask Levl1" — agentic assistant ────────────────────────────────────────
+// ── "Lev" — the Levl1 platform agentic assistant ────────────────────────────
 // Reuses the read-only Build-4 MCP tools (lib/mcp) for answering, and adds an
 // ACTION layer: when the user asks to add/move/email, the model calls a
 // propose_* tool — the backend resolves the targets and returns a structured
 // PROPOSAL (it does NOT execute). The panel renders an approval card; only on
 // approval does /api/hire/assistant/execute apply + log the change.
 
-const SYSTEM = `You are Levl1, an agentic assistant embedded in a recruiter's HirePilot ATS.
-You do THREE things: (1) ANSWER questions about the recruiter's data (read-only tools), (2) PROPOSE actions (propose_* tools), and (3) GUIDE the user on how to use Levl1 (search_help tool).
+const SYSTEM = `You are Lev, the Levl1 platform AI agent, embedded in a recruiter's HirePilot ATS.
+You do THREE things: (1) ANSWER questions about the recruiter's data (read-only tools), (2) PROPOSE actions (propose_* tools), and (3) GUIDE the user on how to use the product (search_help tool).
 Rules:
 - Ground every answer in tool results. Never invent candidates, jobs, scores, or product steps.
 - Discover ids with list_jobs before acting on a job. Never ask the user for ids — look them up.

@@ -1,5 +1,5 @@
 // ── Help guide — SINGLE SOURCE OF TRUTH ─────────────────────────────────────
-// Powers BOTH the in-app Help section (/hire/help) AND "Ask Levl1"'s how-to
+// Powers BOTH the in-app Help section (/hire/help) AND "Lev"'s how-to
 // answers (via the search_help assistant tool). Update an article here and both
 // stay in sync. Client-safe: pure data + pure search, no imports.
 
@@ -225,11 +225,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
     keywords: ['settings', 'billing', 'plan', 'upgrade', 'career page', 'job boards', 'integrations'],
   },
   {
-    id: 'ask-levl1', title: 'Using Ask Levl1', category: 'Team & Settings',
-    screen: { label: 'Ask Levl1 (right panel)', href: '/hire/dashboard' },
+    id: 'ask-levl1', title: 'Using Lev', category: 'Team & Settings',
+    screen: { label: 'Lev (right panel)', href: '/hire/dashboard' },
     what: 'The assistant answers questions about your data, performs actions with your approval, and guides you on how to use Levl1.',
     steps: [
-      'Open Ask Levl1 from the side panel.',
+      'Open Lev from the side panel.',
       'Ask about data: "How many candidates in screening?"',
       'Ask it to act: "Add 5 candidates to this job\'s pipeline" — you approve before anything changes.',
       'Ask how-to: "How do I create a rubric?" — it explains the steps and points to the screen.',

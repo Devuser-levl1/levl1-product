@@ -8,7 +8,7 @@ export const maxDuration = 60
 // Apply an approved agent action. The panel posts back the proposal's payload
 // (the SAME object returned by /assistant). Every target is re-validated for
 // tenant ownership inside executeAgentAction, and each change is logged to the
-// activity timeline as "Levl1 Agent (approved by {user})".
+// activity timeline as "Lev (approved by {user})".
 export const POST = withHireAuth(async (req, ctx) => {
   const body = await req.json().catch(() => ({}))
   const payload = body?.payload

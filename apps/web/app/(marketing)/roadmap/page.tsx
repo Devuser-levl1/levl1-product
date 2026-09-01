@@ -12,7 +12,7 @@ const PILL: Record<Status, { bg: string; fg: string }> = {
 }
 
 const HIRE: [Status, string[]][] = [
-  ['Shipping now', ['AI job-brief generation', 'Weighted screening rubric', 'AI résumé scoring & matching (incl. image-PDF reading)', 'Agentic “Ask Levl1” assistant', 'AI sourcing search-strings', 'ATS + CRM pipeline with deal economics', 'Branded career pages']],
+  ['Shipping now', ['AI job-brief generation', 'Weighted screening rubric', 'AI résumé scoring & matching (incl. image-PDF reading)', 'Agentic assistant “Lev”', 'AI sourcing search-strings', 'ATS + CRM pipeline with deal economics', 'Branded career pages']],
   ['In progress', ['Team management & manager oversight', 'Drag-and-drop job assignment', 'Inbound email → draft position', 'One-click job posting (bring-your-own-board)', 'In-app mailbox']],
   ['Planned', ['Least-click sourcing across boards', 'LinkedIn sourcing via extension', 'Talent-pool intelligence & candidate rediscovery', 'Staged agentic recruiter']],
 ]

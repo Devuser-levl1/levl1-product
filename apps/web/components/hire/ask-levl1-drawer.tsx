@@ -73,7 +73,8 @@ export function AskLevl1Drawer() {
     setMsgs((m) => [...m, { id: nextId(), role: 'assistant', text: 'Cancelled — nothing was changed.' }])
   }
 
-  // Let other parts of the app (e.g. the dashboard "Ask Levl1" bar) open the
+  // Let other parts of the app (e.g. the dashboard "Ask Lev" bar, the nav Lev
+  // entry) open the
   // drawer and optionally fire a question: window.dispatchEvent(new CustomEvent('levl1:ask', { detail: { question } })).
   const askRef = useRef(ask)
   askRef.current = ask
@@ -91,9 +92,9 @@ export function AskLevl1Drawer() {
     <>
       {/* Floating launcher — available across the whole Hire app. */}
       {!open && (
-        <button onClick={() => setOpen(true)} aria-label="Open Ask Levl1"
-          style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 70, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 100, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 800, fontSize: 14, background: 'linear-gradient(135deg, #6D28D9 0%, #4F46E5 100%)', boxShadow: '0 10px 28px rgba(109,40,217,0.35)' }}>
-          ✨ Ask Levl1
+        <button onClick={() => setOpen(true)} aria-label="Open Lev"
+          style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 70, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 100, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 800, fontSize: 14, background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)', boxShadow: '0 10px 28px rgba(109,40,217,0.35)' }}>
+          ✨ Lev
         </button>
       )}
 
@@ -105,7 +106,7 @@ export function AskLevl1Drawer() {
         transform: open ? 'translateX(0)' : 'translateX(105%)', transition: 'transform .22s ease',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', borderBottom: '1px solid #F1F5F9' }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#6D28D9' }}>✨ Ask Levl1</span>
+          <span style={{ fontSize: 14, fontWeight: 800 }}>✨ <span style={{ background: 'linear-gradient(90deg, #7C3AED 0%, #4F46E5 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Lev</span></span>
           {ctxJob && <span title={`Context: ${ctxJob.title}`} style={{ fontSize: 11, fontWeight: 700, color: '#5B21B6', background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(109,40,217,0.18)', borderRadius: 100, padding: '2px 8px', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ctxJob.title}</span>}
           {msgs.length > 0 && <button onClick={() => setMsgs([])} style={{ marginLeft: 'auto', fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>}
           <button onClick={() => setOpen(false)} aria-label="Close" style={{ marginLeft: msgs.length > 0 ? 6 : 'auto', fontSize: 20, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -162,12 +163,12 @@ export function AskLevl1Drawer() {
               )}
             </div>
           ))}
-          {busy && <div style={{ fontSize: 13, color: '#6D28D9', fontWeight: 600 }}>✨ Levl1 is working…</div>}
+          {busy && <div style={{ fontSize: 13, color: '#6D28D9', fontWeight: 600 }}>✨ Lev is working…</div>}
         </div>
 
         <div style={{ borderTop: '1px solid #F1F5F9', padding: 12, display: 'flex', gap: 8 }}>
           <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') ask(input) }}
-            placeholder="Ask or tell Levl1 to do something…"
+            placeholder="Ask or tell Lev to do something…"
             style={{ flex: 1, border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', fontSize: 13.5, outline: 'none' }} />
           <button onClick={() => ask(input)} disabled={busy || !input.trim()} aria-label="Send"
             style={{ width: 42, borderRadius: 10, border: 'none', background: input.trim() ? '#6D28D9' : '#E2E8F0', color: '#fff', fontSize: 18, cursor: input.trim() ? 'pointer' : 'default' }}>→</button>

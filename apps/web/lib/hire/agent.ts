@@ -5,11 +5,11 @@ import { CLAUDE_MODEL } from '@/lib/ai/model'
 import { matchCandidatesToJob, coerceRubric, JobForMatch, CandidateForMatch } from '@/lib/hire/ai-matching'
 import { sendHireEmail } from '@/lib/hire/email'
 
-// ── Ask Levl1 — agentic action layer ───────────────────────────────────────
+// ── Lev — agentic action layer ───────────────────────────────────────
 // The assistant PROPOSES side-effecting actions; nothing executes until the
 // user approves in the panel. Resolvers (read-only) compute the targets +
 // preview; executors apply the change and log it to the activity timeline as
-// "Levl1 Agent (approved by {user})". Everything is tenant-scoped.
+// "Lev (approved by {user})". Everything is tenant-scoped.
 
 export type AgentActionType = 'add_to_pipeline' | 'bulk_stage_move' | 'draft_outreach'
 
@@ -146,7 +146,7 @@ function escapeHtml(s: string) { return s.replace(/&/g, '&amp;').replace(/</g, '
 
 export async function executeAgentAction(tenantId: string, userId: string, payload: Record<string, unknown>): Promise<{ ok: boolean; summary: string }> {
   const user = await prisma.hireUser.findFirst({ where: { id: userId, tenantId }, select: { name: true } })
-  const tag = `Levl1 Agent (approved by ${user?.name ?? 'a teammate'})`
+  const tag = `Lev (approved by ${user?.name ?? 'a teammate'})`
   const type = payload.type
 
   if (type === 'add_to_pipeline') {

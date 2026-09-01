@@ -9,7 +9,7 @@ export const maxDuration = 60
 
 // POST /api/hire/agent/proposals/[id]/approve  { chosenOption }
 // Approves the proposal and runs its tool chain (the ONLY place consequential
-// tools execute). Attributed to 'Levl1 Agent (approved by <user>)'.
+// tools execute). Attributed to 'Lev (approved by <user>)'.
 export const POST = withHireAuth(async (req, ctx, params) => {
   const body = await req.json().catch(() => ({}))
   const me = await prisma.hireUser.findUnique({ where: { id: ctx.userId }, select: { name: true, email: true } })

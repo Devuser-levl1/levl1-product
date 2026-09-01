@@ -17,7 +17,7 @@ export interface AgentCtx {
   role: string
   /** Present only inside an APPROVED proposal execution — gates consequential tools. */
   proposalId?: string
-  /** Human who approved — used for audit attribution ('Levl1 Agent (approved by X)'). */
+  /** Human who approved — used for audit attribution ('Lev (approved by X)'). */
   approvedByName?: string
 }
 
@@ -36,7 +36,7 @@ interface ToolDef<I, O> {
 }
 
 function agentActor(ctx: AgentCtx): string {
-  return ctx.approvedByName ? `Levl1 Agent (approved by ${ctx.approvedByName})` : 'Levl1 Agent'
+  return ctx.approvedByName ? `Lev (approved by ${ctx.approvedByName})` : 'Lev'
 }
 
 // ── Tool implementations ────────────────────────────────────────────────────

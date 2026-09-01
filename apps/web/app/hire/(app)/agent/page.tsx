@@ -33,15 +33,15 @@ export default function AgentInboxPage() {
 
   return (
     <div style={{ maxWidth: 720 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Agent</h1>
-      <div style={{ fontSize: 13.5, color: '#64748B', marginBottom: 16 }}>Actions the Levl1 Agent suggests. Nothing runs until you approve.</div>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Lev</h1>
+      <div style={{ fontSize: 13.5, color: '#64748B', marginBottom: 16 }}>Actions Lev suggests. Nothing runs until you approve.</div>
 
       {note && <div style={{ fontSize: 13, color: '#059669', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>{note}</div>}
 
       {!loaded ? <div style={{ color: '#475569' }}>Loading…</div>
         : proposals.length === 0 ? (
           <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 28, textAlign: 'center', color: '#64748B', fontSize: 14 }}>
-            No pending suggestions. When a résumé arrives in a connected mailbox, the agent will propose the best-fit jobs here.
+            No pending suggestions. When a résumé arrives in a connected mailbox, Lev will propose the best-fit jobs here.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

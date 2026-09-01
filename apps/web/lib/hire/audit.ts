@@ -24,7 +24,7 @@ export async function resolveActorName(userId?: string | null): Promise<string |
 interface LogAuditInput {
   tenantId: string
   actorUserId?: string | null
-  /** Overrides the resolved actor name — e.g. 'Levl1 Agent (approved by Jane)'. */
+  /** Overrides the resolved actor name — e.g. 'Lev (approved by Jane)'. */
   actorName?: string | null
   action: AuditAction
   targetType?: AuditTargetType | null
