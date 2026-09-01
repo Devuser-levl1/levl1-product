@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { STAGE_PROBABILITY, DEAL_STAGES } from '@/lib/hire/constants'
+import { SubmissionColumnsEditor } from '@/components/hire/submission-columns-editor'
 
 interface ContactActivity { id: string; type: string; note: string | null; createdAt: string }
 interface Contact { id: string; name: string; email: string | null; phone: string | null; role: string | null; linkedinUrl: string | null; lastContactedAt: string | null; activities: ContactActivity[] }
@@ -12,7 +13,7 @@ interface Client { id: string; name: string; industry: string | null; website: s
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
 const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
-const TABS = ['Overview', 'Jobs', 'Deals', 'Activity'] as const
+const TABS = ['Overview', 'Jobs', 'Deals', 'Activity', 'Submission format'] as const
 
 export default function ClientDetailPage() {
   const params = useParams(); const router = useRouter()
@@ -102,9 +103,46 @@ export default function ClientDetailPage() {
         </div>
       )}
 
+      {tab === 'Submission format' && <SubmissionFormatTab clientId={client.id} />}
+
       {addContact && <ContactModal clientId={client.id} onClose={() => setAddContact(false)} onSaved={() => { setAddContact(false); load() }} />}
       {logFor && <LogModal contact={logFor} onClose={() => setLogFor(null)} onSaved={() => { setLogFor(null); load() }} />}
       {addDeal && <DealModal clientId={client.id} onClose={() => setAddDeal(false)} onSaved={() => { setAddDeal(false); load() }} />}
+    </div>
+  )
+}
+
+function SubmissionFormatTab({ clientId }: { clientId: string }) {
+  const [columns, setColumns] = useState<string[] | null>(null)
+  const [isDefault, setIsDefault] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const load = useCallback(() => {
+    fetch(`/api/hire/crm/clients/${clientId}/submission-template`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setColumns(d.columns); setIsDefault(d.isDefault) } }).catch(() => {})
+  }, [clientId])
+  useEffect(() => { load() }, [load])
+
+  async function save() {
+    if (!columns) return
+    setSaving(true); setMsg('')
+    const r = await fetch(`/api/hire/crm/clients/${clientId}/submission-template`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ columns }) })
+    setSaving(false)
+    if (r.ok) { setMsg('Saved — every submission to this client now uses these columns.'); setIsDefault(false) } else setMsg('Could not save.')
+  }
+
+  if (!columns) return <div style={{ color: '#475569' }}>Loading…</div>
+  return (
+    <div style={{ ...card, maxWidth: 520 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Candidate submission format</div>
+      <div style={{ fontSize: 12.5, color: '#64748B', marginBottom: 14, lineHeight: 1.6 }}>
+        Columns (and order) for the Excel summary sent to this client with each candidate submission. {isDefault && <span style={{ color: '#B45309' }}>Currently using the default set.</span>} Editable anytime; a single send can also override this.
+      </div>
+      <SubmissionColumnsEditor value={columns} onChange={setColumns} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+        <button onClick={save} disabled={saving} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: saving ? 'default' : 'pointer' }}>{saving ? 'Saving…' : 'Save format'}</button>
+        {msg && <span style={{ fontSize: 12.5, color: msg.startsWith('Saved') ? '#059669' : '#DC2626' }}>{msg}</span>}
+      </div>
     </div>
   )
 }

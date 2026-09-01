@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { BulkEmailModal } from '@/components/hire/bulk-email-modal'
+import { SubmitToClientModal } from '@/components/hire/submit-to-client-modal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
@@ -25,6 +26,7 @@ export default function CandidatesPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [bulkEmail, setBulkEmail] = useState(false)
+  const [submitClient, setSubmitClient] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [wall, setWall] = useState<string | null>(null)
@@ -107,7 +109,8 @@ export default function CandidatesPage() {
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#6D28D9' }}>{sel.size} selected</span>
             <button onClick={() => setSel(new Set())} style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
-            <button onClick={() => setBulkEmail(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>✉ Send email</button>
+            <button onClick={() => setBulkEmail(true)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #6D28D9', background: '#fff', color: '#6D28D9', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>✉ Send email</button>
+            <button onClick={() => setSubmitClient(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>📤 Send to client</button>
           </div>
         )}
       </div>
@@ -150,6 +153,7 @@ export default function CandidatesPage() {
       {wall && <HireUpgradeWall message={wall} onClose={() => setWall(null)} />}
       {deleteFor && <DeleteModal candidate={deleteFor} onCancel={() => setDeleteFor(null)} onConfirm={del} />}
       {bulkEmail && <BulkEmailModal candidateIds={Array.from(sel)} onClose={() => setBulkEmail(false)} onSent={load} />}
+      {submitClient && <SubmitToClientModal candidateIds={Array.from(sel)} onClose={() => setSubmitClient(false)} onSent={load} />}
     </div>
   )
 }

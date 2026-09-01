@@ -873,6 +873,7 @@ model HireCandidate {
   aiRecommendation String?    // strong_yes | yes | maybe | no
   interviewScore   Int?       // synced from Interviews product
   source           String?    // LinkedIn, Naukri, Referral, Direct
+  submittedToClientAt DateTime? // last time this candidate was submitted to a client
   emailOptOut      Boolean    @default(false)
   // Rejection lifecycle — set when moved to the Rejected swimlane; cleared on re-activation.
   rejectedReason   String?    @db.Text
@@ -1160,6 +1161,9 @@ model HireClient {
   industry  String?
   website   String?
   logoUrl   String?
+  // Ordered list of column keys for the candidate-submission Excel summary sent
+  // to this client (see lib/hire/submission.ts catalog). Null → default set.
+  submissionColumns Json?
   createdAt DateTime   @default(now())
 
   contacts  HireContact[]

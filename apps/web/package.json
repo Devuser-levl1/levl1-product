@@ -28,6 +28,7 @@
     "bcryptjs": "^3.0.3",
     "canvas": "^3.2.3",
     "cashfree-pg": "^6.0.4",
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.40.0",
     "imapflow": "^1.4.2",
     "lucide-react": "^1.16.0",

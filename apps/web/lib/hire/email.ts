@@ -2,7 +2,7 @@ import { sendEmail } from '@/lib/emailService'
 import { prisma } from '@/lib/prisma'
 import { interviewScheduledCandidateEmail, interviewScheduledInterviewerEmail } from '@/emails/hire/interview-scheduled'
 
-export async function sendHireEmail(opts: { to: string; subject: string; html: string; replyTo?: string; from?: string }) {
+export async function sendHireEmail(opts: { to: string; subject: string; html: string; replyTo?: string; from?: string; attachments?: { filename: string; content: string; contentType?: string }[] }) {
   return sendEmail(opts)
 }
 
