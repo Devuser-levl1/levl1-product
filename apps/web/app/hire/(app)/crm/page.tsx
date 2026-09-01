@@ -186,7 +186,9 @@ function AddClientModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>Add Client</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <input style={inp} placeholder="Company name" value={f.name} onChange={(e) => set('name', e.target.value)} />
-      <select style={inp} value={f.industry} onChange={(e) => set('industry', e.target.value)}><option value="">Select industry</option>{INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}</select>
+      {/* Combobox: pick a common industry or type any custom value — it saves as-is. */}
+      <input style={inp} list="hire-industry-options" placeholder="Industry (pick from the list or type your own)" value={f.industry} onChange={(e) => set('industry', e.target.value)} />
+      <datalist id="hire-industry-options">{INDUSTRIES.map((i) => <option key={i} value={i} />)}</datalist>
       <input style={inp} placeholder="Website" value={f.website} onChange={(e) => set('website', e.target.value)} />
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginTop: 6 }}>Primary contact (optional)</div>
       <input style={inp} placeholder="Contact name" value={f.contactName} onChange={(e) => set('contactName', e.target.value)} />
