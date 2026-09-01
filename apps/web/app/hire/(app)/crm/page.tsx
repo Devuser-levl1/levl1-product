@@ -70,7 +70,8 @@ function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [industry, setIndustry] = useState('')
-  const shown = clients.filter((c) => (!search || c.name.toLowerCase().includes(search.toLowerCase())) && (!industry || c.industry === industry))
+  const q = search.trim().toLowerCase()
+  const shown = clients.filter((c) => (!q || [c.name, c.industry].filter(Boolean).some((v) => (v as string).toLowerCase().includes(q))) && (!industry || c.industry === industry))
 
   async function del(c: Client) {
     if (!confirm(`Delete ${c.name}?`)) return
@@ -86,7 +87,7 @@ function ClientsTab({ clients, reload }: { clients: Client[]; reload: () => void
         <select value={industry} onChange={(e) => setIndustry(e.target.value)} style={inp}><option value="">All industries</option>{INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}</select>
       </div>
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14 }}>
-        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No clients yet.</div>}
+        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>{q || industry ? 'No clients match your search.' : 'No clients yet.'}</div>}
         {shown.map((c, i) => {
           const pipeline = c.deals.reduce((s, d) => s + d.value, 0)
           return (

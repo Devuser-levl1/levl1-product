@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 
-interface Job { id: string; title: string; department: string | null; status: string; createdAt: string; assigneeId: string | null; _count: { candidates: number }; client: { id: string; name: string } | null }
+interface Job { id: string; title: string; department: string | null; location: string | null; status: string; createdAt: string; assigneeId: string | null; _count: { candidates: number }; client: { id: string; name: string } | null }
 interface Usage { trialActive: boolean; limits: { activeJobs: number }; usage: { activeJobs: number } }
 const STATUS_COLORS: Record<string, string> = { ACTIVE: '#10B981', PAUSED: '#F59E0B', CLOSED: '#475569' }
 
@@ -12,6 +13,8 @@ export default function JobsListPage() {
   const [team, setTeam] = useState<Record<string, string>>({})
   const [usage, setUsage] = useState<Usage | null>(null)
   const [filter, setFilter] = useState('ALL')
+  const [search, setSearch] = useState('')
+  const q = useDebouncedValue(search.trim().toLowerCase(), 200)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
   const load = useCallback(() => {
@@ -36,7 +39,11 @@ export default function JobsListPage() {
   }
 
   const counts = { ALL: jobs.length, ACTIVE: jobs.filter((j) => j.status === 'ACTIVE').length, PAUSED: jobs.filter((j) => j.status === 'PAUSED').length, CLOSED: jobs.filter((j) => j.status === 'CLOSED').length }
-  const shown = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter)
+  // Client-side search over the already-loaded (already tenant + scope-filtered)
+  // jobs — by title, client, department or location. Combines with the status tab.
+  const matchesQuery = (j: Job) => !q || [j.title, j.client?.name, j.department, j.location].filter(Boolean).some((v) => (v as string).toLowerCase().includes(q))
+  const byStatus = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter)
+  const shown = byStatus.filter(matchesQuery)
 
   return (
     <div style={{ maxWidth: 860 }}>
@@ -59,6 +66,13 @@ export default function JobsListPage() {
         </div>
       )}
 
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search jobs by title, client, department or location…"
+        style={{ width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 13.5, background: '#fff', marginBottom: 12, outline: 'none' }}
+      />
+
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(['ALL', 'ACTIVE', 'PAUSED', 'CLOSED'] as const).map((s) => (
           <button key={s} onClick={() => setFilter(s)} style={{ fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (filter === s ? '#6D28D9' : '#E2E8F0'), background: filter === s ? 'rgba(109,40,217,0.08)' : '#fff', color: filter === s ? '#6D28D9' : '#64748B', cursor: 'pointer' }}>
@@ -68,7 +82,11 @@ export default function JobsListPage() {
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, overflow: 'visible' }}>
-        {shown.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>No jobs yet. Create your first one.</div>}
+        {shown.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>
+            {q || filter !== 'ALL' ? `No jobs match${q ? ` “${search.trim()}”` : ''}${filter !== 'ALL' ? ` in ${filter.toLowerCase()}` : ''}.` : 'No jobs yet. Create your first one.'}
+          </div>
+        )}
         {shown.map((j, idx) => (
           <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: idx < shown.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
             <div style={{ flex: 1, minWidth: 0 }}>

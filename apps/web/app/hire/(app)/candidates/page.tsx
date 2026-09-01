@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { BulkEmailModal } from '@/components/hire/bulk-email-modal'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
 import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
@@ -17,6 +18,7 @@ export default function CandidatesPage() {
   const [total, setTotal] = useState(0)
   const [jobs, setJobs] = useState<Job[]>([])
   const [search, setSearch] = useState('')
+  const dsearch = useDebouncedValue(search.trim(), 300) // server-side search — debounced
   const [jobId, setJobId] = useState('')
   const [stage, setStage] = useState('')
   const [band, setBand] = useState('')
@@ -33,12 +35,12 @@ export default function CandidatesPage() {
 
   const load = useCallback(() => {
     const qs = new URLSearchParams()
-    if (search) qs.set('search', search)
+    if (dsearch) qs.set('search', dsearch)
     if (jobId) qs.set('jobId', jobId)
     if (stage) qs.set('stage', stage)
     qs.set('limit', '100')
     fetch(`/api/hire/candidates?${qs}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setCands(d.candidates); setTotal(d.total) } }).catch(() => {})
-  }, [search, jobId, stage])
+  }, [dsearch, jobId, stage])
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setJobs(d)).catch(() => {}) }, [])
 

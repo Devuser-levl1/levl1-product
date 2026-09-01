@@ -20,9 +20,15 @@ export const GET = withHireAuth(async (req, ctx) => {
   if (jobId) where.jobId = jobId
   if (stage) where.currentStage = stage
   if (search) {
+    // Search name / email / title / company (substring, case-insensitive).
+    // Scope is AND-wrapped below, so this never widens what the recruiter is
+    // allowed to see. (Skill search is offered in Talent Pool, which parses the
+    // JSON skills client-side over its already-scoped rows.)
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } },
+      { currentTitle: { contains: search, mode: 'insensitive' } },
+      { currentCompany: { contains: search, mode: 'insensitive' } },
     ]
   }
   // Recruiters see candidates assigned to them, candidates whose job belongs to

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 
 interface Campaign { id: string; name: string; subject: string; status: string; sentCount: number; openCount: number; recipientCount: number; audienceType: string; sentAt: string | null; createdAt: string }
 interface Job { id: string; title: string }
@@ -13,13 +14,17 @@ export default function CampaignsPage() {
   const [list, setList] = useState<Campaign[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
   const [editing, setEditing] = useState<boolean>(false)
+  const [search, setSearch] = useState('')
+  const q = useDebouncedValue(search.trim().toLowerCase(), 200)
 
   const load = useCallback(() => { fetch('/api/hire/campaigns').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setList(d)).catch(() => {}) }, [])
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setJobs(d)).catch(() => {}) }, [])
 
-  const drafts = list.filter((c) => c.status !== 'SENT')
-  const sent = list.filter((c) => c.status === 'SENT')
+  // Client-side search by name or subject over the already-loaded (scoped) list.
+  const filtered = list.filter((c) => !q || [c.name, c.subject].filter(Boolean).some((v) => v.toLowerCase().includes(q)))
+  const drafts = filtered.filter((c) => c.status !== 'SENT')
+  const sent = filtered.filter((c) => c.status === 'SENT')
 
   if (editing) return <Editor jobs={jobs} onClose={() => setEditing(false)} onDone={() => { setEditing(false); load() }} />
 
@@ -29,7 +34,12 @@ export default function CampaignsPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: 0 }}>Campaigns</h1>
         <button onClick={() => setEditing(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ New Campaign</button>
       </div>
-      {list.length === 0 && <div style={{ ...card, textAlign: 'center', color: '#475569', padding: 40 }}>No campaigns yet. Create one to reactivate your talent pool.</div>}
+      {list.length > 0 && (
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search campaigns by name or subject…" style={{ ...inp, marginBottom: 14 }} />
+      )}
+      {list.length === 0 ? <div style={{ ...card, textAlign: 'center', color: '#475569', padding: 40 }}>No campaigns yet. Create one to reactivate your talent pool.</div>
+        : filtered.length === 0 ? <div style={{ ...card, textAlign: 'center', color: '#475569', padding: 40 }}>No campaigns match “{search.trim()}”.</div>
+        : null}
       {drafts.length > 0 && <Section title={`Draft (${drafts.length})`} items={drafts} reload={load} />}
       {sent.length > 0 && <Section title={`Sent (${sent.length})`} items={sent} reload={load} />}
     </div>
