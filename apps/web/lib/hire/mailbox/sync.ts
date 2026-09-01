@@ -6,6 +6,10 @@ import { sanitizeMessage } from './sanitize'
 import { buildResumeProposal } from '@/lib/hire/agent/resume-intake'
 import type { MailboxCfg } from './types'
 
+// A file is résumé-like (drives parse→score→create) by its extension.
+const RESUME_EXT = /\.(pdf|docx?|png|jpe?g|webp)$/i
+const isResumeFile = (filename: string) => RESUME_EXT.test(filename)
+
 interface ConnLike {
   id: string; tenantId: string; provider: string; email: string; userId?: string | null
   imapHost: string | null; imapPort: number | null; smtpHost: string | null; smtpPort: number | null
@@ -58,7 +62,7 @@ export async function syncConnection(conn: ConnLike): Promise<{ newCount: number
             isJobSpec: verdict.isJobSpec, jobSpecConfidence: verdict.confidence,
             isResume: resume.isResume, resumeConfidence: resume.confidence,
             attachments: attachments.length
-              ? { create: attachments.map((a) => ({ tenantId: conn.tenantId, filename: a.filename, mimeType: a.mime, sizeBytes: a.size, contentBase64: a.contentBase64, isResume: resume.isResume })) }
+              ? { create: attachments.map((a) => ({ tenantId: conn.tenantId, filename: a.filename, mimeType: a.mime, sizeBytes: a.size, contentBase64: a.contentBase64, isResume: isResumeFile(a.filename) })) }
               : undefined,
           },
           include: { attachments: { select: { id: true, isResume: true } } },

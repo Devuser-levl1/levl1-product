@@ -50,6 +50,23 @@ async function send(to: string, body: string, kind: string) {
   }
 }
 
+/**
+ * Send a plain WhatsApp text and REPORT the result (unlike the fire-and-forget
+ * notification helpers) — used by the inbox reply flow. Returns ok:false with a
+ * reason when Twilio isn't configured or the send fails, so the caller can tell
+ * the recruiter instead of silently dropping the reply.
+ */
+export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: boolean; sid?: string; error?: string }> {
+  const client = getClient()
+  if (!client) return { ok: false, error: 'WhatsApp (Twilio) is not configured.' }
+  try {
+    const res = await client.messages.create({ from: FROM, to: formatPhone(to), body })
+    return { ok: true, sid: res.sid }
+  } catch (error: unknown) {
+    return { ok: false, error: error instanceof Error ? error.message : 'WhatsApp send failed' }
+  }
+}
+
 export async function sendWhatsAppInvite({
   candidateName,
   candidatePhone,

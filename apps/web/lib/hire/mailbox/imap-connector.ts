@@ -104,27 +104,35 @@ async function fetchBodyText(client: ImapFlow, uid: number, bodyStructure: BodyN
   }
 }
 
-// ── Résumé-attachment capture (agentic résumé-intake workflow) ──────────────
-interface AttNode { part?: string; type?: string; encoding?: string; size?: number; disposition?: string; dispositionParameters?: { filename?: string }; parameters?: { name?: string }; childNodes?: AttNode[] }
-const RESUME_EXT = /\.(pdf|docx?|png|jpe?g|webp)$/i
-const ATTACH_MAX_BYTES = 8 * 1024 * 1024 // skip anything larger than 8MB
+// ── Attachment capture ──────────────────────────────────────────────────────
+// Captures ALL real attachments (filename + mime + bytes), not just résumés, so
+// the inbox can show every attachment. Résumé detection happens later (per file,
+// in sync) to drive the parse→score→create flow.
+interface AttNode { part?: string; type?: string; subtype?: string; encoding?: string; size?: number; disposition?: string; dispositionParameters?: { filename?: string }; parameters?: { name?: string }; childNodes?: AttNode[] }
+const ATTACH_MAX_BYTES = 10 * 1024 * 1024 // skip anything larger than 10MB
+const ATTACH_MAX_COUNT = 12               // cap attachments stored per message
 
-// Walk the bodyStructure and collect résumé-like attachment leaf parts.
+// Walk the bodyStructure and collect every attachment leaf part.
 function findAttachmentParts(node: AttNode | undefined): { part: string; type: string; encoding?: string; filename: string; size: number }[] {
   const out: { part: string; type: string; encoding?: string; filename: string; size: number }[] = []
   const visit = (n: AttNode) => {
     if (n.childNodes && n.childNodes.length) { n.childNodes.forEach(visit); return }
     const filename = n.dispositionParameters?.filename || n.parameters?.name || ''
-    const isAttachment = (n.disposition || '').toLowerCase() === 'attachment' || !!filename
-    if (isAttachment && filename && RESUME_EXT.test(filename)) {
-      out.push({ part: n.part || '1', type: (n.type || 'application/octet-stream').toLowerCase(), encoding: n.encoding, filename, size: n.size ?? 0 })
+    const disp = (n.disposition || '').toLowerCase()
+    // A leaf is an attachment if it's dispositioned as one, or carries a filename
+    // (inline images without a filename are skipped as body decoration).
+    const isAttachment = disp === 'attachment' || (!!filename && disp !== 'inline')
+    // Compose the mime type from bodyStructure type/subtype (e.g. "application" + "pdf").
+    const mime = (n.type && n.subtype ? `${n.type}/${n.subtype}` : n.type || 'application/octet-stream').toLowerCase()
+    if (isAttachment && filename) {
+      out.push({ part: n.part || '1', type: mime, encoding: n.encoding, filename, size: n.size ?? 0 })
     }
   }
   visit(node ?? {})
-  return out
+  return out.slice(0, ATTACH_MAX_COUNT)
 }
 
-async function fetchResumeAttachments(client: ImapFlow, uid: number, bodyStructure: AttNode | undefined): Promise<{ filename: string; mime: string; size: number; contentBase64: string }[]> {
+async function fetchAttachments(client: ImapFlow, uid: number, bodyStructure: AttNode | undefined): Promise<{ filename: string; mime: string; size: number; contentBase64: string }[]> {
   const parts = findAttachmentParts(bodyStructure)
   const out: { filename: string; mime: string; size: number; contentBase64: string }[] = []
   for (const p of parts) {
@@ -184,7 +192,7 @@ export const imapConnector: MailboxConnector = {
           const env = msg.envelope
           const from = env?.from?.[0]
           const bodyText = await fetchBodyText(client, uid, msg.bodyStructure as unknown as BodyNode)
-          const attachments = await fetchResumeAttachments(client, uid, msg.bodyStructure as unknown as AttNode)
+          const attachments = await fetchAttachments(client, uid, msg.bodyStructure as unknown as AttNode)
           const snippetSrc = bodyText || env?.subject || ''
           // Scrub null bytes / invalid UTF-8 / lone surrogates from EVERY text
           // field here so nothing malformed can reach Postgres (error 22021).

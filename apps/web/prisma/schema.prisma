@@ -1062,6 +1062,7 @@ model MailboxMessage {
   isRead            Boolean  @default(false)
   status            String   @default("new") // new | archived | drafted
   createdPositionId String?
+  channel           String   @default("email") // email | (future in-model channels)
   createdAt         DateTime @default(now())
 
   attachments       MailboxAttachment[]
@@ -1072,6 +1073,27 @@ model MailboxMessage {
 
 // Résumé-like attachments captured during mailbox sync (bytes stored so the
 // agent can parse them on approval without re-connecting to IMAP).
+// Inbound (and outbound) WhatsApp messages via the Twilio integration, surfaced
+// in the Hire inbox alongside email. Tenant-scoped; a message is attributed to a
+// tenant by matching the sender's phone to a known candidate/contact.
+model WhatsAppMessage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  direction   String   @default("inbound") // inbound | outbound
+  fromNumber  String              // E.164-ish sender (inbound) or the agency number (outbound)
+  toNumber    String?             // recipient (outbound) / the agency number (inbound)
+  fromName    String?             // resolved contact/candidate name, when known
+  body        String   @db.Text
+  twilioSid   String?  @unique     // Twilio message SID — dedupes webhook retries
+  candidateId String?             // matched HireCandidate, when known
+  contactId   String?             // matched HireContact, when known
+  isRead      Boolean  @default(false)
+  receivedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+}
+
 model MailboxAttachment {
   id           String         @id @default(cuid())
   messageId    String
