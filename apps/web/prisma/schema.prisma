@@ -731,6 +731,9 @@ model HireUser {
   role         HireRole   @default(RECRUITER)
   avatarUrl    String?
   lastLoginAt  DateTime?
+  // Disabled members keep all their data + history but cannot log in and are
+  // hidden from assignment dropdowns. Admin-toggled; never deleted.
+  disabled     Boolean    @default(false)
   createdAt    DateTime   @default(now())
 
   // Clients this recruiter is assigned to (drives scoped visibility).

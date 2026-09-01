@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
     if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
+    // Disabled members cannot log in — their data is preserved, access is not.
+    if (user.disabled) {
+      return NextResponse.json({ error: 'This account has been disabled. Contact your administrator.' }, { status: 403 })
+    }
 
     await prisma.hireUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
 

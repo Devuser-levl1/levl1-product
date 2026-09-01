@@ -3,6 +3,7 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { signPurposeToken } from '@/lib/hire/auth'
 import { sendHireEmail } from '@/lib/hire/email'
+import { agencyFromAddress } from '@/lib/emailService'
 import { inviteTeamMemberEmail } from '@/emails/hire/invite-team-member'
 import { checkAllowance } from '@/lib/hire/usage'
 import { logAudit } from '@/lib/hire/audit'
@@ -34,15 +35,35 @@ export const POST = withHireAuth(async (req, ctx) => {
   const token = signPurposeToken({ userId: user.id, tenantId: ctx.tenantId, purpose: 'invite' })
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
   const inviteUrl = `${appUrl}/hire/accept-invite/${token}`
-  const tenant = await prisma.hireTenant.findUnique({ where: { id: ctx.tenantId } })
+  const [tenant, inviter] = await Promise.all([
+    prisma.hireTenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true } }),
+    prisma.hireUser.findFirst({ where: { id: ctx.userId, tenantId: ctx.tenantId }, select: { name: true, email: true } }),
+  ])
+  const tenantName = tenant?.name ?? 'HirePilot'
 
-  await sendHireEmail({
-    to: email,
-    subject: `You've been invited to ${tenant?.name ?? 'HirePilot'}`,
-    html: inviteTeamMemberEmail({ inviterName: 'Your team', tenantName: tenant?.name ?? 'HirePilot', inviteUrl }),
-  }).catch((e) => console.error('[hire/invite] email failed:', e))
+  // Send via Resend HTTP (never SMTP) — from the tenant's branded Levl1 sender,
+  // reply-to the inviting admin. Capture the result: log the message id on
+  // success, and surface a failure to the caller instead of silently 201-ing.
+  let emailSent = false
+  let emailError: string | null = null
+  try {
+    const result = await sendHireEmail({
+      to: email,
+      from: agencyFromAddress({ name: tenantName }),
+      replyTo: inviter?.email,
+      subject: `You've been invited to ${tenantName}`,
+      html: inviteTeamMemberEmail({ inviterName: inviter?.name || 'Your team', tenantName, inviteUrl }),
+    })
+    emailSent = true
+    console.log('[hire/invite] invite email sent to', email, 'resendId=', result.id ?? '(no id)')
+  } catch (e) {
+    emailError = e instanceof Error ? e.message : 'send failed'
+    console.error('[hire/invite] invite email FAILED for', email, '-', emailError)
+  }
 
-  await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'team_member_invite', targetType: 'team_member', targetId: user.id, targetName: user.email, meta: { role: user.role, name } })
+  await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'team_member_invite', targetType: 'team_member', targetId: user.id, targetName: user.email, meta: { role: user.role, name, emailSent } })
 
-  return NextResponse.json({ id: user.id, email: user.email, role: user.role, status: 'invited' }, { status: 201 })
+  // 201 (member row created) but honest about delivery. The UI can offer the
+  // invite link as a fallback when the email didn't go out.
+  return NextResponse.json({ id: user.id, email: user.email, role: user.role, status: 'invited', emailSent, emailError, inviteUrl }, { status: 201 })
 })

@@ -17,7 +17,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
       orderBy: { name: 'asc' },
     }),
     prisma.hireUser.findMany({
-      where: { tenantId: ctx.tenantId },
+      where: { tenantId: ctx.tenantId, disabled: false },
       select: { id: true, name: true, email: true, role: true },
       orderBy: { name: 'asc' },
     }),

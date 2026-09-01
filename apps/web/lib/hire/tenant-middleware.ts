@@ -93,9 +93,10 @@ export async function getHireContext(req: NextRequest): Promise<HireContext | nu
     // Source of truth: current role + tenant from the live HireUser row.
     const hu = await prisma.hireUser.findUnique({
       where: { id: userId },
-      select: { role: true, tenantId: true, tenant: { select: { businessType: true } } },
+      select: { role: true, tenantId: true, disabled: true, tenant: { select: { businessType: true } } },
     })
     if (!hu) return null // user removed / unknown → no access
+    if (hu.disabled) return null // disabled member — access revoked immediately, even mid-session
 
     return { userId, tenantId: hu.tenantId, role: hu.role, businessType: hu.tenant.businessType as BusinessType }
   } catch {
