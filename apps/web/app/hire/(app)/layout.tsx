@@ -21,25 +21,34 @@ interface Me {
 // without a cap are visible to every role (data is still scoped per-recruiter).
 // `agencyOnly` hides the item for ENTERPRISE tenants (CRM / Receivables /
 // candidate nurturing) — the matching APIs are gated in withHireAuth.
-const NAV: { label: string; href: string; icon: LucideIcon; cap?: Capability; agencyOnly?: boolean; openLev?: boolean }[] = [
+// `cap` gates the item by role capability; `agencyOnly` hides it for ENTERPRISE
+// tenants (matching APIs are gated in withHireAuth). `children` renders nested
+// sub-items (indented) beneath the parent — Receivables under CRM.
+interface NavItem { label: string; href: string; icon: LucideIcon; cap?: Capability; agencyOnly?: boolean; openLev?: boolean; children?: NavItem[] }
+const NAV: NavItem[] = [
   { label: 'Dashboard', href: '/hire/dashboard', icon: LayoutDashboard },
+  {
+    label: 'CRM', href: '/hire/crm', icon: Building2, cap: 'crm', agencyOnly: true,
+    children: [
+      { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar', agencyOnly: true },
+    ],
+  },
+  { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
+  { label: 'Talent Pool', href: '/hire/talent-pool', icon: Database },
   { label: 'Jobs', href: '/hire/jobs', icon: Briefcase },
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
+  { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
+  { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
+  { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone, agencyOnly: true },
+  // Not in the requested sequence but kept — slotted here before the tail.
   { label: 'Inbox', href: '/hire/inbox', icon: Mail },
+  { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
+  { label: 'Team', href: '/hire/team', icon: Network, cap: 'team' },
+  { label: 'Help', href: '/hire/help', icon: HelpCircle },
+  { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
   // Lev — the Levl1 platform AI agent. Opens the slide-out assistant panel
   // (does not navigate). Distinct gradient treatment (light-on-dark).
   { label: 'Lev', href: '/hire/agent', icon: Sparkles, openLev: true },
-  { label: 'Talent Pool', href: '/hire/talent-pool', icon: Database },
-  { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
-  { label: 'Sourcing', href: '/hire/sourcing', icon: Search },
-  { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
-  { label: 'Team', href: '/hire/team', icon: Network, cap: 'team' },
-  { label: 'CRM', href: '/hire/crm', icon: Building2, cap: 'crm', agencyOnly: true },
-  { label: 'Receivables', href: '/hire/crm/ar', icon: Receipt, cap: 'ar', agencyOnly: true },
-  { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
-  { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone, agencyOnly: true },
-  { label: 'Help', href: '/hire/help', icon: HelpCircle },
-  { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
 ]
 
 export default function HireLayout({ children }: { children: React.ReactNode }) {
@@ -101,6 +110,63 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
     )
   }
 
+  // Gating: hide by role capability and hide agency-only items for ENTERPRISE.
+  const navVisible = (item: NavItem) =>
+    (!item.cap || can(me!.user.role, item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')
+
+  // Render one nav row. `depth` indents nested sub-items (e.g. Receivables).
+  const renderNavRow = (item: NavItem, depth: number) => {
+    const active = pathname === item.href
+    const Icon = item.icon
+    const padLeft = 12 + depth * 18
+
+    // Lev — opens the slide-out assistant (no navigation) and wears a light
+    // violet→indigo gradient wordmark so it glows on the dark nav.
+    if (item.openLev) {
+      return (
+        <button
+          key={item.href}
+          onClick={() => window.dispatchEvent(new CustomEvent('levl1:ask'))}
+          aria-label="Open Lev"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            padding: '9px 12px', borderRadius: 8, fontSize: 14, fontFamily: 'inherit',
+            fontWeight: 800, textAlign: 'left', transition: 'background .15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.14)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <Icon size={17} strokeWidth={2.4} style={{ flexShrink: 0, color: '#C4B5FD' }} />
+          <span style={{
+            background: 'linear-gradient(90deg, #C4B5FD 0%, #A5B4FC 100%)',
+            WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+            letterSpacing: '0.01em',
+          }}>{item.label}</span>
+        </button>
+      )
+    }
+
+    return (
+      <a
+        key={item.href}
+        href={item.href}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          color: active ? '#fff' : '#94A3B8',
+          background: active ? 'rgba(124,58,237,0.22)' : 'transparent',
+          boxShadow: active ? 'inset 2px 0 0 #A78BFA' : 'none',
+          fontWeight: active ? 700 : depth > 0 ? 500 : 500,
+          textDecoration: 'none', padding: `9px 12px 9px ${padLeft}px`, borderRadius: 8,
+          fontSize: depth > 0 ? 13 : 13.5, transition: 'background .15s ease',
+        }}
+      >
+        <Icon size={depth > 0 ? 15 : 17} strokeWidth={active ? 2.4 : 2} style={{ flexShrink: 0, color: active ? '#C4B5FD' : '#94A3B8' }} />
+        {item.label}
+      </a>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
       {/* Sidebar */}
@@ -110,55 +176,12 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
           <span style={{ fontSize: 10.5, fontWeight: 600, color: '#64748B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>by Levl1</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV.filter((item) => (!item.cap || can(me!.user.role, item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')).map((item) => {
-            const active = pathname === item.href
-            const Icon = item.icon
-
-            // Lev — opens the slide-out assistant (no navigation) and wears a
-            // light violet→indigo gradient wordmark so it glows on the dark nav.
-            if (item.openLev) {
-              return (
-                <button
-                  key={item.href}
-                  onClick={() => window.dispatchEvent(new CustomEvent('levl1:ask'))}
-                  aria-label="Open Lev"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    padding: '9px 12px', borderRadius: 8, fontSize: 14, fontFamily: 'inherit',
-                    fontWeight: 800, textAlign: 'left', transition: 'background .15s ease',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.14)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-                >
-                  <Icon size={17} strokeWidth={2.4} style={{ flexShrink: 0, color: '#C4B5FD' }} />
-                  <span style={{
-                    background: 'linear-gradient(90deg, #C4B5FD 0%, #A5B4FC 100%)',
-                    WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
-                    letterSpacing: '0.01em',
-                  }}>{item.label}</span>
-                </button>
-              )
-            }
-
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  color: active ? '#fff' : '#94A3B8',
-                  background: active ? 'rgba(124,58,237,0.22)' : 'transparent',
-                  boxShadow: active ? 'inset 2px 0 0 #A78BFA' : 'none',
-                  fontWeight: active ? 700 : 500,
-                  textDecoration: 'none', padding: '9px 12px', borderRadius: 8, fontSize: 13.5, transition: 'background .15s ease',
-                }}
-              >
-                <Icon size={17} strokeWidth={active ? 2.4 : 2} style={{ flexShrink: 0, color: active ? '#C4B5FD' : '#94A3B8' }} />
-                {item.label}
-              </a>
-            )
-          })}
+          {NAV.filter(navVisible).map((item) => (
+            <div key={item.href} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {renderNavRow(item, 0)}
+              {item.children?.filter(navVisible).map((child) => renderNavRow(child, 1))}
+            </div>
+          ))}
         </nav>
 
         {/* Persistent helpdesk — reachable from anywhere in the app */}
