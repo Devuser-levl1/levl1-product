@@ -7,7 +7,7 @@ export type AuditAction =
   | 'stage_move' | 'reject' | 'delete' | 'candidate_create'
   | 'job_create' | 'job_update' | 'job_delete' | 'rubric_change'
   | 'deal_create' | 'deal_update' | 'deal_delete'
-  | 'invoice_create' | 'invoice_paid' | 'invoice_delete'
+  | 'invoice_create' | 'invoice_paid' | 'invoice_delete' | 'ar_reminder_sent'
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove' | 'team_member_disable' | 'team_member_enable'
   | 'job_reassign' | 'candidate_reassign' | 'password_change' | 'password_reset'
   | 'agent_execute'
@@ -111,6 +111,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   invoice_create: 'Invoice created',
   invoice_paid: 'Invoice paid',
   invoice_delete: 'Invoice deleted',
+  ar_reminder_sent: 'Payment reminder sent by Lev',
   team_member_invite: 'Team member invited',
   team_member_role_change: 'Member role changed',
   team_member_remove: 'Team member removed',

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/hire/audit'
-import { deriveStatus } from '@/lib/hire/ar'
+import { deriveStatus, nextReminderAt } from '@/lib/hire/ar'
 import { requireCap } from '@/lib/hire/scope'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +20,9 @@ export const GET = withHireAuth(async (_req, ctx) => {
     },
     orderBy: { sentDate: 'desc' },
   })
-  return NextResponse.json({ invoices })
+  // Attach Lev's next scheduled nudge per invoice (null if paid / reminders off).
+  const withNext = invoices.map((i) => ({ ...i, nextReminderAt: nextReminderAt(i) }))
+  return NextResponse.json({ invoices: withNext })
 })
 
 // POST /api/hire/crm/invoices — raise an invoice against a client (optionally a deal).

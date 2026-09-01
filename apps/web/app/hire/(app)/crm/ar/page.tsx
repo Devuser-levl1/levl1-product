@@ -6,8 +6,11 @@ import { can } from '@/lib/hire/permissions'
 interface Invoice {
   id: string; number: string | null; amount: number; amountPaid: number; currency: string
   sentDate: string; dueDate: string; status: string; lastReminderAt: string | null; remindersOn: boolean
+  reminderIntervalDays: number; nextReminderAt: string | null
   client: { id: string; name: string }; deal: { id: string; title: string } | null; _count: { reminders: number }
 }
+interface Reminder { id: string; sentTo: string; daysOverdue: number; tone: string | null; sentAt: string }
+const TONE_LABEL: Record<string, string> = { reminder: 'Friendly', firm: 'Firm', urgent: 'Urgent', final: 'Final notice' }
 interface ClientAR { clientId: string; clientName: string; totalOwed: number; overdue: number; invoiceCount: number }
 interface Summary {
   totalOwed: number; totalOverdue: number; openInvoiceCount: number
@@ -39,6 +42,8 @@ export default function ARPage() {
   const [tab, setTab] = useState<'open' | 'overdue' | 'paid'>('open')
   const [busy, setBusy] = useState<string | null>(null)
   const [allowed, setAllowed] = useState<boolean | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [history, setHistory] = useState<Record<string, Reminder[]>>({})
 
   useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(can(d?.user?.role, 'ar'))).catch(() => setAllowed(false)) }, [])
 
@@ -65,6 +70,20 @@ export default function ARPage() {
     setBusy(id)
     await fetch(`/api/hire/crm/invoices/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remindersOn: on }) }).catch(() => {})
     setBusy(null); load()
+  }
+  async function setCadence(id: string, days: number) {
+    if (!Number.isFinite(days) || days < 1) return
+    setBusy(id)
+    await fetch(`/api/hire/crm/invoices/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reminderIntervalDays: Math.round(days) }) }).catch(() => {})
+    setBusy(null); load()
+  }
+  async function toggleHistory(id: string) {
+    if (expanded === id) { setExpanded(null); return }
+    setExpanded(id)
+    if (!history[id]) {
+      const d = await fetch(`/api/hire/crm/invoices/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      if (d?.reminders) setHistory((prev) => ({ ...prev, [id]: d.reminders }))
+    }
   }
 
   if (allowed === false) return (
@@ -135,28 +154,66 @@ export default function ARPage() {
           const od = daysOverdue(inv)
           const bal = Math.max(0, inv.amount - inv.amountPaid)
           const st = STATUS_STYLE[inv.status] ?? STATUS_STYLE.pending
+          const rows = history[inv.id]
           return (
-            <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: idx < view.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A' }}>{inv.client.name}</span>
-                  {inv.number && <span style={{ fontSize: 12, color: '#94A3B8' }}>{inv.number}</span>}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: st.c, background: st.bg, padding: '2px 8px', borderRadius: 100 }}>{st.label}</span>
-                  {od > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', background: 'rgba(220,38,38,0.10)', padding: '2px 8px', borderRadius: 100 }}>{od}d overdue</span>}
+            <div key={inv.id} style={{ borderBottom: idx < view.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A' }}>{inv.client.name}</span>
+                    {inv.number && <span style={{ fontSize: 12, color: '#94A3B8' }}>{inv.number}</span>}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: st.c, background: st.bg, padding: '2px 8px', borderRadius: 100 }}>{st.label}</span>
+                    {od > 0 && <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', background: 'rgba(220,38,38,0.10)', padding: '2px 8px', borderRadius: 100 }}>{od}d overdue</span>}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 3 }}>
+                    {inv.deal ? `${inv.deal.title} · ` : ''}Sent {fmtDate(inv.sentDate)} · Due {fmtDate(inv.dueDate)}
+                  </div>
+                  {/* Nudge status line */}
+                  {inv.status !== 'paid' && (
+                    <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span title="Automatic reminders by Lev">🔔 Lev nudges</span>
+                      {!inv.remindersOn ? <span style={{ color: '#94A3B8' }}>paused</span> : <>
+                        <span>· Last {inv.lastReminderAt ? fmtDate(inv.lastReminderAt) : '—'}</span>
+                        <span>· Next {inv.nextReminderAt ? fmtDate(inv.nextReminderAt) : '—'}</span>
+                        <span>· every
+                          <input type="number" min={1} defaultValue={inv.reminderIntervalDays} onBlur={(e) => { const v = Number(e.target.value); if (v !== inv.reminderIntervalDays) setCadence(inv.id, v) }}
+                            style={{ width: 40, margin: '0 4px', padding: '2px 5px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 12, textAlign: 'center' }} /> days
+                        </span>
+                      </>}
+                      {inv._count.reminders > 0 && <button onClick={() => toggleHistory(inv.id)} style={{ border: 'none', background: 'none', color: '#6D28D9', fontWeight: 700, cursor: 'pointer', fontSize: 12, padding: 0 }}>{expanded === inv.id ? 'Hide history' : `History (${inv._count.reminders})`}</button>}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 3 }}>
-                  {inv.deal ? `${inv.deal.title} · ` : ''}Sent {fmtDate(inv.sentDate)} · Due {fmtDate(inv.dueDate)}
-                  {inv.lastReminderAt ? ` · Last reminder ${fmtDate(inv.lastReminderAt)} (${inv._count.reminders})` : inv.status !== 'paid' ? ' · No reminder sent' : ''}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>{money(bal, inv.currency)}</div>
+                  {inv.amountPaid > 0 && inv.status !== 'paid' && <div style={{ fontSize: 11.5, color: '#64748B' }}>of {money(inv.amount, inv.currency)}</div>}
                 </div>
+                {inv.status !== 'paid' && (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => toggleReminders(inv.id, !inv.remindersOn)} disabled={busy === inv.id} title={inv.remindersOn ? 'Pause reminders' : 'Resume reminders'} style={ghost}>{inv.remindersOn ? '🔔' : '🔕'}</button>
+                    <button onClick={() => markPaid(inv.id)} disabled={busy === inv.id} style={{ ...ghost, color: '#059669', borderColor: 'rgba(5,150,105,0.3)', fontWeight: 700 }}>Mark paid</button>
+                  </div>
+                )}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>{money(bal, inv.currency)}</div>
-                {inv.amountPaid > 0 && inv.status !== 'paid' && <div style={{ fontSize: 11.5, color: '#64748B' }}>of {money(inv.amount, inv.currency)}</div>}
-              </div>
-              {inv.status !== 'paid' && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => toggleReminders(inv.id, !inv.remindersOn)} disabled={busy === inv.id} title={inv.remindersOn ? 'Pause reminders' : 'Resume reminders'} style={ghost}>{inv.remindersOn ? '🔔' : '🔕'}</button>
-                  <button onClick={() => markPaid(inv.id)} disabled={busy === inv.id} style={{ ...ghost, color: '#059669', borderColor: 'rgba(5,150,105,0.3)', fontWeight: 700 }}>Mark paid</button>
+
+              {/* Reminder history */}
+              {expanded === inv.id && (
+                <div style={{ padding: '0 18px 14px 18px' }}>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: 10, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Reminder history · sent by Lev</div>
+                    {!rows ? <div style={{ fontSize: 12.5, color: '#94A3B8' }}>Loading…</div>
+                      : rows.length === 0 ? <div style={{ fontSize: 12.5, color: '#94A3B8' }}>No reminders sent yet.</div>
+                      : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {rows.map((r) => (
+                            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: '#475569' }}>
+                              <span style={{ fontWeight: 700, color: '#0F172A', minWidth: 128 }}>{new Date(r.sentAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                              {r.tone && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.08)', borderRadius: 100, padding: '1px 8px' }}>{TONE_LABEL[r.tone] ?? r.tone}</span>}
+                              <span>to {r.sentTo}</span>
+                              <span style={{ marginLeft: 'auto', color: '#94A3B8' }}>{r.daysOverdue}d overdue</span>
+                            </div>
+                          ))}
+                        </div>}
+                  </div>
                 </div>
               )}
             </div>

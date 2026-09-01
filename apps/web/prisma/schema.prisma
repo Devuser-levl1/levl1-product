@@ -1278,6 +1278,7 @@ model HireInvoiceReminder {
   sentTo      String
   daysOverdue Int
   channel     String      @default("email")
+  tone        String?     // escalation tier at send time: reminder | firm | urgent | final
   sentAt      DateTime    @default(now())
 
   @@index([invoiceId])
