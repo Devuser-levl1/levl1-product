@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recordNurtureResponse, type NurtureResponse } from '@/lib/hire/nurture'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,29 @@ export async function POST(req: NextRequest) {
       },
     })
     console.log('[hire/whatsapp/inbound] stored WhatsApp message for tenant', tenantId)
+
+    // Nurture reply capture: if this is a candidate with a check-in awaiting a
+    // reply, map a numeric/keyword answer to the structured response (v1 one-way).
+    if (candidate) {
+      const reply = body.trim().toLowerCase()
+      if (/^stop\b/.test(reply)) {
+        await prisma.hireCandidate.update({ where: { id: candidate.id }, data: { nurtureOptOut: true } }).catch(() => {})
+        await prisma.hireNurtureCheckin.updateMany({ where: { candidateId: candidate.id, status: 'scheduled' }, data: { status: 'skipped' } }).catch(() => {})
+      } else {
+        const map: Record<string, NurtureResponse> = {
+          '1': 'all_good', '2': 'issues', '3': 'left',
+          'all good': 'all_good', 'issues': 'issues', 'no longer': 'left',
+        }
+        const key = Object.keys(map).find((k) => reply === k || reply.startsWith(k))
+        if (key) {
+          const pending = await prisma.hireNurtureCheckin.findFirst({
+            where: { candidateId: candidate.id, tenantId, status: 'sent', response: null },
+            orderBy: { sentAt: 'desc' }, select: { id: true },
+          })
+          if (pending) await recordNurtureResponse(pending.id, tenantId, map[key], 'whatsapp').catch(() => {})
+        }
+      }
+    }
     return twiml()
   } catch (e) {
     console.error('[hire/whatsapp/inbound] error:', e instanceof Error ? e.message : e)

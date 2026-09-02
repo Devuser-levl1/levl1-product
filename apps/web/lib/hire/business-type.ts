@@ -10,11 +10,15 @@ export type BusinessType = 'AGENCY' | 'ENTERPRISE'
 
 // Page path prefixes hidden/blocked for ENTERPRISE. Receivables lives under
 // /hire/crm/ar, so the /hire/crm prefix already covers it.
-export const AGENCY_ONLY_PAGE_PREFIXES = ['/hire/crm', '/hire/campaigns'] as const
+export const AGENCY_ONLY_PAGE_PREFIXES = ['/hire/crm', '/hire/campaigns', '/hire/nurture'] as const
 
 // API path prefixes blocked for ENTERPRISE (all methods, so direct GETs are
 // blocked too — not just the UI).
-export const AGENCY_ONLY_API_PREFIXES = ['/api/hire/crm', '/api/hire/campaigns'] as const
+// NOTE: /api/hire/nurture/respond is intentionally NOT gated here — it's the
+// public, token-authenticated candidate response endpoint (the candidate isn't
+// logged in). It doesn't use withHireAuth, so the business-type gate never runs
+// on it; every other /api/hire/nurture route is authed + agency-gated.
+export const AGENCY_ONLY_API_PREFIXES = ['/api/hire/crm', '/api/hire/campaigns', '/api/hire/nurture'] as const
 
 function hasPrefix(path: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => path === p || path.startsWith(p + '/'))

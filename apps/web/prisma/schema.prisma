@@ -646,6 +646,9 @@ model HireTenant {
   arDueCycleDays         Int @default(30) // default invoice payment window
   arReminderIntervalDays Int @default(7)  // days between automatic overdue reminders
 
+  // Post-placement nurture: active check-in intervals (days). Null → default set.
+  nurtureIntervals       Json?
+
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -874,7 +877,11 @@ model HireCandidate {
   interviewScore   Int?       // synced from Interviews product
   source           String?    // LinkedIn, Naukri, Referral, Direct
   submittedToClientAt DateTime? // last time this candidate was submitted to a client
+  // Placement — feeds the post-placement nurture schedule.
+  placedAt         DateTime?  // when the candidate was placed (drives check-in intervals)
+  placedCompany    String?    // employer they were placed at (for the check-in message)
   emailOptOut      Boolean    @default(false)
+  nurtureOptOut    Boolean    @default(false) // candidate opted out of nurture check-ins
   // Rejection lifecycle — set when moved to the Rejected swimlane; cleared on re-activation.
   rejectedReason   String?    @db.Text
   rejectedAt       DateTime?
@@ -885,9 +892,33 @@ model HireCandidate {
   activities     HireCandidateActivity[]
   hireInterviews HireInterview[]
   enrichment     CandidateEnrichment?
+  nurtureCheckins HireNurtureCheckin[]
 
   @@index([tenantId])
   @@index([tenantId, jobId])
+}
+
+// Post-placement nurture check-in (Agency-only). One row per (candidate, interval);
+// Lev sends a friendly structured check-in at each interval and captures a
+// single structured response. Tenant-scoped.
+model HireNurtureCheckin {
+  id           String        @id @default(cuid())
+  tenantId     String
+  candidateId  String
+  candidate    HireCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  dayOffset    Int                       // 15 | 30 | 45 | 60 | 90 days from placement
+  scheduledFor DateTime
+  status       String        @default("scheduled") // scheduled | sent | responded | skipped
+  channel      String?                   // whatsapp | email (what was sent)
+  sentAt       DateTime?
+  respondedAt  DateTime?
+  response     String?                   // all_good | issues | left
+  responseVia  String?                   // whatsapp | email
+  createdAt    DateTime      @default(now())
+
+  @@unique([candidateId, dayOffset])
+  @@index([tenantId])
+  @@index([status, scheduledFor])
 }
 
 // ── Candidate enrichment (Build 3) — role-agnostic, public sources only ────

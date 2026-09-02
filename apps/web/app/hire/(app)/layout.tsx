@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AskLevl1Drawer } from '@/components/hire/ask-levl1-drawer'
 import {
   LayoutDashboard, Briefcase, Users, KanbanSquare, Search, Database,
-  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Sparkles, Settings as SettingsIcon,
+  CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Sparkles, HeartHandshake, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { can, type Capability } from '@/lib/hire/permissions'
@@ -39,6 +39,8 @@ const NAV: NavItem[] = [
   { label: 'Candidates', href: '/hire/candidates', icon: Users },
   { label: 'Pipeline', href: '/hire/pipeline', icon: KanbanSquare },
   { label: 'Interviews', href: '/hire/interviews', icon: CalendarDays },
+  // Post-placement relationship area — Agency-only.
+  { label: 'Nurture', href: '/hire/nurture', icon: HeartHandshake, agencyOnly: true },
   { label: 'Campaigns', href: '/hire/campaigns', icon: Megaphone, agencyOnly: true },
   // Not in the requested sequence but kept — slotted here before the tail.
   { label: 'Inbox', href: '/hire/inbox', icon: Mail },
