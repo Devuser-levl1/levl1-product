@@ -3,6 +3,7 @@ import { JOB_NAME, scoreCandidateHandler } from './score-candidate'
 import { BASELINE_SUMMARY_JOB, baselineSummaryHandler } from './baseline-summary'
 import { REMINDER_JOB, interviewReminderHandler } from './interview-reminder'
 import { SEND_CAMPAIGN_JOB, sendCampaignHandler } from './send-campaign'
+import { MAILBOX_SYNC_JOB, MAILBOX_SYNC_CRON, mailboxSyncAllHandler } from './mailbox-sync'
 
 let boss: PgBoss | null = null
 let starting: Promise<PgBoss> | null = null
@@ -43,6 +44,13 @@ export async function getQueue(): Promise<PgBoss> {
       await b.work<{ campaignId: string }>(SEND_CAMPAIGN_JOB, async (jobs) => {
         for (const job of jobs) await sendCampaignHandler(job.data)
       })
+
+      // Inbound IMAP mail — polled on a schedule so new mail syncs into
+      // MailboxMessage even when no one has the inbox open. schedule() is keyed
+      // by queue name, so re-registering on each boot is idempotent.
+      await b.createQueue(MAILBOX_SYNC_JOB)
+      await b.work(MAILBOX_SYNC_JOB, async () => { await mailboxSyncAllHandler() })
+      await b.schedule(MAILBOX_SYNC_JOB, MAILBOX_SYNC_CRON)
 
       boss = b
       console.log('[pg-boss] Queue started + workers registered')
