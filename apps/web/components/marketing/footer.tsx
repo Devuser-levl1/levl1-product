@@ -15,7 +15,7 @@ export function MarketingFooter() {
             <div style={{ marginBottom: 14 }}><Logo variant="white" height={26} /></div>
             <div style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 260, color: '#A9B0D6' }}>The AI hiring &amp; evaluation platform for modern talent teams worldwide.</div>
           </div>
-          {col('Products', [['Hire', '/hire'], ['Interviews', '/interviews']])}
+          {col('Products', [['HirePilot', '/hirepilot'], ['· For agencies', '/hirepilot/agencies'], ['· For in-house', '/hirepilot/enterprise'], ['Levl1 Interviews', '/interviews']])}
           {col('Company', [['Roadmap', '/roadmap'], ['Contact', '/contact'], ['Security', '/security']])}
           {col('Legal', [['Privacy', '/privacy'], ['Terms', '/terms'], ['Cookies', '/cookies']])}
           <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Get started</div><Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', display: 'inline-block' }}>Book a demo</Link></div>

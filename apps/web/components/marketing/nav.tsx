@@ -10,7 +10,8 @@ import { Logo, LogoIcon } from './logo'
 const LINKS: [string, string][] = [['Platform', '/'], ['Roadmap', '/roadmap'], ['Pricing', '/pricing']]
 
 const PRODUCTS: { name: string; href: string; desc: string }[] = [
-  { name: 'HirePilot', href: '/hire', desc: 'ATS, CRM & AI screening — run your entire hiring pipeline in one workspace.' },
+  { name: 'HirePilot · For agencies', href: '/hirepilot/agencies', desc: 'Client CRM, receivables, submissions & nurture — run every placement.' },
+  { name: 'HirePilot · For in-house teams', href: '/hirepilot/enterprise', desc: 'AI scoring, interviews & pipeline — fill your own roles, ATS-agnostic.' },
   { name: 'Levl1 Interviews', href: '/interviews', desc: 'Autonomous AI voice interviews with evidence-based scorecards, at scale.' },
 ]
 const SIGN_IN_OPTIONS: { name: string; href: string; desc: string }[] = [
@@ -119,8 +120,9 @@ export function MarketingNav() {
             <motion.nav initial="h" animate="s" variants={{ s: { transition: { staggerChildren: 0.05 } } }} style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 20 }}>
               {([
                 ['Platform', '/'],
-                ['Hire', '/hire'],
-                ['Interviews', '/interviews'],
+                ['HirePilot · Agencies', '/hirepilot/agencies'],
+                ['HirePilot · In-house', '/hirepilot/enterprise'],
+                ['Levl1 Interviews', '/interviews'],
                 ['Roadmap', '/roadmap'],
                 ['Pricing', '/pricing'],
                 ['Sign in · HirePilot', '/hire/login'],
