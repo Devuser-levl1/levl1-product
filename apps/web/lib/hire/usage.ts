@@ -68,11 +68,16 @@ export async function checkAllowance(tenantId: string, kind: 'candidate' | 'job'
     }
   }
   if (kind === 'seat') {
-    const seats = await prisma.hireUser.count({ where: { tenantId } })
+    // A disabled member has no access, so they must NOT hold a seat — otherwise
+    // disabling someone can never free a seat to invite their replacement.
+    const seats = await prisma.hireUser.count({ where: { tenantId, disabled: false } })
     if (seats >= limits.recruiters) {
-      const message = tenant.trialActive
-        ? `You've reached your trial limit of ${limits.recruiters} recruiter seats. Upgrade to add more.`
-        : `Your plan allows ${limits.recruiters} recruiter seats.`
+      // Pending (never-accepted) invites also fill seats — call that out so the
+      // admin knows to remove/disable one to free a seat, not just "upgrade".
+      const base = tenant.trialActive
+        ? `You've reached your trial limit of ${limits.recruiters} recruiter seats`
+        : `Your plan allows ${limits.recruiters} recruiter seats`
+      const message = `${base}. Pending invites count too — remove or disable an inactive member on the Team page to free a seat, or upgrade to add more.`
       return { allowed: false, reason: 'seat_limit', message }
     }
   }
