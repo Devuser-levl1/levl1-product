@@ -10,7 +10,7 @@ export type AuditAction =
   | 'invoice_create' | 'invoice_paid' | 'invoice_delete' | 'ar_reminder_sent'
   | 'candidates_submitted_to_client' | 'candidate_placed' | 'nurture_checkin_sent' | 'nurture_response'
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove' | 'team_member_disable' | 'team_member_enable'
-  | 'job_reassign' | 'candidate_reassign' | 'password_change' | 'password_reset'
+  | 'job_reassign' | 'job_self_assign' | 'candidate_reassign' | 'password_change' | 'password_reset'
   | 'agent_execute'
 
 export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice' | 'agent' | 'client'

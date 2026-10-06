@@ -45,7 +45,10 @@ const NAV: NavItem[] = [
   // Not in the requested sequence but kept — slotted here before the tail.
   { label: 'Inbox', href: '/hire/inbox', icon: Mail },
   { label: 'Analytics', href: '/hire/analytics', icon: BarChart3 },
-  { label: 'Team', href: '/hire/team', icon: Network, cap: 'team' },
+  // No cap: every role sees Team. Managers/admins get oversight + assignment;
+  // recruiters/viewers get the "Open jobs" self-assign view only (gated inside
+  // the page). Data stays per-recruiter scoped regardless.
+  { label: 'Team', href: '/hire/team', icon: Network },
   { label: 'Help', href: '/hire/help', icon: HelpCircle },
   { label: 'Settings', href: '/hire/settings', icon: SettingsIcon },
   // Lev — the Levl1 platform AI agent. Opens the slide-out assistant panel

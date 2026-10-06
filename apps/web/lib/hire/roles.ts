@@ -56,6 +56,7 @@ export function jobScope(role: string | null | undefined, userId: string, assign
  * Candidates a recruiter may see — inherits visibility from the job's client:
  *   - directly assigned to them, OR
  *   - whose job belongs to one of their assigned clients, OR
+ *   - whose job the recruiter owns (incl. self-assigned jobs), OR
  *   - unassigned AND not attached to any job (raw inbound / talent pool).
  */
 export function candidateScope(role: string | null | undefined, userId: string, assignedClientIds: string[]): Record<string, unknown> {
@@ -64,6 +65,7 @@ export function candidateScope(role: string | null | undefined, userId: string, 
     OR: [
       { assigneeId: userId },
       { job: { is: { clientId: { in: assignedClientIds } } } },
+      { job: { is: { assigneeId: userId } } },
       { AND: [{ assigneeId: null }, { jobId: null }] },
     ],
   }

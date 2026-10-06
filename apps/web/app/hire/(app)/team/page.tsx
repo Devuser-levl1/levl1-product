@@ -5,6 +5,7 @@ import { VIZ, CountUp } from '@/components/hire/viz'
 import { ROLE_LABEL } from '@/lib/hire/roles'
 import { ClientAssignments } from '@/components/hire/client-assignments'
 import { TeamMembers } from '@/components/hire/team-members'
+import { OpenJobs } from '@/components/hire/open-jobs'
 import { isAdmin as roleIsAdmin } from '@/lib/hire/permissions'
 
 interface Member { id: string; name: string; email: string; role: string; activeJobs: number; candidatesInProgress: number; totalCandidates: number; placements: number; avgTimeToFill: number | null; activity30d: number; stalledJobs: number }
@@ -18,33 +19,34 @@ export default function TeamPage() {
   const [role, setRole] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [data, setData] = useState<Oversight | null>(null)
-  const [tab, setTab] = useState<'oversight' | 'board' | 'clients' | 'members'>('oversight')
+  const [tab, setTab] = useState<'oversight' | 'board' | 'clients' | 'members' | 'openjobs'>('oversight')
   const [member, setMember] = useState<string | null>(null)
 
-  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => { setRole(d?.user?.role ?? null); setReady(true) }).catch(() => setReady(true)) }, [])
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => { const r = d?.user?.role ?? null; setRole(r); if (r !== 'ADMIN' && r !== 'MANAGER') setTab('openjobs'); setReady(true) }).catch(() => setReady(true)) }, [])
   const load = useCallback(() => { fetch('/api/hire/team/oversight').then((r) => (r.ok ? r.json() : null)).then(setData).catch(() => {}) }, [])
   useEffect(() => { if (role === 'ADMIN' || role === 'MANAGER') load() }, [role, load])
 
   if (!ready) return <div style={{ color: '#475569' }}>Loading…</div>
-  if (role !== 'ADMIN' && role !== 'MANAGER') return (
-    <div style={{ maxWidth: 520, padding: '32px 0' }}>
-      <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A' }}>Access restricted</div>
-      <div style={{ fontSize: 13.5, color: '#64748B', marginTop: 6 }}>Team oversight is available to managers and admins. You can see your own assigned work across the app.</div>
-    </div>
-  )
+
+  const isMgr = role === 'ADMIN' || role === 'MANAGER'
+  // Managers/admins get full oversight; everyone else gets the Open-jobs
+  // self-assign view only (so a new recruiter can claim work themselves).
+  const tabs: [typeof tab, string][] = isMgr
+    ? [['oversight', 'Oversight'], ['board', 'Assignment board'], ['clients', 'Client assignments'], ['members', 'Members'], ['openjobs', 'Open jobs']]
+    : [['openjobs', 'Open jobs']]
 
   const memberName = (id: string | null) => id ? (data?.members.find((m) => m.id === id)?.name ?? 'Unknown') : 'Unassigned'
 
   return (
     <div style={{ maxWidth: 1180 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: VIZ.ink, margin: '0 0 4px' }}>Team</h1>
-      <div style={{ fontSize: 13.5, color: VIZ.slate, marginBottom: 16 }}>Oversight of who&apos;s working on what, ageing positions, and workload — drag jobs to reassign.</div>
+      <div style={{ fontSize: 13.5, color: VIZ.slate, marginBottom: 16 }}>{isMgr ? 'Oversight of who’s working on what, ageing positions, and workload — drag jobs to reassign.' : 'Browse every open job in your workspace and claim the ones you want to work on.'}</div>
 
       <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${VIZ.line}`, marginBottom: 16 }}>
-        {([['oversight', 'Oversight'], ['board', 'Assignment board'], ['clients', 'Client assignments'], ['members', 'Members']] as const).map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', fontSize: 13.5, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === k ? VIZ.primary : 'transparent'), color: tab === k ? VIZ.primary : '#64748B', cursor: 'pointer' }}>{l}</button>)}
+        {tabs.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', fontSize: 13.5, fontWeight: 600, background: 'none', border: 'none', borderBottom: '2px solid ' + (tab === k ? VIZ.primary : 'transparent'), color: tab === k ? VIZ.primary : '#64748B', cursor: 'pointer' }}>{l}</button>)}
       </div>
 
-      {tab === 'members' ? <TeamMembers isAdmin={roleIsAdmin(role)} /> : tab === 'clients' ? <ClientAssignments /> : !data ? <div style={{ color: '#475569' }}>Loading…</div> : tab === 'oversight' ? (
+      {tab === 'openjobs' ? <OpenJobs /> : tab === 'members' ? <TeamMembers isAdmin={roleIsAdmin(role)} /> : tab === 'clients' ? <ClientAssignments /> : !data ? <div style={{ color: '#475569' }}>Loading…</div> : tab === 'oversight' ? (
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 16 }}>
