@@ -745,6 +745,7 @@ model HireUser {
 
   // Clients this recruiter is assigned to (drives scoped visibility).
   assignedClients HireClient[] @relation("ClientRecruiters")
+  assignedJobs    HireJob[]    @relation("JobAssignees")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -769,7 +770,11 @@ model HireJob {
   salaryMax   Int?
   stages      Json          // string[] — custom pipeline stages per job
   status      HireJobStatus @default(ACTIVE)
-  assigneeId  String?       // HireUser who owns this job (defaults to creator)
+  assigneeId  String?       // HireUser who leads this job (defaults to creator)
+  // All recruiters assigned to this job (admin/manager tags many; self-assign
+  // adds the caller). `assigneeId` stays the lead; this is the full set that
+  // drives card initials + per-recruiter visibility.
+  assignees   HireUser[]    @relation("JobAssignees")
   aiAutoAdvance        Boolean @default(false)
   aiAutoAdvanceThreshold Int   @default(75)
   aiAutoAdvanceStage   String?

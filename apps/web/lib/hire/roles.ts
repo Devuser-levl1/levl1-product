@@ -46,6 +46,7 @@ export function jobScope(role: string | null | undefined, userId: string, assign
   return {
     OR: [
       { assigneeId: userId },
+      { assignees: { some: { id: userId } } },
       { clientId: { in: assignedClientIds } },
       { AND: [{ assigneeId: null }, { clientId: null }] },
     ],
@@ -66,6 +67,7 @@ export function candidateScope(role: string | null | undefined, userId: string, 
       { assigneeId: userId },
       { job: { is: { clientId: { in: assignedClientIds } } } },
       { job: { is: { assigneeId: userId } } },
+      { job: { is: { assignees: { some: { id: userId } } } } },
       { AND: [{ assigneeId: null }, { jobId: null }] },
     ],
   }

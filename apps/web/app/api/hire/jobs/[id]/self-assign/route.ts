@@ -1,34 +1,43 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
-import { logAudit } from '@/lib/hire/audit'
+import { logAudit, resolveActorName } from '@/lib/hire/audit'
 import { normalizeRole } from '@/lib/hire/permissions'
+import { sendSelfAssignAdminEmail } from '@/lib/hire/email'
 
 export const dynamic = 'force-dynamic'
 
 // Self-assignment: a team member claims an open job for themselves. Distinct
 // from the manager-only reassign on PATCH /api/hire/jobs/[id] — this only ever
-// sets the assignee to the CALLER, so it needs no assign capability. Once set,
-// the job (and its candidates, per candidateScope) become visible to them with
-// no admin action. Tenant-scoped; ACTIVE jobs only; VIEWERs are read-only.
+// adds the CALLER, so it needs no assign capability. The caller joins the job's
+// assignees (and becomes lead if it had none); the job + its candidates become
+// visible to them with no admin action. Admins are emailed. Tenant-scoped;
+// ACTIVE jobs only; VIEWERs are read-only.
 export const POST = withHireAuth(async (_req, ctx, params) => {
   if (normalizeRole(ctx.role) === 'VIEWER') {
     return NextResponse.json({ error: 'Viewers cannot take jobs.' }, { status: 403 })
   }
 
-  const job = await prisma.hireJob.findFirst({ where: { id: params.id, tenantId: ctx.tenantId } })
+  const job = await prisma.hireJob.findFirst({
+    where: { id: params.id, tenantId: ctx.tenantId },
+    include: { assignees: { select: { id: true } } },
+  })
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (job.status !== 'ACTIVE') {
     return NextResponse.json({ error: 'Only open (active) jobs can be self-assigned.' }, { status: 400 })
   }
 
-  // Already mine → idempotent no-op (don't log a duplicate).
-  if (job.assigneeId === ctx.userId) {
-    return NextResponse.json({ ok: true, jobId: job.id, assigneeId: ctx.userId, alreadyMine: true })
+  // Already on the job → idempotent no-op (don't log/email a duplicate).
+  if (job.assigneeId === ctx.userId || job.assignees.some((a) => a.id === ctx.userId)) {
+    return NextResponse.json({ ok: true, jobId: job.id, assigneeId: job.assigneeId, alreadyMine: true })
   }
 
-  const prevAssigneeId = job.assigneeId
-  const updated = await prisma.hireJob.update({ where: { id: job.id }, data: { assigneeId: ctx.userId } })
+  // Add the caller to the assignee set; take the lead only if the job had none.
+  const lead = job.assigneeId ?? ctx.userId
+  await prisma.hireJob.update({
+    where: { id: job.id },
+    data: { assignees: { connect: { id: ctx.userId } }, assigneeId: lead },
+  })
 
   await logAudit({
     tenantId: ctx.tenantId,
@@ -37,9 +46,16 @@ export const POST = withHireAuth(async (_req, ctx, params) => {
     targetType: 'job',
     targetId: job.id,
     targetName: job.title,
-    reason: prevAssigneeId ? 'Self-assigned (reassigned from another member)' : 'Self-assigned (was unassigned)',
-    meta: { from: prevAssigneeId, to: ctx.userId },
+    reason: job.assigneeId ? 'Self-assigned (joined as an additional recruiter)' : 'Self-assigned (was unassigned)',
+    meta: { to: ctx.userId, lead },
   })
 
-  return NextResponse.json({ ok: true, jobId: updated.id, assigneeId: ctx.userId })
+  // Notify all admins that a member took the job (best-effort).
+  const [admins, actorName] = await Promise.all([
+    prisma.hireUser.findMany({ where: { tenantId: ctx.tenantId, disabled: false, role: 'ADMIN' }, select: { email: true } }),
+    resolveActorName(ctx.userId),
+  ])
+  await Promise.all(admins.map((a) => (a.email ? sendSelfAssignAdminEmail(a.email, job.id, job.title, actorName) : Promise.resolve())))
+
+  return NextResponse.json({ ok: true, jobId: job.id, assigneeId: lead })
 })

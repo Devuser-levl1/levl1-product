@@ -20,7 +20,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
 
   const [users, jobs, candidates, activities, hires] = await Promise.all([
     prisma.hireUser.findMany({ where: { tenantId: t }, select: { id: true, name: true, email: true, role: true } }),
-    prisma.hireJob.findMany({ where: { tenantId: t }, select: { id: true, title: true, status: true, assigneeId: true, createdAt: true, stages: true } }),
+    prisma.hireJob.findMany({ where: { tenantId: t }, select: { id: true, title: true, status: true, assigneeId: true, createdAt: true, stages: true, assignees: { select: { id: true } } } }),
     prisma.hireCandidate.findMany({ where: { tenantId: t }, select: { id: true, jobId: true, assigneeId: true, currentStage: true, createdAt: true, updatedAt: true } }),
     prisma.hireCandidateActivity.findMany({ where: { candidate: { tenantId: t }, createdAt: { gte: sixtyAgo } }, select: { userId: true, createdAt: true, candidate: { select: { jobId: true } } } }),
     prisma.hireCandidate.findMany({ where: { tenantId: t, currentStage: { in: ['Hired', 'Offer'] } }, select: { assigneeId: true, createdAt: true, updatedAt: true } }),
@@ -48,8 +48,11 @@ export const GET = withHireAuth(async (_req, ctx) => {
     const last = jobLastActivity.get(j.id) ?? +new Date(j.createdAt)
     const daysSinceActivity = Math.round((now - last) / DAY)
     const ageSeverity = daysOpen > AGE_BAD ? 'bad' : daysOpen > AGE_WARN ? 'warn' : 'ok'
+    // Full assignee set for card initials — union of the relation and the lead
+    // (covers legacy jobs whose lead predates the multi-assignee relation).
+    const assigneeIds = Array.from(new Set([...j.assignees.map((a) => a.id), ...(j.assigneeId ? [j.assigneeId] : [])]))
     return {
-      id: j.id, title: j.title, assigneeId: j.assigneeId, daysOpen, pipelineCount: cs.length,
+      id: j.id, title: j.title, assigneeId: j.assigneeId, assigneeIds, daysOpen, pipelineCount: cs.length,
       lastActivityAt: new Date(last).toISOString(), daysSinceActivity,
       stalled: daysSinceActivity >= STALL_DAYS, ageSeverity,
       topStage: cs.length ? Object.entries(cs.reduce((m: Record<string, number>, c) => { m[c.currentStage] = (m[c.currentStage] || 0) + 1; return m }, {})).sort((a, b) => b[1] - a[1])[0][0] : null,

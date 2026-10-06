@@ -9,7 +9,15 @@ import { OpenJobs } from '@/components/hire/open-jobs'
 import { isAdmin as roleIsAdmin } from '@/lib/hire/permissions'
 
 interface Member { id: string; name: string; email: string; role: string; activeJobs: number; candidatesInProgress: number; totalCandidates: number; placements: number; avgTimeToFill: number | null; activity30d: number; stalledJobs: number }
-interface JobRow { id: string; title: string; assigneeId: string | null; daysOpen: number; pipelineCount: number; lastActivityAt: string; daysSinceActivity: number; stalled: boolean; ageSeverity: string; topStage: string | null }
+interface JobRow { id: string; title: string; assigneeId: string | null; assigneeIds: string[]; daysOpen: number; pipelineCount: number; lastActivityAt: string; daysSinceActivity: number; stalled: boolean; ageSeverity: string; topStage: string | null }
+
+// Deterministic avatar color + initials from a name.
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
+}
+const AVATAR_COLORS = ['#6D28D9', '#2563EB', '#059669', '#D97706', '#DC2626', '#0891B2', '#7C3AED', '#DB2777']
+function avatarColor(id: string): string { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return AVATAR_COLORS[h % AVATAR_COLORS.length] }
 interface Oversight { members: Member[]; jobs: JobRow[]; metrics: { openJobs: number; placements: number; avgTimeToFill: number | null; fillRate: number; unassignedJobs: number; stalledJobs: number }; thresholds: { ageWarn: number; ageBad: number; stallDays: number } }
 
 const card: React.CSSProperties = { background: '#fff', border: `1px solid ${VIZ.line}`, borderRadius: 14, padding: 18 }
@@ -139,16 +147,20 @@ function AssignmentBoard({ data, onReassigned }: { data: Oversight; onReassigned
     if (!res.ok) { setJobs(data.jobs); alert('Reassign failed — you may not have permission.') } else onReassigned()
   }
 
+  const memberList = data.members.map((m) => ({ id: m.id, name: m.name }))
+  const memberMap = useMemo(() => Object.fromEntries(data.members.map((m) => [m.id, m.name])), [data.members])
+
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <div style={{ fontSize: 12, color: VIZ.faint, marginBottom: 10 }}>Drag a card to set its lead owner · use <strong>Tag</strong> to assign multiple recruiters (they&apos;re emailed).</div>
       <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
-        {columns.map((col) => <BoardColumn key={col.id} col={col} />)}
+        {columns.map((col) => <BoardColumn key={col.id} col={col} members={memberList} memberMap={memberMap} onTagged={onReassigned} />)}
       </div>
     </DndContext>
   )
 }
 
-function BoardColumn({ col }: { col: { id: string; name: string; jobs: JobRow[] } }) {
+function BoardColumn({ col, members, memberMap, onTagged }: { col: { id: string; name: string; jobs: JobRow[] }; members: { id: string; name: string }[]; memberMap: Record<string, string>; onTagged: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id })
   return (
     <div ref={setNodeRef} style={{ width: 230, flexShrink: 0, background: isOver ? '#F1F5F9' : '#F8FAFC', border: isOver ? `1px dashed ${VIZ.primary}` : `1px solid ${VIZ.line}`, borderRadius: 12, padding: 12, minHeight: 200 }}>
@@ -157,22 +169,71 @@ function BoardColumn({ col }: { col: { id: string; name: string; jobs: JobRow[] 
         <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: VIZ.faint, background: '#fff', border: `1px solid ${VIZ.line}`, borderRadius: 100, padding: '1px 8px' }}>{col.jobs.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {col.jobs.map((j) => <JobCard key={j.id} job={j} />)}
+        {col.jobs.map((j) => <JobCard key={j.id} job={j} members={members} memberMap={memberMap} onTagged={onTagged} />)}
         {col.jobs.length === 0 && <div style={{ fontSize: 12, color: VIZ.faint, textAlign: 'center', padding: '14px 0' }}>—</div>}
       </div>
     </div>
   )
 }
 
-function JobCard({ job }: { job: JobRow }) {
+function JobCard({ job, members, memberMap, onTagged }: { job: JobRow; members: { id: string; name: string }[]; memberMap: Record<string, string>; onTagged: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id })
+  const [tagging, setTagging] = useState(false)
+  const assignees = (job.assigneeIds ?? []).filter((id) => memberMap[id])
+
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} style={{ background: '#fff', border: `1px solid ${VIZ.line}`, borderRadius: 9, padding: '10px 11px', cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: VIZ.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-        <span style={{ fontSize: 11, color: ageColor(job.ageSeverity), fontWeight: 600 }}>{job.daysOpen}d</span>
-        <span style={{ fontSize: 11, color: VIZ.faint }}>· {job.pipelineCount} in pipe</span>
-        {job.stalled && <span style={{ fontSize: 9.5, fontWeight: 800, color: VIZ.bad }}>STALLED</span>}
+    <div ref={setNodeRef} style={{ position: 'relative', background: '#fff', border: `1px solid ${VIZ.line}`, borderRadius: 9, padding: '10px 11px', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      {/* Drag handle = the title/meta area; the Tag button is excluded so it stays clickable. */}
+      <div {...listeners} {...attributes} style={{ cursor: 'grab' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: VIZ.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+          <span style={{ fontSize: 11, color: ageColor(job.ageSeverity), fontWeight: 600 }}>{job.daysOpen}d</span>
+          <span style={{ fontSize: 11, color: VIZ.faint }}>· {job.pipelineCount} in pipe</span>
+          {job.stalled && <span style={{ fontSize: 9.5, fontWeight: 800, color: VIZ.bad }}>STALLED</span>}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+        <div style={{ display: 'flex' }}>
+          {assignees.slice(0, 4).map((id, i) => (
+            <span key={id} title={memberMap[id]} style={{ width: 22, height: 22, borderRadius: '50%', background: avatarColor(id), color: '#fff', fontSize: 9.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #fff', marginLeft: i === 0 ? 0 : -7 }}>{initialsOf(memberMap[id])}</span>
+          ))}
+          {assignees.length > 4 && <span style={{ width: 22, height: 22, borderRadius: '50%', background: VIZ.faint, color: '#fff', fontSize: 9.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #fff', marginLeft: -7 }}>+{assignees.length - 4}</span>}
+          {assignees.length === 0 && <span style={{ fontSize: 10.5, color: VIZ.faint }}>No one assigned</span>}
+        </div>
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setTagging((v) => !v)} style={{ marginLeft: 'auto', fontSize: 10.5, fontWeight: 700, color: VIZ.primary, background: '#F5F3FF', border: `1px solid ${VIZ.primary}33`, borderRadius: 7, padding: '2px 8px', cursor: 'pointer' }}>Tag</button>
+      </div>
+      {tagging && <TagPopover job={job} members={members} current={assignees} onClose={() => setTagging(false)} onSaved={() => { setTagging(false); onTagged() }} />}
+    </div>
+  )
+}
+
+function TagPopover({ job, members, current, onClose, onSaved }: { job: JobRow; members: { id: string; name: string }[]; current: string[]; onClose: () => void; onSaved: () => void }) {
+  const [sel, setSel] = useState<Set<string>>(new Set(current))
+  const [saving, setSaving] = useState(false)
+  const toggle = (id: string) => setSel((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  async function save() {
+    setSaving(true)
+    const res = await fetch(`/api/hire/jobs/${job.id}/assignees`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigneeIds: Array.from(sel) }) })
+    setSaving(false)
+    if (res.ok) onSaved(); else alert('Could not update assignees — you may not have permission.')
+  }
+
+  return (
+    <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'absolute', zIndex: 20, top: '100%', right: 0, marginTop: 4, width: 220, background: '#fff', border: `1px solid ${VIZ.line}`, borderRadius: 10, boxShadow: '0 12px 32px -8px rgba(0,0,0,0.25)', padding: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: VIZ.slate, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>Assign recruiters</div>
+      <div style={{ maxHeight: 190, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {members.map((m) => (
+          <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: VIZ.ink, padding: '4px 4px', borderRadius: 6, cursor: 'pointer' }}>
+            <input type="checkbox" checked={sel.has(m.id)} onChange={() => toggle(m.id)} />
+            <span style={{ width: 20, height: 20, borderRadius: '50%', background: avatarColor(m.id), color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{initialsOf(m.name)}</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+        <button onClick={save} disabled={saving} style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#fff', background: VIZ.primary, border: 'none', borderRadius: 7, padding: '6px 0', cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save'}</button>
+        <button onClick={onClose} style={{ fontSize: 12, fontWeight: 700, color: VIZ.slate, background: '#F1F5F9', border: 'none', borderRadius: 7, padding: '6px 12px', cursor: 'pointer' }}>Cancel</button>
       </div>
     </div>
   )

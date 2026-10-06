@@ -15,6 +15,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
     include: {
       _count: { select: { candidates: true } },
       client: { select: { id: true, name: true } },
+      assignees: { select: { id: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -36,7 +37,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
     daysOpen: Math.max(0, Math.floor((now - new Date(j.createdAt).getTime()) / 86400000)),
     assigneeId: j.assigneeId,
     assigneeName: nameOf(j.assigneeId),
-    mine: j.assigneeId === ctx.userId,
+    mine: j.assigneeId === ctx.userId || j.assignees.some((a) => a.id === ctx.userId),
   }))
 
   // Viewers are read-only — they can browse but the client hides the claim button.

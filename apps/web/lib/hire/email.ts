@@ -6,6 +6,30 @@ export async function sendHireEmail(opts: { to: string; subject: string; html: s
   return sendEmail(opts)
 }
 
+const JOB_URL = (jobId: string) => `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'}/hire/jobs/${jobId}`
+
+/** Notify a recruiter that a job has been assigned to them (by an admin/manager or a tag). */
+export async function sendJobAssignedEmail(to: string, jobId: string, jobTitle: string, byName: string | null): Promise<void> {
+  if (!to) return
+  const by = byName ? ` by ${byName}` : ''
+  await sendHireEmail({
+    to,
+    subject: `New job assigned to you: ${jobTitle}`,
+    html: `<p>You've been assigned to <strong>${jobTitle}</strong>${by} in HirePilot.</p><p><a href="${JOB_URL(jobId)}">Open the job →</a></p>`,
+  }).catch(() => {})
+}
+
+/** Notify admins that a team member self-assigned a job. */
+export async function sendSelfAssignAdminEmail(to: string, jobId: string, jobTitle: string, recruiterName: string | null): Promise<void> {
+  if (!to) return
+  const who = recruiterName ?? 'A team member'
+  await sendHireEmail({
+    to,
+    subject: `${who} self-assigned: ${jobTitle}`,
+    html: `<p><strong>${who}</strong> has taken the job <strong>${jobTitle}</strong> in HirePilot.</p><p><a href="${JOB_URL(jobId)}">Open the job →</a></p>`,
+  }).catch(() => {})
+}
+
 interface InterviewLike { id: string; scheduledAt: Date; durationMins: number; type: string; meetLink: string | null; interviewers: unknown }
 interface CandidateLike { id: string; name: string; email: string | null; aiScore: number | null; aiSummary: string | null; job: { title: string } | null }
 

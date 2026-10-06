@@ -36,9 +36,14 @@ export async function getScopes(ctx: HireContext): Promise<ScopedWheres> {
 }
 
 /** True if the current user may see this specific job (used by detail routes). */
-export async function canAccessJob(ctx: HireContext, job: { assigneeId: string | null; clientId: string | null }): Promise<boolean> {
+export async function canAccessJob(ctx: HireContext, job: { id?: string; assigneeId: string | null; clientId: string | null }): Promise<boolean> {
   if (isManagerPlus(ctx.role)) return true
   if (job.assigneeId === ctx.userId) return true
+  // Multi-assignee membership (tagged recruiters) — checked by id when available.
+  if (job.id) {
+    const member = await prisma.hireJob.count({ where: { id: job.id, assignees: { some: { id: ctx.userId } } } })
+    if (member > 0) return true
+  }
   if (job.assigneeId === null && job.clientId === null) return true
   if (!job.clientId) return false
   const ids = await getAssignedClientIds(ctx)
@@ -53,6 +58,11 @@ export async function canAccessCandidate(
   if (isManagerPlus(ctx.role)) return true
   if (cand.assigneeId === ctx.userId) return true
   if (cand.assigneeId === null && cand.jobId === null) return true
+  // Inherit visibility if the recruiter leads or is tagged on the candidate's job.
+  if (cand.jobId) {
+    const onJob = await prisma.hireJob.count({ where: { id: cand.jobId, OR: [{ assigneeId: ctx.userId }, { assignees: { some: { id: ctx.userId } } }] } })
+    if (onJob > 0) return true
+  }
   const clientId = cand.job?.clientId ?? null
   if (!clientId) return false
   const ids = await getAssignedClientIds(ctx)

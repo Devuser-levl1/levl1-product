@@ -87,7 +87,12 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if ('assigneeId' in body) {
     if (!isManagerPlus(ctx.role)) return NextResponse.json({ error: 'Only managers can reassign jobs.' }, { status: 403 })
     const to = body.assigneeId || null
-    if (to !== existing.assigneeId) { data.assigneeId = to; reassigned = { from: existing.assigneeId, to } }
+    if (to !== existing.assigneeId) {
+      data.assigneeId = to
+      // Keep the lead in the multi-assignee set so card initials stay coherent.
+      if (to) data.assignees = { connect: { id: to } }
+      reassigned = { from: existing.assigneeId, to }
+    }
   }
 
   const job = await prisma.hireJob.update({ where: { id: existing.id }, data })

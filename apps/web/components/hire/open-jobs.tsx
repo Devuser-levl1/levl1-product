@@ -99,7 +99,7 @@ export function OpenJobs() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: VIZ.good, width: 110, textAlign: 'center' }}>✓ On your list</span>
               ) : (
                 <button onClick={() => claim(j)} disabled={busy === j.id} style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', background: VIZ.primary, border: 'none', borderRadius: 8, padding: '7px 14px', cursor: busy === j.id ? 'wait' : 'pointer', width: 110, opacity: busy === j.id ? 0.6 : 1 }}>
-                  {busy === j.id ? 'Taking…' : j.assigneeId ? 'Take over' : 'Assign to me'}
+                  {busy === j.id ? 'Taking…' : j.assigneeId ? 'Join job' : 'Assign to me'}
                 </button>
               )
             )}
