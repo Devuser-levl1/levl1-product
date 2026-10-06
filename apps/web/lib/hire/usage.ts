@@ -11,12 +11,16 @@ interface TenantLike {
   usageCandidatesThisMonth: number
   usageResetAt: Date | null
   currentPeriodEnd: Date | null
+  seatLimit?: number | null
 }
 
 export function getLimits(tenant: TenantLike): PlanLimits {
-  if (tenant.trialActive) return TRIAL_LIMITS
-  const plan = HIRE_PLANS[tenant.plan as HirePlanIdLoose]
-  return plan ? plan.limits : TRIAL_LIMITS
+  const base = tenant.trialActive
+    ? TRIAL_LIMITS
+    : (HIRE_PLANS[tenant.plan as HirePlanIdLoose]?.limits ?? TRIAL_LIMITS)
+  // A per-tenant seat override (if set) wins over the plan/trial recruiter cap.
+  if (tenant.seatLimit != null) return { ...base, recruiters: tenant.seatLimit }
+  return base
 }
 type HirePlanIdLoose = keyof typeof HIRE_PLANS
 

@@ -617,6 +617,10 @@ model HireTenant {
   // nurturing/Campaigns). ENTERPRISE = in-house HR; AGENCY = staffing firm.
   businessType HireBusinessType @default(AGENCY)
   plan        HirePlan       @default(STARTER)
+  // Per-tenant seat override. When set, it replaces the plan's recruiter-seat
+  // limit for this tenant only (e.g. a negotiated seat count above the plan
+  // tier). Null = use the plan/trial limit as normal.
+  seatLimit   Int?
   domain      String?        @unique
   logoUrl     String?
 
