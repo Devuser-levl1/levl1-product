@@ -85,17 +85,17 @@ export function TeamMembers({ isAdmin }: { isAdmin: boolean }) {
         {isAdmin && <button onClick={() => setShowInvite(true)} style={{ marginLeft: 'auto', padding: '9px 14px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Invite member</button>}
       </div>
 
-      {note && <div style={{ fontSize: 13, color: note.includes('now') ? '#059669' : '#DC2626', marginBottom: 10 }}>{note}</div>}
+      {note && <div style={{ fontSize: 13, color: /\b(now|copied|re-sent|sent)\b/i.test(note) && !/could\s?n'?t|not|failed|error/i.test(note) ? '#059669' : '#DC2626', marginBottom: 10 }}>{note}</div>}
 
       <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 110px 190px', gap: 10, padding: '10px 16px', borderBottom: '1px solid #F1F5F9', fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 100px 250px', gap: 10, padding: '10px 16px', borderBottom: '1px solid #F1F5F9', fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           <span>Member</span><span>Role</span><span>Status</span><span>Last login</span><span></span>
         </div>
         {members.map((m) => {
           const st = STATUS[m.status] ?? STATUS.active
           const pr = presence(m)
           return (
-            <div key={m.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 110px 190px', gap: 10, alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #F8FAFC', opacity: m.disabled ? 0.62 : 1 }}>
+            <div key={m.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 100px 250px', gap: 10, alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #F8FAFC', opacity: m.disabled ? 0.62 : 1 }}>
               <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 9 }}>
                 {/* Teams-style presence dot */}
                 <span title={`${pr.label} · last login ${fmtFull(m.lastLoginAt)}`} style={{ flexShrink: 0, width: 10, height: 10, borderRadius: '50%', background: pr.color, boxShadow: pr.cross ? 'none' : `0 0 0 3px ${pr.color}22`, position: 'relative' }}>
@@ -117,7 +117,8 @@ export function TeamMembers({ isAdmin }: { isAdmin: boolean }) {
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: st.c, background: st.bg, padding: '2px 9px', borderRadius: 100 }}>{st.label}</span>
               </div>
               <div title={fmtFull(m.lastLoginAt)} style={{ fontSize: 12.5, color: '#64748B', cursor: 'default' }}>{relative(m.lastLoginAt)}</div>
-              <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+              <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {isAdmin && m.status === 'invited' && <PendingInviteActions member={m} onNote={setNote} />}
                 {isAdmin && (m.disabled
                   ? <button onClick={() => enableMember(m)} disabled={busy === m.id} style={{ ...ghost, color: '#059669', borderColor: 'rgba(5,150,105,0.3)' }}>Enable</button>
                   : <button onClick={() => setDisableFor(m)} style={{ ...ghost }}>Disable</button>)}
@@ -135,14 +136,55 @@ export function TeamMembers({ isAdmin }: { isAdmin: boolean }) {
   )
 }
 
+// Pending (invited, not-yet-accepted) members: mint/copy a fresh invite link or
+// resend the email. Lets an admin hand the link over directly when email is
+// filtered to spam or bounces — invites never depend solely on email delivery.
+function PendingInviteActions({ member, onNote }: { member: Member; onNote: (s: string) => void }) {
+  const [busy, setBusy] = useState<null | 'copy' | 'resend'>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function getLink(resend: boolean): Promise<{ inviteUrl?: string; emailSent?: boolean; error?: string } | null> {
+    const res = await fetch(`/api/hire/team/${member.id}/invite-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resend }) })
+    const d = await res.json().catch(() => ({}))
+    if (!res.ok) { onNote(d.error ?? 'Could not generate invite link'); return null }
+    return d
+  }
+
+  async function copyLink() {
+    setBusy('copy'); onNote('')
+    const d = await getLink(false)
+    setBusy(null)
+    if (!d?.inviteUrl) return
+    try { await navigator.clipboard?.writeText(d.inviteUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); onNote(`Invite link for ${member.name || member.email} copied — share it directly.`) }
+    catch { onNote(d.inviteUrl) } // clipboard blocked → show the link so it can be copied manually
+  }
+
+  async function resend() {
+    setBusy('resend'); onNote('')
+    const d = await getLink(true)
+    setBusy(null)
+    if (!d) return
+    onNote(d.emailSent ? `Invite re-sent to ${member.email}. Ask them to check Junk/Spam.` : `Couldn't email ${member.email}${d.error ? ` (${d.error})` : ''} — use Copy link instead.`)
+  }
+
+  return (
+    <>
+      <button onClick={copyLink} disabled={busy !== null} title="Copy a secure invite link to share directly" style={{ ...ghost, color: '#6D28D9', borderColor: 'rgba(109,40,217,0.3)' }}>{copied ? 'Copied ✓' : busy === 'copy' ? '…' : 'Copy link'}</button>
+      <button onClick={resend} disabled={busy !== null} title="Email the invite again" style={{ ...ghost }}>{busy === 'resend' ? '…' : 'Resend'}</button>
+    </>
+  )
+}
+
 function InviteModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('RECRUITER')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  // When the member row was created but the email didn't send, surface the link.
-  const [linkFallback, setLinkFallback] = useState<{ url: string; reason: string } | null>(null)
+  // After creating the member we ALWAYS surface the secure invite link — email
+  // delivery to corporate domains is never guaranteed (spam filters, bounces),
+  // so the link is the reliable hand-off. emailSent just tailors the wording.
+  const [result, setResult] = useState<{ url: string; emailSent: boolean; to: string; error?: string | null } | null>(null)
   const [copied, setCopied] = useState(false)
 
   async function send() {
@@ -153,17 +195,20 @@ function InviteModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     const d = await res.json().catch(() => ({}))
     setSaving(false)
     if (!res.ok) { setErr(d.message ?? d.error ?? 'Could not send invite'); return }
-    if (d.emailSent === false && d.inviteUrl) { setLinkFallback({ url: d.inviteUrl, reason: d.emailError ?? 'the email could not be delivered' }); return }
-    onDone()
+    setResult({ url: d.inviteUrl, emailSent: d.emailSent !== false, to: d.email ?? email, error: d.emailError })
   }
 
-  if (linkFallback) {
+  if (result) {
+    const sent = result.emailSent
     return (
-      <Modal title="Member added — email didn't send" subtitle="The invite couldn't be emailed. Share this secure invite link with them directly." onClose={onDone}>
-        <div style={{ fontSize: 12.5, color: '#92400E', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: 10 }}>Reason: {linkFallback.reason}</div>
-        <input readOnly value={linkFallback.url} onFocus={(e) => e.currentTarget.select()} style={{ ...inp, fontSize: 12, fontFamily: 'monospace' }} />
+      <Modal title={sent ? 'Invite sent' : "Member added — email didn't send"} subtitle={sent ? 'We emailed the invite. Email can land in spam, so share this link directly too.' : 'The invite couldn’t be emailed. Share this secure link with them directly.'} onClose={onDone}>
+        <div style={{ fontSize: 12.5, color: sent ? '#065F46' : '#92400E', background: sent ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${sent ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}`, borderRadius: 10, padding: 10 }}>
+          {sent ? <>Emailed to <strong>{result.to}</strong>. Ask them to check <strong>Junk/Spam</strong> and allow <strong>noreply@mail.levl1.io</strong>.</> : <>Reason: {result.error ?? 'the email could not be delivered'}. Send them this link.</>}
+        </div>
+        <label style={lbl}>Secure invite link</label>
+        <input readOnly value={result.url} onFocus={(e) => e.currentTarget.select()} style={{ ...inp, fontSize: 12, fontFamily: 'monospace' }} />
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { navigator.clipboard?.writeText(linkFallback.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }).catch(() => {}) }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{copied ? 'Copied ✓' : 'Copy invite link'}</button>
+          <button onClick={() => { navigator.clipboard?.writeText(result.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }).catch(() => {}) }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{copied ? 'Copied ✓' : 'Copy invite link'}</button>
           <button onClick={onDone} style={{ ...ghost, flex: 1, padding: 10 }}>Done</button>
         </div>
       </Modal>
