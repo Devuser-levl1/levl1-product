@@ -5,6 +5,8 @@ import type { Prisma } from '@prisma/client'
 import { getConnector } from '@/lib/jobboards'
 import { decryptJson } from '@/lib/jobboards/crypto'
 import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
+import { addCandidateToJob } from '@/lib/hire/candidate-ownership'
+import { resolveActorName } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -17,6 +19,7 @@ export const POST = withHireAuth(async (req, ctx) => {
   const body = await req.json().catch(() => ({}))
   const boards: string[] = Array.isArray(body.boards) ? body.boards.filter((b: unknown) => typeof b === 'string') : []
   const jobId = body.jobId ? String(body.jobId) : null
+  const actorName = await resolveActorName(ctx.userId)
   if (boards.length === 0) return NextResponse.json({ error: 'Select at least one board to pull from' }, { status: 400 })
 
   // Validate optional job + its first stage.
@@ -56,10 +59,9 @@ export const POST = withHireAuth(async (req, ctx) => {
       const allow = await checkAllowance(ctx.tenantId, 'candidate')
       if (!allow.allowed) { limitHit = true; break }
 
-      const created = await prisma.hireCandidate.create({
+      const add = await addCandidateToJob({
+        tenantId: ctx.tenantId, jobId: jobId ?? null, actorUserId: ctx.userId, claimerName: actorName,
         data: {
-          tenantId: ctx.tenantId,
-          jobId: jobId ?? null,
           name: cand.name,
           email: email || null,
           phone: cand.phone ?? null,
@@ -67,8 +69,11 @@ export const POST = withHireAuth(async (req, ctx) => {
           resumeText: cand.resumeText ?? null,
           source: connector.label,
           currentStage: jobId ? firstStage : 'Sourced',
+          assigneeId: ctx.userId,
         },
       })
+      if (!add.created) { duplicates++; continue } // already on this job
+      const created = add.candidate
       await prisma.hireCandidateActivity.create({ data: { candidateId: created.id, type: 'note', note: `Imported from ${connector.label} via Sourcing Hub`, userId: ctx.userId } })
       await incrementUsage(ctx.tenantId, 'candidate')
       // Auto-score: against the job if chosen, else a baseline résumé summary.

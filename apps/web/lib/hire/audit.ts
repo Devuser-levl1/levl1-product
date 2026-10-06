@@ -11,6 +11,7 @@ export type AuditAction =
   | 'candidates_submitted_to_client' | 'candidate_placed' | 'nurture_checkin_sent' | 'nurture_response'
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove' | 'team_member_disable' | 'team_member_enable'
   | 'job_reassign' | 'job_self_assign' | 'candidate_reassign' | 'password_change' | 'password_reset'
+  | 'candidate_claim_override' | 'candidate_claim_reassign' | 'candidate_claim_release'
   | 'agent_execute'
 
 export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice' | 'agent' | 'client'
@@ -115,6 +116,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   ar_reminder_sent: 'Payment reminder sent by Lev',
   candidates_submitted_to_client: 'Candidates submitted to client',
   candidate_placed: 'Candidate marked placed',
+  candidate_claim_override: 'Pursued despite existing owner',
+  candidate_claim_reassign: 'Candidate ownership reassigned',
+  candidate_claim_release: 'Candidate ownership released',
   nurture_checkin_sent: 'Nurture check-in sent by Lev',
   nurture_response: 'Nurture check-in response',
   team_member_invite: 'Team member invited',

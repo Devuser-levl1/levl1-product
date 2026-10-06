@@ -11,6 +11,8 @@ interface Candidate {
   currentStage: string; aiScore: number | null; aiSummary: string | null; aiRecommendation: string | null; source: string | null
   totalYears: number | null; resumeText: string | null
   skills: string[] | null; topSkills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]
+  owner?: { id: string; name: string | null } | null
+  otherJobs?: { candidateId: string; jobId: string; jobTitle: string | null; stage: string; owner: { id: string; name: string | null } | null }[]
 }
 
 const REC: Record<string, string> = { strong_yes: 'Strong Yes', yes: 'Yes', maybe: 'Maybe', no: 'No' }
@@ -62,6 +64,23 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                 <div>
                   <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: 0 }}>{c.name}</h2>
                   <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{[c.currentTitle, c.currentCompany].filter(Boolean).join(' · ') || c.email || c.job?.title || '—'}</div>
+                  {c.job && (
+                    <div style={{ fontSize: 12, color: c.owner ? '#6D28D9' : '#94A3B8', marginTop: 4, fontWeight: 600 }}>
+                      {c.owner ? `Pursued for ${c.job.title} by ${c.owner.name ?? 'a recruiter'}` : `On ${c.job.title} · no owner`}
+                    </div>
+                  )}
+                  {c.otherJobs && c.otherJobs.length > 0 && (
+                    <div style={{ marginTop: 8, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Also pursued for</div>
+                      {c.otherJobs.map((o) => (
+                        <div key={o.candidateId} style={{ fontSize: 12, color: '#334155', display: 'flex', gap: 6, padding: '2px 0' }}>
+                          <span style={{ fontWeight: 600 }}>{o.jobTitle ?? 'A job'}</span>
+                          <span style={{ color: '#94A3B8' }}>· {o.stage}</span>
+                          <span style={{ marginLeft: 'auto', color: o.owner ? '#6D28D9' : '#94A3B8' }}>{o.owner ? (o.owner.name ?? 'a recruiter') : 'no owner'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button onClick={onClose} style={{ marginLeft: 'auto', fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: '#475569' }}>×</button>
               </div>

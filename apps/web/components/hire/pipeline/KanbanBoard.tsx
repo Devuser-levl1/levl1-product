@@ -5,6 +5,7 @@ import { useState } from 'react'
 export interface KanbanCandidate {
   id: string; name: string; email: string; currentStage: string
   aiScore: number | null; aiRecommendation: string | null; source: string | null; createdAt: string
+  owner?: { id: string; name: string | null } | null
   rejectedReason?: string | null; rejectedBy?: string | null; rejectedAt?: string | null
 }
 export interface KanbanStage { name: string; candidates: KanbanCandidate[] }
@@ -51,6 +52,11 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{candidate.name}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {candidate.owner?.name && (
+            <span title={`Pursued by ${candidate.owner.name}`} style={{ flexShrink: 0, width: 20, height: 20, borderRadius: '50%', background: '#6D28D9', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {candidate.owner.name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()}
+            </span>
+          )}
           {candidate.aiScore != null && (
             <div style={{ fontSize: 11, fontWeight: 700, color: scoreColor(candidate.aiScore), background: `${scoreColor(candidate.aiScore)}15`, padding: '2px 6px', borderRadius: 4 }}>{candidate.aiScore}</div>
           )}

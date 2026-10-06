@@ -168,6 +168,7 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: () => void; onSaved: () => void; onLimit: (msg: string) => void }) {
   const [f, setF] = useState({ name: '', email: '', phone: '', currentRole: '', currentCompany: '', jobId: '', stage: 'Sourced', source: 'LinkedIn', resumeText: '' })
   const [saving, setSaving] = useState(false); const [err, setErr] = useState('')
+  const [dup, setDup] = useState<{ message: string } | null>(null)
   const [parsing, setParsing] = useState(false); const [parsedNote, setParsedNote] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }))
@@ -198,15 +199,17 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
     }
   }
 
-  async function save() {
+  async function save(override = false) {
     if (!f.name || !f.email) { setErr('Name and email required'); return }
-    setSaving(true)
-    const res = await fetch('/api/hire/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, jobId: f.jobId || null }) })
+    setSaving(true); setErr('')
+    const res = await fetch('/api/hire/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, jobId: f.jobId || null, override }) })
+    const d = await res.json().catch(() => ({}))
     setSaving(false)
-    if (res.ok) { onSaved(); return }
-    const d = await res.json()
     if (res.status === 402) { onLimit(d.message ?? 'Upgrade to add more candidates.'); return }
-    setErr(d.error ?? 'Failed')
+    if (!res.ok) { setErr(d.error ?? 'Failed'); return }
+    // Soft lock: already on this job. Warn + let them pursue anyway (logged).
+    if (d.duplicate && !d.overridden) { setDup({ message: d.message ?? 'This candidate is already on this job.' }); return }
+    onSaved()
   }
   return <Overlay onClose={onClose}>
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>Add Candidate</div>
@@ -226,10 +229,21 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
       <select style={inp} value={f.source} onChange={(e) => set('source', e.target.value)}>{CANDIDATE_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
       <textarea style={{ ...inp, minHeight: 90 }} placeholder="Resume text (optional — enables AI scoring when a job is selected)" value={f.resumeText} onChange={(e) => set('resumeText', e.target.value)} />
       {err && <div style={{ color: '#DC2626', fontSize: 13 }}>{err}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add Candidate'}</button>
-      </div>
+      {dup ? (
+        <div style={{ background: 'rgba(245,158,11,0.09)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, padding: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E' }}>⚠️ {dup.message}</div>
+          <div style={{ fontSize: 12, color: '#92400E', marginTop: 4 }}>No duplicate was created. You can pursue them anyway (this is logged), or back off.</div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button onClick={onClose} style={{ flex: 1, padding: 9, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Back off</button>
+            <button onClick={() => save(true)} disabled={saving} style={{ flex: 1, padding: 9, borderRadius: 8, border: 'none', background: '#B45309', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Working…' : 'Pursue anyway'}</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+          <button onClick={() => save()} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Adding…' : 'Add Candidate'}</button>
+        </div>
+      )}
     </div>
   </Overlay>
 }

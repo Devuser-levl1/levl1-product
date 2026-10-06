@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
+import { isTerminalStage } from '@/lib/hire/candidate-ownership'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,9 +14,11 @@ export const POST = withHireAuth(async (req, ctx, params) => {
   })
   if (!candidate) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  // A terminal decision (hired/rejected/withdrawn) releases the per-job claim.
+  const releasing = isTerminalStage(String(toStage)) && !!candidate.ownerRecruiterId
   const updated = await prisma.hireCandidate.update({
     where: { id: candidate.id },
-    data: { currentStage: String(toStage) },
+    data: { currentStage: String(toStage), ...(releasing ? { ownerRecruiterId: null, claimedAt: null, claimedBy: null } : {}) },
   })
   await prisma.hireCandidateActivity.create({
     data: {

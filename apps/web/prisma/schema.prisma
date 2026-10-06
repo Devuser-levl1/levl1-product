@@ -880,6 +880,16 @@ model HireCandidate {
   topSkills        Json?      // string[] — the most job-relevant skills surfaced by AI scoring
   currentStage     String     @default("Sourced")
   assigneeId       String?    // HireUser who owns this candidate (defaults to creator)
+  // Per-job ownership (soft lock). First recruiter to add/pursue this candidate
+  // FOR THIS JOB becomes the owner; the lock is advisory (others can override,
+  // logged). Released on a terminal decision (hired/rejected/withdrawn), manual
+  // release, or manager reassignment. Scope is this candidate+job row only.
+  ownerRecruiterId String?    // HireUser currently pursuing this candidate for this job
+  claimedAt        DateTime?  // when ownership was claimed
+  claimedBy        String?    // actor name snapshot at claim time
+  // Duplicate-prevention key: normalized identity (email → phone → name) used by
+  // the per-job unique constraint below. Null for job-less (talent-pool) rows.
+  dedupeKey        String?
   aiScore          Int?       // 0-100
   aiSummary        String?    @db.Text
   aiRecommendation String?    // strong_yes | yes | maybe | no
@@ -905,6 +915,13 @@ model HireCandidate {
 
   @@index([tenantId])
   @@index([tenantId, jobId])
+  @@index([tenantId, ownerRecruiterId])
+  // Concurrency backstop: the same candidate identity can exist only once per
+  // job. Postgres treats NULLs as distinct, so job-less rows (jobId null) and
+  // identity-less rows (dedupeKey null) are intentionally NOT constrained — only
+  // a real candidate-on-a-job is deduped. A racing second insert fails with
+  // P2002 and the caller surfaces the existing row instead.
+  @@unique([tenantId, jobId, dedupeKey], name: "uniq_candidate_identity_per_job")
 }
 
 // Post-placement nurture check-in (Agency-only). One row per (candidate, interval);

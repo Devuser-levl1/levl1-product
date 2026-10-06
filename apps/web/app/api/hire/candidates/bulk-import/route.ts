@@ -6,6 +6,8 @@ import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 import {
   extractTextFromFile, extractCandidateFromResume, validateUpload,
 } from '@/lib/shared/file-parsing'
+import { addCandidateToJob } from '@/lib/hire/candidate-ownership'
+import { resolveActorName } from '@/lib/hire/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +70,7 @@ export const POST = withHireAuth(async (req, ctx) => {
   }
 
   const results = { created: 0, failed: 0, needsReview: 0, errors: [] as string[] }
+  const actorName = await resolveActorName(ctx.userId)
 
   let index = 0
   for (const raw of rawCandidates) {
@@ -102,20 +105,11 @@ export const POST = withHireAuth(async (req, ctx) => {
       // Need at least a name OR an email to have a meaningful record.
       if (!name && !email) { results.failed++; results.errors.push(`${raw.name || 'Row'}: no name or email could be read`); continue }
 
-      // Dedupe only when there's an email to match on.
-      if (email) {
-        const exists = await prisma.hireCandidate.findFirst({
-          where: { tenantId: ctx.tenantId, email, jobId: jobId || null },
-          select: { id: true },
-        })
-        if (exists) { results.failed++; results.errors.push(`${email}: duplicate (already exists)`); continue }
-      }
-
       const skills = Array.isArray(data.topSkills) && data.topSkills.length ? (data.topSkills as Prisma.InputJsonValue) : undefined
-      const candidate = await prisma.hireCandidate.create({
+      // Dedupe (email → phone → name) + claim ownership via the shared helper.
+      const add = await addCandidateToJob({
+        tenantId: ctx.tenantId, jobId: jobId || null, actorUserId: ctx.userId, claimerName: actorName,
         data: {
-          tenantId: ctx.tenantId,
-          jobId: jobId || null,
           name: name || 'Unknown',
           email,                                        // may be null — sourced candidate without an email yet
           phone: data.phone || null,
@@ -127,8 +121,11 @@ export const POST = withHireAuth(async (req, ctx) => {
           resumeText: data.resumeText || null,
           source: 'Bulk Import',
           currentStage: 'Sourced',
+          assigneeId: ctx.userId,
         },
       })
+      if (!add.created) { results.failed++; results.errors.push(`${email || name}: already on this job${add.owner?.name ? ` (pursued by ${add.owner.name})` : ''}`); continue }
+      const candidate = add.candidate
 
       await prisma.hireCandidateActivity.create({
         data: { candidateId: candidate.id, type: 'note', note: 'Added via bulk import', userId: ctx.userId },

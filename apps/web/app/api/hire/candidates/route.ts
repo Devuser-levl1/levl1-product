@@ -3,8 +3,9 @@ import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
-import { writeAudit } from '@/lib/hire/audit'
+import { writeAudit, logAudit, resolveActorName } from '@/lib/hire/audit'
 import { getScopes } from '@/lib/hire/scope'
+import { addCandidateToJob } from '@/lib/hire/candidate-ownership'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,9 +63,13 @@ export const GET = withHireAuth(async (req, ctx) => {
       })
     : []
   const matchByCand = new Map(matchRows.map((m) => [`${m.jobId}|${m.candidateId}`, m]))
+  // Resolve owner (who's pursuing) names for the list in one query.
+  const ownerIds = Array.from(new Set(candidates.map((c) => c.ownerRecruiterId).filter(Boolean) as string[]))
+  const ownerUsers = ownerIds.length ? await prisma.hireUser.findMany({ where: { tenantId: ctx.tenantId, id: { in: ownerIds } }, select: { id: true, name: true } }) : []
   const withMatch = candidates.map((c) => {
     const m = c.jobId ? matchByCand.get(`${c.jobId}|${c.id}`) : undefined
-    return { ...c, match: m ? { score: m.score, verdict: m.verdict, jobTitle: c.job?.title ?? null } : null }
+    const owner = c.ownerRecruiterId ? { id: c.ownerRecruiterId, name: ownerUsers.find((u) => u.id === c.ownerRecruiterId)?.name ?? null } : null
+    return { ...c, owner, match: m ? { score: m.score, verdict: m.verdict, jobTitle: c.job?.title ?? null } : null }
   })
 
   return NextResponse.json({ candidates: withMatch, total, page, limit })
@@ -82,14 +87,15 @@ export const POST = withHireAuth(async (req, ctx) => {
 
   const email = body.email ? String(body.email).toLowerCase() : null
   const skills = Array.isArray(body.skills) && body.skills.length ? (body.skills as Prisma.InputJsonValue) : undefined
+  const jobId = body.jobId || null
+  const actorName = await resolveActorName(ctx.userId)
 
-  const candidate = await prisma.hireCandidate.create({
+  // Funnel through the shared dedupe+ownership helper so a candidate can't be
+  // added to the same job twice, and the first recruiter becomes the owner.
+  const result = await addCandidateToJob({
+    tenantId: ctx.tenantId, jobId, actorUserId: ctx.userId, claimerName: actorName,
     data: {
-      tenantId: ctx.tenantId,
-      jobId: body.jobId || null,
-      name: String(body.name),
-      email,
-      phone: body.phone || null,
+      name: String(body.name), email, phone: body.phone || null,
       currentTitle: body.currentTitle || body.currentRole || null,
       currentCompany: body.currentCompany || null,
       linkedinUrl: body.linkedinUrl || body.linkedIn || null,
@@ -98,9 +104,27 @@ export const POST = withHireAuth(async (req, ctx) => {
       resumeText: body.resumeText || null,
       source: body.source || 'Manual',
       currentStage: body.stage || 'Sourced',
-      assigneeId: ctx.userId, // default the assignee to the creator
+      assigneeId: ctx.userId,
     },
   })
+
+  // Already on this job → no duplicate. Surface the existing record + its owner.
+  // The soft lock is advisory: with override:true the recruiter proceeds anyway
+  // (logged); without it, they see the warning and back off. No new row either way.
+  if (!result.created) {
+    const since = result.candidate.claimedAt ? new Date(result.candidate.claimedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : null
+    const ownerName = result.owner?.name ?? 'another recruiter'
+    if (body.override === true) {
+      await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'candidate_claim_override', targetType: 'candidate', targetId: result.candidate.id, targetName: result.candidate.name, reason: `Proceeded despite ${ownerName}'s claim`, meta: { owner: result.owner?.id, jobId } })
+      return NextResponse.json({ candidate: result.candidate, duplicate: true, overridden: true, owner: result.owner }, { status: 200 })
+    }
+    return NextResponse.json({
+      candidate: result.candidate, duplicate: true, raced: result.raced, owner: result.owner,
+      message: `${result.candidate.name} is already being pursued for this job by ${ownerName}${since ? ` since ${since}` : ''}.`,
+    }, { status: 200 })
+  }
+
+  const candidate = result.candidate
 
   // WITH a job → score; WITHOUT → baseline summary so the candidate isn't blank.
   if (body.resumeText) {

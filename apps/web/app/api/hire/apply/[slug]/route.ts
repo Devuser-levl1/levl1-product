@@ -4,6 +4,7 @@ import { enqueue } from '@/lib/hire/jobs/queue'
 import { JOB_NAME } from '@/lib/hire/jobs/score-candidate'
 import { sendHireEmail } from '@/lib/hire/email'
 import { applicationReceivedCandidateEmail, newApplicationRecruiterEmail } from '@/emails/hire/application-received'
+import { addCandidateToJob } from '@/lib/hire/candidate-ownership'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,18 +58,24 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const stages = Array.isArray(job.stages) ? (job.stages as string[]) : []
     const firstStage = stages[0] ?? 'Sourced'
 
-    const candidate = await prisma.hireCandidate.create({
+    // Dedupe on the job — a re-application by the same person doesn't create a
+    // second record (public apply has no recruiter, so no owner is claimed).
+    const result = await addCandidateToJob({
+      tenantId: job.tenantId, jobId: job.id,
       data: {
-        tenantId: job.tenantId,
-        jobId: job.id,
-        name,
-        email,
+        name, email,
         phone: body.phone ? String(body.phone) : null,
         resumeText: body.resumeText ? String(body.resumeText) : null,
         currentStage: firstStage,
         source: 'Direct',
       },
     })
+    const candidate = result.candidate
+
+    if (!result.created) {
+      // Already applied to this job — acknowledge idempotently, no duplicate.
+      return NextResponse.json({ ok: true, alreadyApplied: true }, { status: 200 })
+    }
 
     await prisma.hireCandidateActivity.create({
       data: { candidateId: candidate.id, type: 'note', note: `Applied via public page${body.currentRole ? ` · ${body.currentRole}` : ''}` },
