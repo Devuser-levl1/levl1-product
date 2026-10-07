@@ -1,4 +1,19 @@
 import type { Metadata, Viewport } from "next";
+// Self-hosted fonts (same family names the app already uses — 'Plus Jakarta
+// Sans' and 'Inter' — so every existing font-family reference keeps working).
+// Replaces the render-blocking Google Fonts @import that was in globals.css.
+import "@fontsource/plus-jakarta-sans/300.css";
+import "@fontsource/plus-jakarta-sans/400.css";
+import "@fontsource/plus-jakarta-sans/400-italic.css";
+import "@fontsource/plus-jakarta-sans/500.css";
+import "@fontsource/plus-jakarta-sans/600.css";
+import "@fontsource/plus-jakarta-sans/700.css";
+import "@fontsource/plus-jakarta-sans/800.css";
+import "@fontsource/inter/300.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegistrar } from "@/components/layout/ServiceWorkerRegistrar";
@@ -45,8 +60,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
-        {/* Cashfree Payment SDK */}
-        <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />
       </head>
       <body>
         <ServiceWorkerRegistrar />

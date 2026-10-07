@@ -7,16 +7,15 @@ Pilot-readiness checklist for onboarding the first agency customers.
 - [ ] `JWT_SECRET` — 64-char secret (shared with Interviews)
 - [ ] `ANTHROPIC_API_KEY` — AI resume scoring + question generation
 - [ ] `RESEND_API_KEY`, `FROM_EMAIL` (noreply@mail.levl1.io)
-- [ ] `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV=TEST` (→ `PROD` at launch)
 - [ ] `NEXT_PUBLIC_APP_URL=https://levl1.io`
 - [ ] `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER` (Interviews invites)
 - [ ] `ADMIN_SECRET_TOKEN` (internal /admin)
 - [ ] `CRON_SECRET` (reminder/cron protection)
 
-## 2. Billing (Cashfree)
-- [ ] Webhook registered: `https://levl1.io/api/hire/billing/webhook`
-- [ ] TEST end-to-end: trial → upgrade → webhook → plan active
-- [ ] Switch `CASHFREE_ENV` TEST → PROD before charging real customers
+## 2. Billing
+- Cashfree was removed (2026-10). Upgrades are set up by the team via the admin
+  console ("change plan") and invoiced directly. Enterprise billing is TBD.
+- [ ] Renew paid tenants before `currentPeriodEnd` (admin "change plan" sets 30 days)
 
 ## 3. Email (Resend)
 - [ ] Resend domain verified (per-agency white-label optional)

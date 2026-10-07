@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import toast from 'react-hot-toast'
 import { HIRE_PLANS } from '@/lib/hire/plans'
 import { startHireUpgrade } from '@/components/hire/upgrade-wall'
 
@@ -15,24 +14,12 @@ const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8
 
 export default function BillingPage() {
   const [s, setS] = useState<Status | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
 
   const load = useCallback(() => { fetch('/api/hire/billing/status').then((r) => (r.ok ? r.json() : null)).then(setS).catch(() => {}) }, [])
   useEffect(() => { load() }, [load])
 
-  // Return from Cashfree checkout
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const orderId = params.get('order_id'); const plan = params.get('plan')
-    if (orderId) {
-      fetch(`/api/hire/billing/verify/${orderId}${plan ? `?plan=${plan}` : ''}`).then((r) => r.json()).then((v) => {
-        if (v.paid) { toast.success('Payment confirmed — plan upgraded!'); load() } else toast.error('Payment not confirmed yet.')
-      }).catch(() => {})
-      window.history.replaceState({}, '', '/hire/settings/billing')
-    }
-  }, [load])
-
-  async function upgrade(planId: string) { setBusy(planId); await startHireUpgrade(planId, load); setBusy(null) }
+  // Upgrades are arranged with the team — opens a pre-filled email.
+  function upgrade(planId: string) { startHireUpgrade(planId) }
 
   if (!s) return <div style={{ color: '#475569' }}>Loading…</div>
 
@@ -66,7 +53,8 @@ export default function BillingPage() {
         <Row label="Recruiter seats" used={s.usage.seats} limit={s.limits.recruiters} />
       </div>
 
-      <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 12 }}>Choose a plan</div>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', marginBottom: 4 }}>Choose a plan</div>
+      <div style={{ fontSize: 13, color: '#475569', marginBottom: 12 }}>Upgrades are set up by our team and invoiced directly.</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }} className="bill-grid">
         {Object.values(HIRE_PLANS).map((p) => {
           const current = !s.trialActive && s.plan === p.id
@@ -74,9 +62,9 @@ export default function BillingPage() {
             <div key={p.id} style={{ ...card, padding: 20, border: `1px solid ${'popular' in p && p.popular ? '#6D28D9' : '#E2E8F0'}` }}>
               {'popular' in p && p.popular && <div style={{ fontSize: 11, fontWeight: 700, color: '#6D28D9', marginBottom: 4 }}>★ Recommended</div>}
               <div style={{ fontSize: 17, fontWeight: 800 }}>{p.name}</div>
-              <div style={{ margin: '6px 0 12px' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{p.priceDisplay}</span><span style={{ fontSize: 13, color: '#475569' }}>/mo</span></div>
+              <div style={{ margin: '6px 0 12px', fontSize: 14, fontWeight: 700, color: '#475569' }}>Contact us for pricing</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>{p.features.slice(0, 5).map((f) => <div key={f} style={{ fontSize: 12, color: '#475569' }}>✓ {f}</div>)}</div>
-              <button onClick={() => upgrade(p.id)} disabled={current || busy === p.id} style={{ width: '100%', padding: 10, borderRadius: 8, border: 'none', background: current ? '#F1F5F9' : '#6D28D9', color: current ? '#475569' : '#fff', fontWeight: 700, cursor: current ? 'default' : 'pointer' }}>{current ? 'Current plan' : busy === p.id ? '…' : 'Upgrade'}</button>
+              <button onClick={() => upgrade(p.id)} disabled={current} style={{ width: '100%', padding: 10, borderRadius: 8, border: 'none', background: current ? '#F1F5F9' : '#6D28D9', color: current ? '#475569' : '#fff', fontWeight: 700, cursor: current ? 'default' : 'pointer' }}>{current ? 'Current plan' : 'Request upgrade'}</button>
             </div>
           )
         })}

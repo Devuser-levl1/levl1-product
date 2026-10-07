@@ -1,16 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import { X, CheckCircle2, Zap, Star } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
-import toast from 'react-hot-toast'
+import { requestUpgrade } from '@/lib/shared/request-upgrade'
 
 const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
-    price: '₹15,000',
-    period: '/month',
+    price: 'Contact us',
+    period: '',
     interviews: 50,
     features: [
       '50 AI interviews / month',
@@ -26,8 +25,8 @@ const PLANS = [
   {
     id: 'professional',
     name: 'Professional',
-    price: '₹45,000',
-    period: '/month',
+    price: 'Contact us',
+    period: '',
     interviews: 200,
     features: [
       '200 AI interviews / month',
@@ -45,43 +44,13 @@ const PLANS = [
 
 export default function UpgradeWallModal() {
   const { showUpgradeWall, setShowUpgradeWall, agencyPlan } = useAppStore()
-  const [loading, setLoading] = useState<string | null>(null)
+  const loading: string | null = null
 
   if (!showUpgradeWall) return null
 
-  async function handleUpgrade(planId: string) {
-    setLoading(planId)
-    try {
-      const res = await fetch('/api/payments/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error ?? 'Could not create payment order')
-        setLoading(null)
-        return
-      }
-
-      // Use Cashfree JS SDK if available, otherwise redirect
-      const cf = (window as unknown as Record<string, unknown>).Cashfree
-      if (cf && typeof cf === 'function') {
-        const cashfree = (cf as (opts: unknown) => { checkout: (opts: unknown) => void })({ mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox' })
-        cashfree.checkout({
-          paymentSessionId: data.paymentSessionId,
-          redirectTarget: '_modal',
-        })
-      } else {
-        // Fallback: redirect to Cashfree hosted page via return_url logic
-        // In practice, Cashfree SDK should always be loaded via layout.tsx script
-        toast.error('Payment SDK not loaded. Please refresh and try again.')
-      }
-    } catch {
-      toast.error('Something went wrong. Please try again.')
-    } finally {
-      setLoading(null)
-    }
+  // Upgrades are arranged with the team (no self-serve checkout).
+  function handleUpgrade(planId: string) {
+    requestUpgrade('Screen', PLANS.find((p) => p.id === planId)?.name ?? planId)
   }
 
   const isExpired = agencyPlan?.plan === 'trial' && (agencyPlan.interviewsUsed ?? 0) >= (agencyPlan.interviewsLimit ?? 5)
@@ -248,7 +217,7 @@ export default function UpgradeWallModal() {
             color: '#94A3B8',
           }}
         >
-          Secure payment via Cashfree · Cancel anytime · GST applicable
+          Our team sets up your plan and invoices you directly
         </div>
       </div>
 
