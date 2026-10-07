@@ -56,6 +56,17 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/login', destination: '/interviews/login', permanent: true },
+
+      // Website restructure (docs/website-restructure-plan.md) — OLD MARKETING
+      // URLs ONLY, exact matches. These never match product routes such as
+      // /hire/login, /hire/apply/*, or /interviews/login.
+      { source: '/hirepilot', destination: '/products/hirepilot', statusCode: 301 },
+      { source: '/hirepilot/agencies', destination: '/solutions/agencies', statusCode: 301 },
+      { source: '/hirepilot/enterprise', destination: '/solutions/enterprise', statusCode: 301 },
+      { source: '/contact', destination: '/demo', statusCode: 301 },
+      { source: '/roadmap', destination: '/products/screen', statusCode: 301 },
+      { source: '/interviews', destination: '/products/screen/demo', statusCode: 301 },
+      { source: '/hire', destination: '/products/hirepilot', statusCode: 301 },
     ]
   },
 

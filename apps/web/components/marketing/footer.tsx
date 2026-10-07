@@ -1,29 +1,38 @@
 import Link from 'next/link'
-import { T } from './tokens'
-import { Logo } from './logo'
+import { CONTACT_EMAIL, FOOTER, LEGAL_ENTITY, ROUTES } from '@/config/site'
 import { ContactHelpdesk } from '@/components/ui/ContactHelpdesk'
+import { Logo } from './logo'
 
 export function MarketingFooter() {
-  const col = (title: string, links: [string, string][]) => (
-    <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>{title}</div><div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>{links.map(([l, h]) => <Link key={l} href={h} className="mk-footlink" style={{ fontSize: 13.5, color: "#C7CCEA", textDecoration: "none" }}>{l}</Link>)}</div></div>
-  )
   return (
-    <footer style={{ background: T.ink, color: '#C7CCEA' }}>
-      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '64px 24px 36px' }}>
-        <div className="mk-foot" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1.2fr', gap: 36 }}>
-          <div>
-            <div style={{ marginBottom: 14 }}><Logo variant="white" height={26} /></div>
-            <div style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 260, color: '#A9B0D6' }}>The AI hiring &amp; evaluation platform for modern talent teams worldwide.</div>
+    <footer className="relative overflow-hidden bg-mk-ink text-slate-300">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+      <div className="mx-auto max-w-[1200px] px-5 pb-10 pt-16 sm:px-8 sm:pt-20">
+        <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(5,1fr)] lg:gap-8">
+          <div className="max-w-xs">
+            <Logo variant="white" height={24} />
+            <p className="mt-4 text-[0.9rem] leading-relaxed text-slate-400">AI-led technical interviews and an AI-native ATS + CRM, for engineering teams and recruitment agencies.</p>
+            <Link href={ROUTES.demo} className="mk-btn mk-btn-primary mt-6 !px-4 !py-2.5 !text-[0.86rem]">Book a demo</Link>
           </div>
-          {col('Products', [['HirePilot', '/hirepilot'], ['· For agencies', '/hirepilot/agencies'], ['· For in-house', '/hirepilot/enterprise'], ['Levl1 Interviews', '/interviews']])}
-          {col('Company', [['Roadmap', '/roadmap'], ['Contact', '/contact'], ['Security', '/security']])}
-          {col('Legal', [['Privacy', '/privacy'], ['Terms', '/terms'], ['Cookies', '/cookies']])}
-          <div><div style={{ fontSize: 12, fontWeight: 700, color: '#A9B0D6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Get started</div><Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: '#fff', background: `linear-gradient(120deg, ${T.purple}, ${T.blue})`, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', display: 'inline-block' }}>Book a demo</Link></div>
+          <nav aria-label="Footer" className="contents">
+            {FOOTER.map((col) => (
+              <div key={col.title}>
+                <h2 className="text-[0.72rem] font-bold uppercase tracking-[0.14em] text-slate-400">{col.title}</h2>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map((l) => (
+                    <li key={l.label}><Link href={l.href} className="text-[0.9rem] text-slate-300 transition-colors hover:text-white">{l.label}</Link></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
         </div>
-        <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 12.5, color: '#7C83A8' }}>
-          <span>hello@levl1.io · © 2026 Levl1. All rights reserved.</span>
-          <ContactHelpdesk tone="dark" />
-          <span style={{ marginLeft: 'auto', color: '#A9B0D6' }}><span style={{ color: T.sky }}>◆</span> Proudly built in India · Serving teams worldwide</span>
+        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 text-[0.82rem] text-slate-400 md:flex-row md:items-center">
+          <p>© 2026 {LEGAL_ENTITY}. Levl1 is a product of {LEGAL_ENTITY}.</p>
+          <div className="flex flex-wrap items-center gap-4 md:ml-auto">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-white">{CONTACT_EMAIL}</a>
+            <ContactHelpdesk tone="dark" />
+          </div>
         </div>
       </div>
     </footer>

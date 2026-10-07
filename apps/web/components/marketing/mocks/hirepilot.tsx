@@ -7,7 +7,7 @@ const shell: React.CSSProperties = { background: '#fff', border: '1px solid #E7E
 const bar: React.CSSProperties = { display: 'flex', gap: 6, padding: '10px 14px', borderBottom: '1px solid #EEF0FA', background: '#FBFBFE' }
 const dot = (c: string): React.CSSProperties => ({ width: 9, height: 9, borderRadius: 99, background: c })
 function Chrome({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div style={shell}><div style={bar}><span style={dot('#FF5F57')} /><span style={dot('#FEBC2E')} /><span style={dot('#28C840')} /><span style={{ marginLeft: 10, fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{title}</span></div>{children}</div>
+  return <div style={shell}><div style={bar}><span style={dot('#FF5F57')} /><span style={dot('#FEBC2E')} /><span style={dot('#28C840')} /><span style={{ marginLeft: 10, fontSize: 11, color: '#64748B', fontWeight: 600 }}>{title}</span></div>{children}</div>
 }
 const pill = (c: string): React.CSSProperties => ({ fontSize: 10, fontWeight: 700, color: c, background: `${c}18`, borderRadius: 6, padding: '2px 8px' })
 
@@ -20,7 +20,7 @@ export function JDRubricMock() {
         <div style={{ padding: 14, borderRight: '1px solid #EEF0FA' }}>
           <div style={{ ...pill(T.violet), display: 'inline-block', marginBottom: 8 }}>✨ AI-generated</div>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Senior Backend Engineer</div>
-          <div style={{ fontSize: 10.5, color: '#94A3B8', margin: '6px 0 10px' }}>from a nudge: “senior backend, Go, event-driven”</div>
+          <div style={{ fontSize: 10.5, color: '#64748B', margin: '6px 0 10px' }}>from a nudge: “senior backend, Go, event-driven”</div>
           {['Own delivery of write-heavy services', 'Design for scale & fault tolerance', 'Mentor and raise the bar'].map((l) => (
             <div key={l} style={{ display: 'flex', gap: 7, fontSize: 11, color: '#475569', marginBottom: 5 }}><span style={{ color: T.violet }}>•</span>{l}</div>
           ))}
@@ -33,7 +33,7 @@ export function JDRubricMock() {
               <div style={{ height: 6, background: '#EEF0FA', borderRadius: 4 }}><div style={{ width: `${w * 20}%`, height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${T.violet}, ${T.blue})` }} /></div>
             </div>
           ))}
-          <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 6 }}>Change a weight → candidates re-rank instantly.</div>
+          <div style={{ fontSize: 10, color: '#64748B', marginTop: 6 }}>Change a weight → candidates re-rank instantly.</div>
         </div>
       </div>
     </Chrome>
@@ -58,7 +58,7 @@ export function SourcingMock() {
             </div>
           ))}
         </div>
-        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 8 }}>One click · under your own board accounts (BYOB).</div>
+        <div style={{ fontSize: 10, color: '#64748B', marginTop: 8 }}>One click · under your own board accounts (BYOB).</div>
       </div>
     </Chrome>
   )
@@ -82,11 +82,11 @@ export function SubmitSheetMock() {
           </div>
           {rows.map((r, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.5fr 0.5fr', fontSize: 11, color: '#334155', borderTop: '1px solid #F1F5F9' }}>
-              {r.map((cell, j) => <div key={j} style={{ padding: '6px 9px', fontWeight: j === 3 ? 800 : 400, color: j === 3 ? '#059669' : '#334155' }}>{cell}</div>)}
+              {r.map((cell, j) => <div key={j} style={{ padding: '6px 9px', fontWeight: j === 3 ? 800 : 400, color: j === 3 ? '#047857' : '#334155' }}>{cell}</div>)}
             </div>
           ))}
         </div>
-        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 8 }}>📎 3 résumés + Candidates.xlsx — in Acme’s own column format.</div>
+        <div style={{ fontSize: 10, color: '#64748B', marginTop: 8 }}>📎 3 résumés + Candidates.xlsx — in Acme’s own column format.</div>
       </div>
     </Chrome>
   )
@@ -96,7 +96,7 @@ export function SubmitSheetMock() {
 export function InboxMock() {
   const msgs: [string, string, string, string][] = [
     ['Ravi · ClientCorp', 'CV for your Backend role', 'Email', '#64748B'],
-    ['Priya Nair', 'Re: interview — Friday works', 'WhatsApp', '#059669'],
+    ['Priya Nair', 'Re: interview — Friday works', 'WhatsApp', '#047857'],
     ['Acme Global', 'New req: Data Engineer (2)', 'Email', '#64748B'],
   ]
   return (
@@ -104,15 +104,15 @@ export function InboxMock() {
       <div style={{ padding: 12 }}>
         {msgs.map(([from, subj, ch, c], i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 11px', borderRadius: 9, border: '1px solid #EEF0FA', marginBottom: 7, background: i === 1 ? '#F5F3FF' : '#fff' }}>
-            <span style={{ width: 7, height: 7, borderRadius: 99, background: c === '#059669' ? '#10B981' : '#6D28D9', flexShrink: 0 }} />
+            <span style={{ width: 7, height: 7, borderRadius: 99, background: c === '#047857' ? '#10B981' : '#6D28D9', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{from}</div>
               <div style={{ fontSize: 11, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subj}</div>
             </div>
-            <span style={{ ...pill(c), background: c === '#059669' ? 'rgba(16,185,129,0.12)' : '#F1F5F9' }}>{ch}</span>
+            <span style={{ ...pill(c), background: c === '#047857' ? 'rgba(16,185,129,0.12)' : '#F1F5F9' }}>{ch}</span>
           </div>
         ))}
-        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 4 }}>A WhatsApp job-spec → a draft job, automatically.</div>
+        <div style={{ fontSize: 10, color: '#64748B', marginTop: 4 }}>Email and WhatsApp threads in one place, linked to the candidate.</div>
       </div>
     </Chrome>
   )
@@ -126,14 +126,14 @@ export function LevPanelMock() {
       <div style={{ padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 800 }}>✦ <span style={{ background: `linear-gradient(90deg,${T.violet},${T.indigo})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Lev</span></span>
-          <span style={{ fontSize: 11, color: '#94A3B8' }}>proposing an action · you approve</span>
+          <span style={{ fontSize: 11, color: '#64748B' }}>proposing an action · you approve</span>
         </div>
         <div style={{ fontSize: 12, color: '#334155', background: '#F7F8FD', borderRadius: 9, padding: '10px 12px', marginBottom: 10 }}>
           “Find 3 strong candidates for <b>Senior Backend Engineer</b> and add them to the pipeline.”
         </div>
         <div style={{ border: '1px solid #DDD6FE', background: '#FBFAFF', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '8px 11px', borderBottom: '1px solid #EDE9FE', fontSize: 10, fontWeight: 800, color: T.violet, textTransform: 'uppercase', letterSpacing: '.04em' }}>Proposed · add to pipeline</div>
-          {items.map(([n, d]) => <div key={n} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 11px', fontSize: 11.5 }}><span style={{ fontWeight: 700, color: '#0F172A' }}>{n}</span><span style={{ color: '#94A3B8' }}>{d}</span></div>)}
+          {items.map(([n, d]) => <div key={n} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 11px', fontSize: 11.5 }}><span style={{ fontWeight: 700, color: '#0F172A' }}>{n}</span><span style={{ color: '#64748B' }}>{d}</span></div>)}
           <div style={{ display: 'flex', gap: 8, padding: '9px 11px', borderTop: '1px solid #EDE9FE' }}>
             <span style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fff', background: T.violet, borderRadius: 8, padding: '7px 0' }}>Approve</span>
             <span style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '7px 0' }}>Cancel</span>
@@ -146,7 +146,7 @@ export function LevPanelMock() {
 
 // 6 — AR ageing + auto-nudge (agency)
 export function ARMock() {
-  const rows: [string, string, string, string][] = [['Acme Global', '₹4.8L', '12d', '#D97706'], ['Vertex', '₹2.0L', '38d', '#DC2626'], ['Northwind', '₹1.2L', 'current', '#059669']]
+  const rows: [string, string, string, string][] = [['Acme Global', 'INV-1042', '12d', '#B45309'], ['Vertex', 'INV-1031', '38d', '#B91C1C'], ['Northwind', 'INV-1057', 'current', '#047857']]
   return (
     <Chrome title="HirePilot — Receivables">
       <div style={{ padding: 14 }}>
@@ -167,13 +167,13 @@ export function ARMock() {
 
 // 7 — nurture timeline + response chips
 export function NurtureMock() {
-  const steps: [string, string, string][] = [['15d', 'All good', '#059669'], ['30d', 'All good', '#059669'], ['60d', 'Sent', '#4F46E5'], ['90d', 'Scheduled', '#94A3B8']]
+  const steps: [string, string, string][] = [['15d', 'All good', '#047857'], ['30d', 'All good', '#047857'], ['60d', 'Sent', '#4F46E5'], ['90d', 'Scheduled', '#64748B']]
   return (
     <Chrome title="HirePilot — Nurture">
       <div style={{ padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={{ width: 30, height: 30, borderRadius: 99, background: `linear-gradient(135deg,${T.violet},${T.blue})`, color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>PN</div>
-          <div><div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A' }}>Priya Nair · placed @ Acme</div><div style={{ fontSize: 10.5, color: '#94A3B8' }}>Post-placement check-ins by Lev</div></div>
+          <div><div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F172A' }}>Priya Nair · placed @ Acme</div><div style={{ fontSize: 10.5, color: '#64748B' }}>Post-placement check-ins by Lev</div></div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {steps.map(([d, s, c]) => (
@@ -183,7 +183,7 @@ export function NurtureMock() {
             </div>
           ))}
         </div>
-        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 10 }}>Confirms the placement sticks — you get paid at 90 days.</div>
+        <div style={{ fontSize: 10, color: '#64748B', marginTop: 10 }}>Confirms the placement sticks — you get paid at 90 days.</div>
       </div>
     </Chrome>
   )
@@ -201,41 +201,12 @@ export function TeamMock() {
             <span style={{ width: 52, fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{n}</span>
             <div style={{ flex: 1, height: 8, background: '#EEF0FA', borderRadius: 5 }}><div style={{ width: `${(jobs / max) * 100}%`, height: '100%', borderRadius: 5, background: `linear-gradient(90deg,${T.violet},${T.blue})` }} /></div>
             <span style={{ fontSize: 10.5, color: '#64748B', width: 44 }}>{jobs} jobs</span>
-            <span style={{ ...pill('#059669'), width: 40, textAlign: 'center' }}>{fill}%</span>
+            <span style={{ ...pill('#047857'), width: 40, textAlign: 'center' }}>{fill}%</span>
           </div>
         ))}
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           {[['Placements', '18'], ['Avg TTF', '21d'], ['Stalled', '2']].map(([k, v]) => (
-            <div key={k} style={{ flex: 1, background: '#F7F8FD', borderRadius: 8, padding: '8px 10px' }}><div style={{ fontSize: 9.5, color: '#94A3B8' }}>{k}</div><div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>{v}</div></div>
-          ))}
-        </div>
-      </div>
-    </Chrome>
-  )
-}
-
-// 9 — enterprise connector diagram (HirePilot ↔ ATS) + security
-export function ConnectorMock() {
-  return (
-    <Chrome title="HirePilot — Connectors">
-      <div style={{ padding: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, textAlign: 'center', border: `1px solid ${T.violet}33`, background: 'rgba(124,58,237,0.06)', borderRadius: 12, padding: '14px 8px' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: T.violet }}>HirePilot</div>
-            <div style={{ fontSize: 10, color: '#94A3B8' }}>scoring · interviews · pipeline</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#94A3B8', fontSize: 10 }}>
-            <span style={{ color: T.indigo }}>→ writes back</span>
-            <span style={{ color: T.violet }}>← reads in</span>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 8px' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Your ATS</div>
-            <div style={{ fontSize: 10, color: '#94A3B8' }}>system of record</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-          {['SOC 2 Type II', 'ISO 27001', 'RBAC', 'Encrypted', 'Audit log'].map((b) => (
-            <span key={b} style={{ fontSize: 10, fontWeight: 700, color: '#334155', background: '#F1F5F9', border: '1px solid #E7E9F5', borderRadius: 6, padding: '3px 9px' }}>🛡 {b}</span>
+            <div key={k} style={{ flex: 1, background: '#F7F8FD', borderRadius: 8, padding: '8px 10px' }}><div style={{ fontSize: 9.5, color: '#64748B' }}>{k}</div><div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>{v}</div></div>
           ))}
         </div>
       </div>

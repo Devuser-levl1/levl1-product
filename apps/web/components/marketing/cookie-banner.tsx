@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { T } from './ui'
+import { T } from './tokens'
 
 export function CookieBanner() {
   const [show, setShow] = useState(false)

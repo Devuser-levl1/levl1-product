@@ -1,0 +1,118 @@
+/* ── Levl1 marketing site — motion + surface primitives ─────────────────────
+   Scoped to .mk-root so product pages are unaffected. Layout/spacing uses
+   Tailwind utilities; this file holds what Tailwind can't express cleanly.
+   Every animation respects prefers-reduced-motion. Motion is transform/opacity
+   only, so nothing causes layout shift. */
+
+.mk-root {
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  color: #0B1020;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.mk-root ::selection { background: rgba(124, 58, 237, 0.18); color: #0B1020; }
+.mk-root a { -webkit-tap-highlight-color: transparent; }
+.mk-root :focus-visible { outline: 2px solid #7C3AED; outline-offset: 3px; border-radius: 8px; }
+
+/* Typography */
+.mk-h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1.03; letter-spacing: -0.035em; font-weight: 800; }
+.mk-h2 { font-size: clamp(2rem, 4.2vw, 3.25rem); line-height: 1.06; letter-spacing: -0.03em; font-weight: 800; }
+.mk-h3 { font-size: clamp(1.25rem, 2vw, 1.5rem); line-height: 1.2; letter-spacing: -0.015em; font-weight: 750; }
+.mk-lead { font-size: clamp(1.0625rem, 1.5vw, 1.25rem); line-height: 1.6; color: #475569; }
+.mk-eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.mk-grad-text {
+  background: linear-gradient(110deg, #6D28D9 0%, #4F46E5 45%, #2563EB 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* Buttons */
+.mk-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-weight: 650; font-size: 0.95rem; line-height: 1; padding: 0.95rem 1.4rem; border-radius: 999px;
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+  white-space: nowrap;
+}
+.mk-btn:active { transform: scale(0.98); }
+.mk-btn-primary { color: #fff; background: linear-gradient(110deg, #6D28D9, #4F46E5 55%, #2563EB); box-shadow: 0 10px 30px -10px rgba(91, 33, 182, 0.55), inset 0 1px 0 rgba(255,255,255,0.18); }
+.mk-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 16px 38px -12px rgba(91, 33, 182, 0.65), inset 0 1px 0 rgba(255,255,255,0.22); }
+.mk-btn-secondary { color: #0B1020; background: rgba(255,255,255,0.75); border: 1px solid rgba(11,16,32,0.12); backdrop-filter: blur(8px); }
+.mk-btn-secondary:hover { border-color: rgba(109,40,217,0.4); color: #4C1D95; transform: translateY(-1px); }
+.mk-btn-onDark { color: #fff; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }
+.mk-btn-onDark:hover { background: rgba(255,255,255,0.16); transform: translateY(-1px); }
+.mk-btn-light { color: #312E81; background: #fff; box-shadow: 0 10px 30px -12px rgba(0,0,0,0.35); }
+.mk-btn-light:hover { transform: translateY(-1px); }
+.mk-btn .mk-arrow { transition: transform .25s cubic-bezier(.22,1,.36,1); }
+.mk-btn:hover .mk-arrow, .mk-link:hover .mk-arrow, .mk-card:hover .mk-arrow { transform: translateX(3px); }
+
+/* Cards */
+.mk-card {
+  position: relative; background: #fff; border: 1px solid #E7E9F5; border-radius: 1.5rem;
+  transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, border-color .35s ease;
+}
+.mk-card-hover:hover { transform: translateY(-4px); border-color: rgba(109,40,217,0.25); box-shadow: 0 30px 60px -30px rgba(49, 46, 129, 0.35); }
+.mk-glass { background: rgba(255,255,255,0.72); backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px); }
+.mk-icon-tile {
+  display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; border-radius: 0.9rem;
+  color: #5B21B6; background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(37,99,235,0.12)); border: 1px solid rgba(124,58,237,0.16);
+}
+.mk-icon-tile-dark { color: #C4B5FD; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+
+/* Gradient mesh — soft purple/blue light behind heroes and bands */
+.mk-mesh { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.mk-mesh span { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; will-change: transform; }
+.mk-mesh span:nth-child(1) { width: 46vw; height: 46vw; max-width: 620px; max-height: 620px; left: -10%; top: -25%; background: radial-gradient(circle, #A78BFA, transparent 65%); animation: mk-drift-a 22s ease-in-out infinite; }
+.mk-mesh span:nth-child(2) { width: 40vw; height: 40vw; max-width: 560px; max-height: 560px; right: -8%; top: -10%; background: radial-gradient(circle, #60A5FA, transparent 65%); animation: mk-drift-b 26s ease-in-out infinite; }
+.mk-mesh span:nth-child(3) { width: 34vw; height: 34vw; max-width: 480px; max-height: 480px; left: 30%; bottom: -30%; background: radial-gradient(circle, #818CF8, transparent 65%); animation: mk-drift-c 30s ease-in-out infinite; opacity: 0.4; }
+.mk-mesh-dark span { opacity: 0.45; mix-blend-mode: screen; }
+.mk-mesh-static span { animation: none !important; will-change: auto; }
+@keyframes mk-drift-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(6%, 8%, 0) scale(1.08); } }
+@keyframes mk-drift-b { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-8%, 6%, 0) scale(0.94); } }
+@keyframes mk-drift-c { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(5%, -8%, 0) scale(1.1); } }
+
+/* Subtle grid texture */
+.mk-grid-bg {
+  background-image: linear-gradient(rgba(79,70,229,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(79,70,229,0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+}
+
+/* Hero intro — transform-only on the headline so it stays an LCP candidate */
+.mk-intro-title { animation: mk-rise .9s cubic-bezier(.22,1,.36,1) both; }
+.mk-intro { animation: mk-fade-rise .9s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--d, 0ms); }
+@keyframes mk-rise { from { transform: translateY(18px); } to { transform: none; } }
+@keyframes mk-fade-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* Scroll reveal — content is only hidden once JS has flagged <html class="mk-js">,
+   so no-JS visitors and crawlers always see everything. */
+.mk-js [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(28px); }
+.mk-js [data-reveal="scale"]:not(.is-in) { transform: translateY(20px) scale(0.97); }
+.mk-js [data-reveal] { transition: opacity .9s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1); transition-delay: var(--d, 0ms); }
+
+/* Live dot / waveform used in product mocks */
+.mk-pulse { animation: mk-pulse 1.8s ease-in-out infinite; }
+@keyframes mk-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.85); } }
+.mk-wave i { display: block; width: 3px; border-radius: 2px; background: currentColor; animation: mk-wave 1.1s ease-in-out infinite; transform-origin: center; }
+@keyframes mk-wave { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+.mk-caret { display: inline-block; width: 7px; height: 1em; vertical-align: -2px; background: #A5B4FC; animation: mk-blink 1s steps(1) infinite; }
+@keyframes mk-blink { 50% { opacity: 0; } }
+
+/* Nav */
+.mk-nav-trigger[aria-expanded="true"] .mk-chev { transform: rotate(180deg); }
+.mk-chev { transition: transform .2s ease; }
+.mk-menu-enter { animation: mk-menu-in .18s cubic-bezier(.22,1,.36,1) both; }
+@keyframes mk-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+.mk-drawer-enter { animation: mk-drawer-in .28s cubic-bezier(.22,1,.36,1) both; }
+@keyframes mk-drawer-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* FAQ (native <details>) */
+.mk-faq summary { list-style: none; cursor: pointer; }
+.mk-faq summary::-webkit-details-marker { display: none; }
+.mk-faq summary .mk-plus { transition: transform .25s ease; }
+.mk-faq[open] summary .mk-plus { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-root *, .mk-root *::before, .mk-root *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .mk-js [data-reveal]:not(.is-in) { opacity: 1; transform: none; }
+}
