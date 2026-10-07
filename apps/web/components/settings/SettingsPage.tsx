@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
-import { requestUpgrade } from "@/lib/shared/request-upgrade";
 
 function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
   return (
@@ -79,8 +78,8 @@ interface TeamMemberRecord { id: string; name: string; email: string; role: stri
 interface UserRecord { id: string; name: string; email: string; role: string; lastLoginAt?: string | null }
 
 export default function SettingsPage() {
-  const { agencyPlan, setShowUpgradeWall } = useAppStore();
-  const billingLoading: string | null = null; // no async checkout any more
+  const { agencyPlan, setShowUpgradeWall, setAgencyPlan } = useAppStore();
+  const [billingLoading, setBillingLoading] = useState<string | null>(null);
 
   // Team members state
   const [teamMembers,   setTeamMembers]   = useState<TeamMemberRecord[]>([]);
@@ -288,19 +287,101 @@ export default function SettingsPage() {
     }
   }
 
-  // Upgrades are arranged with the team (no self-serve checkout).
-  function handleUpgrade(planId: string) {
-    requestUpgrade('Screen', BILLING_PLANS.find((p) => p.id === planId)?.name ?? planId);
+  // Re-fetch the agency plan from the DB and update the global store so the
+  // trial banner / usage bar reflect the new plan immediately after upgrade.
+  const refreshAgencyPlan = useCallback(async () => {
+    try {
+      const data = await fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null));
+      const agency = data?.agency;
+      if (agency) {
+        setAgencyPlan({
+          agencyId: agency.id,
+          agencyName: agency.name,
+          plan: agency.plan,
+          interviewsUsed: agency.interviewsUsed,
+          interviewsLimit: agency.interviewsLimit,
+          trialExpiresAt: agency.trialExpiresAt,
+          trialDaysLeft: agency.trialDaysLeft ?? 0,
+          subscriptionStatus: agency.subscriptionStatus,
+        });
+      }
+    } catch { /* non-critical */ }
+  }, [setAgencyPlan]);
+
+  // Verify a completed payment and refresh the plan.
+  const verifyPayment = useCallback(async (orderId: string, planId: string | null) => {
+    try {
+      const data = await fetch(
+        `/api/payments/verify/${orderId}${planId ? `?plan=${planId}` : ''}`,
+      ).then((r) => r.json());
+      if (data.success) {
+        toast.success(`Successfully upgraded to ${planId ?? 'your new'} plan!`);
+        await refreshAgencyPlan();
+      } else {
+        toast.error('Payment not confirmed yet. If you were charged, contact hello@levl1.io');
+      }
+    } catch {
+      toast.error('Could not verify payment. Contact hello@levl1.io if you were charged.');
+    }
+  }, [refreshAgencyPlan]);
+
+  // On return from Cashfree hosted checkout: /settings?order_id=...&plan=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    const planId = params.get('plan');
+    if (orderId) {
+      verifyPayment(orderId, planId);
+      // Strip the payment params from the URL so a refresh doesn't re-verify.
+      params.delete('order_id');
+      params.delete('plan');
+      const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+      window.history.replaceState({}, '', clean);
+    }
+  }, [verifyPayment]);
+
+  async function handleUpgrade(planId: string) {
+    setBillingLoading(planId);
+    try {
+      const res = await fetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Could not create order'); setBillingLoading(null); return; }
+
+      const cf = (window as unknown as Record<string, unknown>).Cashfree;
+      if (cf && typeof cf === 'function') {
+        const cashfree = (cf as (opts: unknown) => { checkout: (opts: unknown) => Promise<{ error?: unknown }> })({
+          mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+        });
+        // _modal keeps the user on this page; the returned promise resolves
+        // when the modal closes, after which we verify server-side.
+        const result = await cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
+        if (result?.error) {
+          toast.error('Payment was cancelled or failed.');
+        } else if (data.orderId) {
+          await verifyPayment(data.orderId, planId);
+        }
+      } else {
+        toast.error('Payment SDK not ready. Please refresh and try again.');
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setBillingLoading(null);
+    }
   }
 
   const BILLING_PLANS = [
     {
-      id: 'starter', name: 'Starter', price: 'Contact us for pricing', interviews: 50,
+      id: 'starter', name: 'Starter', price: '₹15,000/mo', interviews: 50,
       features: ['50 interviews/month', '5 active positions', 'AI question generation', 'Evaluation reports'],
       color: '#4F46E5',
     },
     {
-      id: 'professional', name: 'Professional', price: 'Contact us for pricing', interviews: 200,
+      id: 'professional', name: 'Professional', price: '₹45,000/mo', interviews: 200,
       features: ['200 interviews/month', 'Unlimited positions', 'White-label reports', 'Priority support'],
       color: '#7C3AED', popular: true,
     },
@@ -770,7 +851,7 @@ export default function SettingsPage() {
         )}
 
         <p style={{ fontSize: 11, color: '#94A3B8' }}>
-          Upgrades are set up by our team and invoiced directly
+          Secure payments via Cashfree · GST applicable · Cancel anytime
         </p>
       </Section>
 

@@ -5,6 +5,7 @@ export interface Plan {
   currency:            string
   interviewsPerMonth:  number
   features:            string[]
+  cashfreePlanId:      string
   popular?:            boolean
 }
 
@@ -22,6 +23,7 @@ export const PLANS: Record<string, Plan> = {
       'Evaluation reports',
       'Email support',
     ],
+    cashfreePlanId: 'levl1_starter_monthly',
   },
   professional: {
     id:                 'professional',
@@ -37,6 +39,7 @@ export const PLANS: Record<string, Plan> = {
       'L2 handoff workflow',
       'Priority support',
     ],
+    cashfreePlanId:  'levl1_professional_monthly',
     popular:         true,
   },
 }

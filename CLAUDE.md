@@ -33,9 +33,7 @@ built and owned by Abhijit Majumdar (Avyoma Labs).
 - Auth:        JWT (access token), bcrypt — NO Google OAuth
 - File storage: PostgreSQL text fields for MVP (no Cloudinary yet)
 - Jobs:        pg-boss (background queues — AI scoring, email reminders)
-- Billing:     None in-app (Cashfree removed 2026-10). Upgrades are arranged by
-               the team and invoiced directly; in-app "Upgrade" opens a pre-filled
-               email (lib/shared/request-upgrade.ts). Enterprise billing TBD.
+- Billing:     Cashfree (both products)
 - Hosting:     Render (web service + PostgreSQL)
 - CI/CD:       GitHub → Render auto-deploy on push to main
 
@@ -101,6 +99,9 @@ ANTHROPIC_API_KEY    Claude API key
 RESEND_API_KEY       Resend email API key
 FROM_EMAIL           noreply@mail.levl1.io
 JWT_SECRET           Access token secret (64 char random)
+CASHFREE_APP_ID      Cashfree payments (both products)
+CASHFREE_SECRET_KEY  Cashfree payments
+CASHFREE_ENV         TEST or PROD
 NEXT_PUBLIC_APP_URL  https://levl1.io
 CRON_SECRET          Cron job auth secret
 ELEVENLABS_API_KEY   Voice (Interviews only)

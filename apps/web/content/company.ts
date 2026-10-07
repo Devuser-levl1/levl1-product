@@ -86,6 +86,7 @@ export const security = {
     ['ElevenLabs', 'Interview voice and transcription'],
     ['Twilio', 'WhatsApp messaging'],
     ['Resend', 'Transactional email'],
+    ['Cashfree', 'Payments and billing'],
     ['Render', 'Hosting and managed database'],
   ] as [string, string][],
   contact: `Security questions or a vendor questionnaire? Email ${CONTACT_EMAIL}.`,

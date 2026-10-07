@@ -218,14 +218,14 @@ Next.js redirect sources match exactly, so `/hire` does **not** catch `/hire/log
 
 ## 11. Phase B results (2026-10-07, branch `feat/website-restructure`)
 
-**Follow-up approved and done:** fonts are self-hosted via `@fontsource` (same family names, so product pages are unchanged), and **Cashfree is removed entirely** (see the PR description for the billing implications).
+**Follow-up approved and done:** fonts are self-hosted via `@fontsource` (same family names, so product pages are unchanged). Cashfree was briefly removed, then **restored unchanged** at your request: every Cashfree file matches `main`, and the SDK script is back in the root layout.
 
 **Lighthouse** (mobile preset, local production build, median of 3 runs):
 
 | Page | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|
-| `/` | 91 | 100 | 100 | 100 | 3.4 s | 41 ms | 0.001 |
-| `/products/screen` | 90 | 100 | 100 | 100 | 3.5 s | 36 ms | 0.019 |
-| `/products/hirepilot` | 95 | 100 | 100 | 100 | 2.8 s | 19 ms | 0.014 |
+| `/` | 95 | 100 | 100 | 100 | 2.9 s | 37 ms | 0.001 |
+| `/products/screen` | 90 | 100 | 100 | 100 | 3.5 s | 43 ms | 0.019 |
+| `/products/hirepilot` | 91 | 100 | 100 | 100 | 3.5 s | 31 ms | 0.014 |
 
-**Still TODO, rendering nothing until confirmed:** customer proof slots (home, screen, hirepilot, agencies, enterprise); security facts for encryption at rest, a retention policy, model training and data residency; the `DEMO_LEADS_TO_EMAIL` env var on Render; real screenshots to replace the recreated mockups (optional); an enterprise billing flow (`lib/shared/request-upgrade.ts`).
+**Still TODO, rendering nothing until confirmed:** customer proof slots (home, screen, hirepilot, agencies, enterprise); security facts for encryption at rest, a retention policy, model training and data residency; the `DEMO_LEADS_TO_EMAIL` env var on Render; real screenshots to replace the recreated mockups (optional).

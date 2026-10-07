@@ -60,6 +60,8 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* Cashfree Payment SDK */}
+        <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />
       </head>
       <body>
         <ServiceWorkerRegistrar />
