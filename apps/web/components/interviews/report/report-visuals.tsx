@@ -398,3 +398,72 @@ export function MustHavePanel({ items }: { items: MustHaveShape[] | null | undef
     </div>
   )
 }
+
+// ── Logistics / early filters (Screen) ─────────────────────────────────────
+// Recruiter-only. Separate axis from competency / communication / culture /
+// integrity — the "can this even work?" check a recruiter reads FIRST.
+type LgVerdict = 'fit' | 'resolved' | 'gap' | 'mismatch' | 'recorded' | 'unknown'
+type CompVerdictT = 'below' | 'within' | 'above' | 'recorded' | 'not_disclosed'
+export interface LogisticsShape {
+  location: { verdict: LgVerdict; summary: string }
+  notice: { verdict: LgVerdict; summary: string }
+  comp: { verdict: CompVerdictT; summary: string }
+  workAuth: { verdict: LgVerdict; summary: string }
+  hardMismatch: boolean
+  completed: boolean
+}
+
+const LG_TONE: Record<string, { label: string; fg: string; bg: string }> = {
+  fit: { label: 'Fits', fg: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  resolved: { label: 'Resolved', fg: '#4F46E5', bg: 'rgba(79,70,229,0.10)' },
+  gap: { label: 'Gap', fg: '#D97706', bg: 'rgba(245,158,11,0.12)' },
+  mismatch: { label: 'Mismatch', fg: '#DC2626', bg: 'rgba(239,68,68,0.10)' },
+  recorded: { label: 'Recorded', fg: '#475569', bg: '#F1F5F9' },
+  unknown: { label: 'Not established', fg: '#94A3B8', bg: '#F8FAFC' },
+  within: { label: 'Within band', fg: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  below: { label: 'Below band', fg: '#4F46E5', bg: 'rgba(79,70,229,0.10)' },
+  above: { label: 'Above band', fg: '#D97706', bg: 'rgba(245,158,11,0.12)' },
+  not_disclosed: { label: 'Not shared', fg: '#94A3B8', bg: '#F8FAFC' },
+}
+
+export function LogisticsPanel({ logistics }: { logistics: LogisticsShape | null | undefined }) {
+  if (!logistics) return null
+  const rows: { key: string; title: string; verdict: string; summary: string; sensitive?: boolean }[] = [
+    { key: 'location', title: 'Location & work mode', ...logistics.location },
+    { key: 'notice', title: 'Notice & start date', ...logistics.notice },
+    { key: 'comp', title: 'Compensation expectation', ...logistics.comp, sensitive: true },
+    { key: 'workAuth', title: 'Work authorization', ...logistics.workAuth },
+  ]
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${logistics.hardMismatch ? '#FECACA' : '#E2E8F0'}`, borderRadius: 14, padding: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Logistics</h3>
+        {logistics.hardMismatch
+          ? <span style={{ fontSize: 12.5, fontWeight: 800, color: '#DC2626', background: 'rgba(239,68,68,0.10)', borderRadius: 100, padding: '4px 12px' }}>Hard mismatch</span>
+          : <span style={{ fontSize: 12.5, fontWeight: 800, color: '#059669', background: 'rgba(16,185,129,0.10)', borderRadius: 100, padding: '4px 12px' }}>No hard blockers</span>}
+        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Early filters · recruiter-only · separate from competency</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>
+        {logistics.hardMismatch ? 'At least one non-negotiable logistics constraint was not resolved — check before reading the competency assessment.' : 'Practical fit as discussed with the candidate, compared against this position’s constraints.'}
+        {!logistics.completed && ' The segment was cut short, so some items may be missing.'}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rows.map((r) => {
+          const t = LG_TONE[r.verdict] ?? LG_TONE.unknown
+          return (
+            // Comp never prints/exports with the report (reports get forwarded to clients).
+            <div key={r.key} className={r.sensitive ? 'no-print' : undefined} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${r.verdict === 'mismatch' ? '#FECACA' : '#F1F5F9'}`, borderRadius: 10, background: r.verdict === 'mismatch' ? '#FFFBFB' : '#fff' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {r.title}{r.sensitive && <span style={{ fontSize: 10, color: '#7C3AED', background: 'rgba(124,58,237,0.08)', borderRadius: 100, padding: '1px 7px', letterSpacing: 0, textTransform: 'none' }}>Sensitive · don&apos;t share</span>}
+                </div>
+                <div style={{ fontSize: 13.5, color: '#0F172A', marginTop: 3, lineHeight: 1.5 }}>{r.summary}</div>
+              </div>
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: t.fg, background: t.bg, borderRadius: 100, padding: '3px 10px', fontSize: 11.5 }}>{t.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

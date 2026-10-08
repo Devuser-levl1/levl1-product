@@ -18,6 +18,7 @@ import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
+import { logisticsIntro, LOGISTICS_MAX_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -113,6 +114,14 @@ const TR_BRIEF = [
   'Noted. Let us keep going.',
 ] as const
 
+// Short connectors after a confirm-back (the restatement carries the substance).
+const TR_CONFIRM_NEXT = [
+  'Let me move us on.',
+  'Next one.',
+  'Let us keep going.',
+  'On to something different.',
+] as const
+
 const TR_SECTION: Partial<Record<string, readonly string[]>> = {
   scenario: [
     'I would like to shift gears now and ask you a few scenario-based questions.',
@@ -193,6 +202,7 @@ interface EvalResult {
   followUpQuestion?: string
   generateDynamic: boolean
   suggestedTransition: string
+  confirmBack?: string   // one-sentence restatement of a substantive answer (active mirroring)
 }
 
 /* ── Question bank ──────────────────────────────────────────────── */
@@ -433,6 +443,7 @@ export default function InterviewPage() {
   const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
   const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
   const stuckActiveRef        = useRef(false)    // Bug A: gave the one diluted hint; next weak reply → move on
+  const lastConfirmBackRef    = useRef(false)    // mirroring: never confirm-back on consecutive turns
   const followUpCountRef      = useRef(0)        // I-P0-3: follow-ups asked on this question (cap 3)
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
@@ -963,7 +974,10 @@ export default function InterviewPage() {
     candidateSpokeRef.current = true   // typed input is genuine input
     noInputStrikesRef.current = 0
     setSttWarning(null)
-    captureResponse(text)
+    // Warm-up / logistics segments own their replies (typed ones too).
+    const segmentCb = warmupCaptureRef.current
+    if (segmentCb) segmentCb(text)
+    else captureResponse(text)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textInputValue])
 
@@ -1211,6 +1225,9 @@ export default function InterviewPage() {
           previousResponses: prevQ,
           dynamicIntensity:  position?.dynamicQuestionIntensity ?? 'standard',
           followUpCount:     followUpCountRef.current,  // I-P0-3 depth cap
+          // Recent interviewer lines → the brain varies its phrasing instead of
+          // repeating stock follow-ups (does not change the follow-up budget).
+          recentAiLines:     transcriptRef.current.filter(e => e.speaker === 'ai').slice(-8).map(e => e.text),
         }),
       })
       ev = await res.json()
@@ -1282,11 +1299,23 @@ export default function InterviewPage() {
       startListening()
     } else {
       // Speak quality-based transition — section changes get their own preamble in moveToQuestion
-      if (!isSectionChange) {
-        const transText = (ev.score ?? 5) >= 6 ? pick(TR_GOOD) : pick(TR_BRIEF)
-        addTranscript({ speaker: 'ai', text: transText, type: 'transition' })
-        await speakText(transText)
+      // Active mirroring: on a substantive answer, briefly confirm it back before
+      // moving on — but not on back-to-back turns, so it never feels scripted.
+      const confirmBack = (ev.confirmBack ?? '').trim()
+      if (confirmBack && wordCount >= 30 && !lastConfirmBackRef.current) {
+        lastConfirmBackRef.current = true
+        const text = isSectionChange ? confirmBack : `${confirmBack} ${pick(TR_CONFIRM_NEXT)}`
+        addTranscript({ speaker: 'ai', text, type: 'transition' })
+        await speakText(text)
         await delay(400)
+      } else {
+        lastConfirmBackRef.current = false
+        if (!isSectionChange) {
+          const transText = (ev.score ?? 5) >= 6 ? pick(TR_GOOD) : pick(TR_BRIEF)
+          addTranscript({ speaker: 'ai', text: transText, type: 'transition' })
+          await speakText(transText)
+          await delay(400)
+        }
       }
       await moveToQuestion(nextIdx)
     }
@@ -1382,7 +1411,9 @@ export default function InterviewPage() {
       company:          position.company,
       interviewDate:    new Date().toISOString().slice(0, 10),
       duration:         position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES,
-      transcript:       transcriptRef.current,
+      // Logistics (comp / notice / work-auth) is evaluated separately and is
+      // recruiter-only — never fed into competency scoring.
+      transcript:       transcriptRef.current.filter(e => e.segment !== 'logistics'),
       questionResponses: responsesRef.current,
       resumeText:       '',
       techStack:        position.techStack ?? [],
@@ -1635,6 +1666,63 @@ export default function InterviewPage() {
     })
   }, [startListening, stopListening])
 
+  /* ── Logistics / filtering segment ────────────────────────── */
+  // Resolves location/work-mode (negotiated against the position's constraints),
+  // notice/start, comp expectation and work authorization. The server holds the
+  // constraints (the comp band never reaches the browser) and drives each turn.
+  // Hard-capped (~2.5 min / 7 replies); reuses the warm-up reply routing so Q&A
+  // silence timers stay off. Build-01 termination handling applies to every
+  // reply; the time-up gate still wins. Demo runs skip it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const runLogistics = useCallback(async (): Promise<'done' | 'ended'> => {
+    if (isDemoRef.current || wrapUpFiredRef.current) return 'done'
+    warmupActiveRef.current = true
+    const turns: SegmentTurn[] = []
+    const startedAt = Date.now()
+    const finalize = (completed: boolean) => {
+      if (!turns.some(t => t.speaker === 'candidate')) return
+      fetch('/api/interview/logistics', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId, action: 'finalize', turns, completed }),
+      }).catch(() => {})
+    }
+    const say = async (text: string) => {
+      turns.push({ speaker: 'ai', text })
+      addTranscript({ speaker: 'ai', text, type: 'transition', segment: 'logistics' })
+      await speakText(text)
+    }
+
+    await say(logisticsIntro())
+    let silent = 0
+    while (!wrapUpFiredRef.current) {
+      const reply = await awaitWarmupReply(20000)
+      if (wrapUpFiredRef.current) break
+      const term = detectTerminationIntent(reply)
+      if (term) { finalize(false); await endByTermination(term.reason); return 'ended' }
+      if (reply) {
+        silent = 0
+        turns.push({ speaker: 'candidate', text: reply })
+        addTranscript({ speaker: 'candidate', text: reply, type: 'transition', segment: 'logistics' })
+      } else silent += 1
+      const wrapNow = silent >= 2 || Date.now() - startedAt > LOGISTICS_MAX_MS
+      setPhase('processing')
+      let next: { say?: string; done?: boolean } = {}
+      try {
+        const r = await fetch('/api/interview/logistics', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ interviewId, action: 'turn', turns, wrapNow }),
+        })
+        if (r.ok) next = await r.json()
+      } catch { /* fall through — never block the interview */ }
+      if (wrapUpFiredRef.current) break
+      if (!next.say) break
+      await say(next.say)
+      if (next.done || wrapNow) break
+    }
+    finalize(!wrapUpFiredRef.current)
+    return wrapUpFiredRef.current ? 'ended' : 'done'
+  }, [interviewId, addTranscript, speakText, awaitWarmupReply, endByTermination, setPhase])
+
   // Three-beat, time-boxed warm-up, then a firm transition into the questions.
   // ≤3 exchanges / ~60s. Reactive: beat 2 conditions on the candidate's reply.
   // Build-01 termination handling is preserved even here.
@@ -1681,6 +1769,12 @@ export default function InterviewPage() {
     const term2 = detectTerminationIntent(reply2)
     if (term2) { warmupActiveRef.current = false; warmupCaptureRef.current = null; await endByTermination(term2.reason); return }
 
+    // Logistics / filtering segment (~2–3 min) — after warm-up, before Q&A.
+    if (await runLogistics() === 'ended' || wrapUpFiredRef.current) {
+      warmupActiveRef.current = false; warmupCaptureRef.current = null
+      return
+    }
+
     // Beat 3 — signposted, firm transition into the evaluation.
     const transition = buildTransition()
     addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
@@ -1691,7 +1785,7 @@ export default function InterviewPage() {
     warmupCaptureRef.current = null
     await delay(600)
     await moveToQuestion(0)
-  }, [candidate, position, addTranscript, speakText, awaitWarmupReply, moveToQuestion, endByTermination])
+  }, [candidate, position, addTranscript, speakText, awaitWarmupReply, moveToQuestion, endByTermination, runLogistics])
 
   /* ── Fraud recording (interview-long; batch-diarized post-interview) ── */
   const startFraudRecording = useCallback(async () => {

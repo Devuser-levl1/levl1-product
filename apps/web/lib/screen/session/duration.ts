@@ -14,6 +14,10 @@ export const PRODUCTION_INTERVIEW_MINUTES =
   Math.max(8, Math.min(60, Number(process.env.SCREEN_PRODUCTION_INTERVIEW_MINUTES) || 18))
 
 // Budget split (informational; the flow enforces the cap via the time-up gate).
-// ~14–15 min depth Q&A (4–5 questions, full adaptive follow-ups) + ~2–3 min Likert.
-export const QA_SEGMENT_MINUTES = 15
+// ~1 min warm-up + ≤2.5 min logistics (hard-capped in lib/screen/logistics/
+// prompts.ts) + ~12 min depth Q&A (4–5 questions, adaptive follow-ups) +
+// ~2–3 min Likert. The logistics segment is carved out of Q&A time — the
+// envelope itself does not grow.
+export const LOGISTICS_SEGMENT_MINUTES = 2.5
+export const QA_SEGMENT_MINUTES = 12
 export const CULTURE_FIT_SEGMENT_MINUTES = 3

@@ -279,6 +279,11 @@ model Position {
   // Per-position invite email override (null = use the agency template).
   inviteEmailSubject String?
   inviteEmailBody    String?   @db.Text
+  // Logistics constraints the interviewer negotiates against (Screen-scoped).
+  // Shape: lib/screen/logistics/config.ts. null/missing keys = "not specified"
+  // → the segment just records that filter. The comp band is RECRUITER-ONLY:
+  // it is never sent to the model or to any candidate-facing response.
+  logistics          Json?
   voiceAccent        String?
   softSkillWeightage Json?
   agencyId           String?
@@ -390,6 +395,7 @@ model Interview {
   cultureFit      CultureFitResult?
   liveState       InterviewLiveState?
   recording       InterviewRecording?
+  logistics       InterviewLogistics?
 }
 
 // ── Likert culture/values-fit (Build 08) — Screen-scoped ───────────────────
@@ -406,6 +412,26 @@ model CultureFitResult {
   fitScore    Int       // 0–100, NOT blended into competency
   summary     String    @db.Text
   createdAt   DateTime  @default(now())
+}
+
+// ── Logistics / filtering segment result (Screen-scoped) ───────────────────
+// One row per interview: what the candidate said about location/work-mode,
+// notice/start, comp expectation and work authorization, plus server-computed
+// fit verdicts against the position's constraints. A SEPARATE axis — never
+// blended into competency. Kept in its own table (not on Interview/Report) so
+// the sensitive comp expectation is only reachable through the recruiter-
+// gated logistics endpoint.
+model InterviewLogistics {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  // { location, notice, comp, workAuth } — see lib/screen/logistics/result.ts
+  result      Json
+  // Snapshot of the constraints the verdicts were computed against.
+  constraints Json?
+  hardMismatch Boolean  @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // ── Integrity Layer, Tier 1 (Build 01-A) — Screen-scoped ───────────────────

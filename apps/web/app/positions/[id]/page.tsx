@@ -10,6 +10,8 @@ import {
 import toast from 'react-hot-toast'
 import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
 import { MustHaveEditor } from '@/components/positions/MustHaveEditor'
+import { LogisticsEditor } from '@/components/positions/LogisticsEditor'
+import { readLogisticsConfig, type LogisticsConfig } from '@/lib/screen/logistics/config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ interface Position {
   techStack: string[]
   goodToHave: string[]
   mustHaves?: string[]
+  logistics?: LogisticsConfig | null
   jdText?: string
   status: string
   techLeadApproved: boolean
@@ -196,6 +199,22 @@ export default function PositionDetailPage() {
   const [mhDraft, setMhDraft]   = useState<string[] | null>(null)
   const [mhSaving, setMhSaving] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [lgDraft, setLgDraft]   = useState<LogisticsConfig | null>(null)
+  const [lgSaving, setLgSaving] = useState(false)
+  const saveLogistics = async () => {
+    if (!lgDraft) return
+    setLgSaving(true)
+    try {
+      const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logistics: lgDraft }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      setPosition(p => p ? { ...p, logistics: data.logistics ?? lgDraft } : p)
+      setLgDraft(null)
+      toast.success('Logistics filters saved')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally { setLgSaving(false) }
+  }
   const saveMustHaves = async () => {
     if (!mhDraft) return
     setMhSaving(true)
@@ -539,6 +558,23 @@ export default function PositionDetailPage() {
                   This position&apos;s questions were generated before this change — regenerate questions so every new must-have gets a dedicated question. Reports still rate each must-have either way.
                 </p>
               )}
+            </div>
+
+            {/* Logistics filters — negotiated / recorded early in the interview */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Logistics Filters</h3>
+                  <p style={{ fontSize: 12.5, color: '#64748B', margin: '4px 0 0' }}>Resolved in a short segment right after the warm-up. Blank = just record the candidate&apos;s answer.</p>
+                </div>
+                {lgDraft && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setLgDraft(null)} disabled={lgSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
+                    <button className="btn-primary" onClick={saveLogistics} disabled={lgSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>{lgSaving ? 'Saving…' : 'Save'}</button>
+                  </div>
+                )}
+              </div>
+              <LogisticsEditor value={lgDraft ?? readLogisticsConfig(position.logistics)} onChange={setLgDraft} />
             </div>
 
             {/* Interview settings */}

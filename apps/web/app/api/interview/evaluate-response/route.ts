@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
     // How many follow-ups already asked on THIS question (Part 3a depth cap).
     const followUpCount: number           = Math.max(0, Number(body.followUpCount) || 0)
     const followUpsLeft                   = Math.max(0, MAX_FOLLOWUPS - followUpCount)
+    // Recent interviewer lines — so phrasing can be varied, not repeated.
+    const recentAiLines: string[] = Array.isArray(body.recentAiLines)
+      ? body.recentAiLines.filter((l: unknown): l is string => typeof l === 'string').slice(-8).map((l: string) => l.slice(0, 200))
+      : []
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'No API key' }, { status: 500 })
@@ -56,12 +60,18 @@ export async function POST(req: NextRequest) {
         '- When you DO follow up, spend it on the SINGLE highest-signal gap in the answer — the most important weakness, ambiguity, or unverified claim — not on whatever is easiest to ask. Do not re-ask what was already answered.\n' +
         '- Probe role-relevant EDGE CASES to test depth: for a coding/design answer, push on failure modes, error handling, scale, concurrency, or edge inputs; for a behavioural answer, push on trade-offs, what they would do differently, or how they handled conflict. Pick the one that most reveals the candidate\'s true depth.\n' +
         '- Do NOT accept a vague answer by drilling endlessly, and do NOT exceed the budget even if the answer is weak — record the gap in keyPointsMissed and move on.\n\n' +
-        'FOLLOW-UP QUESTION PHRASING (when shouldAskFollowUp is true):\n' +
-        '- Strong answer: "You mentioned [X] — how did that play out in practice?" or "Interesting. What would you do differently in hindsight?"\n' +
-        '- Vague or incomplete: "Can you walk me through a specific example of that?" or "That makes sense at a high level — can you get more concrete?"\n' +
-        '- Edge-case probe: "What happens when [edge condition]?" or "How would that hold up under [scale / concurrency / failure]?"\n' +
-        '- Off-topic: "I appreciate that context. Let me bring it back to [specific aspect of the question]."\n' +
-        '- Candidate struggled: "No worries — let me come at it from a different angle." or "Fair enough — let us move on and come back to this if time allows."\n\n' +
+        'FOLLOW-UP QUESTION PHRASING (when shouldAskFollowUp is true) — intents, NOT scripts:\n' +
+        '- Strong answer → ask how it played out in practice, or what they would change in hindsight.\n' +
+        '- Vague or incomplete → ask for one specific, concrete example.\n' +
+        '- Edge-case probe → ask what happens under a specific failure, scale, or concurrency condition.\n' +
+        '- Off-topic → acknowledge briefly and steer back to the specific aspect of the question.\n' +
+        '- Candidate struggled → ease off gently (one simpler angle at most), never stack angles.\n' +
+        '- VARY YOUR WORDING. Write each follow-up fresh, anchored in the candidate\'s actual words. Do NOT reuse openers or stock phrases that appear in the RECENT INTERVIEWER LINES below (e.g. if "walk me through" or "can you get more concrete" was used recently, phrase it differently). Variety of phrasing only — this does NOT change how many follow-ups you ask.\n\n' +
+        'CONFIRM-BACK (active mirroring):\n' +
+        '- When the answer is SUBSTANTIVE (concrete content — a real example, design, decision, or reasoning; not a one-liner, "I don\'t know", or small talk), briefly restate its core in ONE natural sentence so the candidate feels heard, e.g. "So you sharded by tenant and moved hot keys to a separate cache — got it."\n' +
+        '- If you ARE asking a follow-up, open followUpQuestion with that one-sentence restatement, then ask.\n' +
+        '- If you are NOT asking a follow-up, put the restatement in confirmBack (it is spoken before moving on).\n' +
+        '- For non-substantive answers, set confirmBack to "" and do not restate. Never restate on every turn; never sound robotic; never praise ("great answer") or judge; vary the opener ("So…", "If I\'ve got that right…", "Okay — …").\n\n' +
         'RELEVANCE SCORE (relevanceScore 0-10) — how well the response addresses the question:\n' +
         '- 9-10: Directly and comprehensively addresses the question asked\n' +
         '- 7-8: Mostly relevant with only minor tangents\n' +
@@ -76,7 +86,9 @@ export async function POST(req: NextRequest) {
           `Expected key points: ${expectedKeyPoints.join(', ')}\n` +
           `Candidate response: "${candidateResponse}"\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
-          `${budgetLine}${prevCtx}\n\n` +
+          `${budgetLine}${prevCtx}` +
+          (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
+          `\n\n` +
           `Return ONLY this JSON:\n` +
           `{\n` +
           `  "score": <integer 0-10>,\n` +
@@ -87,7 +99,8 @@ export async function POST(req: NextRequest) {
           `  "shouldAskFollowUp": true|false,\n` +
           `  "followUpQuestion": "optional — only if shouldAskFollowUp is true",\n` +
           `  "generateDynamic": true|false,\n` +
-          `  "suggestedTransition": "brief neutral phrase before moving on"\n` +
+          `  "suggestedTransition": "brief neutral phrase before moving on",\n` +
+          `  "confirmBack": "one-sentence restatement of a substantive answer when NOT following up, else empty string"\n` +
           `}`,
       }],
     })

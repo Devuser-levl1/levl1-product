@@ -154,6 +154,9 @@ export interface TranscriptEntry {
   text: string
   questionId?: string
   type: 'intro' | 'preset' | 'dynamic' | 'followup' | 'transition' | 'closing'
+  // Logistics/filtering segment (comp, notice, work-auth) — kept OUT of the
+  // competency-scoring payload; evaluated separately and recruiter-only.
+  segment?: 'logistics'
 }
 
 export interface QuestionResponse {

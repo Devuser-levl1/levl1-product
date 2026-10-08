@@ -7,7 +7,7 @@ import { useAppStore, CandidateReport } from '@/store/appStore'
 import toast from 'react-hot-toast'
 import {
   CompetencyRadar, CommunicationDial, SkillEvidenceList, IntegrityPanel,
-  CultureFitPanel, CultureFitShape, MustHavePanel, MustHaveShape,
+  CultureFitPanel, CultureFitShape, MustHavePanel, MustHaveShape, LogisticsPanel, LogisticsShape,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -55,6 +55,19 @@ export default function ReportPage() {
 
   const report = reports[interviewId]
   const candidate = candidates.find((c) => c.interviewId === interviewId)
+
+  // Logistics (early filters) — recruiter-only endpoint because it carries the
+  // comp expectation; silently absent for anyone else (e.g. demo viewers).
+  const [logistics, setLogistics] = useState<LogisticsShape | null>(null)
+  useEffect(() => {
+    if (!interviewId) return
+    let alive = true
+    fetch(`/api/reports/interview/${interviewId}/logistics`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.logistics) setLogistics(d.logistics as LogisticsShape) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [interviewId])
 
   useEffect(() => {
     if (report || !interviewId) return
@@ -194,6 +207,9 @@ export default function ReportPage() {
           </div>
           {R.professionalSummary && <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65, margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>{R.professionalSummary}</p>}
         </section>
+
+        {/* R1a — Logistics: early filters (location, notice, comp, work-auth) */}
+        <LogisticsPanel logistics={logistics} />
 
         {/* R1b — Must-have requirements: the pass/fail lens on non-negotiables */}
         <MustHavePanel items={R.mustHaveAssessment} />

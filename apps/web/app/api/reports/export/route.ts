@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 import { MUST_HAVE_LABEL, type MustHaveResult } from '@/lib/screen/recruiter/must-haves'
+import { fmtMoney, type LogisticsResult } from '@/lib/screen/logistics/result'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
       },
       position: { select: { title: true, company: true } },
       cultureFit: { select: { fitScore: true } },
+      logistics: { select: { result: true, hardMismatch: true } },
     },
     orderBy: { completedAt: 'desc' },
     take: MAX_ROWS,
@@ -65,7 +67,9 @@ export async function GET(req: NextRequest) {
   const header = [
     'Candidate', 'Email', 'Position', 'Company', 'Interview date', 'Recommendation',
     'Competency score (0-100)', 'Communication score (0-100)', 'CEFR level', 'Culture-fit score (0-100)',
-    'Integrity review', 'Integrity events', 'Must-haves met', 'Must-have detail', 'Duration (min)', 'Outcome',
+    'Integrity review', 'Integrity events', 'Must-haves met', 'Must-have detail',
+    'Logistics hard mismatch', 'Work arrangement', 'Notice / start', 'Comp expectation', 'Comp vs band', 'Work authorization',
+    'Duration (min)', 'Outcome',
   ]
   const rows = interviews.map((i) => {
     const r = i.candidate.report
@@ -88,6 +92,7 @@ export async function GET(req: NextRequest) {
       integrity.totalEvents,
       mh.length ? `${mh.filter((m) => m.status === 'met').length}/${mh.length}` : '',
       mh.map((m) => `${m.requirement}: ${MUST_HAVE_LABEL[m.status] ?? m.status}`).join('; '),
+      ...logisticsCells(i.logistics),
       durationMinutes(i),
       outcomeLabel(i.terminationReason),
     ]
@@ -104,6 +109,23 @@ export async function GET(req: NextRequest) {
     },
   })
 }
+
+// Logistics (recruiter-only; this export is agency-gated). Blank when the
+// segment didn't run (demo, older interviews, cut short before any answer).
+function logisticsCells(l: { result: unknown; hardMismatch: boolean } | null): (string | number)[] {
+  if (!l) return ['', '', '', '', '', '']
+  const r = l.result as Partial<LogisticsResult>
+  const comp = r.comp
+  return [
+    l.hardMismatch ? 'Yes' : 'No',
+    r.location?.summary ?? '',
+    r.notice?.summary ?? '',
+    comp?.asSaid ?? (comp?.amount != null ? fmtMoney(comp.amount, comp.currency ?? null, comp.period ?? null) : ''),
+    comp ? COMP_LABEL[comp.verdict] ?? comp.verdict : '',
+    r.workAuth?.summary ?? '',
+  ]
+}
+const COMP_LABEL: Record<string, string> = { within: 'Within band', above: 'Above band', below: 'Below band', recorded: 'No band set', not_disclosed: 'Not shared' }
 
 // RFC 4180 quoting + spreadsheet formula-injection guard (=, +, -, @, tab, CR).
 function cell(v: unknown): string {

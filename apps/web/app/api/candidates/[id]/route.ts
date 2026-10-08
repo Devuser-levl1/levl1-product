@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+// Recruiter-only, agency-scoped: the payload includes the position (with its
+// recruiter-only comp band) and the report.
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const candidate = await prisma.candidate.findUnique({
-      where: { id: params.id },
+    const session = getSessionFromRequest(req)
+    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const candidate = await prisma.candidate.findFirst({
+      where: { id: params.id, position: { agencyId: session.agencyId } },
       include: {
         position: true,
         interview: true,
@@ -30,6 +35,10 @@ const ALLOWED_CANDIDATE_FIELDS = new Set([
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
+    const session = getSessionFromRequest(req)
+    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const owned = await prisma.candidate.findFirst({ where: { id: params.id, position: { agencyId: session.agencyId } }, select: { id: true } })
+    if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const body = await req.json()
 
     // Strip any keys not in the allowlist — prevents overwriting positionId,

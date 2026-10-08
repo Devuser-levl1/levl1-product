@@ -3,14 +3,18 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
+import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
+    // Agency-scoped and session-required: positions carry recruiter-only data
+    // (logistics comp band). Unauthenticated callers used to get every agency's.
     const session = getSessionFromRequest(req)
+    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
     const positions = await prisma.position.findMany({
-      where: session?.agencyId ? { agencyId: session.agencyId } : undefined,
+      where: { agencyId: session.agencyId },
       include: {
         questionSet: true,
         candidates: { select: { id: true, status: true, score: true } },
@@ -66,7 +70,7 @@ export async function POST(req: NextRequest) {
       'jdApprovedBy', 'jdApprovedAt', 'techLeadApproved', 'hrApproved',
       'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
-      'softSkillWeightage', 'clientId', 'mustHaves',
+      'softSkillWeightage', 'clientId', 'mustHaves', 'logistics',
     ])
     const data: Record<string, unknown> = { agencyId: agencyId ?? body.agencyId }
     for (const [k, v] of Object.entries(body)) {
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
     // unaffected.
     data.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
     if ('mustHaves' in data) data.mustHaves = sanitizeMustHaves(data.mustHaves)
+    if ('logistics' in data) data.logistics = sanitizeLogisticsConfig(data.logistics)
 
     const position = await prisma.position.create({ data: data as never })
     return NextResponse.json(position, { status: 201 })

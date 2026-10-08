@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
+import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'techLeadApproved', 'hrApproved', 'jdApprovedAt', 'jdApprovedBy',
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
       'dynamicIntensity', 'voiceAccent', 'wonCandidateId', 'wonNotes',
-      'lostReason', 'lostNotes', 'closedAt', 'mustHaves',
+      'lostReason', 'lostNotes', 'closedAt', 'mustHaves', 'logistics',
     ])
     const safe: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
@@ -54,6 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // set 20/45/60.
     if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
     if ('mustHaves' in safe) safe.mustHaves = sanitizeMustHaves(safe.mustHaves)
+    if ('logistics' in safe) safe.logistics = sanitizeLogisticsConfig(safe.logistics)
 
     const position = await prisma.position.update({
       where: { id: params.id },

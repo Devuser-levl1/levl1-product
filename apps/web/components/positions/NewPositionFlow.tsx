@@ -2,6 +2,8 @@
 
 import { useState, KeyboardEvent } from "react";
 import { MustHaveEditor } from "./MustHaveEditor";
+import { LogisticsEditor } from "./LogisticsEditor";
+import type { LogisticsConfig } from "@/lib/screen/logistics/config";
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
@@ -269,6 +271,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [mustHaveTech,    setMustHaveTech]    = useState<string[]>([]);
   const [niceToHaveTech,  setNiceToHaveTech]  = useState<string[]>([]);
   const [mustHaves,       setMustHaves]       = useState<string[]>([]);
+  const [logistics,       setLogistics]       = useState<LogisticsConfig>({});
   const [primaryDomain,   setPrimaryDomain]   = useState("Backend Engineering");
   const [domainContext,   setDomainContext]   = useState("Fintech");
   const [companyStage,    setCompanyStage]    = useState("Growth Stage");
@@ -505,7 +508,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: positionTitle, company, department, experienceLevel, roleType,
-            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves,
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics,
             domainContext, workMode, interviewDuration: 30,
             dynamicIntensity, voiceAccent: voiceAccent ?? "american",
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
@@ -562,7 +565,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: positionTitle, company, department, experienceLevel, roleType,
-          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves,
+          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics,
           domainContext, workMode, interviewDuration: 30,
           dynamicIntensity, voiceAccent: voiceAccent ?? "american",
           jdText: finalJD,
@@ -933,6 +936,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <FieldLabel label="Must-have requirements" hint="Non-negotiables — each is assessed directly and shown as met / not met in the report" />
                 <MustHaveEditor value={mustHaves} onChange={setMustHaves} suggestions={mustHaveTech} />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <FieldLabel label="Logistics filters (optional)" hint="The interviewer resolves these early — leave blank and it just records the candidate's answer" />
+                <LogisticsEditor value={logistics} onChange={setLogistics} />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
