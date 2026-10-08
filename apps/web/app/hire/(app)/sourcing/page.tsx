@@ -1,164 +1,105 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { SOURCING_BOARDS, getSourcingBoard } from '@/lib/hire/sourcing-boards'
 
-interface Board { board: string; label: string; tier: string; mode: string; comingSoon: boolean; inbound: 'live' | 'scaffold' | null; connected: boolean; canPull: boolean }
 interface Job { id: string; title: string }
-interface PostResult { board: string; status: string; externalUrl?: string | null; error?: string; payload?: string }
-interface ImportRow { board: string; label: string; pulled: number; imported: number; duplicates: number; note?: string }
+interface BoardStrings { key: string; label: string; boolean: string; filters: string[] }
 
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 20 }
-const H: React.CSSProperties = { fontSize: 13, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }
 const sel: React.CSSProperties = { padding: '8px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13.5, background: '#fff' }
+const btn: React.CSSProperties = { padding: '9px 16px', borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }
+const ghost: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }
 
-const STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  posted: { label: 'Posted', color: '#059669', bg: 'rgba(5,150,105,0.1)' },
-  manual_pending: { label: 'Pending — finish on board', color: '#D97706', bg: 'rgba(245,158,11,0.12)' },
-  pending: { label: 'Pending', color: '#D97706', bg: 'rgba(245,158,11,0.12)' },
-  failed: { label: 'Failed', color: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
-}
+// Indeed first, then the other boards we have a search template for.
+const ORDER = SOURCING_BOARDS.map((b) => b.key)
 
 export default function SourcingPage() {
-  const [boards, setBoards] = useState<Board[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
   const [jobId, setJobId] = useState('')
-  const [outSel, setOutSel] = useState<Set<string>>(new Set())
-  const [inSel, setInSel] = useState<Set<string>>(new Set())
-  const [importJobId, setImportJobId] = useState('')
-  const [posting, setPosting] = useState(false)
-  const [pulling, setPulling] = useState(false)
-  const [results, setResults] = useState<PostResult[] | null>(null)
-  const [imported, setImported] = useState<{ perBoard: ImportRow[]; totals: { pulled: number; imported: number; duplicates: number } } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [strings, setStrings] = useState<BoardStrings[] | null>(null)
+  const [location, setLocation] = useState('')
+  const [err, setErr] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
 
-  const load = useCallback(() => {
-    fetch('/api/hire/sourcing').then((r) => (r.ok ? r.json() : null)).then((d) => {
-      if (!d) return
-      setBoards(d.boards); setJobs(d.jobs)
-      if (d.jobs[0]) { setJobId((j) => j || d.jobs[0].id) }
-      const connected = d.boards.filter((b: Board) => b.connected && !b.comingSoon).map((b: Board) => b.board)
-      setOutSel(new Set(connected))
-      setInSel(new Set(d.boards.filter((b: Board) => b.connected && b.canPull).map((b: Board) => b.board)))
+  const loadJobs = useCallback(() => {
+    fetch('/api/hire/jobs').then((r) => (r.ok ? r.json() : [])).then((d) => {
+      const list: Job[] = Array.isArray(d) ? d.map((j: { id: string; title: string }) => ({ id: j.id, title: j.title })) : []
+      setJobs(list)
+      if (list[0]) setJobId((j) => j || list[0].id)
     }).catch(() => {})
   }, [])
-  useEffect(() => { load() }, [load])
+  useEffect(() => { loadJobs() }, [loadJobs])
 
-  const toggle = (set: Set<string>, setter: (s: Set<string>) => void, board: string) => { const n = new Set(set); n.has(board) ? n.delete(board) : n.add(board); setter(n) }
-
-  async function distribute() {
-    if (!jobId || outSel.size === 0) return
-    setPosting(true); setResults(null)
+  async function generate() {
+    if (!jobId) return
+    setLoading(true); setErr(''); setStrings(null)
     try {
-      const res = await fetch('/api/hire/sourcing/distribute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId, boards: Array.from(outSel) }) })
-      const d = await res.json(); if (res.ok) setResults(d.results)
-    } finally { setPosting(false) }
-  }
-  async function pull() {
-    if (inSel.size === 0) return
-    setPulling(true); setImported(null)
-    try {
-      const res = await fetch('/api/hire/sourcing/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ boards: Array.from(inSel), jobId: importJobId || undefined }) })
-      const d = await res.json(); if (res.ok) setImported(d)
-    } finally { setPulling(false) }
+      const res = await fetch(`/api/hire/jobs/${jobId}/search-strings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const d = await res.json()
+      if (!res.ok) { setErr(d.error ?? 'Could not generate search strings'); return }
+      // Only boards we have a sourcing template/extension matcher for, Indeed first.
+      const supported: BoardStrings[] = (d.boards ?? []).filter((b: BoardStrings) => getSourcingBoard(b.key))
+      supported.sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key))
+      setStrings(supported)
+      setLocation(d.inputs?.location ?? '')
+    } finally { setLoading(false) }
   }
 
-  const postable = boards.filter((b) => !b.comingSoon)
-  const pullable = boards.filter((b) => b.canPull && !b.comingSoon)
+  function copy(key: string, text: string) {
+    navigator.clipboard?.writeText(text).then(() => { setCopied(key); setTimeout(() => setCopied(null), 1500) }).catch(() => {})
+  }
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div style={{ maxWidth: 820 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Sourcing</h1>
-      <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 20px' }}>Distribute a role to multiple boards and pull applicants into your pool — from one screen.</p>
+      <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 12px' }}>Generate a board-optimized search for a role, open the board pre-filled, and capture the profiles you choose with the Levl1 browser extension — one at a time.</p>
+      <div style={{ fontSize: 12.5, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', marginBottom: 20 }}>
+        Sourcing is <strong>recruiter-driven</strong>: you choose each candidate. Levl1 does not scrape or bulk-pull from boards — the extension captures only the profile you&apos;re viewing, under your own board login.
+      </div>
 
-      {/* Connected boards */}
       <div style={{ ...card, marginBottom: 16 }}>
-        <div style={H}>Job boards</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-          {boards.map((b) => (
-            <div key={b.board} style={{ border: '1px solid #F1F5F9', borderRadius: 10, padding: '11px 12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{b.label}</span>
-                {b.comingSoon && <span style={{ fontSize: 10, color: '#94A3B8' }}>soon</span>}
-              </div>
-              <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: b.connected ? '#059669' : '#94A3B8', background: b.connected ? 'rgba(5,150,105,0.1)' : '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>{b.connected ? '● Connected' : 'Not connected'}</span>
-                {b.canPull && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#6D28D9', background: 'rgba(109,40,217,0.08)', borderRadius: 100, padding: '2px 8px' }}>inbound</span>}
-              </div>
-            </div>
-          ))}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select value={jobId} onChange={(e) => { setJobId(e.target.value); setStrings(null) }} style={sel}>
+            {jobs.length === 0 && <option value="">No active jobs</option>}
+            {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+          </select>
+          <button onClick={generate} disabled={loading || !jobId} style={{ ...btn, opacity: loading || !jobId ? 0.6 : 1 }}>{loading ? 'Generating…' : 'Generate search strings'}</button>
         </div>
-        <a href="/hire/settings/job-boards" style={{ display: 'inline-block', marginTop: 12, fontSize: 12.5, fontWeight: 600, color: '#6D28D9' }}>Manage connections →</a>
+        {err && <div style={{ fontSize: 13, color: '#DC2626', marginTop: 10 }}>{err}</div>}
       </div>
 
-      {/* Outbound */}
-      <div style={{ ...card, marginBottom: 16 }}>
-        <div style={H}>Distribute a job</div>
-        {jobs.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No active jobs to distribute.</div> : (
-          <>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-              <select value={jobId} onChange={(e) => setJobId(e.target.value)} style={sel}>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
-              <button onClick={distribute} disabled={posting || !jobId || outSel.size === 0} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: posting || outSel.size === 0 ? '#C4B5FD' : '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>{posting ? 'Posting…' : `Distribute to ${outSel.size} board${outSel.size === 1 ? '' : 's'}`}</button>
+      {strings && strings.map((b) => {
+        const board = getSourcingBoard(b.key)!
+        return (
+          <div key={b.key} style={{ ...card, marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>{b.label}</span>
+              {!board.captureReady && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#94A3B8', background: '#F1F5F9', borderRadius: 100, padding: '2px 8px' }}>capture coming soon</span>}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {postable.map((b) => (
-                <button key={b.board} onClick={() => toggle(outSel, setOutSel, b.board)} style={chip(outSel.has(b.board))}>{outSel.has(b.board) ? '✓ ' : ''}{b.label}</button>
-              ))}
-            </div>
-            {results && (
-              <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {results.map((r) => {
-                  const s = STATUS[r.status] ?? STATUS.pending
-                  const label = boards.find((b) => b.board === r.board)?.label ?? r.board
-                  return (
-                    <div key={r.board} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, padding: '8px 10px', border: '1px solid #F1F5F9', borderRadius: 8 }}>
-                      <span style={{ fontWeight: 700, color: '#0F172A', width: 110 }}>{label}</span>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: s.color, background: s.bg, borderRadius: 100, padding: '2px 10px' }}>{s.label}</span>
-                      {r.externalUrl && <a href={r.externalUrl} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#6D28D9' }}>Open ↗</a>}
-                      {r.payload && <button onClick={() => navigator.clipboard?.writeText(r.payload!)} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#6D28D9', background: 'none', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>Copy post</button>}
-                      {r.error && <span style={{ marginLeft: 'auto', fontSize: 12, color: '#DC2626' }}>{r.error}</span>}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </>
-        )}
-      </div>
 
-      {/* Inbound */}
-      <div style={card}>
-        <div style={H}>Pull candidates in</div>
-        {pullable.length === 0 ? <div style={{ fontSize: 13, color: '#94A3B8' }}>No boards with an inbound source connected yet.</div> : (
-          <>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-              <select value={importJobId} onChange={(e) => setImportJobId(e.target.value)} style={sel}>
-                <option value="">Add to pool (no job)</option>
-                {jobs.map((j) => <option key={j.id} value={j.id}>Attach to: {j.title}</option>)}
-              </select>
-              <button onClick={pull} disabled={pulling || inSel.size === 0} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: pulling || inSel.size === 0 ? '#C4B5FD' : '#6D28D9', color: '#fff', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>{pulling ? 'Pulling…' : `Pull from ${inSel.size} board${inSel.size === 1 ? '' : 's'}`}</button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {pullable.map((b) => <button key={b.board} onClick={() => toggle(inSel, setInSel, b.board)} style={chip(inSel.has(b.board))}>{inSel.has(b.board) ? '✓ ' : ''}{b.label}</button>)}
-            </div>
-            {imported && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>Imported {imported.totals.imported} · {imported.totals.duplicates} duplicate{imported.totals.duplicates === 1 ? '' : 's'} skipped · {imported.totals.pulled} pulled</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {imported.perBoard.map((r) => (
-                    <div key={r.board} style={{ fontSize: 13, color: '#475569', display: 'flex', gap: 10, padding: '6px 10px', border: '1px solid #F1F5F9', borderRadius: 8 }}>
-                      <span style={{ fontWeight: 700, color: '#0F172A', width: 110 }}>{r.label}</span>
-                      <span>{r.imported} imported · {r.duplicates} dup · {r.pulled} pulled{r.note ? ` · ${r.note}` : ''}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href="/hire/candidates" style={{ display: 'inline-block', marginTop: 10, fontSize: 12.5, fontWeight: 600, color: '#6D28D9' }}>View candidates →</a>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Search string</div>
+            <textarea readOnly value={b.boolean} style={{ width: '100%', boxSizing: 'border-box', minHeight: 64, fontSize: 12.5, fontFamily: 'monospace', border: '1px solid #E2E8F0', borderRadius: 8, padding: 10 }} />
+            {b.filters.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {b.filters.map((f, i) => <span key={i} style={{ fontSize: 11.5, color: '#475569', background: '#F1F5F9', borderRadius: 100, padding: '3px 10px' }}>{f}</span>)}
               </div>
             )}
-          </>
-        )}
-      </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button onClick={() => copy(b.key, b.boolean)} style={btn}>{copied === b.key ? 'Copied ✓' : 'Copy search string'}</button>
+              <a href={board.searchUrl(b.boolean, location)} target="_blank" rel="noreferrer" style={{ ...ghost, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Search on {b.label} →</a>
+            </div>
+
+            <div style={{ fontSize: 12, color: '#64748B', marginTop: 10, lineHeight: 1.5 }}>
+              Browse the results on {b.label} (your own login). On a profile you want, click the <strong>Levl1 extension</strong> to capture it — it&apos;s parsed, scored against this role, de-duplicated, tagged <strong>{b.label}</strong>, and added to the pipeline. {board.captureReady ? '' : 'Extension capture for this board is coming soon.'}
+            </div>
+            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Capture works on: {board.captureHint}</div>
+          </div>
+        )
+      })}
+
+      {strings && strings.length === 0 && <div style={{ ...card, fontSize: 13, color: '#64748B' }}>No supported boards in the generated strings.</div>}
     </div>
   )
-}
-
-function chip(active: boolean): React.CSSProperties {
-  return { fontSize: 12.5, fontWeight: 600, padding: '6px 13px', borderRadius: 100, cursor: 'pointer', border: '1px solid ' + (active ? '#6D28D9' : '#E2E8F0'), background: active ? 'rgba(109,40,217,0.08)' : '#fff', color: active ? '#6D28D9' : '#64748B' }
 }

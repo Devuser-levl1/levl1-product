@@ -15,11 +15,24 @@
     "https://levl1.io/*",
     "https://*.levl1.io/*",
     "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://127.0.0.1/*",
+    "https://www.linkedin.com/*",
+    "https://resumes.indeed.com/*",
+    "https://*.indeed.com/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://www.linkedin.com/in/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://resumes.indeed.com/resume/*",
+        "https://resumes.indeed.com/search*",
+        "https://*.indeed.com/rc/*",
+        "https://employers.indeed.com/candidates/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

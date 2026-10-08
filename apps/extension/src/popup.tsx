@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { getSettings } from './storage'
 import { scrapeProfile } from './scrape'
-import { createCandidate, triggerInterview, AuthError } from './api'
+import { captureToHire, triggerInterview, AuthError } from './api'
 import { Captured, Settings } from './types'
 
 const PURPLE = '#6D28D9'
@@ -53,14 +53,21 @@ function App() {
 
   async function submit() {
     if (!settings) return
-    if (!fields.name.trim() || !fields.email.trim()) { setError('Name and email are required.'); return }
+    if (!fields.name.trim()) { setError('A name is required.'); return }
     setError(''); setSubmitting(true)
     try {
-      const candidate = await createCandidate(settings, {
+      // Capture into Levl1 Hire: deduped per job, scored, source-tagged, added
+      // to the pipeline. Attaches to the default Hire job when one is set.
+      const candidate = await captureToHire(settings, {
         name: fields.name.trim(),
-        email: fields.email.trim(),
+        email: fields.email.trim() || undefined,
         phone: fields.phone.trim() || undefined,
-        resumeUrl: fields.profileUrl || undefined,
+        title: fields.title.trim() || undefined,
+        company: fields.company.trim() || undefined,
+        location: fields.location.trim() || undefined,
+        profileUrl: fields.profileUrl || undefined,
+        source: fields.source,
+        jobId: settings.defaultJobId || undefined,
       })
       let interviewUrl: string | undefined
       if (withInterview) {
@@ -70,7 +77,7 @@ function App() {
         const res = await triggerInterview(settings, args)
         interviewUrl = res.interviewUrl
       }
-      setDone({ candidateUrl: `${settings.baseUrl}/hire/candidates`, interviewUrl })
+      setDone({ candidateUrl: candidate.candidateUrl || `${settings.baseUrl}/hire/candidates`, interviewUrl })
     } catch (e) {
       if (e instanceof AuthError) setError('Your API key is invalid or revoked. Re-enter it in Options.')
       else setError(e instanceof Error ? e.message : 'Failed to add candidate.')

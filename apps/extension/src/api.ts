@@ -46,6 +46,16 @@ export async function createCandidate(settings: Settings, input: {
   return call<{ id: string }>(settings, '/candidates', { method: 'POST', body: JSON.stringify(input) })
 }
 
+// Capture a recruiter-selected profile into Levl1 HIRE: deduped per job, scored
+// against the job, source-tagged, added to the pipeline. Human-driven (one at a
+// time). Returns the candidate id + whether it was already on the job.
+export async function captureToHire(settings: Settings, input: {
+  name: string; email?: string; phone?: string; title?: string; company?: string
+  location?: string; profileUrl?: string; source?: string; jobId?: string
+}): Promise<{ id: string; duplicate: boolean; candidateUrl: string }> {
+  return call<{ id: string; duplicate: boolean; candidateUrl: string }>(settings, '/hire/capture', { method: 'POST', body: JSON.stringify(input) })
+}
+
 export async function triggerInterview(settings: Settings, input: {
   candidateId: string; jobId?: string; title?: string; jdText?: string
 }): Promise<{ interviewId: string; interviewUrl: string }> {

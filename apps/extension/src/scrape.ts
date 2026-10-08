@@ -20,9 +20,10 @@ export function scrapeProfile(): Captured {
   }
 
   const isLinkedIn = location.hostname.endsWith('linkedin.com') && location.pathname.startsWith('/in/')
+  const isIndeed = location.hostname.endsWith('indeed.com')
   const result: Captured = {
     name: '', title: '', company: '', location: '', profileUrl: location.href.split('?')[0],
-    email: '', phone: '', source: isLinkedIn ? 'linkedin' : 'generic',
+    email: '', phone: '', source: isLinkedIn ? 'linkedin' : isIndeed ? 'indeed' : 'generic',
   }
 
   // ── JSON-LD Person (works on many sites incl. LinkedIn) ──
@@ -51,6 +52,16 @@ export function scrapeProfile(): Captured {
       const exp = document.querySelector('[aria-label*="Current company"], button[aria-label*="company"]')
       result.company = text(exp)
     }
+  }
+
+  if (isIndeed) {
+    // Indeed résumé / candidate pages. Selectors are best-effort across Indeed's
+    // résumé view and employer candidate detail; falls through to generic +
+    // visible-text extraction below for anything not matched.
+    if (!result.name) result.name = firstText(['[data-testid="resume-name"]', 'h1[itemprop="name"]', 'header h1', 'main h1', 'h1'])
+    if (!result.title) result.title = firstText(['[data-testid="resume-headline"]', '[itemprop="jobTitle"]', 'h2.rezemp-ResumeDisplay-header'])
+    if (!result.company) result.company = firstText(['[data-testid="work-experience"] [data-testid="company"]', '[itemprop="worksFor"]'])
+    if (!result.location) result.location = firstText(['[data-testid="resume-location"]', '[itemprop="address"]'])
   }
 
   // ── Generic fallback from page metadata ──
