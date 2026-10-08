@@ -1154,50 +1154,6 @@ model MailboxConnection {
   @@index([tenantId])
 }
 
-// ── BYOB job-board connections (foundation) — recruiter connects their OWN
-// board account; postings use their credits, searches their subscription.
-// Connect + test + store only here; posting/searching ride on this later.
-model BoardConnection {
-  id          String   @id @default(cuid())
-  tenantId    String
-  userId      String
-  provider    String   // "naukri" | "indeed" | "linkedin"
-  authType    String   // "api_key" | "oauth" | "extension"
-  email       String?
-  accountId   String?
-  credentials String?  @db.Text  // AES-256-GCM via encryptJson; never plaintext (null for extension)
-  canPost     Boolean  @default(false)
-  canSearch   Boolean  @default(false)
-  status      String   @default("pending") // pending | connected | error
-  lastError   String?
-  lastUsedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([userId, provider])
-  @@index([tenantId])
-}
-
-// Where a Levl1 job has been posted, per board. BYOB — always under the
-// recruiter's own connected account, never a Levl1-owned one.
-model BoardPosting {
-  id            String   @id @default(cuid())
-  tenantId      String
-  jobId         String
-  provider      String   // "naukri" | "indeed"
-  externalRefId String?
-  postingUrl    String?
-  status        String   @default("pending") // pending | posted | failed
-  errorMsg      String?
-  postedAt      DateTime?
-  lastSyncedAt  DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([jobId, provider])
-  @@index([tenantId])
-}
-
 model MailboxMessage {
   id                String   @id @default(cuid())
   connectionId      String
