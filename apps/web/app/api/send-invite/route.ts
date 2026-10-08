@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { buildInviteEmail } from '@/lib/screen/recruiter/invite-email'
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
           candidateId: candidate.id,
           positionId:  candidate.positionId,
           status:      'scheduled',
-          duration:    candidate.position.interviewDuration ?? 30,
+          duration:    effectiveInterviewMinutes(candidate.position),
           agentOnline: false,
           candidateJoined: false,
         },
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     // 3b. WhatsApp invite with slot options (non-blocking)
     if (candidate.phone) {
       const slotDates  = generateAvailableSlots(5)
-      const duration   = candidate.position.interviewDuration ?? 30
+      const duration   = effectiveInterviewMinutes(candidate.position)
 
       // Persist the offered slots so the WhatsApp reply webhook can resolve
       // the exact instant the candidate picks (numbers 1–5).

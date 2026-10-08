@@ -248,7 +248,7 @@ model Position {
   domainContext      String?
   companyStage       String?
   workMode           String    @default("hybrid")
-  interviewDuration  Int       @default(18)  // Build 08: ~17–18 min (was 30)
+  interviewDuration  Int       @default(20)  // legacy snapshot; production runs use PRODUCTION_INTERVIEW_MINUTES (20)
   status             String    @default("draft")
   // Build 08 — per-position Likert culture-fit items (overrides the generic
   // default set). Screen-scoped; shape: [{ id, prompt, reverse?, dimension? }].
@@ -370,7 +370,7 @@ model Interview {
   scheduledAt       DateTime?
   startedAt         DateTime?
   completedAt       DateTime?
-  duration          Int       @default(18)
+  duration          Int       @default(20)
   actualDuration    Int?
   agentOnline       Boolean   @default(false)
   candidateJoined   Boolean   @default(false)

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { getSessionFromRequest } from '@/lib/auth'
 import { TERMINATION_REASONS } from '@/lib/screen/session/lifecycle'
 
@@ -46,17 +47,24 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
           },
         },
       })
-      if (interview) return NextResponse.json(interview)
+      if (interview) return NextResponse.json(withEffectiveDuration(interview))
       // Signed-in users can also be candidates opening their own link (or a
       // demo run) — fall through to the public projection.
     }
     const interview = await prisma.interview.findUnique({ where: { id: params.id }, select: PUBLIC_SELECT })
     if (!interview) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(interview)
+    return NextResponse.json(withEffectiveDuration(interview))
   } catch (err) {
     console.error('GET /api/interviews/[id] error:', err)
     return NextResponse.json({ error: 'Failed to fetch interview' }, { status: 500 })
   }
+}
+
+// The interview room's timer + start screen read these — serve the length the
+// session will actually run (production envelope; demos keep their own).
+function withEffectiveDuration<T extends { isDemo: boolean; duration: number; position: { interviewDuration: number } }>(iv: T): T {
+  const minutes = effectiveInterviewMinutes({ isDemo: iv.isDemo, interviewDuration: iv.position.interviewDuration })
+  return { ...iv, duration: minutes, position: { ...iv.position, interviewDuration: minutes } }
 }
 
 const TERMINATIONS = new Set<string>(Object.values(TERMINATION_REASONS))

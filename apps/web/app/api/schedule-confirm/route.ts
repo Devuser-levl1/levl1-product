@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sendEmail, confirmationEmailHtml } from '@/lib/emailService'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { candidateId, slotId, scheduledAt, duration } = body
+    const { candidateId, slotId, scheduledAt } = body  // client-sent duration ignored — the server owns the session length
 
     if (!candidateId || !scheduledAt) {
       return NextResponse.json({ error: 'candidateId and scheduledAt required' }, { status: 400 })
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
           positionId: candidate.positionId,
           scheduledAt: scheduledDate,
           status: 'scheduled',
-          duration: duration ?? candidate.position.interviewDuration,
+          duration: effectiveInterviewMinutes(candidate.position),
         },
       })
     }
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
         positionTitle: candidate.position.title,
         company: candidate.position.company,
         scheduledAt: scheduledDate,
-        duration: duration ?? candidate.position.interviewDuration,
+        duration: effectiveInterviewMinutes(candidate.position),
         interviewUrl,
       }),
     }).catch((err) => {

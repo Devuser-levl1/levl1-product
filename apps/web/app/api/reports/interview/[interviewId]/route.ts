@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 
 export async function GET(
@@ -65,7 +66,7 @@ export async function GET(
       company:        p?.company ?? '',
       interviewDate:  (candidate.interviewedAt ?? r.generatedAt)
                         .toISOString().slice(0, 10),
-      duration:       p?.interviewDuration ?? 30,
+      duration:       effectiveInterviewMinutes(p),
       generatedAt:    r.generatedAt.toISOString(),
       // White-label branding
       agencyName:     agency?.name ?? null,

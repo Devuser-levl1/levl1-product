@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
@@ -22,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
     })
     if (!position) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(position)
+    return NextResponse.json({ ...position, interviewDuration: effectiveInterviewMinutes(position) })
   } catch (err) {
     console.error('GET /api/positions/[id] error:', err)
     return NextResponse.json({ error: 'Failed to fetch position' }, { status: 500 })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 
 /* POST /api/interview-token
  * Body: { interviewId: string }
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
         interview: {
           include: {
             candidate: { select: { name: true, email: true } },
-            position:  { select: { title: true, company: true, interviewDuration: true } },
+            position:  { select: { title: true, company: true, interviewDuration: true, isDemo: true } },
           },
         },
       },
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
         candidateName: record.interview.candidate.name,
         positionTitle: record.interview.position.title,
         company:       record.interview.position.company,
-        duration:      record.interview.position.interviewDuration,
+        duration:      effectiveInterviewMinutes(record.interview.position),
         status:        record.interview.status,
       },
     })

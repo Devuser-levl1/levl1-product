@@ -1,4 +1,5 @@
 import { renderInviteEmail, resolveTemplate } from './invite-template'
+import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 
 // Server-side: build the candidate invite for an interview from the
 // recruiter's template (position override → agency → default). Used by every
@@ -9,7 +10,7 @@ interface TemplateFields { inviteEmailSubject: string | null; inviteEmailBody: s
 export function buildInviteEmail(opts: {
   interviewId: string
   candidateName: string
-  position: TemplateFields & { title: string; company: string; interviewDuration: number | null }
+  position: TemplateFields & { title: string; company: string; interviewDuration: number | null; isDemo?: boolean | null }
   agency: TemplateFields & { name: string; senderName: string | null }
 }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
@@ -22,7 +23,7 @@ export function buildInviteEmail(opts: {
     position_title: opts.position.title,
     company: opts.position.company,
     agency_name: opts.agency.senderName ?? opts.agency.name,
-    duration_minutes: String(opts.position.interviewDuration ?? 30),
+    duration_minutes: String(effectiveInterviewMinutes(opts.position)),
     scheduling_link: schedulingUrl,
     interview_link: joinUrl,
     consent_link: joinUrl, // consent is acknowledged on the interview page before it starts
