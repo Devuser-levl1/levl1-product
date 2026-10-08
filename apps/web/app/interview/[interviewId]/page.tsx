@@ -8,7 +8,8 @@ import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
 import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'lucide-react'
-import { IntegrityMonitor } from '@/components/interviews/IntegrityMonitor'
+import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
+import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
@@ -416,6 +417,11 @@ export default function InterviewPage() {
   const fraudStreamRef    = useRef<MediaStream | null>(null)
   const fraudChunksRef    = useRef<Blob[]>([])
   const fraudUploadedRef  = useRef(false)
+  const recordingStartedAtRef = useRef<number | null>(null)  // wall clock → syncs playback timeline
+  // ── Recruiter Control Room heartbeat — latest presence + speech signals ──
+  const presenceRef = useRef<{ camState: PresenceSample['camState']; faceCount: number | null; faceAbsentSince: string | null; multiFaceAt: string | null }>({ camState: 'starting', faceCount: null, faceAbsentSince: null, multiFaceAt: null })
+  const lastSpeechAtRef = useRef<string | null>(null)
+  const sentTranscriptLenRef = useRef(0)
   const aiSpeakingRef     = useRef(false)        // bugfix: true while Alex's TTS plays — drop mic echo
   const noInputStrikesRef = useRef(0)            // bugfix: consecutive silent turns → mic warning, never end
   const candidateSpokeRef = useRef(false)        // bugfix: any captured candidate speech this session?
@@ -535,6 +541,61 @@ export default function InterviewPage() {
     }, 30_000)
     return () => clearInterval(interval)
   }, [interviewId])
+
+  /* ── Recruiter Control Room: live heartbeat ──────────────── */
+  // Pushes the signals this page ALREADY has (phase, question, CV face count,
+  // STT/mic state, transcript) so recruiters can monitor without joining.
+  // Fire-and-forget; never blocks or alters the interview.
+  const liveSignalsRef = useRef({ micFailed, textInputMode, sttWarning })
+  liveSignalsRef.current = { micFailed, textInputMode, sttWarning }
+  useEffect(() => { if (liveTranscript) lastSpeechAtRef.current = new Date().toISOString() }, [liveTranscript])
+  const handlePresence = useCallback((p: PresenceSample) => {
+    const cur = presenceRef.current
+    const now = new Date().toISOString()
+    presenceRef.current = {
+      camState: p.camState,
+      faceCount: p.faceCount ?? cur.faceCount,
+      faceAbsentSince: p.faceCount === 0 ? (cur.faceAbsentSince ?? now) : p.faceCount === null ? cur.faceAbsentSince : null,
+      multiFaceAt: p.faceCount !== null && p.faceCount > 1 ? now : cur.multiFaceAt,
+    }
+  }, [])
+  const sendHeartbeat = useCallback((final = false) => {
+    if (!interviewId) return
+    const sig = liveSignalsRef.current
+    const q = questionsRef.current[currentQIdxRef.current]
+    const tx = transcriptRef.current
+    const grew = tx.length !== sentTranscriptLenRef.current
+    const beat: HeartbeatInput & { interviewId: string } = {
+      interviewId,
+      phase: phaseRef.current,
+      questionIndex: q ? currentQIdxRef.current : undefined,
+      questionCount: questionsRef.current.length || undefined,
+      questionText: q?.question,
+      ...presenceRef.current,
+      sttMode: sig.textInputMode ? 'text' : sig.micFailed ? 'none' : sttPreferWebSpeechRef.current ? 'webspeech' : 'scribe',
+      micOk: !sig.micFailed,
+      sttWarning: sig.sttWarning,
+      lastSpeechAt: lastSpeechAtRef.current,
+      tabHidden: typeof document !== 'undefined' && document.hidden,
+      interim: liveTranscriptRef.current || '',
+      ...(grew || final ? { transcript: tx.map((e) => ({ speaker: e.speaker, text: e.text, timestamp: e.timestamp })) } : {}),
+    }
+    if (grew) sentTranscriptLenRef.current = tx.length
+    try {
+      fetch('/api/interview/live-heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(beat), keepalive: final && tx.length < 200 }).catch(() => {})
+    } catch { /* telemetry only */ }
+  }, [interviewId])
+  const liveSessionOn = phase !== 'waiting' && phase !== 'completed'
+  useEffect(() => {
+    if (!liveSessionOn) return
+    sendHeartbeat()
+    const iv = setInterval(() => sendHeartbeat(), HEARTBEAT_MS)
+    const onVis = () => sendHeartbeat()  // tab hide/show → reflect immediately
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis) }
+  }, [liveSessionOn, sendHeartbeat])
+  // Final beat: phase "completed" + the complete transcript for playback.
+  useEffect(() => { if (phase === 'completed') sendHeartbeat(true) }, [phase, sendHeartbeat])
 
   /* ── Countdown timer ──────────────────────────────────────── */
   useEffect(() => {
@@ -1639,9 +1700,12 @@ export default function InterviewPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       fraudStreamRef.current = stream
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
-      const rec = new MediaRecorder(stream, { mimeType: mime })
+      // 32 kbps Opus: plenty for speech/diarization, keeps the retained
+      // playback recording small (~7 MB per 30 min).
+      const rec = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 })
       rec.ondataavailable = (e) => { if (e.data.size > 0) fraudChunksRef.current.push(e.data) }
       rec.start(2000)
+      recordingStartedAtRef.current = Date.now()
       fraudRecorderRef.current = rec
     } catch { /* best-effort; fraud diarization is review-only and non-blocking */ }
   }, [])
@@ -1659,11 +1723,21 @@ export default function InterviewPage() {
       const blob = new Blob(chunks, { type: rec?.mimeType || 'audio/webm' })
       // Skip uploads that are too small to contain a real second voice.
       if (blob.size < 4096) return
+      // NOT keepalive: browsers cap keepalive bodies at 64 KB and reject larger
+      // ones outright, so the interview recording would never arrive. The
+      // completion screen stays open long enough for a normal upload.
       try {
         fetch(`/api/interview/fraud-diarize?interviewId=${encodeURIComponent(interviewId)}`, {
-          method: 'POST', headers: { 'Content-Type': blob.type }, body: blob, keepalive: true,
+          method: 'POST', headers: { 'Content-Type': blob.type }, body: blob,
         }).catch(() => {})
       } catch {}
+      // Retain the same recording for recruiter session playback (consented;
+      // server skips demo runs).
+      const startedAt = recordingStartedAtRef.current
+      if (startedAt && !isDemoRef.current) {
+        const qs = new URLSearchParams({ interviewId, startedAt: new Date(startedAt).toISOString(), durationMs: String(Date.now() - startedAt) })
+        try { fetch(`/api/interview/recording?${qs}`, { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob }).catch(() => {}) } catch {}
+      }
     }
     if (rec && rec.state !== 'inactive') { rec.onstop = finish; try { rec.stop() } catch { finish() } }
     else finish()
@@ -2213,7 +2287,7 @@ export default function InterviewPage() {
                 Equal-sized box with normal proportions; objectFit:cover keeps the
                 face naturally framed (no stretch/letterbox). */}
             <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" />
+              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" onPresence={handlePresence} />
             </div>
           </div>
 

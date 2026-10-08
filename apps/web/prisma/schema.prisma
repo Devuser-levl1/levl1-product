@@ -376,6 +376,8 @@ model Interview {
   verification    InterviewVerification?
   integrityEvents InterviewIntegrityEvent[]
   cultureFit      CultureFitResult?
+  liveState       InterviewLiveState?
+  recording       InterviewRecording?
 }
 
 // ── Likert culture/values-fit (Build 08) — Screen-scoped ───────────────────
@@ -415,6 +417,55 @@ model InterviewIntegrityEvent {
   meta        Json?
   createdAt   DateTime  @default(now())
   @@index([interviewId])
+}
+
+// ── Recruiter Control Room (Screen-scoped) ─────────────────────────────────
+// Latest presence snapshot pushed by the candidate's browser (heartbeat, ~5s).
+// Aggregation only — every field is a signal the interview client ALREADY
+// computes (CV face count, STT/mic state, phase). One row per interview,
+// upserted in place; never a time series. No frames/audio.
+model InterviewLiveState {
+  id              String    @id @default(cuid())
+  interviewId     String    @unique
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  lastBeatAt      DateTime  @default(now())
+  phase           String?   // InterviewPhase (intro | listening | processing | speaking | closing | completed …)
+  phaseSince      DateTime?
+  questionIndex   Int?
+  questionCount   Int?
+  questionText    String?   @db.Text
+  // Camera / CV: 'on' | 'denied' | 'starting'; faceCount = latest CV sample (null = CV unavailable)
+  camState        String?
+  faceCount       Int?
+  faceAbsentSince DateTime?
+  multiFaceAt     DateTime?
+  // Audio / STT
+  sttMode         String?   // scribe | webspeech | text | none
+  micOk           Boolean   @default(true)
+  sttWarning      String?
+  lastSpeechAt    DateTime? // last candidate speech (interim or final)
+  tabHidden       Boolean   @default(false)
+  // Rolling tail for the drill-in view: [{ speaker, text, timestamp }] + the current interim line
+  transcriptTail  Json?
+  interim         String?
+  updatedAt       DateTime  @updatedAt
+}
+
+// Retained session audio for recruiter playback. Covered by the existing
+// candidate consent ("recorded and monitored"). Postgres bytea (no object
+// storage yet) → audio-only, low bitrate, size-capped, auto-expiring.
+model InterviewRecording {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  mimeType    String
+  sizeBytes   Int
+  data        Bytes
+  startedAt   DateTime  // wall-clock start of the recording — offsets transcript + integrity events
+  durationMs  Int?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  @@index([expiresAt])
 }
 
 model InterviewVerification {

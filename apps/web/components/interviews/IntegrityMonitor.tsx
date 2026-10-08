@@ -15,13 +15,20 @@ const INDIGO = '#4F46E5'
 // variant 'floating' = the original fixed bottom-right self-view; 'inline' fills
 // its parent (for the redesigned top-left video slot). Same video element + same
 // integrity client either way — capture/CV is unchanged.
-export function IntegrityMonitor({ interviewId, active, variant = 'floating' }: { interviewId: string; active: boolean; variant?: 'floating' | 'inline' }) {
+// Live presence (camera state + latest CV face count) for the recruiter Control
+// Room heartbeat. faceCount is null until/unless face detection is available.
+export interface PresenceSample { camState: 'starting' | 'on' | 'denied'; faceCount: number | null }
+
+export function IntegrityMonitor({ interviewId, active, variant = 'floating', onPresence }: { interviewId: string; active: boolean; variant?: 'floating' | 'inline'; onPresence?: (p: PresenceSample) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const clientRef = useRef<IntegrityMonitorClient | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [camState, setCamState] = useState<'starting' | 'on' | 'denied'>('starting')
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(null)
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onPresenceRef = useRef(onPresence)
+  onPresenceRef.current = onPresence
+  const camStateRef = useRef<PresenceSample['camState']>('starting')
 
   useEffect(() => {
     if (!active || !interviewId) return
@@ -42,12 +49,14 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating' }: 
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
         streamRef.current = stream
         if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}) }
-        setCamState('on')
+        setCamState('on'); camStateRef.current = 'on'
       } catch {
-        setCamState('denied') // tab/window/fullscreen signals still run
+        setCamState('denied'); camStateRef.current = 'denied' // tab/window/fullscreen signals still run
       }
       if (cancelled) return
-      const client = new IntegrityMonitorClient({ interviewId, video: videoRef.current as HTMLVideoElement, onFlag })
+      onPresenceRef.current?.({ camState: camStateRef.current, faceCount: null })
+      const onFaceSample = (faceCount: number) => onPresenceRef.current?.({ camState: camStateRef.current, faceCount })
+      const client = new IntegrityMonitorClient({ interviewId, video: videoRef.current as HTMLVideoElement, onFlag, onFaceSample })
       clientRef.current = client
       await client.start()
     }

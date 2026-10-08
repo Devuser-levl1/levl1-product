@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Zap, Download, ArrowLeft, ThumbsUp, XCircle, Loader2, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react'
+import { Zap, Download, ArrowLeft, PlayCircle, ThumbsUp, XCircle, Loader2, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAppStore, CandidateReport } from '@/store/appStore'
 import toast from 'react-hot-toast'
 import {
@@ -167,6 +167,7 @@ export default function ReportPage() {
           <span style={{ fontSize: 14, fontWeight: 700, color: INDIGO }}>Levl1</span>
         </div>
         <div style={{ flex: 1 }} />
+        <a href={`/playback/${interviewId}`} style={{ ...navBtn, textDecoration: 'none' }}><PlayCircle size={14} /> Replay session</a>
         <button onClick={() => window.print()} style={{ ...navBtn, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.2)', color: INDIGO }}><Download size={14} /> Export</button>
       </header>
 

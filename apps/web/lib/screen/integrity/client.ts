@@ -24,6 +24,7 @@ export interface IntegrityClientOptions {
   video: HTMLVideoElement
   screenStream?: MediaStream | null
   onFlag?: (e: IntegrityEventInput) => void   // high-confidence → live notice
+  onFaceSample?: (faceCount: number) => void  // every CV sample → recruiter Control Room heartbeat
   faceIntervalMs?: number
 }
 
@@ -174,6 +175,7 @@ export class IntegrityMonitorClient {
       } else return
     } catch { return }
 
+    this.opts.onFaceSample?.(faceCount)
     const now = Date.now()
 
     if (faceCount === 0) {

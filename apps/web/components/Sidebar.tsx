@@ -18,6 +18,7 @@ import {
   Plus,
   Upload,
   LifeBuoy,
+  Radar,
 } from "lucide-react";
 import { useState } from "react";
 import { SupportModal } from "@/components/ui/SupportModal";
@@ -34,6 +35,7 @@ const NAV_MAIN: NavItem[] = [
   { section: "clients",    icon: Building2,       label: "Clients"    },
   { section: "candidates", icon: Users,            label: "Candidates" },
   { section: "interviews", icon: Video,            label: "Interviews" },
+  { section: "control-room", icon: Radar,          label: "Control Room" },
   { section: "reports",    icon: BarChart2,        label: "Reports"    },
   { section: "analytics",  icon: LineChart,        label: "Analytics"  },
 ];

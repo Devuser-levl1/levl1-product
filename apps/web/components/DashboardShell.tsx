@@ -11,6 +11,7 @@ import ClientsPage from "./clients/ClientsPage";
 import CandidatesPage from "./candidates/CandidatesPage";
 import InterviewsPage from "./interviews/InterviewsPage";
 import ReportsPage from "./reports/ReportsPage";
+import { ControlRoomPage } from "./control-room/ControlRoomPage";
 import AnalyticsPage from "./analytics/AnalyticsPage";
 import SettingsPage from "./settings/SettingsPage";
 // Shepherd.js accesses document/window at import time — must be client-only
@@ -48,6 +49,7 @@ export default function DashboardShell() {
       case "clients":    return <ClientsPage />;
       case "candidates": return <CandidatesPage />;
       case "interviews": return <InterviewsPage />;
+      case "control-room": return <ControlRoomPage />;
       case "reports":    return <ReportsPage />;
       case "analytics":  return <AnalyticsPage />;
       case "settings":   return <SettingsPage />;
