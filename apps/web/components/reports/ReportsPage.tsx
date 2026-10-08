@@ -21,6 +21,7 @@ import {
   FileText, Zap,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ExportResults } from "./ExportResults";
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 const REC_CFG = {
@@ -388,7 +389,8 @@ export default function ReportsPage() {
     <div style={{ padding: "32px 36px", maxWidth: 1100, margin: "0 auto" }}>
 
       {/* ── Page header ── */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+       <div style={{ flex: 1, minWidth: 260 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <BarChart2 size={15} color="white" />
@@ -400,6 +402,8 @@ export default function ReportsPage() {
         <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>
           View candidate rankings, AI evaluation reports, and position-level insights.
         </p>
+       </div>
+        <ExportResults />
       </div>
 
       {/* ── Position cards grid ── */}

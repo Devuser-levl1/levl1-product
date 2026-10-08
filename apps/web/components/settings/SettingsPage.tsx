@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus, Mail } from "lucide-react";
+import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
@@ -491,6 +492,11 @@ export default function SettingsPage() {
             </table>
           </div>
         )}
+      </Section>
+
+      {/* Candidate invite email template (org-wide; positions can override) */}
+      <Section icon={Mail} title="Candidate Invite Email" description="The email candidates receive with their interview link. Positions can override it.">
+        <InviteTemplateEditor endpoint="/api/agency/invite-template" scope="agency" />
       </Section>
 
       {/* Branding (white-label reports & candidate portal) */}

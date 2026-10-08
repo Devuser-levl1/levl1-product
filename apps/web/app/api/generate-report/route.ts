@@ -6,6 +6,7 @@ import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interview
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { Prisma } from '@prisma/client'
+import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,6 +43,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'interviewId is required' }, { status: 400 })
     }
 
+    // Recruiter-marked must-have requirements for this position (Screen F3).
+    const mustHaves: string[] = candidateId
+      ? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { position: { select: { mustHaves: true } } } }).catch(() => null))?.position.mustHaves ?? []
+      : body.positionId
+        ? (await prisma.position.findUnique({ where: { id: body.positionId }, select: { mustHaves: true } }).catch(() => null))?.mustHaves ?? []
+        : []
+
     const hasTranscript = Array.isArray(transcript) && transcript.length > 0
     const hasResponses = Array.isArray(questionResponses) && questionResponses.length > 0
 
@@ -69,6 +77,9 @@ export async function POST(req: NextRequest) {
         transcriptHighlights: [],
         hrNote: 'Transcript was not captured for this interview. Recommend re-interviewing the candidate.',
         l2Recommendation: '',
+        mustHaveAssessment: (mustHaves.length
+          ? reconcileMustHaves(mustHaves, null, { insufficientEvidence: true })
+          : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       }
 
       const resolvedCandidateId: string | null = candidateId ?? null
@@ -143,6 +154,13 @@ export async function POST(req: NextRequest) {
             `Transcript:\n${transcriptText || 'No transcript available.'}\n\n` +
             `Question responses with scores:\n${responsesText || 'No question responses available.'}\n\n` +
             `Resume excerpt:\n${resumeExcerpt || 'No resume provided.'}\n\n` +
+            (mustHaves.length
+              ? `MUST-HAVE REQUIREMENTS (non-negotiable). Judge EACH one strictly from what the candidate said in the transcript — the resume alone is NOT evidence:\n` +
+                mustHaves.map((m, i) => `${i + 1}. ${m}`).join('\n') + `\n` +
+                `- "met": the candidate gave concrete, specific evidence (examples, depth, correct detail).\n` +
+                `- "not_met": the candidate was asked about it and showed a clear gap, lack of experience, or incorrect understanding.\n` +
+                `- "insufficient_evidence": it was not covered, or only superficially — do NOT guess.\n\n`
+              : '') +
             `Return ONLY this exact JSON structure:\n` +
             `{\n` +
             `  "overallScore": <number 0-100>,\n` +
@@ -179,7 +197,10 @@ export async function POST(req: NextRequest) {
             `    { "quote": "<notable quote>", "context": "<where in interview>" }\n` +
             `  ],\n` +
             `  "hrNote": "<one paragraph plain English for HR>",\n` +
-            `  "l2Recommendation": "<what to focus on in L2 if proceeding>"\n` +
+            `  "l2Recommendation": "<what to focus on in L2 if proceeding>"` +
+            (mustHaves.length
+              ? `,\n  "mustHaveAssessment": [\n    { "requirement": "<exact requirement text from the list>", "status": "<met|not_met|insufficient_evidence>", "evidence": "<1 sentence citing what the candidate said, or why evidence is insufficient>" }\n  ]\n`
+              : `\n`) +
             `}`,
         },
       ],
@@ -265,6 +286,12 @@ export async function POST(req: NextRequest) {
       console.warn('[generate-report] Rubric weighting failed (non-fatal):', rubricErr)
     }
 
+    // One verdict per configured must-have — never dropped, never invented.
+    // Reconciled once so the response and the persisted report agree.
+    report.mustHaveAssessment = mustHaves.length
+      ? reconcileMustHaves(mustHaves, report.mustHaveAssessment, { insufficientEvidence: report.insufficientEvidence === true })
+      : undefined
+
     // ── Persist to DB ─────────────────────────────────────────────────
     const resolvedCandidateId: string | null = candidateId ?? null
 
@@ -282,6 +309,7 @@ export async function POST(req: NextRequest) {
         l2Recommendation:       report.l2Recommendation ?? '',
         communication:          (report.communication ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         insufficientEvidence:   report.insufficientEvidence === true,
+        mustHaveAssessment:     (report.mustHaveAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       }
       try {
         const savedReport = await prisma.report.upsert({

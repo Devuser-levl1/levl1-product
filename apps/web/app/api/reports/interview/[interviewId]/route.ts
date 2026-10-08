@@ -54,6 +54,8 @@ export async function GET(
       transcriptHighlights:   r.transcriptHighlights,
       hrNote:                 r.hrNote,
       l2Recommendation:       r.l2Recommendation,
+      // Must-have requirements (Screen F3) — one met/not_met/insufficient verdict each.
+      mustHaveAssessment:     r.mustHaveAssessment ?? null,
       // Metadata
       interviewId,
       candidateId:    candidate.id,

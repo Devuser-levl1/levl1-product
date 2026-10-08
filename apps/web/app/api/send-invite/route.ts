@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
-import { sendEmail, inviteEmailHtml, agencyFromAddress } from '@/lib/emailService'
+import { sendEmail, agencyFromAddress } from '@/lib/emailService'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
+import { buildInviteEmail } from '@/lib/screen/recruiter/invite-email'
 import { sendWhatsAppInvite } from '@/lib/whatsappService'
 import { generateAvailableSlots, formatSlotLabel } from '@/lib/slots'
 
@@ -13,8 +14,9 @@ export function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const access = recruiterAccess(req, { edit: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const session = access.session
 
     const body = await req.json()
     const { candidateId, candidateEmail: bodyEmail } = body
@@ -25,14 +27,14 @@ export async function POST(req: NextRequest) {
     console.log('[send-invite] agencyId from session:', session.agencyId)
 
     // Primary lookup by DB id; fallback by email
-    let candidate = await prisma.candidate.findUnique({
-      where: { id: candidateId },
+    let candidate = await prisma.candidate.findFirst({
+      where: { id: candidateId, position: { agencyId: session.agencyId } },
       include: { position: true },
     })
     if (!candidate && bodyEmail) {
       console.log('[send-invite] ID lookup missed — trying email fallback:', bodyEmail)
       candidate = await prisma.candidate.findFirst({
-        where: { email: bodyEmail },
+        where: { email: bodyEmail, position: { agencyId: session.agencyId } },
         include: { position: true },
         orderBy: { uploadedAt: 'desc' },
       })
@@ -74,18 +76,14 @@ export async function POST(req: NextRequest) {
 
     // 3. Send invite email with scheduling URL
     const emailConfigured = !!process.env.RESEND_API_KEY
+    // Recruiter-editable template: position override → agency → default.
+    // Variables are substituted + HTML-escaped server-side (invite-template.ts).
+    const email = buildInviteEmail({ interviewId: interview.id, candidateName: candidate.name, position: candidate.position, agency })
     if (emailConfigured) {
       await sendEmail({
         to:      candidate.email,
-        subject: `Interview Invitation — ${candidate.position.title} at ${candidate.position.company}`,
-        html:    inviteEmailHtml({
-          candidateName:  candidate.name,
-          positionTitle:  candidate.position.title,
-          company:        candidate.position.company,
-          agencyName:     agency.senderName ?? agency.name,
-          schedulingUrl,  // candidates pick their slot here
-          duration:       candidate.position.interviewDuration ?? 30,
-        }),
+        subject: email.subject,
+        html:    email.html,
         from: agencyFromAddress(agency),
       })
     } else {

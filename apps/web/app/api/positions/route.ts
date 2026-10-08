@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
       'jdApprovedBy', 'jdApprovedAt', 'techLeadApproved', 'hrApproved',
       'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
-      'softSkillWeightage', 'clientId',
+      'softSkillWeightage', 'clientId', 'mustHaves',
     ])
     const data: Record<string, unknown> = { agencyId: agencyId ?? body.agencyId }
     for (const [k, v] of Object.entries(body)) {
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
     // value (20/45/60 are gone). Demo durations use a separate route and are
     // unaffected.
     data.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
+    if ('mustHaves' in data) data.mustHaves = sanitizeMustHaves(data.mustHaves)
 
     const position = await prisma.position.create({ data: data as never })
     return NextResponse.json(position, { status: 201 })

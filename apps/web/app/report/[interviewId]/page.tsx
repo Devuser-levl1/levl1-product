@@ -7,7 +7,7 @@ import { useAppStore, CandidateReport } from '@/store/appStore'
 import toast from 'react-hot-toast'
 import {
   CompetencyRadar, CommunicationDial, SkillEvidenceList, IntegrityPanel,
-  CultureFitPanel, CultureFitShape,
+  CultureFitPanel, CultureFitShape, MustHavePanel, MustHaveShape,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -37,6 +37,7 @@ interface ReportPayload {
   transcriptHighlights: { quote: string; context: string }[]
   integrity: IntegritySummaryShape | null
   cultureFit: CultureFitShape | null
+  mustHaveAssessment?: MustHaveShape[] | null
   terminationReason: string | null
   isDemo?: boolean
   candidateName?: string; positionTitle?: string; company?: string; interviewDate?: string; duration?: number
@@ -193,6 +194,9 @@ export default function ReportPage() {
           </div>
           {R.professionalSummary && <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.65, margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>{R.professionalSummary}</p>}
         </section>
+
+        {/* R1b — Must-have requirements: the pass/fail lens on non-negotiables */}
+        <MustHavePanel items={R.mustHaveAssessment} />
 
         {/* R2 — Two-axis scoring (visually distinct) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }} className="report-grid2">

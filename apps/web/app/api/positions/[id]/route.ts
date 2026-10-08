@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
+import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const position = await prisma.position.findUnique({
-      where: { id: params.id },
+    const session = getSessionFromRequest(req)
+    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const position = await prisma.position.findFirst({
+      where: { id: params.id, agencyId: session.agencyId },
       include: {
         questionSet: true,
         candidates: true,
@@ -26,8 +30,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const access = recruiterAccess(req, { edit: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const owned = await prisma.position.findFirst({ where: { id: params.id, agencyId: access.session.agencyId }, select: { id: true } })
+    if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const body = await req.json()
 
@@ -38,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'techLeadApproved', 'hrApproved', 'jdApprovedAt', 'jdApprovedBy',
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
       'dynamicIntensity', 'voiceAccent', 'wonCandidateId', 'wonNotes',
-      'lostReason', 'lostNotes', 'closedAt',
+      'lostReason', 'lostNotes', 'closedAt', 'mustHaves',
     ])
     const safe: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
@@ -47,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Production interviews are fixed at 30 min (Build 06) — never let an update
     // set 20/45/60.
     if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
+    if ('mustHaves' in safe) safe.mustHaves = sanitizeMustHaves(safe.mustHaves)
 
     const position = await prisma.position.update({
       where: { id: params.id },

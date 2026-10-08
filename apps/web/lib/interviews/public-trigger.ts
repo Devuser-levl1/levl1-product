@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { sendEmail, inviteEmailHtml } from '@/lib/emailService'
+import { sendEmail } from '@/lib/emailService'
+import { buildInviteEmail } from '@/lib/screen/recruiter/invite-email'
 import { autoApproveQuestionSet } from '@/lib/interviews/questions'
 
 // ── Interviews-owned public interview trigger (Phase 1) ────────────────────
@@ -84,11 +85,12 @@ export async function triggerInterview(input: TriggerInput): Promise<{ interview
     const agency = await prisma.agency.findUnique({ where: { id: agencyId } })
     const position = await prisma.position.findUnique({ where: { id: positionId } })
     if (process.env.RESEND_API_KEY && source.email && agency && position) {
+      const email = buildInviteEmail({ interviewId: interview.id, candidateName: source.name, position, agency })
       await sendEmail({
         to: source.email,
         from: agency.senderEmail && agency.resendDomainVerified ? `${agency.senderName ?? agency.name} <${agency.senderEmail}>` : undefined,
-        subject: `Interview Invitation — ${position.title} at ${position.company}`,
-        html: inviteEmailHtml({ candidateName: source.name, positionTitle: position.title, company: position.company, agencyName: agency.name, schedulingUrl, duration: position.interviewDuration ?? 30 }),
+        subject: email.subject,
+        html: email.html,
       })
     } else {
       console.log('[interviews/public-trigger] (no RESEND key) scheduling URL:', schedulingUrl)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
+import { MustHaveEditor } from "./MustHaveEditor";
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
@@ -267,6 +268,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // ── Step 2: Skills Review ─────────────────────────────────────────────
   const [mustHaveTech,    setMustHaveTech]    = useState<string[]>([]);
   const [niceToHaveTech,  setNiceToHaveTech]  = useState<string[]>([]);
+  const [mustHaves,       setMustHaves]       = useState<string[]>([]);
   const [primaryDomain,   setPrimaryDomain]   = useState("Backend Engineering");
   const [domainContext,   setDomainContext]   = useState("Fintech");
   const [companyStage,    setCompanyStage]    = useState("Growth Stage");
@@ -406,7 +408,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           positionTitle, company, experienceLevel, roleType,
           primaryDomain, mustHaveTech, niceToHaveTech, domainContext,
           workMode, weights, interviewStyle, behavioralFramework,
-          interviewDuration: 30, redFlags, approvedJD: finalJD,
+          interviewDuration: 30, redFlags, approvedJD: finalJD, mustHaves,
         }),
       });
       const data = await res.json();
@@ -503,7 +505,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: positionTitle, company, department, experienceLevel, roleType,
-            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech,
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves,
             domainContext, workMode, interviewDuration: 30,
             dynamicIntensity, voiceAccent: voiceAccent ?? "american",
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
@@ -560,7 +562,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: positionTitle, company, department, experienceLevel, roleType,
-          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech,
+          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves,
           domainContext, workMode, interviewDuration: 30,
           dynamicIntensity, voiceAccent: voiceAccent ?? "american",
           jdText: finalJD,
@@ -926,6 +928,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   <FieldLabel label="Good to Have" hint="Preferred — AI will include if time permits" />
                   <TagInput tags={niceToHaveTech} onChange={setNiceToHaveTech} placeholder="e.g. Kubernetes, Terraform…" />
                 </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <FieldLabel label="Must-have requirements" hint="Non-negotiables — each is assessed directly and shown as met / not met in the report" />
+                <MustHaveEditor value={mustHaves} onChange={setMustHaves} suggestions={mustHaveTech} />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>

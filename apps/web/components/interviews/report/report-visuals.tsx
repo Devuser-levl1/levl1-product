@@ -350,3 +350,51 @@ export function IntegrityPanel({ integrity, terminationReason }: { integrity: In
     </div>
   )
 }
+
+// ── Must-have requirements (Screen F3) ─────────────────────────────────────
+// The recruiter's non-negotiables, each judged met / not met / insufficient
+// evidence from the transcript. Insufficient is never shown as a fail.
+export interface MustHaveShape { requirement: string; status: 'met' | 'not_met' | 'insufficient_evidence'; evidence: string }
+
+const MH_STYLE: Record<MustHaveShape['status'], { label: string; fg: string; bg: string; icon: string }> = {
+  met: { label: 'Met', fg: '#059669', bg: 'rgba(16,185,129,0.10)', icon: '✓' },
+  not_met: { label: 'Not met', fg: '#DC2626', bg: 'rgba(239,68,68,0.10)', icon: '✕' },
+  insufficient_evidence: { label: 'Insufficient evidence', fg: '#64748B', bg: '#F1F5F9', icon: '?' },
+}
+
+export function MustHavePanel({ items }: { items: MustHaveShape[] | null | undefined }) {
+  if (!Array.isArray(items) || items.length === 0) return null
+  const met = items.filter((i) => i.status === 'met').length
+  const notMet = items.filter((i) => i.status === 'not_met').length
+  const allMet = met === items.length
+  const tone = allMet ? '#059669' : notMet ? '#DC2626' : '#D97706'
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Must-have requirements</h3>
+        <span style={{ fontSize: 13, fontWeight: 800, color: tone, background: `${tone}1A`, borderRadius: 100, padding: '4px 12px' }}>{met}/{items.length} met</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Set by the recruiter · judged from the transcript</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>
+        {allMet ? 'Every non-negotiable was demonstrated in the interview.'
+          : notMet ? `${notMet} non-negotiable${notMet > 1 ? 's were' : ' was'} not met — review before advancing.`
+          : 'Some requirements weren’t covered in enough depth to judge — consider probing them in the next round.'}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((m, i) => {
+          const st = MH_STYLE[m.status] ?? MH_STYLE.insufficient_evidence
+          return (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10 }}>
+              <span aria-hidden style={{ width: 22, height: 22, borderRadius: 11, background: st.bg, color: st.fg, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{st.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{m.requirement}</div>
+                {m.evidence && <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 2, lineHeight: 1.5 }}>{m.evidence}</div>}
+              </div>
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: st.fg, background: st.bg, borderRadius: 100, padding: '3px 10px', fontSize: 11.5 }}>{st.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

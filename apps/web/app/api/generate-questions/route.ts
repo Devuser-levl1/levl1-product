@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { sanitizeMustHaves } from "@/lib/screen/recruiter/must-haves";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -36,6 +37,8 @@ export async function POST(req: NextRequest) {
       workMode, weights, interviewStyle, behavioralFramework,
       interviewDuration, redFlags, approvedJD,
     } = body;
+    // Recruiter-marked non-negotiables — every one must be directly assessed.
+    const mustHaves = sanitizeMustHaves(body.mustHaves);
 
     const isSenior    = ["8–12 years","12–18 years","18+ years"].includes(experienceLevel);
     const isHandsOn   = workMode === "Hands-on (writes code/does the work)";
@@ -111,7 +114,11 @@ Interview Duration: ${interviewDuration} mins
 Soft Skill Weights: Technical ${weights?.technical}/100, Leadership ${weights?.leadership}/100, Communication ${weights?.communication}/100, Problem Solving ${weights?.problemSolving}/100
 Interview Style: ${interviewStyle} | Behavioral Framework: ${behavioralFramework}
 ${redFlags ? `Red flags / gaps to probe: ${redFlags}` : ""}
-
+${mustHaves.length ? `
+MUST-HAVE REQUIREMENTS (non-negotiable — the recruiter will judge each one as met / not met):
+${mustHaves.map((m, i) => `${i + 1}. ${m}`).join("\n")}
+Every must-have MUST be directly assessed by at least one question: its expectedKeyPoints must include concrete evidence that would show the requirement is met, and set "mustHaves" on that question to the exact requirement text(s) it assesses. Prefer folding several must-haves into one deep question over adding questions. Questions not tied to a must-have use "mustHaves": [].
+` : ""}
 IMPORTANT: Only generate questions directly relevant to the ${primaryDomain} domain.
 DO NOT generate questions about: ${excludedDomains}
 
@@ -137,6 +144,7 @@ Generate exactly this structure (${techCount} technical, ${scenCount} scenario, 
       "followUp": "...",
       "difficulty": "intermediate",
       "techTag": "${mustHaveTech?.[0] ?? primaryDomain}",
+      "mustHaves": [],
       "estimatedMinutes": 4
     }
   ],

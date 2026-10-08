@@ -60,6 +60,11 @@ model Agency {
   state             String?
   pinCode           String?
 
+  // Candidate invite email — org-wide template (null = built-in default).
+  // Plain text with {{variables}}; rendered + escaped server-side.
+  inviteEmailSubject String?
+  inviteEmailBody    String? @db.Text
+
   // Onboarding
   onboardingComplete Boolean @default(false)
   onboardingStep     Int     @default(1)
@@ -267,6 +272,13 @@ model Position {
   // Cost lever (Build 02): the Claude-API AI-assist content check is toggleable
   // per interview tier so it can be disabled on cost-sensitive plans.
   aiAssistCheck      Boolean   @default(true)
+  // Non-negotiable requirements (subset of skills or free-form, e.g. "Led a
+  // team of 5+"). Questions must assess each; the report rates each
+  // met / not_met / insufficient_evidence.
+  mustHaves          String[]  @default([])
+  // Per-position invite email override (null = use the agency template).
+  inviteEmailSubject String?
+  inviteEmailBody    String?   @db.Text
   voiceAccent        String?
   softSkillWeightage Json?
   agencyId           String?
@@ -571,6 +583,9 @@ model Report {
   // had no evaluable content, so this report is NOT a pass/fail. Persisted so
   // analytics can exclude it in-DB rather than re-parsing sectionScores JSON.
   insufficientEvidence   Boolean   @default(false)
+  // [{ requirement, status: met|not_met|insufficient_evidence, evidence }]
+  // One entry per Position.mustHaves at generation time.
+  mustHaveAssessment     Json?
   generatedAt            DateTime  @default(now())
 }
 

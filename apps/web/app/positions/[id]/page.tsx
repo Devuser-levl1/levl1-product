@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
+import { MustHaveEditor } from '@/components/positions/MustHaveEditor'
+import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -55,6 +57,7 @@ interface Position {
   primaryDomain?: string
   techStack: string[]
   goodToHave: string[]
+  mustHaves?: string[]
   jdText?: string
   status: string
   techLeadApproved: boolean
@@ -188,6 +191,25 @@ export default function PositionDetailPage() {
   const [lostReason, setLostReason]     = useState('')
   const [lostNotes, setLostNotes]       = useState('')
   const [statusDropOpen, setStatusDropOpen] = useState(false)
+
+  // Must-have requirements (draft → PATCH) + invite template panel
+  const [mhDraft, setMhDraft]   = useState<string[] | null>(null)
+  const [mhSaving, setMhSaving] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const saveMustHaves = async () => {
+    if (!mhDraft) return
+    setMhSaving(true)
+    try {
+      const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mustHaves: mhDraft }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      setPosition(p => p ? { ...p, mustHaves: data.mustHaves ?? mhDraft } : p)
+      setMhDraft(null)
+      toast.success('Must-have requirements saved')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally { setMhSaving(false) }
+  }
 
   // Fetch position
   useEffect(() => {
@@ -500,6 +522,25 @@ export default function PositionDetailPage() {
               </div>
             </div>
 
+            {/* Must-have requirements (F3) */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Must-have Requirements</h3>
+                {mhDraft && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setMhDraft(null)} disabled={mhSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
+                    <button className="btn-primary" onClick={saveMustHaves} disabled={mhSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>{mhSaving ? 'Saving…' : 'Save'}</button>
+                  </div>
+                )}
+              </div>
+              <MustHaveEditor value={mhDraft ?? position.mustHaves ?? []} onChange={setMhDraft} suggestions={position.techStack} />
+              {mhDraft && allQuestions.length > 0 && (
+                <p style={{ fontSize: 12, color: '#B45309', margin: '10px 0 0' }}>
+                  This position&apos;s questions were generated before this change — regenerate questions so every new must-have gets a dedicated question. Reports still rate each must-have either way.
+                </p>
+              )}
+            </div>
+
             {/* Interview settings */}
             <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
               <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>Interview Settings</h3>
@@ -520,6 +561,24 @@ export default function PositionDetailPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Candidate invite email (F2) — per-position override */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Mail size={14} color="#4F46E5" />
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Candidate Invite Email</h3>
+                  <p style={{ fontSize: 12.5, color: '#64748B', margin: '4px 0 0' }}>Uses your agency template unless you customise it for this position.</p>
+                </div>
+                <button className="btn-ghost" onClick={() => setShowInvite(v => !v)} style={{ fontSize: 12.5, padding: '5px 12px' }}>{showInvite ? 'Close' : 'Customise'}</button>
+              </div>
+              {showInvite && (
+                <div style={{ marginTop: 16 }}>
+                  <InviteTemplateEditor endpoint={`/api/positions/${id}/invite-template`} scope="position"
+                    previewVars={{ position_title: position.title, company: position.company, duration_minutes: String(position.interviewDuration) }} />
+                </div>
+              )}
             </div>
 
             {/* L2 Threshold + Scoring Rubric */}
@@ -811,6 +870,10 @@ export default function PositionDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 14, color: '#64748B' }}>{completedCount} completed interview{completedCount !== 1 ? 's' : ''}</p>
+              <a href={`/api/reports/export?positionId=${id}`} download
+                style={{ marginLeft: 'auto', marginRight: 8, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#4F46E5', fontSize: 12, fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-sans)' }}>
+                <Download size={13} /> Export CSV
+              </a>
               <button
                 onClick={() => router.push(`/reports/${id}`)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
