@@ -12,6 +12,7 @@ export const linkedinConnector: BoardConnector = {
   label: 'LinkedIn',
   tier: 'A',
   mode: 'assisted',
+  postUrl: 'https://www.linkedin.com/talent/post-a-job',
   async post(job: JobForPosting): Promise<PostResult> {
     return {
       status: 'manual_pending',

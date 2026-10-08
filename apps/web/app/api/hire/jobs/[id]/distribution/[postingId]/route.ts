@@ -40,8 +40,9 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   if (!posting) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json().catch(() => ({}))
-  const data: { status?: string; externalUrl?: string; postedAt?: Date; error?: null } = {}
-  if (body.status === 'posted') { data.status = 'posted'; data.postedAt = new Date(); data.error = null }
+  const data: { status?: string; externalUrl?: string; postedAt?: Date; postedByUserId?: string; error?: null } = {}
+  // Recruiter confirms they posted it under their own account ("by whom").
+  if (body.status === 'posted') { data.status = 'posted'; data.postedAt = new Date(); data.postedByUserId = ctx.userId; data.error = null }
   if (typeof body.externalUrl === 'string' && body.externalUrl.trim()) data.externalUrl = body.externalUrl.trim()
 
   const updated = await prisma.jobPosting.update({ where: { id: posting.id }, data })

@@ -928,6 +928,10 @@ model JobBoardConnector {
   board       String                 // "linkedin" | "indeed" | "naukri" | ...
   mode        String   @default("assisted") // "api" | "assisted"
   credentials Json?                  // encrypted per-tenant creds when in api mode
+  // Assisted model: the tenant's OWN employer-account URL / profile reference on
+  // this board. Levl1 posts nothing itself — it assists the recruiter to post
+  // under this account. `active` = the board is "enabled" for this tenant.
+  accountUrl  String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   @@unique([tenantId, board])
@@ -942,6 +946,7 @@ model JobPosting {
   externalId  String?                // board's post id when available
   externalUrl String?
   postedAt    DateTime?
+  postedByUserId String?             // recruiter who confirmed the manual post ("by whom")
   error       String?
   createdAt   DateTime @default(now())
   @@index([hireJobId])

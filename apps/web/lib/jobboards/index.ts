@@ -38,12 +38,29 @@ export interface InboundCandidate {
   resumeText?: string | null
 }
 
+// ── Assisted posting (no automation) ───────────────────────────────────────
+// A board maps a Levl1 job to ITS expected fields and returns a clean, copy-
+// ready post. Levl1 never posts for the recruiter — they paste it into the
+// board and submit under their OWN account, reached via `postUrl`.
+export interface FormattedField { label: string; value: string }
+export interface FormattedPost {
+  // The job mapped to this board's expected fields (title, location, salary…).
+  fields: FormattedField[]
+  // One clean block the recruiter copies in one click.
+  copyText: string
+}
+
 export interface BoardConnector {
   board: string
   label: string
   tier: 'A' | 'B'
   mode: 'api' | 'assisted'
   comingSoon?: boolean
+  // Deep link to this board's own "post a job" page (the recruiter's account).
+  postUrl?: string
+  // Field-mapping + formatted, copy-ready output for assisted posting. Boards
+  // without a custom mapper fall back to defaultFormatPost().
+  formatPost?(job: JobForPosting): FormattedPost
   post(job: JobForPosting, creds?: Record<string, unknown>): Promise<PostResult>
   expire?(externalId: string, creds?: Record<string, unknown>): Promise<void>
   // Inbound source capability. 'live' once a real board API is wired;
@@ -51,6 +68,34 @@ export interface BoardConnector {
   // has no inbound yet.
   inbound?: 'live' | 'scaffold'
   pull?(creds?: Record<string, unknown>): Promise<InboundCandidate[]>
+}
+
+function salaryText(job: JobForPosting): string | null {
+  if (!job.salaryMin && !job.salaryMax) return null
+  const fmt = (n: number) => `₹${(n / 100000).toFixed(1)}L`
+  return `${job.salaryMin ? fmt(job.salaryMin) : '–'} – ${job.salaryMax ? fmt(job.salaryMax) : '–'} per annum`
+}
+
+// Default field mapping, reused by board adapters that don't need a custom one.
+export function defaultFormatPost(job: JobForPosting): FormattedPost {
+  const fields: FormattedField[] = [
+    { label: 'Job title', value: job.title },
+    { label: 'Company', value: job.companyName ?? '—' },
+    { label: 'Location', value: job.location ?? '—' },
+    { label: 'Job type', value: 'Full-time' },
+  ]
+  const sal = salaryText(job)
+  if (sal) fields.push({ label: 'Salary', value: sal })
+  fields.push({ label: 'Apply link', value: job.applyUrl })
+  fields.push({ label: 'Description', value: job.description })
+  return { fields, copyText: buildJobPayload(job) }
+}
+
+// Assisted-posting bundle for a board: where to post + the formatted post.
+export function assistForBoard(board: string, job: JobForPosting): { label: string; postUrl: string | null; formatted: FormattedPost } | null {
+  const c = getConnector(board)
+  if (!c) return null
+  return { label: c.label, postUrl: c.postUrl ?? null, formatted: c.formatPost ? c.formatPost(job) : defaultFormatPost(job) }
 }
 
 // Shared sample feed for boards whose inbound is still scaffolded (no live API

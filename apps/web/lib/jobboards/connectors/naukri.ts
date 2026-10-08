@@ -8,6 +8,7 @@ export const naukriConnector: BoardConnector = {
   label: 'Naukri',
   tier: 'A',
   mode: 'assisted',
+  postUrl: 'https://www.naukri.com/recruit/post-job',
   async post(job: JobForPosting): Promise<PostResult> {
     return {
       status: 'manual_pending',
