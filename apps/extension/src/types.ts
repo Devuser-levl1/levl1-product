@@ -18,6 +18,11 @@ export interface Captured {
   email: string              // only if visibly present on the page
   phone: string              // only if visibly present on the page
   source: 'linkedin' | 'indeed' | 'naukri' | 'generic'
+  // False when the current page isn't an individual candidate profile (e.g. a
+  // board's search-results list) — the popup then prompts to open a candidate.
+  capturable?: boolean
+  // Guidance shown when capturable is false.
+  notice?: string
 }
 
 export interface Job { id: string; title: string }

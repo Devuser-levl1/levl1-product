@@ -102,6 +102,17 @@ function App() {
     </div>
   )
 
+  if (fields.capturable === false) return (
+    <div>{Header}
+      <div style={{ padding: 18 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#B45309', background: 'rgba(245,158,11,0.09)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, padding: 12, lineHeight: 1.5 }}>
+          {fields.notice ?? 'Open a specific candidate’s profile first, then click capture.'}
+        </div>
+        <button onClick={async () => { setLoading(true); setFields(await captureActiveTab()); setLoading(false) }} style={{ ...I, marginTop: 12, cursor: 'pointer' }}>Re-check this page</button>
+      </div>
+    </div>
+  )
+
   return (
     <div>{Header}
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>

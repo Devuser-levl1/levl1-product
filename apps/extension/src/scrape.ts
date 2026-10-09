@@ -25,6 +25,7 @@ export function scrapeProfile(): Captured {
   const result: Captured = {
     name: '', title: '', company: '', location: '', profileUrl: location.href.split('?')[0],
     email: '', phone: '', source: isLinkedIn ? 'linkedin' : isIndeed ? 'indeed' : isNaukri ? 'naukri' : 'generic',
+    capturable: true,
   }
 
   // ── JSON-LD Person (works on many sites incl. LinkedIn) ──
@@ -56,13 +57,43 @@ export function scrapeProfile(): Captured {
   }
 
   if (isIndeed) {
-    // Indeed résumé / candidate pages. Selectors are best-effort across Indeed's
-    // résumé view and employer candidate detail; falls through to generic +
-    // visible-text extraction below for anything not matched.
-    if (!result.name) result.name = firstText(['[data-testid="resume-name"]', 'h1[itemprop="name"]', 'header h1', 'main h1', 'h1'])
-    if (!result.title) result.title = firstText(['[data-testid="resume-headline"]', '[itemprop="jobTitle"]', 'h2.rezemp-ResumeDisplay-header'])
-    if (!result.company) result.company = firstText(['[data-testid="work-experience"] [data-testid="company"]', '[itemprop="worksFor"]'])
-    if (!result.location) result.location = firstText(['[data-testid="resume-location"]', '[itemprop="address"]'])
+    // Only an INDIVIDUAL candidate profile is capturable — never the search
+    // list (whose heading is "Smart Sourcing" and whose only email is the
+    // logged-in recruiter's account). Detect page type by URL + DOM.
+    const path = location.pathname
+    const looksLikeProfile = /\/resume\/[A-Za-z0-9]/.test(path) || /\/candidates?\/[A-Za-z0-9]/.test(path)
+    const looksLikeSearch = /\/search/.test(path) || path === '/' || path === ''
+    // A real profile renders a dedicated candidate container; a search list does not.
+    const profileRoot = document.querySelector(
+      '[data-testid="resume"], [data-testid="CandidateProfile"], .rezemp-ResumeDisplay, [class*="ResumeDisplay"], main [data-testid="resume-name"]',
+    )
+    const isProfile = !!profileRoot || (looksLikeProfile && !looksLikeSearch)
+
+    if (!isProfile) {
+      result.capturable = false
+      result.notice = 'This looks like the Indeed search/results page. Open a specific candidate’s profile first, then click capture.'
+      return result // do NOT scrape list headings or the account email
+    }
+
+    // Scope every lookup to the candidate profile container so we never read the
+    // page chrome (account menu, nav, "Smart Sourcing" heading).
+    const root: ParentNode = profileRoot ?? document
+    const scoped = (sels: string[]): string => {
+      for (const s of sels) { const t = text(root.querySelector(s)); if (t) return t }
+      return ''
+    }
+    // NOTE: selectors are best-effort until the real profile DOM is confirmed
+    // (see the report) — but they are SCOPED to the profile root and never fall
+    // back to document.title / og: / a page-wide email scan.
+    result.name = scoped(['[data-testid="resume-name"]', '[data-testid="CandidateName"]', 'h1[itemprop="name"]', 'h1'])
+    result.title = scoped(['[data-testid="resume-headline"]', '[data-testid="CandidateHeadline"]', '[itemprop="jobTitle"]'])
+    result.company = scoped(['[data-testid="work-experience"] [data-testid="company"]', '[data-testid="ExperienceItem-company"]', '[itemprop="worksFor"]'])
+    result.location = scoped(['[data-testid="resume-location"]', '[data-testid="CandidateLocation"]', '[itemprop="address"]'])
+    // Email/phone on Indeed are usually behind a paid unlock — only take them
+    // from an explicit mailto/tel INSIDE the profile; otherwise leave blank.
+    const m = root.querySelector('a[href^="mailto:"]'); if (m) result.email = (m.getAttribute('href') || '').replace('mailto:', '').split('?')[0].trim()
+    const t = root.querySelector('a[href^="tel:"]'); if (t) result.phone = (t.getAttribute('href') || '').replace('tel:', '').trim()
+    return result // Indeed is fully handled here — skip the generic fallbacks
   }
 
   if (isNaukri) {
@@ -77,19 +108,23 @@ export function scrapeProfile(): Captured {
     if (!result.location) result.location = firstText(['.loc', '.location', '[data-ngp="location"]'])
   }
 
-  // ── Generic fallback from page metadata ──
-  if (!result.name) result.name = meta('og:title') || (document.title || '').split(/[|\-–]/)[0].trim()
-  if (!result.title) result.title = meta('og:description') || meta('description')
-
-  // ── Email / phone — ONLY if visibly present (mailto/tel links or page text) ──
+  // Explicit candidate contact links are safe on any source.
   const mailto = document.querySelector('a[href^="mailto:"]')
   if (mailto) result.email = (mailto.getAttribute('href') || '').replace('mailto:', '').split('?')[0].trim()
   const tel = document.querySelector('a[href^="tel:"]')
   if (tel) result.phone = (tel.getAttribute('href') || '').replace('tel:', '').trim()
 
-  const visible = (document.body?.innerText || '')
-  if (!result.email) { const m = visible.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if (m) result.email = m[0] }
-  if (!result.phone) { const m = visible.match(/(\+?\d[\d\s().-]{8,}\d)/); if (m) result.phone = m[1].trim() }
+  // ── Generic fallbacks — ONLY for unknown pages (source 'generic'). Known
+  //    boards must NEVER fall back to the page title / og: metadata (grabs the
+  //    page heading) or scan the whole page for an email/phone (grabs the
+  //    logged-in account's) — leave those fields blank instead.
+  if (result.source === 'generic') {
+    if (!result.name) result.name = meta('og:title') || (document.title || '').split(/[|\-–]/)[0].trim()
+    if (!result.title) result.title = meta('og:description') || meta('description')
+    const visible = (document.body?.innerText || '')
+    if (!result.email) { const m = visible.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if (m) result.email = m[0] }
+    if (!result.phone) { const m = visible.match(/(\+?\d[\d\s().-]{8,}\d)/); if (m) result.phone = m[1].trim() }
+  }
 
   return result
 }
