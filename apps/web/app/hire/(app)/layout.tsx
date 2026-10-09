@@ -207,12 +207,6 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
                 <span style={{ color: '#7C3AED' }}>◆</span> Levl1 Screen <span style={{ fontSize: 11 }}>↗</span>
               </a>
             )}
-            {entInterviews === false && (
-              <a href="/contact" title="Add Levl1 Interviews to your account"
-                style={{ fontSize: 12.5, fontWeight: 600, color: '#64748B', textDecoration: 'none', border: '1px dashed #CBD5E1', borderRadius: 8, padding: '6px 12px' }}>
-                + Add Levl1 Screen
-              </a>
-            )}
             {isStaff && (
               <a href="/platform/usage" title="Levl1 platform owner console" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#6D28D9,#7C3AED)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>
                 ◆ Platform <span style={{ fontSize: 11 }}>↗</span>
