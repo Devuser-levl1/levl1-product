@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { signJWT, buildSessionCookie } from '@/lib/auth'
+import { linkInterviewsLogin, unifiedPayloadFor, signLevlSession, buildSessionCookie } from '@/lib/levl-sso'
 import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 
 export async function POST(req: NextRequest) {
@@ -53,13 +53,11 @@ export async function POST(req: NextRequest) {
       return { agency, user }
     })
 
-    const token = signJWT({
-      userId:   user.id,
-      agencyId: agency.id,
-      email:    user.email,
-      role:     user.role,
-      name:     user.name,
-    })
+    // Mint the unified Levl1 SSO session (same path as OTP login) and LINK the
+    // account, so a later HirePilot login keeps Screen access in the shared
+    // cookie instead of overwriting it with interviews:false.
+    const account = await linkInterviewsLogin(user.email, user.id, agency.id)
+    const token = signLevlSession(await unifiedPayloadFor(account, user.name))
 
     const res = NextResponse.json({
       user:   { id: user.id, name: user.name, email: user.email, role: user.role },

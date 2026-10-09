@@ -323,6 +323,10 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(body),
       });
+      if (res.status === 401) {
+        window.location.assign("/interviews/login?expired=1");
+        throw new Error("Your session has expired — please sign in again.");
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save candidates");
 

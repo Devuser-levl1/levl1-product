@@ -6,6 +6,20 @@ import { useAppStore } from '@/store/appStore'
 export function useDataLoader() {
   const { setPositions, setCandidates, setInterviews } = useAppStore()
 
+  // Session guard: the dashboard renders from cached store data, so without
+  // this a signed-out user (expired cookie, or a HirePilot login that replaced
+  // the shared session without Screen access) sees a "live" dashboard and only
+  // finds out via an "Unauthenticated" error on their next action.
+  useEffect(() => {
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((r) => {
+        if (r.status === 401 && typeof window !== 'undefined') {
+          window.location.replace('/interviews/login?expired=1')
+        }
+      })
+      .catch(() => { /* offline — don't bounce */ })
+  }, [])
+
   useEffect(() => {
     // Load positions
     fetch('/api/positions')

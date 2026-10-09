@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { signJWT, buildSessionCookie } from '@/lib/auth'
+import { linkInterviewsLogin, unifiedPayloadFor, signLevlSession, buildSessionCookie } from '@/lib/levl-sso'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,13 +33,9 @@ export async function POST(req: NextRequest) {
     })
 
     // Auto-login after successful reset
-    const jwtToken = signJWT({
-      userId:   user.id,
-      agencyId: user.agencyId,
-      email:    user.email,
-      role:     user.role,
-      name:     user.name,
-    })
+    // Unified SSO session + account link (see auth/signup for why).
+    const account = await linkInterviewsLogin(user.email, user.id, user.agencyId)
+    const jwtToken = signLevlSession(await unifiedPayloadFor(account, user.name))
 
     const res = NextResponse.json({ success: true })
     res.headers.set('Set-Cookie', buildSessionCookie(jwtToken))

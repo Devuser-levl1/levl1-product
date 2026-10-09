@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Loader2 } from 'lucide-react'
@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [expired, setExpired] = useState(false)
+  useEffect(() => { setExpired(new URLSearchParams(window.location.search).get('expired') === '1') }, [])
 
   async function requestCode(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +56,11 @@ export default function LoginPage() {
           <span style={{ fontSize: 15, fontWeight: 800, color: INDIGO }}>Interviews</span>
         </Link>
 
+        {expired && (
+          <div role="status" style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 16 }}>
+            Your session has expired. Please sign in again to continue — nothing you saved was lost.
+          </div>
+        )}
         <h1 style={{ fontSize: 23, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>Sign in</h1>
         <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 22px' }}>
           {step === 'email' ? 'Enter your work email and we\'ll send you a one-time code.' : `We sent a 6-digit code to ${email}.`}
