@@ -55,7 +55,7 @@ export default function SourcingPage() {
       <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Sourcing</h1>
       <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 12px' }}>Generate a board-optimized search for a role, open the board pre-filled, and capture the profiles you choose with the Levl1 browser extension — one at a time.</p>
       <div style={{ fontSize: 12.5, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', marginBottom: 20 }}>
-        Sourcing is <strong>recruiter-driven</strong>: you choose each candidate. Levl1 does not scrape or bulk-pull from boards — the extension captures only the profile you&apos;re viewing, under your own board login.
+        Sourcing is <strong>recruiter-driven</strong>: you choose each candidate. Levl1 does not scrape or bulk-pull from boards — the extension captures only the profile you&apos;re viewing, under your own board login. <a href="/hire/settings/sourcing-extension" style={{ color: '#6D28D9', fontWeight: 700 }}>Install the capture extension →</a>
       </div>
 
       <div style={{ ...card, marginBottom: 16 }}>

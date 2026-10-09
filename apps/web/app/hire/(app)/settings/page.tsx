@@ -9,6 +9,7 @@ export default function HireSettings() {
     ['Account', 'Your profile (name, email) and change your password.', '/hire/settings/account'],
     ['Billing & plan', 'Manage your plan, usage and invoices.', '/hire/settings/billing'],
     ['Job Boards', 'Enable Indeed, Naukri, LinkedIn & more — Levl1 formats the post, you submit under your own account.', '/hire/settings/job-boards'],
+    ['Sourcing Extension', 'Install the Chrome extension to capture LinkedIn, Indeed & Naukri profiles into Hire — one-click setup, no terminal.', '/hire/settings/sourcing-extension'],
     ['Email Templates', 'Reusable templates with {{name}}, {{job}}, {{company}} tokens for 1:1 outreach.', '/hire/settings/email-templates'],
     ['Email / Mailbox', 'Connect your business mailbox (IMAP/SMTP) to pull job-spec emails & send from your own address.', '/hire/settings/mailbox'],
     ['Career Page', 'A branded public page listing your open roles, on your logo & colour.', '/hire/settings/career-page'],
