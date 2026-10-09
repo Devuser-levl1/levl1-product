@@ -30,20 +30,15 @@ async function call<T>(settings: Settings, path: string, init?: RequestInit): Pr
 }
 
 // Lightweight authenticated call used to validate the key on the options page.
+// Hits the Hire job list (lvl1_ auth) so the SAME key validates + captures.
 export async function validateKey(settings: Settings): Promise<boolean> {
-  await call<Job[]>(settings, '/jobs')
+  await call<Job[]>(settings, '/hire/jobs')
   return true
 }
 
 export async function listJobs(settings: Settings): Promise<Job[]> {
-  const jobs = await call<{ id: string; title: string }[]>(settings, '/jobs')
+  const jobs = await call<{ id: string; title: string }[]>(settings, '/hire/jobs')
   return jobs.map((j) => ({ id: j.id, title: j.title }))
-}
-
-export async function createCandidate(settings: Settings, input: {
-  name: string; email: string; phone?: string; resumeUrl?: string
-}): Promise<{ id: string }> {
-  return call<{ id: string }>(settings, '/candidates', { method: 'POST', body: JSON.stringify(input) })
 }
 
 // Capture a recruiter-selected profile into Levl1 HIRE: deduped per job, scored
@@ -54,10 +49,4 @@ export async function captureToHire(settings: Settings, input: {
   location?: string; profileUrl?: string; source?: string; jobId?: string
 }): Promise<{ id: string; duplicate: boolean; candidateUrl: string }> {
   return call<{ id: string; duplicate: boolean; candidateUrl: string }>(settings, '/hire/capture', { method: 'POST', body: JSON.stringify(input) })
-}
-
-export async function triggerInterview(settings: Settings, input: {
-  candidateId: string; jobId?: string; title?: string; jdText?: string
-}): Promise<{ interviewId: string; interviewUrl: string }> {
-  return call<{ interviewId: string; interviewUrl: string }>(settings, '/interviews', { method: 'POST', body: JSON.stringify(input) })
 }

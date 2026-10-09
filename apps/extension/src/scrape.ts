@@ -21,9 +21,10 @@ export function scrapeProfile(): Captured {
 
   const isLinkedIn = location.hostname.endsWith('linkedin.com') && location.pathname.startsWith('/in/')
   const isIndeed = location.hostname.endsWith('indeed.com')
+  const isNaukri = location.hostname.endsWith('naukri.com')
   const result: Captured = {
     name: '', title: '', company: '', location: '', profileUrl: location.href.split('?')[0],
-    email: '', phone: '', source: isLinkedIn ? 'linkedin' : isIndeed ? 'indeed' : 'generic',
+    email: '', phone: '', source: isLinkedIn ? 'linkedin' : isIndeed ? 'indeed' : isNaukri ? 'naukri' : 'generic',
   }
 
   // ── JSON-LD Person (works on many sites incl. LinkedIn) ──
@@ -62,6 +63,18 @@ export function scrapeProfile(): Captured {
     if (!result.title) result.title = firstText(['[data-testid="resume-headline"]', '[itemprop="jobTitle"]', 'h2.rezemp-ResumeDisplay-header'])
     if (!result.company) result.company = firstText(['[data-testid="work-experience"] [data-testid="company"]', '[itemprop="worksFor"]'])
     if (!result.location) result.location = firstText(['[data-testid="resume-location"]', '[itemprop="address"]'])
+  }
+
+  if (isNaukri) {
+    // Naukri Resdex / recruiter candidate-profile view. Selectors are best-effort
+    // across Resdex profile layouts; falls through to generic + visible-text
+    // extraction below for anything not matched. Experience/skills aren't part of
+    // the shared capture shape, so (like LinkedIn/Indeed) only the standard
+    // fields are mapped here.
+    if (!result.name) result.name = firstText(['.cand-name', '[data-ngp="candidateName"]', '.name', 'header h1', 'main h1', 'h1'])
+    if (!result.title) result.title = firstText(['.desig', '.designation', '[data-ngp="designation"]'])
+    if (!result.company) result.company = firstText(['.org', '.company', '[data-ngp="organization"]'])
+    if (!result.location) result.location = firstText(['.loc', '.location', '[data-ngp="location"]'])
   }
 
   // ── Generic fallback from page metadata ──

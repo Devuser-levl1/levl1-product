@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { getSettings } from './storage'
 import { scrapeProfile } from './scrape'
-import { captureToHire, triggerInterview, AuthError } from './api'
+import { captureToHire, AuthError } from './api'
 import { Captured, Settings } from './types'
 
 const PURPLE = '#6D28D9'
@@ -10,11 +10,13 @@ const I: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadiu
 const L: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }
 
 const empty: Captured = { name: '', title: '', company: '', location: '', profileUrl: '', email: '', phone: '', source: 'generic' }
+const SOURCE_LABEL: Record<string, string> = { linkedin: 'LinkedIn profile', indeed: 'Indeed profile', naukri: 'Naukri profile', generic: 'Page' }
 
 async function captureActiveTab(): Promise<Captured> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab?.id) return empty
-  // Prefer the declared content script (LinkedIn); fall back to on-demand inject.
+  // Prefer the declared content script (LinkedIn/Indeed/Naukri); fall back to
+  // on-demand inject for anything else.
   try {
     const resp = await chrome.tabs.sendMessage(tab.id, { type: 'LEVL1_SCRAPE' })
     if (resp?.ok && resp.data) return resp.data as Captured
@@ -30,21 +32,15 @@ function App() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [fields, setFields] = useState<Captured>(empty)
   const [loading, setLoading] = useState(true)
-  const [withInterview, setWithInterview] = useState(false)
-  const [roleTitle, setRoleTitle] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [done, setDone] = useState<{ candidateUrl: string; interviewUrl?: string } | null>(null)
+  const [done, setDone] = useState<{ candidateUrl: string; duplicate: boolean } | null>(null)
 
   useEffect(() => {
     (async () => {
       const s = await getSettings()
       setSettings(s)
-      if (s.apiKey) {
-        const cap = await captureActiveTab()
-        setFields(cap)
-        setRoleTitle(cap.title || '')
-      }
+      if (s.apiKey) setFields(await captureActiveTab())
       setLoading(false)
     })()
   }, [])
@@ -69,15 +65,7 @@ function App() {
         source: fields.source,
         jobId: settings.defaultJobId || undefined,
       })
-      let interviewUrl: string | undefined
-      if (withInterview) {
-        const args = settings.defaultJobId
-          ? { candidateId: candidate.id, jobId: settings.defaultJobId }
-          : { candidateId: candidate.id, title: roleTitle || fields.title || 'Role', jdText: roleTitle || fields.title || 'Role' }
-        const res = await triggerInterview(settings, args)
-        interviewUrl = res.interviewUrl
-      }
-      setDone({ candidateUrl: candidate.candidateUrl || `${settings.baseUrl}/hire/candidates`, interviewUrl })
+      setDone({ candidateUrl: candidate.candidateUrl || `${settings.baseUrl}/hire/candidates`, duplicate: candidate.duplicate })
     } catch (e) {
       if (e instanceof AuthError) setError('Your API key is invalid or revoked. Re-enter it in Options.')
       else setError(e instanceof Error ? e.message : 'Failed to add candidate.')
@@ -97,7 +85,7 @@ function App() {
   if (!settings?.apiKey) return (
     <div>{Header}
       <div style={{ padding: 18 }}>
-        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5 }}>Add your Levl1 API key to start capturing candidates.</div>
+        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5 }}>Add your Levl1 Hire API key to start capturing candidates.</div>
         <button onClick={() => chrome.runtime.openOptionsPage()} style={{ ...I, background: PURPLE, color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer', marginTop: 12 }}>Open setup</button>
       </div>
     </div>
@@ -106,12 +94,10 @@ function App() {
   if (done) return (
     <div>{Header}
       <div style={{ padding: 18 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', marginBottom: 8 }}>✓ Added to Levl1 Hire</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', marginBottom: 8 }}>{done.duplicate ? '✓ Already on this job' : '✓ Added to Levl1 Hire'}</div>
+        {done.duplicate && <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 8 }}>This candidate was already on the selected job — no duplicate created.</div>}
         <a href={done.candidateUrl} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: 13, color: PURPLE, marginBottom: 8 }}>View in candidates →</a>
-        {done.interviewUrl && (
-          <div style={{ fontSize: 12.5, color: '#475569' }}>Interview created. Candidate link:<br /><a href={done.interviewUrl} target="_blank" rel="noreferrer" style={{ color: PURPLE, wordBreak: 'break-all' }}>{done.interviewUrl}</a></div>
-        )}
-        <button onClick={() => { setDone(null); setFields(empty) }} style={{ ...I, marginTop: 14, cursor: 'pointer' }}>Capture another</button>
+        <button onClick={() => { setDone(null); setFields(empty) }} style={{ ...I, marginTop: 6, cursor: 'pointer' }}>Capture another</button>
       </div>
     </div>
   )
@@ -119,10 +105,10 @@ function App() {
   return (
     <div>{Header}
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 11, color: '#94A3B8' }}>Source: {fields.source === 'linkedin' ? 'LinkedIn profile' : 'Page'} · edit before adding</div>
+        <div style={{ fontSize: 11, color: '#94A3B8' }}>Source: {SOURCE_LABEL[fields.source] ?? 'Page'} · edit before adding</div>
         <div><span style={L}>Name *</span><input style={I} value={fields.name} onChange={(e) => set('name', e.target.value)} /></div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ flex: 1 }}><span style={L}>Email *</span><input style={I} value={fields.email} onChange={(e) => set('email', e.target.value)} placeholder="add if not shown" /></div>
+          <div style={{ flex: 1 }}><span style={L}>Email</span><input style={I} value={fields.email} onChange={(e) => set('email', e.target.value)} placeholder="add if not shown" /></div>
           <div style={{ flex: 1 }}><span style={L}>Phone</span><input style={I} value={fields.phone} onChange={(e) => set('phone', e.target.value)} /></div>
         </div>
         <div><span style={L}>Title</span><input style={I} value={fields.title} onChange={(e) => set('title', e.target.value)} /></div>
@@ -131,18 +117,12 @@ function App() {
           <div style={{ flex: 1 }}><span style={L}>Location</span><input style={I} value={fields.location} onChange={(e) => set('location', e.target.value)} /></div>
         </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', marginTop: 4, cursor: 'pointer' }}>
-          <input type="checkbox" checked={withInterview} onChange={(e) => setWithInterview(e.target.checked)} />
-          Add &amp; trigger AI interview
-        </label>
-        {withInterview && !settings.defaultJobId && (
-          <div><span style={L}>Role title (inline JD)</span><input style={I} value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} placeholder="e.g. Backend Engineer" /></div>
-        )}
-        {withInterview && settings.defaultJobId && <div style={{ fontSize: 11.5, color: '#94A3B8' }}>Using your default job from Options.</div>}
-
+        <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2 }}>
+          {settings.defaultJobId ? 'Adds to your default Hire job (set in Options) — scored & deduped.' : 'Adds to your talent pool (no default job set in Options).'}
+        </div>
         {error && <div style={{ fontSize: 12.5, color: '#DC2626' }}>{error}</div>}
         <button onClick={submit} disabled={submitting} style={{ ...I, background: PURPLE, color: '#fff', fontWeight: 700, border: 'none', cursor: 'pointer', marginTop: 6 }}>
-          {submitting ? 'Adding…' : withInterview ? 'Add & trigger interview' : 'Add to Levl1'}
+          {submitting ? 'Adding…' : 'Add to Levl1'}
         </button>
       </div>
     </div>

@@ -17,7 +17,7 @@ export interface Captured {
   profileUrl: string
   email: string              // only if visibly present on the page
   phone: string              // only if visibly present on the page
-  source: 'linkedin' | 'indeed' | 'generic'
+  source: 'linkedin' | 'indeed' | 'naukri' | 'generic'
 }
 
 export interface Job { id: string; title: string }

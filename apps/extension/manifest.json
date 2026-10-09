@@ -18,7 +18,9 @@
     "http://127.0.0.1/*",
     "https://www.linkedin.com/*",
     "https://resumes.indeed.com/*",
-    "https://*.indeed.com/*"
+    "https://*.indeed.com/*",
+    "https://resdex.naukri.com/*",
+    "https://*.naukri.com/*"
   ],
   "content_scripts": [
     {
@@ -32,6 +34,16 @@
         "https://resumes.indeed.com/search*",
         "https://*.indeed.com/rc/*",
         "https://employers.indeed.com/candidates/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://resdex.naukri.com/v3/profileView*",
+        "https://resdex.naukri.com/v3/search*",
+        "https://resdex.naukri.com/profile/*",
+        "https://*.naukri.com/recruit/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"

@@ -67,12 +67,12 @@ function App() {
       {status.kind !== 'idle' && <div style={{ fontSize: 13, marginTop: 10, color: status.kind === 'ok' ? '#059669' : '#DC2626' }}>{status.msg}</div>}
 
       <div style={{ marginTop: 22, borderTop: '1px solid #F1F5F9', paddingTop: 18 }}>
-        <span style={L}>Default job for interviews (optional)</span>
+        <span style={L}>Default Hire job for captures (optional)</span>
         <select style={I} value={defaultJobId} onChange={(e) => saveJob(e.target.value)} disabled={jobs.length === 0}>
-          <option value="">No default — use inline role title</option>
+          <option value="">No default — add captures to the talent pool</option>
           {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
         </select>
-        <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 4 }}>{jobs.length === 0 ? 'Validate your key to load jobs.' : 'Used when “Add & trigger interview” is on.'}</div>
+        <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 4 }}>{jobs.length === 0 ? 'Validate your key to load your Hire jobs.' : 'Captured candidates are added to this job — scored against it and de-duplicated. One key setup covers every board.'}</div>
       </div>
     </div>
   )
