@@ -8,12 +8,13 @@ import {
   CalendarDays, Building2, BarChart3, Megaphone, Mail, Network, Receipt, HelpCircle, Sparkles, HeartHandshake, Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
-import { can, type Capability } from '@/lib/hire/permissions'
+import { type Capability } from '@/lib/hire/permissions'
 import { ContactHelpdesk } from '@/components/ui/ContactHelpdesk'
 import { isAgencyOnlyPage, type BusinessType } from '@/lib/hire/business-type'
 
 interface Me {
   user: { id: string; name: string; email: string; role: string }
+  caps?: Capability[]
   tenant: { id: string; name: string; plan: string; trialEndsAt: string | null; trialActive: boolean; businessType: BusinessType }
 }
 
@@ -117,7 +118,7 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
 
   // Gating: hide by role capability and hide agency-only items for ENTERPRISE.
   const navVisible = (item: NavItem) =>
-    (!item.cap || can(me!.user.role, item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')
+    (!item.cap || (me!.caps ?? []).includes(item.cap)) && !(item.agencyOnly && me!.tenant.businessType === 'ENTERPRISE')
 
   // Render one nav row. `depth` indents nested sub-items (e.g. Receivables).
   const renderNavRow = (item: NavItem, depth: number) => {

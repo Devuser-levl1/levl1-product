@@ -4,6 +4,7 @@ import { verifyLevlSession, SESSION_COOKIE } from '@/lib/levl-sso'
 import { prisma } from '@/lib/prisma'
 import { isReadOnly, TRIAL_CONFIG } from '@/lib/hire/trial-config'
 import { isAgencyOnlyApi, type BusinessType } from '@/lib/hire/business-type'
+import { effectiveCaps, type Capability } from '@/lib/hire/permissions'
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'levl1-dev-secret-change-in-production-please'
@@ -13,6 +14,9 @@ export interface HireContext {
   tenantId: string
   role: string
   businessType: BusinessType
+  // Effective capabilities for this user's role under the tenant's RBAC matrix
+  // (resolved from HireTenant.rolePermissions, with Admin lock-on caps forced).
+  caps: Capability[]
 }
 
 interface HireTokenPayload {
@@ -93,12 +97,16 @@ export async function getHireContext(req: NextRequest): Promise<HireContext | nu
     // Source of truth: current role + tenant from the live HireUser row.
     const hu = await prisma.hireUser.findUnique({
       where: { id: userId },
-      select: { role: true, tenantId: true, disabled: true, tenant: { select: { businessType: true } } },
+      select: { role: true, tenantId: true, disabled: true, tenant: { select: { businessType: true, rolePermissions: true } } },
     })
     if (!hu) return null // user removed / unknown → no access
     if (hu.disabled) return null // disabled member — access revoked immediately, even mid-session
 
-    return { userId, tenantId: hu.tenantId, role: hu.role, businessType: hu.tenant.businessType as BusinessType }
+    return {
+      userId, tenantId: hu.tenantId, role: hu.role,
+      businessType: hu.tenant.businessType as BusinessType,
+      caps: effectiveCaps(hu.role, hu.tenant.rolePermissions),
+    }
   } catch {
     return null
   }

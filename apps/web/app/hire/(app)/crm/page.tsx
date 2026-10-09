@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core'
 import { INDUSTRIES, DEAL_STAGES, STAGE_PROBABILITY } from '@/lib/hire/constants'
 import { DealModal, type DealLike } from '@/components/hire/deal-modal'
-import { can } from '@/lib/hire/permissions'
 
 interface Client { id: string; name: string; industry: string | null; website: string | null; contacts: unknown[]; jobs: { id: string; title: string }[]; deals: { id: string; value: number; stage: string }[]; _count: { contacts: number; deals: number; jobs: number } }
 interface Deal extends DealLike { client: { id: string; name: string } }
@@ -22,7 +21,7 @@ export default function CrmPage() {
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
 
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(can(d?.user?.role, 'crm'))).catch(() => setAllowed(false)) }, [])
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(Boolean(d?.caps?.includes('crm')))).catch(() => setAllowed(false)) }, [])
 
   const loadClients = useCallback(() => { fetch('/api/hire/crm/clients').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setClients(d)).catch(() => {}) }, [])
   const loadDeals = useCallback(() => { fetch('/api/hire/crm/deals').then((r) => (r.ok ? r.json() : null)).then((d) => d?.grouped && setGrouped(d.grouped)).catch(() => {}) }, [])

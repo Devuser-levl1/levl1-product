@@ -1,7 +1,6 @@
 'use client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NewInvoiceModal } from '@/components/hire/new-invoice-modal'
-import { can } from '@/lib/hire/permissions'
 
 interface Invoice {
   id: string; number: string | null; amount: number; amountPaid: number; currency: string
@@ -45,7 +44,7 @@ export default function ARPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [history, setHistory] = useState<Record<string, Reminder[]>>({})
 
-  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(can(d?.user?.role, 'ar'))).catch(() => setAllowed(false)) }, [])
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setAllowed(Boolean(d?.caps?.includes('ar')))).catch(() => setAllowed(false)) }, [])
 
   const load = useCallback(() => {
     Promise.all([

@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { canAccessClient, requireCap } from '@/lib/hire/scope'
-import { can } from '@/lib/hire/permissions'
 
 export const dynamic = 'force-dynamic'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
   // Recruiters may only open a client they're assigned to (no direct-URL access to others).
   if (!(await canAccessClient(ctx, params.id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  const showDeals = can(ctx.role, 'deals')
+  const showDeals = ctx.caps.includes('deals')
   const client = await prisma.hireClient.findFirst({
     where: { id: params.id, tenantId: ctx.tenantId },
     include: {

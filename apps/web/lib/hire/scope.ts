@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { HireContext } from './tenant-middleware'
-import { can, isManagerPlus, normalizeRole, type Capability } from './permissions'
+import { isManagerPlus, normalizeRole, type Capability } from './permissions'
 import { clientScope, jobScope, candidateScope } from './roles'
 
 // Server-side scoping: turns a request context into Prisma where-fragments that
@@ -83,9 +83,10 @@ export function forbidden(): NextResponse {
   return NextResponse.json({ error: 'You do not have access to this.' }, { status: 403 })
 }
 
-/** Returns a 403 response if the role lacks the capability, else null. */
+/** Returns a 403 response if the user lacks the capability, else null.
+ *  Reads the tenant's RBAC matrix (ctx.caps), not the hardcoded defaults. */
 export function requireCap(ctx: HireContext, cap: Capability): NextResponse | null {
-  return can(ctx.role, cap) ? null : forbidden()
+  return ctx.caps.includes(cap) ? null : forbidden()
 }
 
 export { normalizeRole }

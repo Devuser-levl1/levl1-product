@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
-import { can } from '@/lib/hire/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +16,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
 
 // PATCH — change the tenant's business type. Admin-only (settingsAdmin).
 export const PATCH = withHireAuth(async (req, ctx) => {
-  if (!can(ctx.role, 'settingsAdmin')) {
+  if (!ctx.caps.includes('settingsAdmin')) {
     return NextResponse.json({ error: 'Only an admin can change the business type.' }, { status: 403 })
   }
   const body = await req.json().catch(() => ({}))

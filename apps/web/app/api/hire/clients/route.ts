@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { withHireAuth } from '@/lib/hire/tenant-middleware'
 import { prisma } from '@/lib/prisma'
 import { getScopes } from '@/lib/hire/scope'
-import { can } from '@/lib/hire/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +15,7 @@ export const GET = withHireAuth(async (_req, ctx) => {
 })
 
 export const POST = withHireAuth(async (req, ctx) => {
-  if (!can(ctx.role, 'manageClients')) {
+  if (!ctx.caps.includes('manageClients')) {
     console.warn('[hire/clients] create denied — role=%s (needs manageClients)', ctx.role)
     return NextResponse.json({ error: `Your role (${ctx.role}) can't create clients — an Admin or Manager can.` }, { status: 403 })
   }

@@ -12,6 +12,7 @@ export type AuditAction =
   | 'team_member_invite' | 'team_member_role_change' | 'team_member_remove' | 'team_member_disable' | 'team_member_enable'
   | 'job_reassign' | 'job_self_assign' | 'candidate_reassign' | 'password_change' | 'password_reset'
   | 'candidate_claim_override' | 'candidate_claim_reassign' | 'candidate_claim_release'
+  | 'role_permissions_change'
   | 'agent_execute'
 
 export type AuditTargetType = 'candidate' | 'job' | 'deal' | 'rubric' | 'team_member' | 'invoice' | 'agent' | 'client'
@@ -119,6 +120,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   candidate_claim_override: 'Pursued despite existing owner',
   candidate_claim_reassign: 'Candidate ownership reassigned',
   candidate_claim_release: 'Candidate ownership released',
+  role_permissions_change: 'Roles & permissions changed',
   nurture_checkin_sent: 'Nurture check-in sent by Lev',
   nurture_response: 'Nurture check-in response',
   team_member_invite: 'Team member invited',

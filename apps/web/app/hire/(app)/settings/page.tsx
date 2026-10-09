@@ -13,6 +13,7 @@ export default function HireSettings() {
     ['Email Templates', 'Reusable templates with {{name}}, {{job}}, {{company}} tokens for 1:1 outreach.', '/hire/settings/email-templates'],
     ['Email / Mailbox', 'Connect your business mailbox (IMAP/SMTP) to pull job-spec emails & send from your own address.', '/hire/settings/mailbox'],
     ['Career Page', 'A branded public page listing your open roles, on your logo & colour.', '/hire/settings/career-page'],
+    ['Roles & Permissions', 'Admin-configurable access matrix — control what Admin, Manager, Recruiter & Viewer can see and do.', '/hire/settings/roles'],
     ['Developers / API', 'API keys, outbound webhooks & the MCP server for integrations.', '/hire/settings/developers'],
   ]
   return (

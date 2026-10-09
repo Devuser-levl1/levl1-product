@@ -3,7 +3,7 @@ import { checkAllowance, incrementUsage } from '@/lib/hire/usage'
 import { extractTextFromFile, extractCandidateFromResume } from '@/lib/shared/file-parsing'
 import { scoreCandidateForJob } from '@/lib/hire/ai-matching'
 import { logAudit } from '@/lib/hire/audit'
-import { can, type Capability } from '@/lib/hire/permissions'
+import { effectiveCaps, type Capability } from '@/lib/hire/permissions'
 import { addCandidateToJob } from '@/lib/hire/candidate-ownership'
 
 // ── Agent tool registry (Part A of the agent substrate) ─────────────────────
@@ -207,8 +207,12 @@ export async function runTool<N extends AgentToolName>(
   if (tool.consequential && !ctx.proposalId) {
     throw new AgentGuardError(`"${name}" is consequential and requires an approved proposal.`, 'needs_approval')
   }
-  if (tool.requiredCap && !can(ctx.role, tool.requiredCap)) {
-    throw new AgentGuardError(`Your role can't run "${name}".`, 'forbidden')
+  if (tool.requiredCap) {
+    // Respect the tenant's configurable RBAC matrix, not the hardcoded defaults.
+    const t = await prisma.hireTenant.findUnique({ where: { id: ctx.tenantId }, select: { rolePermissions: true } })
+    if (!effectiveCaps(ctx.role, t?.rolePermissions).includes(tool.requiredCap)) {
+      throw new AgentGuardError(`Your role can't run "${name}".`, 'forbidden')
+    }
   }
   return tool.handler(ctx, input) as Promise<Awaited<ReturnType<(typeof AGENT_TOOLS)[N]['handler']>>>
 }

@@ -54,6 +54,67 @@ export function can(role: string | null | undefined, cap: Capability): boolean {
   return ROLE_CAPABILITIES[normalizeRole(role)].includes(cap)
 }
 
+// ── Admin-configurable RBAC matrix ──────────────────────────────────────────
+
+export const ROLE_ORDER: HireRoleName[] = ['ADMIN', 'MANAGER', 'RECRUITER', 'VIEWER']
+
+// Matrix rows: every capability with a human-readable label + description. This
+// is exactly what the Roles & Permissions UI renders (and what to report).
+export const CAPABILITY_META: { key: Capability; label: string; description: string }[] = [
+  { key: 'crm', label: 'CRM & Clients', description: 'Access the CRM workspace and client records.' },
+  { key: 'manageClients', label: 'Create / edit clients', description: 'Create and edit client & contact records.' },
+  { key: 'deals', label: 'Deals', description: 'View and manage the deal pipeline.' },
+  { key: 'ar', label: 'Receivables', description: 'Accounts Receivable — invoices & payment reminders.' },
+  { key: 'oversight', label: 'Team oversight', description: 'The manager oversight / assignment dashboard.' },
+  { key: 'team', label: 'Team management', description: 'Invite, disable and manage members & their roles.' },
+  { key: 'assignClients', label: 'Assign recruiters to clients', description: 'Assign recruiters to specific clients.' },
+  { key: 'audit', label: 'Audit log', description: 'View the tenant audit log.' },
+  { key: 'billing', label: 'Billing & plan', description: 'Manage the plan, usage and invoices.' },
+  { key: 'settingsAdmin', label: 'Settings admin', description: 'Tenant-wide settings — career page, integrations, roles.' },
+  { key: 'viewAllClients', label: 'View all clients', description: 'See every client’s jobs & candidates (not client-scoped).' },
+]
+
+export const ALL_CAPABILITIES: Capability[] = CAPABILITY_META.map((c) => c.key)
+
+// Core caps an Admin can NEVER lose — otherwise an admin could lock themselves
+// out of role/settings/billing management. Always forced on for ADMIN.
+export const ADMIN_LOCKED: Capability[] = ['settingsAdmin', 'team', 'billing']
+
+type RoleMatrix = Record<HireRoleName, Capability[]>
+
+function sanitizeCaps(list: unknown): Capability[] {
+  if (!Array.isArray(list)) return []
+  return ALL_CAPABILITIES.filter((c) => list.includes(c))
+}
+
+/**
+ * Resolve the effective RBAC matrix for a tenant: start from the stored override
+ * (per role), fall back to the hardcoded defaults for any role not present, and
+ * force the Admin lock-on caps. This is the single source of truth consumed by
+ * the middleware (ctx.caps), /me (nav) and the matrix UI.
+ */
+export function resolveRoleMatrix(stored: unknown): RoleMatrix {
+  const s = (stored && typeof stored === 'object') ? (stored as Record<string, unknown>) : {}
+  const out = {} as RoleMatrix
+  for (const role of ROLE_ORDER) {
+    const raw = role in s ? sanitizeCaps(s[role]) : [...ROLE_CAPABILITIES[role]]
+    out[role] = raw
+  }
+  // Admin always retains the locked core caps.
+  out.ADMIN = Array.from(new Set([...out.ADMIN, ...ADMIN_LOCKED]))
+  return out
+}
+
+/** Effective capabilities for one role under a tenant's stored matrix. */
+export function effectiveCaps(role: string | null | undefined, stored: unknown): Capability[] {
+  return resolveRoleMatrix(stored)[normalizeRole(role)]
+}
+
+/** Capability check against an already-resolved capability list (ctx.caps). */
+export function hasCap(caps: Capability[] | undefined | null, cap: Capability): boolean {
+  return !!caps && caps.includes(cap)
+}
+
 export function isAdmin(role?: string | null): boolean { return normalizeRole(role) === 'ADMIN' }
 export function isManagerPlus(role?: string | null): boolean {
   const r = normalizeRole(role)
