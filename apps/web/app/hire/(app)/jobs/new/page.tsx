@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { StagesEditor } from '@/components/hire/stages-editor'
 import { ClientPicker } from '@/components/hire/client-picker'
-import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
+import { FILE_ACCEPT_ATTR, MAX_FILE_SIZE, validateUpload } from '@/lib/shared/file-constants'
 
 const DEFAULT_STAGES = ['Sourced', 'Screening', 'Interview', 'Technical Round', 'HR Round', 'Offer', 'Hired']
 const SENIORITIES = ['', 'Junior', 'Mid', 'Senior', 'Lead', 'Principal', 'Manager', 'Director']
@@ -36,6 +36,9 @@ export default function NewJobPage() {
   const [jdMode, setJdMode] = useState<'paste' | 'upload'>('paste')
   const [jdParsing, setJdParsing] = useState(false)
   const [jdNote, setJdNote] = useState('')
+  const [jdFileName, setJdFileName] = useState('')
+  const [jdError, setJdError] = useState('')
+  const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -74,20 +77,31 @@ export default function NewJobPage() {
     } finally { setGenerating(false) }
   }
 
+  function removeJd() {
+    setJdFileName(''); setJdNote(''); setJdError('')
+    setForm((f) => ({ ...f, description: '' }))
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   async function handleJdFile(file: File) {
-    setJdParsing(true); setError(''); setJdNote('')
+    // Client-side validation first (same rules the server enforces) so wrong
+    // type / too-big / empty files get a friendly message without a round-trip.
+    const invalid = validateUpload(file.name, file.size)
+    if (invalid) { setJdError(invalid); setJdNote(''); if (fileRef.current) fileRef.current.value = ''; return }
+    setJdFileName(file.name)
+    setJdParsing(true); setJdError(''); setJdNote('')
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await fetch('/api/hire/jobs/parse-jd', { method: 'POST', body: fd })
       const d = await res.json()
-      if (!res.ok) { setError(d.error ?? 'Could not parse JD file'); return }
+      if (!res.ok) { setJdError(d.error ?? 'Could not parse JD file'); setJdFileName(''); return }
       setForm((f) => ({ ...f, description: d.text, title: f.title || d.parsed?.title || '' }))
       const skills: string[] = d.parsed?.requiredSkills ?? []
       if (skills.length && !mustHave) setMustHave(skills.join('\n'))
       setJdNote(`Loaded ${d.text.length.toLocaleString()} chars${skills.length ? ` · skills: ${skills.slice(0, 6).join(', ')}` : ''}`)
     } catch {
-      setError('Something went wrong reading the file')
+      setJdError('Something went wrong reading the file'); setJdFileName('')
     } finally {
       setJdParsing(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -218,9 +232,58 @@ export default function NewJobPage() {
               </div>
               {jdMode === 'upload' && (
                 <div style={{ marginBottom: 10 }}>
-                  <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={jdParsing} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleJdFile(f) }} style={{ fontSize: 13 }} />
-                  {jdParsing && <span style={{ fontSize: 13, color: '#64748B', marginLeft: 8 }}>Reading & parsing…</span>}
-                  {jdNote && !jdParsing && <div style={{ fontSize: 12, color: '#059669', marginTop: 6 }}>✓ {jdNote}</div>}
+                  {/* Hidden input — the drop zone (click or drag) drives it. */}
+                  <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={jdParsing} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleJdFile(f) }} style={{ display: 'none' }} />
+
+                  {jdFileName && !jdParsing ? (
+                    // Uploaded state — file name + remove/replace.
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 14px', background: '#F8FAFC' }}>
+                      <span style={{ fontSize: 18 }}>📄</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{jdFileName}</div>
+                        {jdNote && <div style={{ fontSize: 12, color: '#059669', marginTop: 2 }}>✓ {jdNote}</div>}
+                      </div>
+                      <button type="button" onClick={() => fileRef.current?.click()} style={{ fontSize: 12.5, fontWeight: 600, color: purple, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 7, padding: '5px 11px', cursor: 'pointer' }}>Replace</button>
+                      <button type="button" onClick={removeJd} style={{ fontSize: 12.5, fontWeight: 600, color: '#DC2626', background: '#fff', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 7, padding: '5px 11px', cursor: 'pointer' }}>Remove</button>
+                    </div>
+                  ) : (
+                    // Drop zone — click to browse OR drag a file in.
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { if (!jdParsing) fileRef.current?.click() }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !jdParsing) { e.preventDefault(); fileRef.current?.click() } }}
+                      onDragOver={(e) => { e.preventDefault(); if (!jdParsing && !dragging) setDragging(true) }}
+                      onDragEnter={(e) => { e.preventDefault(); if (!jdParsing) setDragging(true) }}
+                      onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === e.target) setDragging(false) }}
+                      onDrop={(e) => {
+                        e.preventDefault(); setDragging(false)
+                        if (jdParsing) return
+                        const f = e.dataTransfer.files?.[0]
+                        if (f) handleJdFile(f)
+                      }}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '26px 16px', borderRadius: 12, cursor: jdParsing ? 'default' : 'pointer', textAlign: 'center',
+                        border: `2px dashed ${dragging ? purple : '#CBD5E1'}`,
+                        background: dragging ? 'rgba(109,40,217,0.06)' : '#FBFBFE',
+                        transition: 'border-color .12s ease, background .12s ease',
+                      }}
+                    >
+                      {jdParsing ? (
+                        <span style={{ fontSize: 13.5, fontWeight: 600, color: '#64748B' }}>⏳ Reading &amp; parsing…</span>
+                      ) : dragging ? (
+                        <span style={{ fontSize: 14, fontWeight: 800, color: purple }}>Drop to upload</span>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 22 }}>⬆️</span>
+                          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#334155' }}>Drag &amp; drop a JD here, or <span style={{ color: purple }}>click to browse</span></span>
+                          <span style={{ fontSize: 11.5, color: '#94A3B8' }}>PDF, Word (.doc/.docx) or .txt · up to {MAX_FILE_SIZE / 1024 / 1024}MB</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {jdError && <div style={{ fontSize: 12.5, color: '#DC2626', marginTop: 8, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '8px 10px' }}>{jdError}</div>}
                 </div>
               )}
               <textarea style={{ ...inp, minHeight: 180, resize: 'vertical', lineHeight: 1.6 }} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Generate above, or paste a JD here…" />
