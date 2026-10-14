@@ -90,6 +90,17 @@ export default function HireLayout({ children }: { children: React.ReactNode }) 
     }
   }, [me, pathname, router])
 
+  // Presence heartbeat — keep "last seen" fresh while the tab is open (even when
+  // idle). The server throttles the actual write to ≤ once/60s. Also ping when
+  // the tab regains focus so returning users show green promptly.
+  useEffect(() => {
+    const ping = () => { if (document.visibilityState === 'visible') fetch('/api/hire/heartbeat', { method: 'POST' }).catch(() => {}) }
+    ping()
+    const id = setInterval(ping, 120_000)
+    document.addEventListener('visibilitychange', ping)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', ping) }
+  }, [])
+
   // Read cross-product entitlements to decide launcher vs upsell.
   useEffect(() => {
     fetch('/api/levl/me')

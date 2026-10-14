@@ -8,13 +8,13 @@ export const dynamic = 'force-dynamic'
 export const GET = withHireAuth(async (_req, ctx) => {
   const users = await prisma.hireUser.findMany({
     where: { tenantId: ctx.tenantId },
-    select: { id: true, name: true, email: true, role: true, lastLoginAt: true, createdAt: true, passwordHash: true, disabled: true },
+    select: { id: true, name: true, email: true, role: true, lastLoginAt: true, lastActiveAt: true, createdAt: true, passwordHash: true, disabled: true },
     orderBy: { createdAt: 'asc' },
   })
   return NextResponse.json(
     users.map((u) => ({
       id: u.id, name: u.name, email: u.email, role: u.role,
-      lastLoginAt: u.lastLoginAt, createdAt: u.createdAt, disabled: u.disabled,
+      lastLoginAt: u.lastLoginAt, lastActiveAt: u.lastActiveAt, createdAt: u.createdAt, disabled: u.disabled,
       status: u.disabled ? 'disabled' : u.passwordHash ? 'active' : 'invited',
     })),
   )

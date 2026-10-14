@@ -97,10 +97,18 @@ export async function getHireContext(req: NextRequest): Promise<HireContext | nu
     // Source of truth: current role + tenant from the live HireUser row.
     const hu = await prisma.hireUser.findUnique({
       where: { id: userId },
-      select: { role: true, tenantId: true, disabled: true, tenant: { select: { businessType: true, rolePermissions: true } } },
+      select: { role: true, tenantId: true, disabled: true, lastActiveAt: true, tenant: { select: { businessType: true, rolePermissions: true } } },
     })
     if (!hu) return null // user removed / unknown → no access
     if (hu.disabled) return null // disabled member — access revoked immediately, even mid-session
+
+    // Heartbeat: any authenticated request marks the user as active now. Throttled
+    // to ≤ once/60s and fire-and-forget so it never adds latency or write churn.
+    const now = Date.now()
+    if (!hu.lastActiveAt || now - hu.lastActiveAt.getTime() > 60_000) {
+      prisma.hireUser.update({ where: { id: userId }, data: { lastActiveAt: new Date(now) } })
+        .catch((e) => console.error('[hire] lastActiveAt update failed:', e instanceof Error ? e.message : e))
+    }
 
     return {
       userId, tenantId: hu.tenantId, role: hu.role,

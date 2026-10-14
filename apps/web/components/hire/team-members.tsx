@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { HIRE_ROLES, ROLE_LABEL, ROLE_DESCRIPTION } from '@/lib/hire/roles'
 
-interface Member { id: string; name: string; email: string; role: string; status: 'active' | 'invited' | 'disabled'; lastLoginAt: string | null; disabled: boolean }
+interface Member { id: string; name: string; email: string; role: string; status: 'active' | 'invited' | 'disabled'; lastLoginAt: string | null; lastActiveAt: string | null; disabled: boolean }
 interface Workload { jobs: number; candidates: number; clients: number }
 
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
@@ -18,15 +18,32 @@ const STATUS = {
 }
 
 const DAY = 86400000
-// Teams-style presence from last-login recency. Green = active recently,
-// amber = idle beyond a day, grey/✕ = never or no recent session.
+// Presence thresholds (documented):
+//   GREEN  "Available" — active (any authenticated action / heartbeat) within
+//           the last ACTIVE_MINUTES.
+//   AMBER  "Idle"      — not active recently, but seen earlier TODAY (viewer's
+//           local calendar day).
+//   GREY ✕ "Away"      — not seen today, or never signed in / disabled.
+// Recency is measured on instants (UTC-safe); "today" uses the viewer's local
+// day. Driven by lastActiveAt (refreshed on use), NOT lastLoginAt — so an active
+// user who logged in hours ago still shows green.
+const ACTIVE_MINUTES = 10
+
+// True if the instant falls on the viewer's local calendar day ("today").
+function isToday(iso: string): boolean {
+  const d = new Date(iso), n = new Date()
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
+}
+
 function presence(m: Member): { color: string; label: string; cross: boolean } {
   if (m.disabled) return { color: '#94A3B8', label: 'Disabled', cross: true }
-  if (!m.lastLoginAt) return { color: '#CBD5E1', label: 'Not logged in', cross: true }
-  const days = (Date.now() - new Date(m.lastLoginAt).getTime()) / DAY
-  if (days <= 1) return { color: '#22C55E', label: 'Available', cross: false }
-  if (days <= 14) return { color: '#F59E0B', label: 'Inactive', cross: false }
-  return { color: '#CBD5E1', label: 'Not logged in', cross: true } // no recent session
+  // "Last seen" = most recent of activity or login (login covers pre-heartbeat rows).
+  const seen = m.lastActiveAt ?? m.lastLoginAt
+  if (!seen) return { color: '#CBD5E1', label: 'Not logged in', cross: true }
+  const mins = (Date.now() - new Date(seen).getTime()) / 60000
+  if (mins <= ACTIVE_MINUTES) return { color: '#22C55E', label: 'Available', cross: false }
+  if (isToday(seen)) return { color: '#F59E0B', label: 'Idle', cross: false }
+  return { color: '#CBD5E1', label: 'Away', cross: true }
 }
 function relative(iso: string | null): string {
   if (!iso) return 'never'
@@ -98,7 +115,7 @@ export function TeamMembers({ isAdmin }: { isAdmin: boolean }) {
             <div key={m.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 100px 250px', gap: 10, alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #F8FAFC', opacity: m.disabled ? 0.62 : 1 }}>
               <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 9 }}>
                 {/* Teams-style presence dot */}
-                <span title={`${pr.label} · last login ${fmtFull(m.lastLoginAt)}`} style={{ flexShrink: 0, width: 10, height: 10, borderRadius: '50%', background: pr.color, boxShadow: pr.cross ? 'none' : `0 0 0 3px ${pr.color}22`, position: 'relative' }}>
+                <span title={`${pr.label} · last seen ${fmtFull(m.lastActiveAt ?? m.lastLoginAt)}`} style={{ flexShrink: 0, width: 10, height: 10, borderRadius: '50%', background: pr.color, boxShadow: pr.cross ? 'none' : `0 0 0 3px ${pr.color}22`, position: 'relative' }}>
                   {pr.cross && <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 900, lineHeight: 1 }}>×</span>}
                 </span>
                 <div style={{ minWidth: 0 }}>

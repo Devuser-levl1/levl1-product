@@ -834,6 +834,10 @@ model HireUser {
   role         HireRole   @default(RECRUITER)
   avatarUrl    String?
   lastLoginAt  DateTime?
+  // Last time the user actually interacted with the app (refreshed, throttled to
+  // ~60s, on any authenticated request + a client heartbeat while the tab is
+  // open). Drives the Team presence dot — distinct from lastLoginAt.
+  lastActiveAt DateTime?
   // Disabled members keep all their data + history but cannot log in and are
   // hidden from assignment dropdowns. Admin-toggled; never deleted.
   disabled     Boolean    @default(false)
