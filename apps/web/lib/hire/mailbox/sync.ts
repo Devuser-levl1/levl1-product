@@ -94,7 +94,23 @@ export async function syncConnection(conn: ConnLike): Promise<{ newCount: number
   } catch (e) {
     const msg = (e instanceof Error ? e.message : String(e)).replace(/\s+/g, ' ').slice(0, 200)
     console.error('[hire/mailbox/sync] failed for', conn.email, '-', msg) // email + generic error, no creds
-    await prisma.mailboxConnection.update({ where: { id: conn.id }, data: { status: 'error', lastError: msg } }).catch(() => {})
+    // Only a GENUINE credential failure (wrong/revoked password) should mark the
+    // mailbox as needing reconnect. Transient/technical failures (timeout, dropped
+    // socket, TLS, provider throttling) must NOT flip a valid, persisted
+    // connection to 'error' — otherwise the recruiter is wrongly asked to
+    // re-enter credentials on the next login. Keep it 'connected' and record the
+    // soft error so the next scheduled sync simply retries.
+    if (isAuthFailure(msg)) {
+      await prisma.mailboxConnection.update({ where: { id: conn.id }, data: { status: 'error', lastError: msg } }).catch(() => {})
+    } else {
+      await prisma.mailboxConnection.update({ where: { id: conn.id }, data: { lastError: `Temporary sync issue — will retry. (${msg})` } }).catch(() => {})
+    }
     return { newCount: 0 }
   }
+}
+
+// A real authentication rejection (vs a transient network/IMAP error). Matches
+// the raw provider/ImapFlow messages for bad or revoked credentials.
+function isAuthFailure(message: string): boolean {
+  return /authenticationfailed|authentication failed|authentication rejected|invalid credential|invalid login|incorrect (password|username)|535|\[AUTH\]|login(?:\s|_)?(failed|disabled)|password.*(incorrect|rejected|wrong)/i.test(message)
 }
