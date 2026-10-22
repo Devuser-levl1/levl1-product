@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
+import { FileDropZone } from '@/components/hire/file-drop-zone'
 
 // Reusable "Bulk upload resumes" modal. Sends files one at a time to the
 // multipart bulk-import endpoint so it can show live progress and aggregate
@@ -54,8 +54,8 @@ export function BulkResumeUpload({ jobId, jobTitle, onClose, onDone }: {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <input type="file" multiple accept={FILE_ACCEPT_ATTR} disabled={busy} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} style={{ fontSize: 13 }} />
-            {files.length > 0 && <div style={{ fontSize: 12, color: '#475569' }}>{files.length} file{files.length !== 1 ? 's' : ''} selected</div>}
+            <FileDropZone multiple disabled={busy} onFiles={(fs) => setFiles((prev) => [...prev, ...fs])} />
+            {files.length > 0 && <div style={{ fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>{files.length} file{files.length !== 1 ? 's' : ''} selected<button type="button" onClick={() => setFiles([])} disabled={busy} style={{ fontSize: 11.5, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>clear</button></div>}
             {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#6D28D9' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer' }}>Cancel</button>

@@ -1,12 +1,12 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { CandidateSlideOver } from '@/components/hire/candidate-slideover'
 import { BulkEmailModal } from '@/components/hire/bulk-email-modal'
 import { SubmitToClientModal } from '@/components/hire/submit-to-client-modal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { CANDIDATE_SOURCES } from '@/lib/hire/constants'
 import { HireUpgradeWall } from '@/components/hire/upgrade-wall'
-import { FILE_ACCEPT_ATTR } from '@/lib/shared/file-constants'
+import { FileDropZone } from '@/components/hire/file-drop-zone'
 
 interface Cand { id: string; name: string; email: string; currentTitle: string | null; currentCompany: string | null; currentStage: string; aiScore: number | null; interviewScore: number | null; source: string | null; createdAt: string; job: { id: string; title: string } | null; match: { score: number; verdict: string; jobTitle: string | null } | null }
 interface Job { id: string; title: string; stages?: string[] }
@@ -170,7 +170,6 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
   const [saving, setSaving] = useState(false); const [err, setErr] = useState('')
   const [dup, setDup] = useState<{ message: string } | null>(null)
   const [parsing, setParsing] = useState(false); const [parsedNote, setParsedNote] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }))
 
   async function handleResume(file: File) {
@@ -195,7 +194,6 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
       setErr('Something went wrong reading the file')
     } finally {
       setParsing(false)
-      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
@@ -215,10 +213,8 @@ function AddModal({ jobs, onClose, onSaved, onLimit }: { jobs: Job[]; onClose: (
     <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>Add Candidate</div>
     <div style={{ background: '#F8FAFC', border: '1px dashed #64748B', borderRadius: 10, padding: 12, marginBottom: 12 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>Upload a resume to auto-fill</div>
-      <input ref={fileRef} type="file" accept={FILE_ACCEPT_ATTR} disabled={parsing} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleResume(file) }} style={{ fontSize: 13 }} />
-      {parsing && <div style={{ fontSize: 12, color: '#64748B', marginTop: 6 }}>Reading & extracting…</div>}
+      <FileDropZone compact disabled={parsing} busy={parsing} busyLabel="Reading & extracting…" onFiles={(fs) => { if (fs[0]) handleResume(fs[0]) }} />
       {parsedNote && !parsing && <div style={{ fontSize: 12, color: '#059669', marginTop: 6 }}>{parsedNote}</div>}
-      <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>PDF, Word (.docx/.doc) or .txt — up to 10MB.</div>
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <input style={inp} placeholder="Full name" value={f.name} onChange={(e) => set('name', e.target.value)} />
@@ -340,8 +336,8 @@ function ImportModal({ jobs, onClose, onDone, initialTab = 'csv' }: { jobs: Job[
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, color: '#64748B' }}>Select multiple resumes (.pdf/.docx/.doc/.txt). Each is parsed, created, and queued for AI scoring when a job is selected.</div>
         <select style={inp} value={jobId} onChange={(e) => setJobId(e.target.value)}><option value="">No job (no scoring)</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</select>
-        <input type="file" multiple accept={FILE_ACCEPT_ATTR} disabled={busy} onChange={(e) => setFiles(Array.from(e.target.files ?? []))} style={{ fontSize: 13 }} />
-        {files.length > 0 && <div style={{ fontSize: 12, color: '#475569' }}>{files.length} file{files.length !== 1 ? 's' : ''} selected</div>}
+        <FileDropZone multiple disabled={busy} onFiles={(fs) => setFiles((prev) => [...prev, ...fs])} />
+        {files.length > 0 && <div style={{ fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>{files.length} file{files.length !== 1 ? 's' : ''} selected<button type="button" onClick={() => setFiles([])} disabled={busy} style={{ fontSize: 11.5, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>clear</button></div>}
         {busy && progress && <div style={{ fontSize: 13, fontWeight: 600, color: '#6D28D9' }}>Processing {Math.min(progress.done + 1, progress.total)} of {progress.total}…</div>}
         <button onClick={uploadFiles} disabled={busy || files.length === 0} style={{ padding: 11, borderRadius: 8, border: 'none', background: files.length === 0 ? '#64748B' : '#6D28D9', color: '#fff', fontWeight: 700, cursor: busy || files.length === 0 ? 'default' : 'pointer' }}>{busy ? 'Uploading…' : `Upload & Parse ${files.length || ''} resume${files.length !== 1 ? 's' : ''}`}</button>
       </div>
