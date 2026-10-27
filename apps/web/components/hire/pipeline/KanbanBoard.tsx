@@ -43,9 +43,16 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
   const [menu, setMenu] = useState(false)
   const [submenu, setSubmenu] = useState(false)
   const isRejected = candidate.currentStage === REJECTED_STAGE
-  const moveTargets = stageNames.filter((s) => s !== candidate.currentStage && s !== REJECTED_STAGE)
+  const activeStages = stageNames.filter((s) => s !== REJECTED_STAGE)
+  const moveTargets = activeStages.filter((s) => s !== candidate.currentStage)
+  // Next stage in order (for one-click Advance + the "next step" hint).
+  const curIdx = activeStages.indexOf(candidate.currentStage)
+  const nextStage = curIdx >= 0 && curIdx < activeStages.length - 1 ? activeStages[curIdx + 1] : null
+  const hiredStage = activeStages.find((s) => /^hired$/i.test(s)) ?? activeStages.find((s) => /hired/i.test(s)) ?? null
+  const atHired = !!hiredStage && candidate.currentStage === hiredStage
 
-  // Stop dnd-kit from starting a drag when interacting with the menu.
+  // Stop dnd-kit from starting a drag (and the card's open-on-click) when
+  // interacting with an inline control.
   const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
 
   // Owned by someone OTHER than the viewer → amber flag + left accent so it's
@@ -82,6 +89,28 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
         {ownedByOther && <span title={`Owned by ${candidate.owner!.name}`} style={{ fontSize: 10, fontWeight: 700, background: 'rgba(245,158,11,0.14)', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>🔒 {candidate.owner!.name}</span>}
       </div>
 
+      {/* Click-based movement (no dragging required): one-click Advance + a
+          jump-to-stage picker. Both stop propagation so the card neither opens
+          nor starts a drag. */}
+      {!isRejected && (
+        <div onPointerDown={stop} onClick={stop} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          {nextStage && (
+            <button onClick={() => onMove(nextStage)} title={`Advance to ${nextStage}`}
+              style={{ fontSize: 11.5, fontWeight: 700, color: '#6D28D9', background: '#F5F3FF', border: '1px solid rgba(109,40,217,0.25)', borderRadius: 6, padding: '4px 9px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              Advance →
+            </button>
+          )}
+          <select value={candidate.currentStage} onChange={(e) => { if (e.target.value !== candidate.currentStage) onMove(e.target.value) }}
+            title="Move to stage"
+            style={{ fontSize: 11, color: '#475569', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', maxWidth: 120 }}>
+            {activeStages.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
+      {!isRejected && nextStage && (
+        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 5 }}>Next step: {nextStage}</div>
+      )}
+
       {isRejected && candidate.rejectedReason && (
         <div style={{ marginTop: 8, padding: '6px 8px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>{candidate.rejectedReason}</div>
@@ -96,6 +125,8 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
       {menu && (
         <div onPointerDown={stop} onClick={stop}
           style={{ position: 'absolute', right: 8, top: 30, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, boxShadow: '0 6px 20px rgba(15,23,42,0.14)', zIndex: 30, minWidth: 188, overflow: 'visible' }}>
+          {!isRejected && nextStage && <MI onClick={() => { setMenu(false); onMove(nextStage) }} color="#6D28D9">Advance → {nextStage}</MI>}
+          {!isRejected && hiredStage && !atHired && <MI onClick={() => { setMenu(false); onMove(hiredStage) }} color="#059669">Mark hired</MI>}
           {moveTargets.length > 0 && (
             <div style={{ position: 'relative' }} onMouseEnter={() => setSubmenu(true)} onMouseLeave={() => setSubmenu(false)}>
               <MI>Move to stage ▸</MI>
