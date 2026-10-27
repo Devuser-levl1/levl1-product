@@ -278,6 +278,8 @@ function JobActivity({ jobId }: { jobId: string }) {
 function PipelineTab({ jobId }: { jobId: string }) {
   const [pipeline, setPipeline] = useState<{ id: string; title: string; stages: KanbanStage[] } | null>(null)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+  const [viewerId, setViewerId] = useState<string | undefined>(undefined)
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setViewerId(d?.user?.id)).catch(() => {}) }, [])
 
   const load = useCallback(() => {
     fetch(`/api/hire/pipeline?jobId=${jobId}`).then((r) => (r.ok ? r.json() : [])).then((d) => setPipeline(Array.isArray(d) ? (d[0] ?? null) : null)).catch(() => {})
@@ -297,7 +299,7 @@ function PipelineTab({ jobId }: { jobId: string }) {
   if (!pipeline) return <div style={card}>This job has no active pipeline (it may be paused or closed).</div>
   return (
     <div>
-      <KanbanBoard stages={pipeline.stages} jobId={pipeline.id} onMove={onMove} onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
+      <KanbanBoard stages={pipeline.stages} jobId={pipeline.id} onMove={onMove} viewerId={viewerId} onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
       {selectedCandidateId && <CandidateSlideOver candidateId={selectedCandidateId} onClose={() => setSelectedCandidateId(null)} onChanged={load} />}
     </div>
   )

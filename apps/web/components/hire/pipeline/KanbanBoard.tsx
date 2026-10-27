@@ -16,6 +16,7 @@ interface KanbanBoardProps {
   onReject?: (candidate: KanbanCandidate) => void
   onDelete?: (candidate: KanbanCandidate) => void
   onCandidateClick: (candidate: KanbanCandidate) => void
+  viewerId?: string   // the current user — to flag cards owned by someone else
 }
 
 export const REJECTED_STAGE = 'Rejected'
@@ -29,13 +30,14 @@ function scoreColor(score: number | null): string {
 const REC_BG: Record<string, string> = { strong_yes: '#ECFDF5', yes: '#F5F3FF', maybe: '#FFFBEB', no: '#FEF2F2' }
 const REC_FG: Record<string, string> = { strong_yes: '#059669', yes: '#6D28D9', maybe: '#D97706', no: '#DC2626' }
 
-function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDelete }: {
+function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDelete, viewerId }: {
   candidate: KanbanCandidate
   stageNames: string[]
   onClick: () => void
   onMove: (toStage: string) => void
   onReject?: () => void
   onDelete?: () => void
+  viewerId?: string
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: candidate.id, data: { candidate } })
   const [menu, setMenu] = useState(false)
@@ -46,14 +48,19 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
   // Stop dnd-kit from starting a drag when interacting with the menu.
   const stop = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation()
 
+  // Owned by someone OTHER than the viewer → amber flag + left accent so it's
+  // obvious at a glance this candidate is already being worked by a teammate.
+  const ownedByOther = !!candidate.owner?.id && !!viewerId && candidate.owner.id !== viewerId
+  const ownedByMe = !!candidate.owner?.id && candidate.owner.id === viewerId
+
   return (
     <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick}
-      style={{ position: 'relative', background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined, marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', userSelect: 'none' }}>
+      style={{ position: 'relative', background: 'white', border: '1px solid #E2E8F0', borderLeft: ownedByOther ? '3px solid #F59E0B' : '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined, marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', userSelect: 'none' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{candidate.name}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {candidate.owner?.name && (
-            <span title={`Pursued by ${candidate.owner.name}`} style={{ flexShrink: 0, width: 20, height: 20, borderRadius: '50%', background: '#6D28D9', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span title={ownedByOther ? `Owned by ${candidate.owner.name} — not you` : ownedByMe ? `You own this` : `Pursued by ${candidate.owner.name}`} style={{ flexShrink: 0, width: 20, height: 20, borderRadius: '50%', background: ownedByOther ? '#F59E0B' : '#6D28D9', color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {candidate.owner.name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()}
             </span>
           )}
@@ -72,6 +79,7 @@ function CandidateCard({ candidate, stageNames, onClick, onMove, onReject, onDel
       <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
         {candidate.source && <span style={{ fontSize: 10, background: '#F1F5F9', color: '#64748B', padding: '2px 6px', borderRadius: 4 }}>{candidate.source}</span>}
         {candidate.aiRecommendation && <span style={{ fontSize: 10, background: REC_BG[candidate.aiRecommendation] ?? '#F1F5F9', color: REC_FG[candidate.aiRecommendation] ?? '#64748B', padding: '2px 6px', borderRadius: 4, textTransform: 'capitalize' }}>{candidate.aiRecommendation.replace('_', ' ')}</span>}
+        {ownedByOther && <span title={`Owned by ${candidate.owner!.name}`} style={{ fontSize: 10, fontWeight: 700, background: 'rgba(245,158,11,0.14)', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>🔒 {candidate.owner!.name}</span>}
       </div>
 
       {isRejected && candidate.rejectedReason && (
@@ -116,13 +124,14 @@ function MI({ children, onClick, color }: { children: React.ReactNode; onClick?:
   )
 }
 
-function StageColumn({ stage, stageNames, onCandidateClick, onMove, onReject, onDelete }: {
+function StageColumn({ stage, stageNames, onCandidateClick, onMove, onReject, onDelete, viewerId }: {
   stage: KanbanStage
   stageNames: string[]
   onCandidateClick: (c: KanbanCandidate) => void
   onMove: (candidateId: string, toStage: string) => void
   onReject?: (c: KanbanCandidate) => void
   onDelete?: (c: KanbanCandidate) => void
+  viewerId?: string
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.name })
   const isRejected = stage.name === REJECTED_STAGE
@@ -133,7 +142,7 @@ function StageColumn({ stage, stageNames, onCandidateClick, onMove, onReject, on
         <span style={{ fontSize: 11, background: isRejected ? '#FEE2E2' : '#E2E8F0', color: isRejected ? '#DC2626' : '#64748B', padding: '1px 7px', borderRadius: 10, fontWeight: 600 }}>{stage.candidates.length}</span>
       </div>
       {stage.candidates.map((candidate) => (
-        <CandidateCard key={candidate.id} candidate={candidate} stageNames={stageNames}
+        <CandidateCard key={candidate.id} candidate={candidate} stageNames={stageNames} viewerId={viewerId}
           onClick={() => onCandidateClick(candidate)}
           onMove={(toStage) => onMove(candidate.id, toStage)}
           onReject={onReject ? () => onReject(candidate) : undefined}
@@ -162,7 +171,7 @@ function SummaryBar({ stages }: { stages: KanbanStage[] }) {
   )
 }
 
-export function KanbanBoard({ stages, onMove, onReject, onDelete, onCandidateClick }: KanbanBoardProps) {
+export function KanbanBoard({ stages, onMove, onReject, onDelete, onCandidateClick, viewerId }: KanbanBoardProps) {
   const [activeCandidate, setActiveCandidate] = useState<KanbanCandidate | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const stageNames = stages.map((s) => s.name)
@@ -187,7 +196,7 @@ export function KanbanBoard({ stages, onMove, onReject, onDelete, onCandidateCli
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16 }}>
           {stages.map((stage) => (
-            <StageColumn key={stage.name} stage={stage} stageNames={stageNames}
+            <StageColumn key={stage.name} stage={stage} stageNames={stageNames} viewerId={viewerId}
               onCandidateClick={onCandidateClick} onMove={onMove} onReject={onReject} onDelete={onDelete} />
           ))}
         </div>

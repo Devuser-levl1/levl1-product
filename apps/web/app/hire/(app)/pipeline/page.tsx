@@ -16,6 +16,8 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true)
   const [rejectFor, setRejectFor] = useState<KanbanCandidate | null>(null)
   const [deleteFor, setDeleteFor] = useState<KanbanCandidate | null>(null)
+  const [viewerId, setViewerId] = useState<string | undefined>(undefined)
+  useEffect(() => { fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setViewerId(d?.user?.id)).catch(() => {}) }, [])
 
   const load = useCallback(() => {
     fetch('/api/hire/pipeline').then((r) => (r.ok ? r.json() : [])).then((data: JobPipeline[]) => {
@@ -103,7 +105,7 @@ export default function PipelinePage() {
       )}
 
       {selectedJob && (
-        <KanbanBoard stages={selectedJob.stages} jobId={selectedJob.id} onMove={handleMove}
+        <KanbanBoard stages={selectedJob.stages} jobId={selectedJob.id} onMove={handleMove} viewerId={viewerId}
           onReject={(c) => setRejectFor(c)} onDelete={(c) => setDeleteFor(c)}
           onCandidateClick={(c: KanbanCandidate) => setSelectedCandidateId(c.id)} />
       )}
