@@ -13,11 +13,25 @@ interface Candidate {
   skills: string[] | null; topSkills: string[] | null; job: { id: string; title: string; stages: string[] } | null; activities: Activity[]
   owner?: { id: string; name: string | null } | null
   otherJobs?: { candidateId: string; jobId: string; jobTitle: string | null; stage: string; owner: { id: string; name: string | null } | null }[]
+  attribution?: {
+    sourcedBy: { id: string; name: string | null } | null; sourcedAt: string | null
+    addedBy: { id: string; name: string | null } | null; addedAt: string | null
+    owner: { id: string; name: string | null } | null; claimedAt: string | null
+    placedBy: { id: string; name: string | null } | null; placedAt: string | null
+  }
+  attributionEvents?: { id: string; eventType: string; note: string | null; createdAt: string; actor: { id: string; name: string | null } | null; from: { id: string; name: string | null } | null }[]
 }
 
 const REC: Record<string, string> = { strong_yes: 'Strong Yes', yes: 'Yes', maybe: 'Maybe', no: 'No' }
 function scoreColor(s: number) { return s >= 80 ? '#10B981' : s >= 60 ? '#F59E0B' : '#EF4444' }
-const TABS = ['Summary', 'Resume', 'Matches', 'Activity', 'Notes'] as const
+const TABS = ['Summary', 'Resume', 'Matches', 'Attribution', 'Activity', 'Notes'] as const
+
+const EVENT_LABEL: Record<string, string> = {
+  sourced: 'Sourced', added_to_job: 'Added to job', owner_claimed: 'Ownership claimed',
+  owner_released: 'Ownership released', reassigned: 'Reassigned', advanced: 'Stage advanced',
+  placed: 'Placed', owner_override: 'Attribution corrected',
+}
+const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 type Tab = typeof TABS[number]
 
 export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candidateId: string; onClose: () => void; onChanged: () => void }) {
@@ -164,6 +178,42 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
               {tab === 'Matches' && (
                 <Sec title="Best-fit jobs" first>
                   <BestFitJobs candidateId={c.id} onAttached={() => { load(); onChanged() }} />
+                </Sec>
+              )}
+
+              {tab === 'Attribution' && (
+                <Sec title="Attribution" first>
+                  {(() => {
+                    const a = c.attribution
+                    const who = (p: { name: string | null } | null) => p?.name ?? 'Unknown'
+                    return (
+                      <>
+                        <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.9, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 14px' }}>
+                          <div><strong style={{ color: '#6D28D9' }}>Sourced by</strong> {a?.sourcedBy ? who(a.sourcedBy) : 'Unknown'}{a?.sourcedAt ? ` · ${fmtDate(a.sourcedAt)}` : ''}</div>
+                          <div><strong style={{ color: '#6D28D9' }}>Currently worked by</strong> {a?.owner ? who(a.owner) : '—'}{a?.claimedAt ? ` · since ${fmtDate(a.claimedAt)}` : ''}</div>
+                          <div><strong style={{ color: '#6D28D9' }}>Placed by</strong> {a?.placedBy ? who(a.placedBy) : '—'}{a?.placedAt ? ` · ${fmtDate(a.placedAt)}` : ''}</div>
+                        </div>
+                        <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '16px 0 8px' }}>Timeline</div>
+                        {(c.attributionEvents ?? []).length === 0 ? (
+                          <div style={{ fontSize: 13, color: '#94A3B8' }}>No attribution events yet.</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {(c.attributionEvents ?? []).map((e) => (
+                              <div key={e.id} style={{ display: 'flex', gap: 10, fontSize: 12.5, borderLeft: '2px solid #E2E8F0', paddingLeft: 10 }}>
+                                <span style={{ width: 70, flexShrink: 0, color: '#94A3B8' }}>{fmtDate(e.createdAt)}</span>
+                                <span style={{ color: '#334155' }}>
+                                  <strong>{EVENT_LABEL[e.eventType] ?? e.eventType}</strong>
+                                  {e.actor?.name ? ` · ${e.actor.name}` : ''}
+                                  {e.from?.name ? ` (from ${e.from.name})` : ''}
+                                  {e.note ? <span style={{ color: '#94A3B8' }}> · {e.note}</span> : null}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </Sec>
               )}
 

@@ -995,6 +995,16 @@ model HireCandidate {
   // Duplicate-prevention key: normalized identity (email → phone → name) used by
   // the per-job unique constraint below. Null for job-less (talent-pool) rows.
   dedupeKey        String?
+  // ── Attribution (Layer 1) ──
+  // Who FIRST brought this candidate into the tenant (any path). Set ONCE, never
+  // overwritten by edits / re-imports / dedupe merges / takeovers. null = unknown.
+  sourcedByUserId  String?
+  sourcedAt        DateTime?
+  // Who put this candidate on THIS job (the candidate↔job row), at creation.
+  addedByUserId    String?
+  addedAt          DateTime?
+  // Set at placement (distinct from owner & sourcer). placedAt already exists below.
+  placedByUserId   String?
   aiScore          Int?       // 0-100
   aiSummary        String?    @db.Text
   aiRecommendation String?    // strong_yes | yes | maybe | no
@@ -1082,6 +1092,24 @@ model HireCandidateActivity {
 }
 
 // Tenant-scoped audit trail for significant actions across modules (candidates,
+// Append-only attribution timeline for a candidate (and per-job link). One row
+// per ownership-chain action; never updated or deleted. Target ids are plain
+// scalars (no FK) so events survive a candidate/job delete.
+model CandidateAttributionEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  candidateId String
+  jobId       String?               // null for candidate-level events (e.g. 'sourced')
+  eventType   String                // sourced | added_to_job | owner_claimed | owner_released | reassigned | advanced | placed | owner_override
+  actorUserId String?               // who performed it (null = system/unknown)
+  fromUserId  String?               // previous owner, for 'reassigned'
+  note        String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, candidateId])
+  @@index([candidateId, createdAt])
+}
+
 // jobs, deals, rubric, team). Deliberately NO relation to any model — target ids
 // are plain scalars so a delete audit survives the target's removal.
 model HireAuditLog {

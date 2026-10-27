@@ -9,7 +9,7 @@ import { verdictToRecommendation, Verdict } from '@/lib/hire/ai-matching'
 import { writeAudit, logAudit, resolveActorName } from '@/lib/hire/audit'
 import { isManagerPlus } from '@/lib/hire/roles'
 import { canAccessCandidate } from '@/lib/hire/scope'
-import { dedupeKeyFor, isTerminalStage, ownerInfo } from '@/lib/hire/candidate-ownership'
+import { dedupeKeyFor, isTerminalStage, ownerInfo, logAttribution, notifyPreviousOwner } from '@/lib/hire/candidate-ownership'
 
 export const GET = withHireAuth(async (_req, ctx, params) => {
   const candidate = await prisma.hireCandidate.findFirst({
@@ -47,7 +47,7 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
     claimedAt: s.claimedAt,
   }))
 
-  let merged: typeof candidate & { match?: unknown; owner?: unknown; otherJobs?: unknown } = { ...candidate, owner, otherJobs }
+  let merged: typeof candidate & { match?: unknown; owner?: unknown; otherJobs?: unknown; attribution?: unknown; attributionEvents?: unknown } = { ...candidate, owner, otherJobs }
   if (candidate.jobId) {
     const match = await prisma.hireMatch.findUnique({
       where: { jobId_candidateId: { jobId: candidate.jobId, candidateId: candidate.id } },
@@ -66,6 +66,36 @@ export const GET = withHireAuth(async (_req, ctx, params) => {
       }
     }
   }
+
+  // ── Attribution chain + append-only timeline (Layer 1 surfacing) ──
+  const events = await prisma.candidateAttributionEvent.findMany({
+    where: { tenantId: ctx.tenantId, candidateId: candidate.id },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, eventType: true, jobId: true, actorUserId: true, fromUserId: true, note: true, createdAt: true },
+  })
+  const userIds = Array.from(new Set([
+    candidate.sourcedByUserId, candidate.addedByUserId, candidate.placedByUserId, candidate.ownerRecruiterId,
+    ...events.flatMap((e) => [e.actorUserId, e.fromUserId]),
+  ].filter(Boolean) as string[]))
+  const users = userIds.length ? await prisma.hireUser.findMany({ where: { tenantId: ctx.tenantId, id: { in: userIds } }, select: { id: true, name: true } }) : []
+  const nameOf = (id: string | null) => (id ? (users.find((u) => u.id === id)?.name ?? 'Unknown') : null)
+
+  const attribution = {
+    sourcedBy: candidate.sourcedByUserId ? { id: candidate.sourcedByUserId, name: nameOf(candidate.sourcedByUserId) } : null,
+    sourcedAt: candidate.sourcedAt,
+    addedBy: candidate.addedByUserId ? { id: candidate.addedByUserId, name: nameOf(candidate.addedByUserId) } : null,
+    addedAt: candidate.addedAt,
+    owner, claimedAt: candidate.claimedAt,
+    placedBy: candidate.placedByUserId ? { id: candidate.placedByUserId, name: nameOf(candidate.placedByUserId) } : null,
+    placedAt: candidate.placedAt,
+  }
+  const attributionEvents = events.map((e) => ({
+    id: e.id, eventType: e.eventType, jobId: e.jobId, note: e.note, createdAt: e.createdAt,
+    actor: e.actorUserId ? { id: e.actorUserId, name: nameOf(e.actorUserId) } : null,
+    from: e.fromUserId ? { id: e.fromUserId, name: nameOf(e.fromUserId) } : null,
+  }))
+  merged = { ...merged, attribution, attributionEvents }
+
   return NextResponse.json(merged)
 })
 
@@ -106,7 +136,10 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
       ownerPatch.ownerRecruiterId = null; ownerPatch.claimedAt = null; ownerPatch.claimedBy = null
       ownerChange = { kind: 'release', to: null }
     } else {
-      if (!isManagerPlus(ctx.role)) return NextResponse.json({ error: 'Only managers can reassign candidate ownership.' }, { status: 403 })
+      // Self-takeover (claim for yourself) is allowed for any member after the
+      // soft-lock warning; reassigning to SOMEONE ELSE is a manager/admin action.
+      const self = to === ctx.userId
+      if (!self && !isManagerPlus(ctx.role)) return NextResponse.json({ error: 'Only managers can reassign ownership to another member.' }, { status: 403 })
       ownerPatch.ownerRecruiterId = to; ownerPatch.claimedAt = new Date(); ownerPatch.claimedBy = await resolveActorName(to)
       ownerChange = { kind: 'reassign', to }
     }
@@ -148,6 +181,15 @@ export const PATCH = withHireAuth(async (req, ctx, params) => {
   }
   if (ownerChange) {
     await logAudit({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: ownerChange.kind === 'reassign' ? 'candidate_claim_reassign' : 'candidate_claim_release', targetType: 'candidate', targetId: candidate.id, targetName: candidate.name, meta: { from: existing.ownerRecruiterId, to: ownerChange.to, jobId: existing.jobId } })
+    // Attribution timeline (sourcedBy is NEVER touched — only owner changes).
+    await logAttribution(prisma, {
+      tenantId: ctx.tenantId, candidateId: candidate.id, jobId: existing.jobId, actorUserId: ctx.userId,
+      eventType: ownerChange.kind === 'reassign' ? 'reassigned' : 'owner_released', fromUserId: existing.ownerRecruiterId,
+    })
+    // Notify the PREVIOUS owner their candidate was taken over / reassigned.
+    if (ownerChange.kind === 'reassign' && existing.ownerRecruiterId && existing.ownerRecruiterId !== ownerChange.to) {
+      notifyPreviousOwner(ctx.tenantId, existing.ownerRecruiterId, ctx.userId, candidate.id, candidate.name, existing.jobId).catch(() => {})
+    }
   }
 
   // Score now that there's a JD to score against (deferred from a jobless import).

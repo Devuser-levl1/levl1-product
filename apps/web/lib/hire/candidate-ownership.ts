@@ -31,6 +31,43 @@ export function dedupeKeyFor({ email, phone, name }: Identity): string | null {
   return null
 }
 
+export type AttributionEventType =
+  | 'sourced' | 'added_to_job' | 'owner_claimed' | 'owner_released'
+  | 'reassigned' | 'advanced' | 'placed' | 'owner_override'
+
+/** Append one immutable attribution event (never updated/deleted). Best-effort. */
+export async function logAttribution(db: Db, e: {
+  tenantId: string; candidateId: string; jobId?: string | null
+  eventType: AttributionEventType; actorUserId?: string | null; fromUserId?: string | null; note?: string | null
+}): Promise<void> {
+  await db.candidateAttributionEvent.create({
+    data: {
+      tenantId: e.tenantId, candidateId: e.candidateId, jobId: e.jobId ?? null,
+      eventType: e.eventType, actorUserId: e.actorUserId ?? null, fromUserId: e.fromUserId ?? null, note: e.note ?? null,
+    },
+  }).catch((err) => console.error('[attribution] log failed:', err instanceof Error ? err.message : err))
+}
+
+/** Notify the previous owner (email, best-effort) that their candidate was taken
+ *  over / reassigned. In-app surfacing is the attribution timeline + owner badge. */
+export async function notifyPreviousOwner(tenantId: string, prevOwnerId: string, actorUserId: string, candidateId: string, candidateName: string, jobId: string | null): Promise<void> {
+  const [prev, actor, job] = await Promise.all([
+    prisma.hireUser.findFirst({ where: { id: prevOwnerId, tenantId }, select: { email: true, name: true } }),
+    prisma.hireUser.findFirst({ where: { id: actorUserId, tenantId }, select: { name: true } }),
+    jobId ? prisma.hireJob.findFirst({ where: { id: jobId, tenantId }, select: { title: true } }) : Promise.resolve(null),
+  ])
+  if (!prev?.email) return
+  const by = actor?.name ?? 'A teammate'
+  const forJob = job?.title ? ` for ${job.title}` : ''
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
+  const { sendHireEmail } = await import('@/lib/hire/email')
+  await sendHireEmail({
+    to: prev.email,
+    subject: `${candidateName} was reassigned${forJob}`,
+    html: `<p><strong>${by}</strong> has taken over <strong>${candidateName}</strong>${forJob} in HirePilot.</p><p>You were the previous owner. If this wasn't expected, reach out to your manager.</p><p><a href="${appUrl}/hire/candidates">Open HirePilot →</a></p>`,
+  }).catch(() => {})
+}
+
 export interface OwnerInfo { id: string; name: string | null }
 
 /** Resolve an owner's display name (tenant-scoped). */
@@ -64,6 +101,24 @@ export async function findCandidateOnJob(db: Db, tenantId: string, jobId: string
   return null
 }
 
+/** Earliest existing row for this identity ANYWHERE in the tenant (any job),
+ *  used to inherit the original candidate-level sourcedBy for a new row. */
+async function findSourcedInTenant(tenantId: string, id: Identity): Promise<{ sourcedByUserId: string | null; sourcedAt: Date | null } | null> {
+  const email = (id.email ?? '').trim().toLowerCase()
+  const phone = (id.phone ?? '').replace(/[^\d]/g, '')
+  const name = (id.name ?? '').trim()
+  const or: Prisma.HireCandidateWhereInput[] = []
+  if (email) or.push({ email })
+  else if (phone.length >= 6) or.push({ phone: { contains: phone.slice(-10) } })
+  else if (name) or.push({ name: { equals: name, mode: 'insensitive' } })
+  if (or.length === 0) return null
+  return prisma.hireCandidate.findFirst({
+    where: { tenantId, OR: or },
+    orderBy: { createdAt: 'asc' },
+    select: { sourcedByUserId: true, sourcedAt: true },
+  })
+}
+
 export interface AddResult {
   candidate: Awaited<ReturnType<typeof prisma.hireCandidate.create>>
   /** true when a new row was created; false when an existing candidate-on-job was found. */
@@ -87,13 +142,14 @@ export async function addCandidateToJob(args: {
   jobId: string | null
   actorUserId?: string | null
   claimerName?: string | null
-  data: Omit<Prisma.HireCandidateUncheckedCreateInput, 'tenantId' | 'jobId' | 'dedupeKey' | 'ownerRecruiterId' | 'claimedAt' | 'claimedBy'>
+  data: Omit<Prisma.HireCandidateUncheckedCreateInput, 'tenantId' | 'jobId' | 'dedupeKey' | 'ownerRecruiterId' | 'claimedAt' | 'claimedBy' | 'sourcedByUserId' | 'sourcedAt' | 'addedByUserId' | 'addedAt'>
 }): Promise<AddResult> {
   const { tenantId, jobId, actorUserId, claimerName, data } = args
   const identity: Identity = { email: data.email as string | null, phone: data.phone as string | null, name: data.name as string | null }
   const key = dedupeKeyFor(identity)
 
-  // Only a candidate ON a job can be a duplicate / be owned.
+  // Only a candidate ON a job can be a duplicate / be owned. On a dedupe match we
+  // PRESERVE the existing row untouched — sourcedBy (and owner) are never changed.
   if (jobId) {
     const existing = await findCandidateOnJob(prisma, tenantId, jobId, identity)
     if (existing) {
@@ -101,17 +157,36 @@ export async function addCandidateToJob(args: {
     }
   }
 
+  const now = new Date()
   const claim = jobId && actorUserId
-    ? { ownerRecruiterId: actorUserId, claimedAt: new Date(), claimedBy: claimerName ?? null }
+    ? { ownerRecruiterId: actorUserId, claimedAt: now, claimedBy: claimerName ?? null }
     : {}
+  // sourcedBy is CANDIDATE-LEVEL (the first person to bring this identity into the
+  // tenant by ANY path). Since we store one row per candidate+job, a new row for
+  // an identity already present in the tenant INHERITS the original sourcer —
+  // never reset by adding the same person to another job or re-importing.
+  const prior = await findSourcedInTenant(tenantId, identity)
+  const isFirstInTenant = !prior
+  const attribution = {
+    sourcedByUserId: prior ? prior.sourcedByUserId : (actorUserId ?? null),
+    sourcedAt: prior ? prior.sourcedAt : now,
+    addedByUserId: jobId ? (actorUserId ?? null) : null, addedAt: jobId ? now : null,
+  }
 
   try {
     const candidate = await prisma.hireCandidate.create({
-      data: { ...data, tenantId, jobId: jobId ?? null, dedupeKey: jobId ? key : null, ...claim },
+      data: { ...data, tenantId, jobId: jobId ?? null, dedupeKey: jobId ? key : null, ...claim, ...attribution },
     })
+    // 'sourced' only fires the FIRST time this identity enters the tenant.
+    if (isFirstInTenant) await logAttribution(prisma, { tenantId, candidateId: candidate.id, eventType: 'sourced', actorUserId: actorUserId ?? null })
+    if (jobId) {
+      await logAttribution(prisma, { tenantId, candidateId: candidate.id, jobId, eventType: 'added_to_job', actorUserId: actorUserId ?? null })
+      if (actorUserId) await logAttribution(prisma, { tenantId, candidateId: candidate.id, jobId, eventType: 'owner_claimed', actorUserId })
+    }
     return { candidate, created: true, duplicate: false, raced: false, owner: await ownerInfo(prisma, tenantId, candidate.ownerRecruiterId) }
   } catch (e) {
-    // P2002 = unique violation → a concurrent insert won the race. Resolve to it.
+    // P2002 = unique violation → a concurrent insert won the race. Resolve to the
+    // existing row (its original sourcedBy/owner preserved — no second insert).
     if (e && typeof e === 'object' && (e as { code?: string }).code === 'P2002' && jobId) {
       const existing = await findCandidateOnJob(prisma, tenantId, jobId, identity)
       if (existing) return { candidate: existing, created: false, duplicate: true, raced: true, owner: await ownerInfo(prisma, tenantId, existing.ownerRecruiterId) }
