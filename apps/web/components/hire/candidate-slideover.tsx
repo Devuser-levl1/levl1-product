@@ -41,11 +41,21 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
   const [savingNote, setSavingNote] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [showEmail, setShowEmail] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([])
+  const [correcting, setCorrecting] = useState(false)
 
   const load = useCallback(() => {
     fetch(`/api/hire/candidates/${candidateId}`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && !d.error) setC(d) }).catch(() => {})
   }, [candidateId])
   useEffect(() => { load() }, [load])
+
+  // Admin-only "correct attribution" affordance needs the viewer's caps + the
+  // member list for the pickers.
+  useEffect(() => {
+    fetch('/api/hire/auth/me').then((r) => (r.ok ? r.json() : null)).then((d) => setIsAdmin(Boolean(d?.caps?.includes('settingsAdmin')))).catch(() => {})
+    fetch('/api/hire/team').then((r) => (r.ok ? r.json() : [])).then((d) => { if (Array.isArray(d)) setMembers(d.map((m: { id: string; name: string }) => ({ id: m.id, name: m.name }))) }).catch(() => {})
+  }, [])
 
   async function changeStage(stage: string) {
     await fetch(`/api/hire/candidates/${candidateId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentStage: stage }) })
@@ -193,6 +203,9 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
                           <div><strong style={{ color: '#6D28D9' }}>Currently worked by</strong> {a?.owner ? who(a.owner) : '—'}{a?.claimedAt ? ` · since ${fmtDate(a.claimedAt)}` : ''}</div>
                           <div><strong style={{ color: '#6D28D9' }}>Placed by</strong> {a?.placedBy ? who(a.placedBy) : '—'}{a?.placedAt ? ` · ${fmtDate(a.placedAt)}` : ''}</div>
                         </div>
+                        {isAdmin && (
+                          <button onClick={() => setCorrecting(true)} style={{ marginTop: 10, fontSize: 12.5, fontWeight: 700, color: '#6D28D9', background: '#fff', border: '1px solid rgba(109,40,217,0.3)', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}>Correct attribution…</button>
+                        )}
                         <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '16px 0 8px' }}>Timeline</div>
                         {(c.attributionEvents ?? []).length === 0 ? (
                           <div style={{ fontSize: 13, color: '#94A3B8' }}>No attribution events yet.</div>
@@ -262,6 +275,77 @@ export function CandidateSlideOver({ candidateId, onClose, onChanged }: { candid
         />
       )}
       {showEmail && c && <EmailComposer candidateId={c.id} onClose={() => setShowEmail(false)} onSent={() => { load(); onChanged() }} />}
+      {correcting && c && (
+        <CorrectAttributionModal
+          candidateId={c.id}
+          members={members}
+          current={{ sourcedById: c.attribution?.sourcedBy?.id ?? '', ownerId: c.attribution?.owner?.id ?? '' }}
+          onClose={() => setCorrecting(false)}
+          onSaved={() => { setCorrecting(false); load(); onChanged() }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Admin-only correction of the immutable attribution (sourcedBy) + owner. Posts
+// to the dedicated, logged correct-attribution endpoint — never a normal edit.
+function CorrectAttributionModal({ candidateId, members, current, onClose, onSaved }: {
+  candidateId: string
+  members: { id: string; name: string }[]
+  current: { sourcedById: string; ownerId: string }
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [sourcedBy, setSourcedBy] = useState(current.sourcedById)
+  const [owner, setOwner] = useState(current.ownerId)
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const field: React.CSSProperties = { width: '100%', padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, boxSizing: 'border-box', background: '#fff' }
+
+  async function save() {
+    if (!reason.trim()) { setErr('A reason is required.'); return }
+    setSaving(true); setErr('')
+    const body: Record<string, unknown> = { reason: reason.trim() }
+    if (sourcedBy && sourcedBy !== current.sourcedById) body.sourcedByUserId = sourcedBy
+    if (owner !== current.ownerId) body.ownerUserId = owner || null
+    if (!('sourcedByUserId' in body) && !('ownerUserId' in body)) { setErr('Change the sourcer and/or owner first.'); setSaving(false); return }
+    const res = await fetch(`/api/hire/candidates/${candidateId}/correct-attribution`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const d = await res.json().catch(() => ({}))
+    setSaving(false)
+    if (!res.ok) { setErr(d.error ?? 'Could not save.'); return }
+    onSaved()
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, padding: 22, width: 420, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>Correct attribution</div>
+          <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 3 }}>Admin-only. This overrides the immutable sourced-by (and optionally the owner) and is logged with your name, the time, and the reason.</div>
+        </div>
+        <div><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Sourced by</label>
+          <select style={field} value={sourcedBy} onChange={(e) => setSourcedBy(e.target.value)}>
+            <option value="">Unknown</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </div>
+        <div><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Owner (this job)</label>
+          <select style={field} value={owner} onChange={(e) => setOwner(e.target.value)}>
+            <option value="">No owner</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </div>
+        <div><label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Reason (required)</label>
+          <input style={field} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. wrong sourcer recorded at import" />
+        </div>
+        {err && <div style={{ fontSize: 12.5, color: '#DC2626' }}>{err}</div>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+          <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#6D28D9', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save correction'}</button>
+        </div>
+      </div>
     </div>
   )
 }
