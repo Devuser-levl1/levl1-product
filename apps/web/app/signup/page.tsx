@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Zap, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const PERKS = [
@@ -26,33 +26,43 @@ export default function SignupPage() {
   const [agencyName, setAgencyName] = useState('')
   const [name,       setName]       = useState('')
   const [email,      setEmail]      = useState('')
-  const [password,   setPassword]   = useState('')
   const [phone,      setPhone]      = useState('')
-  const [showPw,     setShowPw]     = useState(false)
+  const [code,       setCode]       = useState('')
+  const [step,       setStep]       = useState<'details' | 'code'>('details')
   const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Passwordless, two steps (same endpoint): details → we email a 6-digit code →
+  // verify → the account is created and you're signed in.
+  const submit = async (withCode: boolean) => {
     setError('')
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
-
     try {
       const res  = await fetch('/api/auth/signup', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ agencyName, name, email, password, phone }),
+        body:    JSON.stringify({ agencyName, name, email, phone, ...(withCode ? { code } : {}) }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Signup failed'); setLoading(false); return }
 
+      if (!withCode) {
+        toast.success('Check your email for a 6-digit code')
+        setStep('code'); setLoading(false)
+        return
+      }
       toast.success('Account created! Setting up your workspace…')
       router.push('/onboarding')
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
+  }
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); void submit(false) }
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code.trim().length < 6) { setError('Enter the 6-digit code.'); return }
+    void submit(true)
   }
 
   return (
@@ -75,9 +85,29 @@ export default function SignupPage() {
             Start your free trial
           </h1>
           <p style={{ fontSize: 14, color: '#94A3B8', marginBottom: 32, lineHeight: 1.5 }}>
-            5 interviews · 14 days · No credit card required
+            {step === 'details' ? '5 interviews · 14 days · No credit card required' : `We sent a 6-digit code to ${email}. Enter it to create your account.`}
           </p>
 
+          {step === 'code' ? (
+            <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>6-digit code</label>
+                <input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ ...INPUT, letterSpacing: 8, fontSize: 20, textAlign: 'center', fontWeight: 700 }}
+                  value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" />
+              </div>
+              {error && (
+                <p style={{ fontSize: 13, color: '#DC2626', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '10px 14px' }}>{error}</p>
+              )}
+              <button type="submit" disabled={loading}
+                style={{ background: loading ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.30)' }}>
+                {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Creating your account…</> : <><span>Verify &amp; create account</span><ArrowRight size={16} /></>}
+              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <button type="button" onClick={() => { setStep('details'); setCode(''); setError('') }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: 0 }}>← Edit details</button>
+                <button type="button" disabled={loading} onClick={() => { setCode(''); void submit(false) }} style={{ background: 'none', border: 'none', color: '#7C3AED', cursor: 'pointer', fontWeight: 600, padding: 0 }}>Resend code</button>
+              </div>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Agency / Company name *</label>
@@ -90,19 +120,7 @@ export default function SignupPage() {
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Work email *</label>
               <input required type="email" style={INPUT} value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@hireedge.in" autoComplete="email" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Password *</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  required type={showPw ? 'text' : 'password'} style={{ ...INPUT, paddingRight: 44 }}
-                  value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="At least 8 characters" autoComplete="new-password"
-                />
-                <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', padding: 0 }}>
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+              <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Use your company email — personal addresses (Gmail, Outlook, etc.) aren&apos;t supported. We&apos;ll email you a code to verify it.</div>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 5 }}>Phone (optional)</label>
@@ -126,15 +144,16 @@ export default function SignupPage() {
                 gap: 8, marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.30)',
               }}
             >
-              {loading ? 'Creating your account…' : <><span>Start Free Trial</span><ArrowRight size={16} /></>}
+              {loading ? 'Sending your code…' : <><span>Continue</span><ArrowRight size={16} /></>}
             </button>
 
             <p style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', lineHeight: 1.6 }}>
               By signing up you agree to our{' '}
-              <span style={{ color: '#7C3AED', cursor: 'pointer' }}>Terms</span> and{' '}
-              <span style={{ color: '#7C3AED', cursor: 'pointer' }}>Privacy Policy</span>.
+              <Link href="/terms" style={{ color: '#7C3AED', textDecoration: 'none' }}>Terms</Link> and{' '}
+              <Link href="/privacy" style={{ color: '#7C3AED', textDecoration: 'none' }}>Privacy Policy</Link>.
             </p>
           </form>
+          )}
 
           <p style={{ textAlign: 'center', fontSize: 13, color: '#94A3B8', marginTop: 24 }}>
             Already have an account?{' '}
@@ -195,6 +214,7 @@ export default function SignupPage() {
           .login-grid { grid-template-columns: 1fr !important; }
           .login-right-panel { display: none !important; }
         }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )

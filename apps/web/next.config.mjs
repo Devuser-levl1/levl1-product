@@ -56,6 +56,9 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/login', destination: '/interviews/login', permanent: true },
+      // The login page linked here for a while (it never existed) — keep any
+      // bookmarks/shared links working. Create-account lives at /signup.
+      { source: '/interviews/signup', destination: '/signup', permanent: true },
 
       // Website restructure (docs/website-restructure-plan.md) — OLD MARKETING
       // URLs ONLY, exact matches. These never match product routes such as

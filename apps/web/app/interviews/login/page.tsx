@@ -89,7 +89,7 @@ export default function LoginPage() {
         )}
 
         <div style={{ textAlign: 'center', marginTop: 22, fontSize: 13, color: '#64748B' }}>
-          New to Levl1? <Link href="/interviews/signup" style={{ color: INDIGO, fontWeight: 700 }}>Create an account</Link>
+          New to Levl1? <Link href="/signup" style={{ color: INDIGO, fontWeight: 700 }}>Create an account</Link>
         </div>
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
