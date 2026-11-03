@@ -167,8 +167,6 @@ export default function ReportPage() {
   }
 
   const R = report as unknown as ReportPayload
-  const wl = report as unknown as { brandColor?: string | null; agencyName?: string | null }
-  const brandColor = wl.brandColor || INDIGO
   const verdict = VERDICT[R.recommendation] ?? VERDICT.maybe
   const insufficient = !!R.insufficientEvidence
 

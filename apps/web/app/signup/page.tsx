@@ -166,20 +166,6 @@ export default function SignupPage() {
               </div>
             ))}
           </div>
-
-          {/* Social proof */}
-          <div style={{ marginTop: 48, padding: '20px 24px', background: 'rgba(255,255,255,0.10)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.18)' }}>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.88)', fontStyle: 'italic', lineHeight: 1.65, marginBottom: 12 }}>
-              &ldquo;We onboarded Levl1 in a single afternoon. Within a week, we&apos;d screened more candidates than the previous month.&rdquo;
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff' }}>AM</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Ananya Mehta</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.60)' }}>Talent Director, SecureAxis</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

@@ -29,6 +29,8 @@ const STATUS_CFG: Record<string, { label: string; tone: Tone; tip: string }> = {
   draft:            { label: "Draft",            tone: "neutral", tip: "Still being set up — questions not yet generated" },
   paused:           { label: "Paused",           tone: "neutral", tip: "Interviews paused — no new invites will be sent" },
   closed:           { label: "Closed",           tone: "danger",  tip: "Position filled or cancelled — no more interviews" },
+  won:              { label: "Won",              tone: "success", tip: "Filled — a candidate from this position was selected" },
+  lost:             { label: "Lost",             tone: "danger",  tip: "Not filled — the requirement was lost or cancelled" },
 };
 
 function ApprovalDot({ approved, role }: { approved: boolean; role: string }) {

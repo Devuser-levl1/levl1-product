@@ -104,7 +104,7 @@ function PositionCard({
   ).length;
 
   const statusTone: Record<string, Tone> = {
-    active: "success", pending_approval: "warning", draft: "neutral", paused: "warning", closed: "neutral",
+    active: "success", pending_approval: "warning", draft: "neutral", paused: "warning", closed: "neutral", won: "success", lost: "danger",
   };
   const none = completedCandidates.length === 0;
 

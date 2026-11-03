@@ -87,7 +87,9 @@ export default function SettingsPage() {
   useEffect(() => { loadTeam(); }, [loadTeam]);
 
   const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
-  const [agencyEmail,   setAgencyEmail]   = useState("abma3005@gmail.com");
+  // Read-only: the signed-in user's email (the Agency model has no contact-email
+  // field, so this was never loaded or saved — it used to show a hard-coded address).
+  const accountEmail = useAppStore((s) => s.account?.user?.email ?? "");
   const [agencyWebsite, setAgencyWebsite] = useState("https://levl1.ai");
   const [senderName,    setSenderName]    = useState('');
   const [senderEmail,   setSenderEmail]   = useState('');
@@ -410,8 +412,9 @@ export default function SettingsPage() {
           <Field label="Agency Name">
             <input className="lv-input" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} />
           </Field>
-          <Field label="Contact Email">
-            <input className="lv-input" type="email" value={agencyEmail} onChange={(e) => setAgencyEmail(e.target.value)} />
+          <Field label="Account email">
+            <input className="lv-input" type="email" value={accountEmail} readOnly aria-readonly="true" placeholder="—"
+              title="Your sign-in email" style={{ background: "var(--lv-surface-sunken)", color: "var(--lv-text-muted)" }} />
           </Field>
         </div>
         <Field label="Website">

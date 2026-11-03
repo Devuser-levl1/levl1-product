@@ -9,7 +9,7 @@ export interface Position {
   department: string
   experienceLevel: string
   techStack: string[]
-  status: 'draft' | 'pending_approval' | 'active' | 'paused' | 'closed'
+  status: 'draft' | 'pending_approval' | 'active' | 'paused' | 'closed' | 'won' | 'lost'
   interviewsScheduled: number
   interviewsCompleted: number
   createdAt: string

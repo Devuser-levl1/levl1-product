@@ -46,6 +46,8 @@ const STATUS_CONFIG: Record<string, { label: string; tone: Tone }> = {
   draft:            { label: "Draft",            tone: "neutral" },
   paused:           { label: "Paused",           tone: "neutral" },
   closed:           { label: "Closed",           tone: "danger"  },
+  won:              { label: "Won",              tone: "success" },
+  lost:             { label: "Lost",             tone: "danger"  },
 };
 
 // Shared look for the list rows inside dashboard cards.

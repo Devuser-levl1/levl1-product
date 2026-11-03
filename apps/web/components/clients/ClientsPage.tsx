@@ -140,7 +140,7 @@ export default function ClientsPage() {
   useEffect(() => { loadClients() }, [loadClients])
 
   const STATUS_TONE: Record<string, Tone> = { active: 'success', inactive: 'neutral', paused: 'neutral' }
-  const posTone = (st: string): Tone => (st === 'active' ? 'success' : st === 'pending_approval' ? 'warning' : 'neutral')
+  const posTone = (st: string): Tone => (st === 'active' || st === 'won' ? 'success' : st === 'lost' ? 'danger' : st === 'pending_approval' ? 'warning' : 'neutral')
 
   return (
     <>

@@ -101,6 +101,8 @@ const STATUS_CFG: Record<string, { label: string; tone: Tone }> = {
   draft:            { label: 'Draft',            tone: 'neutral' },
   paused:           { label: 'Paused',           tone: 'neutral' },
   closed:           { label: 'Closed',           tone: 'danger'  },
+  won:              { label: 'Won',              tone: 'success' },
+  lost:             { label: 'Lost',             tone: 'danger'  },
 }
 
 const REC_CFG: Record<string, { label: string; tone: Tone }> = {
