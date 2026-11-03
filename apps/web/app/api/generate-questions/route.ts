@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { sanitizeMustHaves } from "@/lib/screen/recruiter/must-haves";
+import { formatExperience, isJuniorExperience, isSeniorExperience, parseExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeMix } from "@/lib/screen/position-config";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -34,31 +35,48 @@ export async function POST(req: NextRequest) {
     const {
       positionTitle, company, experienceLevel, roleType,
       primaryDomain, mustHaveTech, niceToHaveTech, domainContext,
-      workMode, weights, interviewStyle, behavioralFramework,
+      workMode, weights, interviewStyle,
       interviewDuration, redFlags, approvedJD,
     } = body;
+    // Fixpack 3: experience is a min–max range; question mix is configurable;
+    // a JD-derived concept rubric steers coverage.
+    const exp = sanitizeExperience(body.experienceMin, body.experienceMax) ?? parseExperience(experienceLevel);
+    const experienceText = exp ? formatExperience(exp) : (experienceLevel || "Not specified");
+    const mix = sanitizeMix(body.questionMix);
+    const conceptRubric = sanitizeConceptRubric(body.conceptRubric);
     // Recruiter-marked non-negotiables — every one must be directly assessed.
     const mustHaves = sanitizeMustHaves(body.mustHaves);
 
-    const isSenior    = ["8–12 years","12–18 years","18+ years"].includes(experienceLevel);
+    const isSenior    = isSeniorExperience(exp);
+    const isJunior    = isJuniorExperience(exp);
     const isHandsOn   = workMode === "Hands-on (writes code/does the work)";
     const isOversight = workMode === "Oversight (leads, does not execute)";
 
-    // Build 08 — DEPTH over breadth. ~14–15 min Q&A with FULL adaptive follow-ups
-    // (≤3 each) means 4–5 preset questions, NOT 14. Packing more makes the time-up
-    // gate fire mid-question. 2 technical + 1 scenario + 1 behavioral + 1 EQ = 5.
-    const techCount = 2, scenCount = 1, behavCount = 1, eqCount = 1, wbCount = 0;
+    // DEPTH over breadth (~14 min Q&A, adaptive follow-ups). The mix is
+    // recruiter-configurable (#15); basic-concept checks are short and live in
+    // the technical section (kind: "concept"), asked BEFORE applied technical.
+    const conceptCount = mix.concept, appliedCount = mix.technical;
+    const techCount = conceptCount + appliedCount, scenCount = mix.scenario, behavCount = mix.behavioral, eqCount = mix.eq, wbCount = 0;
+    const totalCount = techCount + scenCount + behavCount + eqCount;
 
     const excludedDomains = getExcludedDomains(primaryDomain ?? "", roleType ?? "");
 
     const systemPrompt = `You are a world-class technical interviewer with 25+ years of experience hiring across software engineering, IT, product management, and enterprise technology roles.
 
-INTERVIEW STRUCTURE — ~15 MINUTE DEPTH Q&A (each question gets full adaptive follow-ups, so DEPTH matters more than count):
-- Technical questions (core skills + project execution): 2 questions
-- Scenario questions (workplace situations): 1 question
-- Behavioral questions (STAR framework): 1 question
-- EQ and soft skills questions: 1 question
-- Total pre-set questions: 5 — pick the HIGHEST-SIGNAL questions; each will be probed deeply, so choose ones that reward follow-up.
+INTERVIEW STRUCTURE — ~14 MINUTE Q&A (each question gets adaptive follow-ups, so DEPTH matters more than count):
+- Basic-concept questions (direct fundamentals checks): ${conceptCount}
+- Applied technical questions (core skills + project execution): ${appliedCount}
+- Scenario questions (workplace situations): ${scenCount}
+- Behavioral questions (conversational, about how they work): ${behavCount}
+- EQ and soft skills questions: ${eqCount}
+- Total pre-set questions: ${totalCount} — pick the HIGHEST-SIGNAL questions.
+
+BASIC-CONCEPT QUESTIONS (kind: "concept") — direct knowledge checks:
+- One clear question about a foundational concept the role genuinely relies on (e.g. "What's the difference between a process and a thread?", "How does an index speed up a query, and what does it cost?").
+- Answerable in 1-2 minutes from knowledge alone — NOT a scenario, NOT "tell me about a time".
+- Calibrate to seniority: junior → core definitions and how they work; senior → the fundamentals that matter at their level (consistency models, failure modes, trade-offs of core primitives) — never trivia.
+- expectedKeyPoints are the facts a correct answer must contain. estimatedMinutes: 1-2.
+- Put them FIRST in technicalQuestions with "kind": "concept"; applied technical questions follow with "kind": "applied".
 
 TECHNICAL QUESTIONS must cover:
 - Core technical concepts specific to the EXACT tech stack provided
@@ -74,10 +92,12 @@ SCENARIO QUESTIONS must be:
 - Test: judgment, prioritization, stakeholder management, crisis handling
 - Example for IT Risk: "The external auditor flags a critical SOX deficiency on day 3 of fieldwork. Your CISO is traveling and the control owner is on leave. Walk me through the next 24 hours."
 
-BEHAVIORAL QUESTIONS must follow STAR framework:
-- Past behavior as predictor of future behavior
-- Senior roles: leadership, influence, org-level decisions
-- Cover: conflict resolution, failure and recovery, cross-functional collaboration, delivering under pressure
+BEHAVIORAL QUESTIONS — general and conversational, about the PERSON:
+- Aim to understand their judgment, how they treat people, and how they handle pressure and disagreement — their EQ and behavior, not their storytelling technique.
+- Ask naturally, the way a thoughtful hiring manager would ("How do you usually handle it when a teammate keeps missing deadlines?", "What do you do when you disagree with your manager's call?"). Hypothetical or past-experience phrasing are both fine.
+- NEVER mention or require STAR, "situation/task/action/result", or any answer framework — many candidates don't know them and the question must not gate on it.
+- expectedKeyPoints describe the qualities/judgment a strong answer shows (e.g. "addresses the issue directly but privately", "considers the other person's constraints") — not framework steps.
+- Senior roles: leadership, influence, org-level decisions. Others: collaboration, ownership, conflict, recovering from mistakes.
 
 EQ AND SOFT SKILL QUESTIONS — critical differentiators:
 - Self-awareness: "How do you typically respond when you receive critical feedback from someone junior to you?"
@@ -97,27 +117,31 @@ QUALITY STANDARDS:
 - followUp: address the most common gap in candidate answers
 - estimatedMinutes: technical 2-4 mins, behavioral/scenario 3-5 mins, EQ 2-3 mins
 - difficulty: calibrated to experience level
-- 12+ year roles: NO fundamentals — only leadership, strategy, architecture
-- 0-3 year roles: NO org design — only fundamentals and problem solving
+- 12+ year roles: concept checks at senior depth only (no textbook basics); applied questions on leadership, strategy, architecture
+- 0-3 year roles: NO org design — fundamentals and problem solving
 
 OUTPUT: ONLY valid JSON, no markdown, no explanation.`;
 
     const userPrompt = `Generate interview questions for this role:
 
 Position: ${positionTitle} at ${company}
-Experience: ${experienceLevel} | Role Type: ${roleType} | Work Mode: ${workMode}
+Experience: ${experienceText}${isJunior ? " (junior)" : isSenior ? " (senior)" : ""} | Role Type: ${roleType} | Work Mode: ${workMode}
 Role domain: ${primaryDomain}
 Industry context: ${domainContext}
 Tech Stack (MUST be covered): ${mustHaveTech?.join(", ")}
 Nice-to-have tech: ${niceToHaveTech?.join(", ")}
 Interview Duration: ${interviewDuration} mins
 Soft Skill Weights: Technical ${weights?.technical}/100, Leadership ${weights?.leadership}/100, Communication ${weights?.communication}/100, Problem Solving ${weights?.problemSolving}/100
-Interview Style: ${interviewStyle} | Behavioral Framework: ${behavioralFramework}
+Interview Style: ${interviewStyle}
 ${redFlags ? `Red flags / gaps to probe: ${redFlags}` : ""}
 ${mustHaves.length ? `
 MUST-HAVE REQUIREMENTS (non-negotiable — the recruiter will judge each one as met / not met):
 ${mustHaves.map((m, i) => `${i + 1}. ${m}`).join("\n")}
 Every must-have MUST be directly assessed by at least one question: its expectedKeyPoints must include concrete evidence that would show the requirement is met, and set "mustHaves" on that question to the exact requirement text(s) it assesses. Prefer folding several must-haves into one deep question over adding questions. Questions not tied to a must-have use "mustHaves": [].
+` : ""}
+${conceptRubric.length ? `
+ROLE CONCEPT RUBRIC (from the JD — the competencies this role actually needs). Spread questions across these so each concept is assessed at least once where the mix allows; tag every question with "concepts": [exact concept names it assesses]. Use the strong/weak anchors to write expectedKeyPoints:
+${conceptRubric.map((c, i) => `${i + 1}. ${c.concept}\n   strong: ${c.strong || "—"}\n   weak: ${c.weak || "—"}`).join("\n")}
 ` : ""}
 IMPORTANT: Only generate questions directly relevant to the ${primaryDomain} domain.
 DO NOT generate questions about: ${excludedDomains}
@@ -125,7 +149,7 @@ DO NOT generate questions about: ${excludedDomains}
 Seniority guidance: ${isSenior && isOversight
   ? "This is a senior leadership role. Focus entirely on strategy, org design, cross-functional influence, executive stakeholder management, and leading teams — NO fundamental technical questions."
   : isSenior
-  ? "Senior IC role. Focus on architectural decisions, trade-off reasoning, mentoring others, and owning complex systems — skip basic concept questions."
+  ? "Senior IC role. Focus on architectural decisions, trade-off reasoning, mentoring others, and owning complex systems — concept checks at senior depth, never textbook basics."
   : isHandsOn
   ? "Hands-on role. Include specific technical depth questions relevant to the stated tech stack — practical implementation, debugging, performance."
   : "Balance domain knowledge with leadership and communication for this mid-level role."}
@@ -133,7 +157,7 @@ Seniority guidance: ${isSenior && isOversight
 Approved JD (for context):
 ${approvedJD ? approvedJD.substring(0, 2000) : "Not provided"}
 
-Generate exactly this structure (${techCount} technical, ${scenCount} scenario, ${behavCount} behavioral, ${eqCount} EQ, ${wbCount} whiteboard questions). The whiteboardAssessment array MUST be empty — whiteboard is conducted live during the interview, not pre-set.
+Generate exactly this structure (${techCount} technical — ${conceptCount} "concept" first, then ${appliedCount} "applied" — plus ${scenCount} scenario, ${behavCount} behavioral, ${eqCount} EQ, ${wbCount} whiteboard questions). Any array whose count is 0 MUST be empty. The whiteboardAssessment array MUST be empty — whiteboard is conducted live during the interview, not pre-set.
 
 {
   "technicalQuestions": [
@@ -144,6 +168,8 @@ Generate exactly this structure (${techCount} technical, ${scenCount} scenario, 
       "followUp": "...",
       "difficulty": "intermediate",
       "techTag": "${mustHaveTech?.[0] ?? primaryDomain}",
+      "kind": "concept | applied",
+      "concepts": [],
       "mustHaves": [],
       "estimatedMinutes": 4
     }

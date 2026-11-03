@@ -138,7 +138,7 @@ export default function RubricApprovalPage() {
           </h3>
           <RubricRow label="Technical Depth"   value={r.technical}     color="#4F46E5" />
           <RubricRow label="Problem Solving"   value={r.problemSolving} color="#7C3AED" />
-          <RubricRow label="Behavioral / STAR" value={r.behavioral}    color="#10B981" />
+          <RubricRow label="Behavioral / EQ" value={r.behavioral}    color="#10B981" />
           <RubricRow label="EQ & Soft Skills"  value={r.eq}            color="#F59E0B" />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 0', marginTop: 4 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>Total</span>

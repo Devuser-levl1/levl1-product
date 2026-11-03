@@ -1,4 +1,5 @@
 import { LogisticsConfig, WORK_MODE_LABEL, WorkMode } from './config'
+import type { KnockoutQuestion, KnockoutResult, KnockoutVerdict } from '@/lib/screen/position-config'
 
 // ── Logistics segment result + verdicts (Screen-scoped) ────────────────────
 // The model only EXTRACTS what the candidate said (extraction). Every verdict
@@ -16,10 +17,12 @@ export interface Extraction {
     willingToRelocate: 'yes' | 'no' | 'conditional' | null
     agreedArrangement: string | null   // the concrete resolution reached, in one sentence
     resolved: boolean                  // did the conversation land on something the role allows?
+    acceptsOfficeDays: boolean | null  // hybrid: agreed to the role's in-office days?
   }
   notice: { noticeDays: number | null; earliestStart: string | null; note: string | null }
   comp: { amount: number | null; currency: string | null; period: 'annual' | 'monthly' | null; asSaid: string | null }
   workAuth: { status: WorkAuthStatus }
+  knockouts: { id: string; answer: string | null; verdict: KnockoutVerdict }[]
 }
 
 export interface LogisticsResult {
@@ -29,6 +32,9 @@ export interface LogisticsResult {
   workAuth: { verdict: Verdict; summary: string; status: WorkAuthStatus }
   hardMismatch: boolean
   completed: boolean   // false when the segment was cut short (time-up / termination)
+  // Recruiter knockout questions (#14) — SURFACED for review, never auto-reject.
+  knockouts: KnockoutResult[]
+  knockoutsNotMet: number
 }
 
 const MODE_SET = new Set(['onsite', 'hybrid', 'remote', 'flexible'])
@@ -48,6 +54,7 @@ export function sanitizeExtraction(raw: unknown): Extraction {
       willingToRelocate: l.willingToRelocate === 'yes' || l.willingToRelocate === 'no' || l.willingToRelocate === 'conditional' ? l.willingToRelocate : null,
       agreedArrangement: s(l.agreedArrangement, 300),
       resolved: l.resolved === true,
+      acceptsOfficeDays: typeof l.acceptsOfficeDays === 'boolean' ? l.acceptsOfficeDays : null,
     },
     notice: { noticeDays: n(no.noticeDays), earliestStart: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null, note: s(no.note, 200) },
     comp: {
@@ -58,10 +65,20 @@ export function sanitizeExtraction(raw: unknown): Extraction {
     },
     // Only the four-state status is ever kept — any volunteered detail is dropped.
     workAuth: { status: AUTH_SET.has(w.status as WorkAuthStatus) ? (w.status as WorkAuthStatus) : 'unclear' },
+    knockouts: Array.isArray((raw as Record<string, unknown> | null)?.knockouts)
+      ? ((raw as Record<string, unknown>).knockouts as unknown[]).flatMap((k) => {
+          const o = (k && typeof k === 'object' ? k : {}) as Record<string, unknown>
+          if (typeof o.id !== 'string') return []
+          const verdict = KO_SET.has(o.verdict as KnockoutVerdict) ? (o.verdict as KnockoutVerdict) : 'unclear'
+          return [{ id: o.id, answer: s(o.answer, 200), verdict }]
+        })
+      : [],
   }
 }
 
-export function computeVerdicts(cfg: LogisticsConfig, x: Extraction, opts: { completed: boolean }): LogisticsResult {
+const KO_SET = new Set<KnockoutVerdict>(['met', 'not_met', 'unclear', 'not_asked'])
+
+export function computeVerdicts(cfg: LogisticsConfig, x: Extraction, opts: { completed: boolean; knockouts?: KnockoutQuestion[] }): LogisticsResult {
   // ── Location / work mode ──
   const allowed = cfg.workModes ?? []
   const pref = x.location.preferredMode
@@ -128,6 +145,21 @@ export function computeVerdicts(cfg: LogisticsConfig, x: Extraction, opts: { com
   const authSummary = { authorized: 'Authorized to work in the job location', needs_sponsorship: 'Needs sponsorship', not_authorized: 'Not authorized to work in the job location', unclear: 'Not established' }[st]
     + (authVerdict === 'mismatch' ? ' — role requires authorization' : '')
 
+  // Hybrid in-office days (#7): agreed to hybrid but not the role's office days.
+  if (cfg.hybridDaysPerWeek && pref === 'hybrid' && x.location.acceptsOfficeDays === false && (locVerdict === 'fit' || locVerdict === 'unknown')) {
+    locVerdict = 'gap'
+    locSummary = `Wants hybrid but not ${cfg.hybridDaysPerWeek} office days/week${x.location.agreedArrangement ? ` — proposes: ${x.location.agreedArrangement}` : ''}`
+  } else if (cfg.hybridDaysPerWeek && pref === 'hybrid' && locVerdict === 'fit') {
+    locSummary = `Hybrid — matches the role (${cfg.hybridDaysPerWeek} office day${cfg.hybridDaysPerWeek > 1 ? 's' : ''}/week${x.location.acceptsOfficeDays ? ', confirmed' : ''})`
+  }
+
+  // Knockouts: one verdict per CONFIGURED question (never dropped or invented).
+  const byId = new Map(x.knockouts.map((k) => [k.id, k]))
+  const knockouts: KnockoutResult[] = (opts.knockouts ?? []).map((q) => {
+    const k = byId.get(q.id)
+    return { id: q.id, question: q.question, requiredAnswer: q.requiredAnswer, answer: k?.answer ?? null, verdict: k?.verdict ?? (opts.completed ? 'unclear' : 'not_asked') }
+  })
+
   const hardMismatch = locVerdict === 'mismatch' || authVerdict === 'mismatch'
   return {
     location: { verdict: locVerdict, summary: locSummary, candidateLocation: x.location.candidateLocation, preferredMode: pref, agreedArrangement: x.location.agreedArrangement },
@@ -136,6 +168,8 @@ export function computeVerdicts(cfg: LogisticsConfig, x: Extraction, opts: { com
     workAuth: { verdict: authVerdict, summary: authSummary, status: st },
     hardMismatch,
     completed: opts.completed,
+    knockouts,
+    knockoutsNotMet: knockouts.filter((k) => k.verdict === 'not_met').length,
   }
 }
 

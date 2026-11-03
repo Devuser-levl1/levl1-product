@@ -7,6 +7,7 @@ import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE 
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
+import { reconcileConcepts, sanitizeConceptRubric } from '@/lib/screen/position-config'
 import { appUrl } from '@/lib/screen/app-url'
 
 export async function POST(req: NextRequest) {
@@ -45,11 +46,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Recruiter-marked must-have requirements for this position (Screen F3).
-    const mustHaves: string[] = candidateId
-      ? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { position: { select: { mustHaves: true } } } }).catch(() => null))?.position.mustHaves ?? []
+    // Recruiter-marked must-haves (F3) + the JD-derived concept rubric (#13).
+    const posCfg = candidateId
+      ? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { position: { select: { mustHaves: true, conceptRubric: true } } } }).catch(() => null))?.position ?? null
       : body.positionId
-        ? (await prisma.position.findUnique({ where: { id: body.positionId }, select: { mustHaves: true } }).catch(() => null))?.mustHaves ?? []
-        : []
+        ? await prisma.position.findUnique({ where: { id: body.positionId }, select: { mustHaves: true, conceptRubric: true } }).catch(() => null)
+        : null
+    const mustHaves: string[] = posCfg?.mustHaves ?? []
+    const conceptRubric = sanitizeConceptRubric(posCfg?.conceptRubric)
 
     const hasTranscript = Array.isArray(transcript) && transcript.length > 0
     const hasResponses = Array.isArray(questionResponses) && questionResponses.length > 0
@@ -80,6 +84,9 @@ export async function POST(req: NextRequest) {
         l2Recommendation: '',
         mustHaveAssessment: (mustHaves.length
           ? reconcileMustHaves(mustHaves, null, { insufficientEvidence: true })
+          : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+        conceptAssessment: (conceptRubric.length
+          ? reconcileConcepts(conceptRubric, null, { insufficientEvidence: true })
           : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       }
 
@@ -155,6 +162,12 @@ export async function POST(req: NextRequest) {
             `Transcript:\n${transcriptText || 'No transcript available.'}\n\n` +
             `Question responses with scores:\n${responsesText || 'No question responses available.'}\n\n` +
             `Resume excerpt:\n${resumeExcerpt || 'No resume provided.'}\n\n` +
+            (conceptRubric.length
+              ? `ROLE CONCEPT RUBRIC (derived from the JD — ground your scoring in these role-specific criteria). Rate EACH concept from the transcript only, against its anchors:\n` +
+                conceptRubric.map((c, i) => `${i + 1}. ${c.concept}\n   strong looks like: ${c.strong || '—'}\n   weak looks like: ${c.weak || '—'}`).join('\n') + `\n` +
+                `- "strong": matches the strong anchor with specifics. "adequate": correct but shallow or partial. "weak": matches the weak anchor or shows a clear gap.\n` +
+                `- "not_assessed": the concept didn't come up in enough depth — do NOT guess. Let these ratings inform sectionScores and the recommendation.\n\n`
+              : '') +
             (mustHaves.length
               ? `MUST-HAVE REQUIREMENTS (non-negotiable). Judge EACH one strictly from what the candidate said in the transcript — the resume alone is NOT evidence:\n` +
                 mustHaves.map((m, i) => `${i + 1}. ${m}`).join('\n') + `\n` +
@@ -199,9 +212,13 @@ export async function POST(req: NextRequest) {
             `  ],\n` +
             `  "hrNote": "<one paragraph plain English for HR>",\n` +
             `  "l2Recommendation": "<what to focus on in L2 if proceeding>"` +
-            (mustHaves.length
-              ? `,\n  "mustHaveAssessment": [\n    { "requirement": "<exact requirement text from the list>", "status": "<met|not_met|insufficient_evidence>", "evidence": "<1 sentence citing what the candidate said, or why evidence is insufficient>" }\n  ]\n`
-              : `\n`) +
+            (() => {
+              const extra = [
+                mustHaves.length ? `"mustHaveAssessment": [\n    { "requirement": "<exact requirement text from the list>", "status": "<met|not_met|insufficient_evidence>", "evidence": "<1 sentence citing what the candidate said, or why evidence is insufficient>" }\n  ]` : null,
+                conceptRubric.length ? `"conceptAssessment": [\n    { "concept": "<exact concept name from the rubric>", "rating": "<strong|adequate|weak|not_assessed>", "evidence": "<1 sentence citing what the candidate said>" }\n  ]` : null,
+              ].filter(Boolean)
+              return extra.length ? `,\n  ${extra.join(',\n  ')}\n` : `\n`
+            })() +
             `}`,
         },
       ],
@@ -289,6 +306,9 @@ export async function POST(req: NextRequest) {
 
     // One verdict per configured must-have — never dropped, never invented.
     // Reconciled once so the response and the persisted report agree.
+    report.conceptAssessment = conceptRubric.length
+      ? reconcileConcepts(conceptRubric, report.conceptAssessment, { insufficientEvidence: report.insufficientEvidence === true })
+      : undefined
     report.mustHaveAssessment = mustHaves.length
       ? reconcileMustHaves(mustHaves, report.mustHaveAssessment, { insufficientEvidence: report.insufficientEvidence === true })
       : undefined
@@ -311,6 +331,7 @@ export async function POST(req: NextRequest) {
         communication:          (report.communication ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         insufficientEvidence:   report.insufficientEvidence === true,
         mustHaveAssessment:     (report.mustHaveAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        conceptAssessment:      (report.conceptAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       }
       try {
         const savedReport = await prisma.report.upsert({

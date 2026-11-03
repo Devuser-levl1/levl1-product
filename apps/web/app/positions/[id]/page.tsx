@@ -12,6 +12,8 @@ import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
 import { MustHaveEditor } from '@/components/positions/MustHaveEditor'
 import { LogisticsEditor } from '@/components/positions/LogisticsEditor'
 import { readLogisticsConfig, type LogisticsConfig } from '@/lib/screen/logistics/config'
+import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/SetupFields'
+import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -61,6 +63,8 @@ interface Position {
   goodToHave: string[]
   mustHaves?: string[]
   logistics?: LogisticsConfig | null
+  conceptRubric?: ConceptRubricItem[] | null
+  knockoutQuestions?: KnockoutQuestion[] | null
   jdText?: string
   status: string
   techLeadApproved: boolean
@@ -199,6 +203,38 @@ export default function PositionDetailPage() {
   const [mhDraft, setMhDraft]   = useState<string[] | null>(null)
   const [mhSaving, setMhSaving] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  // Concept rubric (#13) + knockout questions (#14): draft → PATCH
+  const [crDraft, setCrDraft]   = useState<ConceptRubricItem[] | null>(null)
+  const [koDraft, setKoDraft]   = useState<KnockoutQuestion[] | null>(null)
+  const [cfgSaving, setCfgSaving] = useState<'cr' | 'ko' | null>(null)
+  const [crGenerating, setCrGenerating] = useState(false)
+  const savePositionField = async (which: 'cr' | 'ko') => {
+    const body = which === 'cr' ? { conceptRubric: crDraft } : { knockoutQuestions: koDraft }
+    setCfgSaving(which)
+    try {
+      const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      setPosition(p => p ? { ...p, conceptRubric: data.conceptRubric, knockoutQuestions: data.knockoutQuestions } : p)
+      if (which === 'cr') setCrDraft(null); else setKoDraft(null)
+      toast.success(which === 'cr' ? 'Concept rubric saved' : 'Knockout questions saved')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally { setCfgSaving(null) }
+  }
+  const regenerateRubric = async () => {
+    if (!position) return
+    setCrGenerating(true)
+    try {
+      const res = await fetch('/api/positions/concept-rubric', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jdText: position.jdText ?? '', positionTitle: position.title, experienceLevel: position.experienceLevel, skills: position.techStack, mustHaves: position.mustHaves ?? [] }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Rubric generation failed')
+      setCrDraft(data.rubric)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Rubric generation failed')
+    } finally { setCrGenerating(false) }
+  }
   const [lgDraft, setLgDraft]   = useState<LogisticsConfig | null>(null)
   const [lgSaving, setLgSaving] = useState(false)
   const saveLogistics = async () => {
@@ -584,6 +620,36 @@ export default function PositionDetailPage() {
               <LogisticsEditor value={lgDraft ?? readLogisticsConfig(position.logistics)} onChange={setLgDraft} />
             </div>
 
+            {/* Role concept rubric (#13) */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <h3 style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Role Concept Rubric</h3>
+                {crDraft && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setCrDraft(null)} disabled={cfgSaving === 'cr'} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
+                    <button className="btn-primary" onClick={() => savePositionField('cr')} disabled={cfgSaving === 'cr'} style={{ fontSize: 12.5, padding: '5px 12px' }}>{cfgSaving === 'cr' ? 'Saving…' : 'Save'}</button>
+                  </div>
+                )}
+              </div>
+              <ConceptRubricEditor value={crDraft ?? sanitizeConceptRubric(position.conceptRubric)} onChange={setCrDraft}
+                onGenerate={regenerateRubric} generating={crGenerating} canGenerate={!!position.jdText || !!position.title} />
+              {crDraft && <p style={{ fontSize: 12, color: '#64748B', margin: '10px 0 0' }}>Reports generated from now on are scored against the saved rubric. Regenerate questions to steer them toward any new concepts.</p>}
+            </div>
+
+            {/* Knockout questions (#14) */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <h3 style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Knockout Questions</h3>
+                {koDraft && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={() => setKoDraft(null)} disabled={cfgSaving === 'ko'} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
+                    <button className="btn-primary" onClick={() => savePositionField('ko')} disabled={cfgSaving === 'ko'} style={{ fontSize: 12.5, padding: '5px 12px' }}>{cfgSaving === 'ko' ? 'Saving…' : 'Save'}</button>
+                  </div>
+                )}
+              </div>
+              <KnockoutEditor value={koDraft ?? sanitizeKnockouts(position.knockoutQuestions)} onChange={setKoDraft} />
+            </div>
+
             {/* Interview settings */}
             <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
               <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>Interview Settings</h3>
@@ -643,7 +709,7 @@ export default function PositionDetailPage() {
                   {[
                     { label: 'Technical Depth',    value: rubric.technical ?? 40,       color: '#4F46E5' },
                     { label: 'Problem Solving',    value: rubric.problemSolving ?? 30,  color: '#7C3AED' },
-                    { label: 'Behavioral / STAR',  value: rubric.behavioral ?? 20,     color: '#10B981' },
+                    { label: 'Behavioral / EQ',  value: rubric.behavioral ?? 20,     color: '#10B981' },
                     { label: 'EQ & Soft Skills',   value: rubric.eq ?? 10,             color: '#F59E0B' },
                   ].map(({ label, value, color }) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk'
 const SECTION_DESC: Record<string, string> = {
   technical:  'Technical knowledge, concepts and skills questions',
   scenario:   'Real-world scenario and problem-solving questions',
-  behavioral: 'Behavioral STAR-method questions about past experience',
+  behavioral: 'Conversational behavioral questions about how they work with people and handle pressure — never mention STAR or any answer framework',
   eq:         'Emotional intelligence and values-based questions',
   whiteboard: 'System design and whiteboard challenge questions',
 }

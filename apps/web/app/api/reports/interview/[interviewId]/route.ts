@@ -68,6 +68,8 @@ export async function GET(
       l2Recommendation:       r.l2Recommendation,
       // Must-have requirements (Screen F3) — one met/not_met/insufficient verdict each.
       mustHaveAssessment:     r.mustHaveAssessment ?? null,
+      // JD-based concept rubric ratings (#13)
+      conceptAssessment:      r.conceptAssessment ?? null,
       // Metadata
       interviewId,
       candidateId:    candidate.id,

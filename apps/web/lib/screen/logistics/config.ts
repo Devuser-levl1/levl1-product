@@ -16,6 +16,7 @@ export interface CompBand { min?: number; max?: number; currency: string; period
 export interface LogisticsConfig {
   location?: string            // "Bengaluru, India"
   workModes?: WorkMode[]       // modes the role ALLOWS
+  hybridDaysPerWeek?: number   // in-office days/week when hybrid is allowed (1–5)
   relocation?: Relocation      // expectation for candidates outside `location`
   maxNoticeDays?: number       // longest acceptable notice period
   targetStartBy?: string       // YYYY-MM-DD — want them started by
@@ -43,6 +44,8 @@ export function sanitizeLogisticsConfig(raw: unknown): LogisticsConfig {
     const modes = WORK_MODES.filter((m) => (o.workModes as unknown[]).includes(m))
     if (modes.length) cfg.workModes = modes
   }
+  const days = num(o.hybridDaysPerWeek, 5)
+  if (days !== undefined && days >= 1 && cfg.workModes?.includes('hybrid')) cfg.hybridDaysPerWeek = days
   if (o.relocation === 'required' || o.relocation === 'supported' || o.relocation === 'not_required') cfg.relocation = o.relocation
   const notice = num(o.maxNoticeDays, 365)
   if (notice !== undefined) cfg.maxNoticeDays = notice
@@ -83,6 +86,9 @@ export function constraintsForModel(cfg: LogisticsConfig): string {
     modes
       ? `- Allowed work modes: ${modes} ONLY${cfg.workModes!.length < 3 ? ` (${WORK_MODES.filter((m) => !cfg.workModes!.includes(m)).map((m) => WORK_MODE_LABEL[m]).join(' / ')} is NOT available)` : ''} → NEGOTIATE if the candidate wants something else`
       : `- Work mode: not specified → just record their preference`,
+    ...(cfg.hybridDaysPerWeek && cfg.workModes?.includes('hybrid')
+      ? [`- Hybrid means ${cfg.hybridDaysPerWeek} day${cfg.hybridDaysPerWeek > 1 ? 's' : ''} per week in the office${cfg.location ? ` (${cfg.location})` : ''} → if they want hybrid, confirm they can do that many office days; negotiate like a work-mode conflict if not`]
+      : []),
     cfg.relocation ? `- Relocation: ${RELOCATION_LABEL[cfg.relocation]}` : `- Relocation: not specified → just record`,
     cfg.maxNoticeDays !== undefined || cfg.targetStartBy
       ? `- Start: the team hopes to have someone start soon (do NOT state exact internal targets; just capture their notice period and earliest start)`

@@ -26,7 +26,7 @@ export function LogisticsEditor({ value, onChange, disabled }: { value: Logistic
   const toggleMode = (m: (typeof WORK_MODES)[number]) => {
     const cur = value.workModes ?? [];
     const next = cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m];
-    set({ workModes: next.length ? WORK_MODES.filter((x) => next.includes(x)) : undefined });
+    set({ workModes: next.length ? WORK_MODES.filter((x) => next.includes(x)) : undefined, ...(next.includes("hybrid") ? {} : { hybridDaysPerWeek: undefined }) });
   };
 
   const row: React.CSSProperties = { display: "grid", gridTemplateColumns: "28px 1fr", gap: 12, alignItems: "start", padding: "14px 0", borderTop: "1px solid #F1F5F9" };
@@ -50,7 +50,7 @@ export function LogisticsEditor({ value, onChange, disabled }: { value: Logistic
               {WORK_MODES.map((m) => {
                 const on = value.workModes?.includes(m);
                 return (
-                  <button key={m} type="button" disabled={disabled} onClick={() => toggleMode(m)} aria-pressed={on}
+                  <button key={m} type="button" disabled={disabled} onClick={() => toggleMode(m)} aria-pressed={!!on}
                     style={{ flex: 1, padding: "8px 4px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? "#4F46E5" : "#E2E8F0"}`, background: on ? "#EEF2FF" : "#fff", color: on ? "#4F46E5" : "#64748B" }}>
                     {WORK_MODE_LABEL[m]}
                   </button>
@@ -67,6 +67,17 @@ export function LogisticsEditor({ value, onChange, disabled }: { value: Logistic
               <option value="not_required">Not required</option>
             </select>
           </div>
+          {value.workModes?.includes("hybrid") && (
+            <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 10, background: "#F8FAFF", border: "1px solid #E0E7FF", borderRadius: 10, padding: "8px 12px" }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#475569" }}>Hybrid — in-office days per week</span>
+              <select className="input" disabled={disabled} style={{ width: 120 }} aria-label="In-office days per week"
+                value={value.hybridDaysPerWeek ?? ""} onChange={(e) => set({ hybridDaysPerWeek: e.target.value ? Number(e.target.value) : undefined })}>
+                <option value="">Not specified</option>
+                {[1, 2, 3, 4, 5].map((d) => <option key={d} value={d}>{d} day{d > 1 ? "s" : ""}</option>)}
+              </select>
+              <span style={{ fontSize: 11.5, color: "#94A3B8" }}>The interviewer confirms the candidate can do this.</span>
+            </div>
+          )}
           <div style={{ gridColumn: "1 / -1", ...hint, marginTop: 0 }}>If a candidate wants a mode you don&apos;t allow, the interviewer states the constraint honestly and works toward a concrete arrangement.</div>
         </div>
       </div>

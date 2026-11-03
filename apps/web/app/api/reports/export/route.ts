@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     'Candidate', 'Email', 'Position', 'Company', 'Interview date', 'Recommendation',
     'Competency score (0-100)', 'Communication score (0-100)', 'CEFR level', 'Culture-fit score (0-100)',
     'Integrity review', 'Integrity events', 'Must-haves met', 'Must-have detail',
-    'Logistics hard mismatch', 'Work arrangement', 'Notice / start', 'Comp expectation', 'Comp vs band', 'Work authorization',
+    'Logistics hard mismatch', 'Work arrangement', 'Notice / start', 'Comp expectation', 'Comp vs band', 'Work authorization', 'Knockouts not met',
     'Duration (min)', 'Outcome',
   ]
   const rows = interviews.map((i) => {
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 // Logistics (recruiter-only; this export is agency-gated). Blank when the
 // segment didn't run (demo, older interviews, cut short before any answer).
 function logisticsCells(l: { result: unknown; hardMismatch: boolean } | null): (string | number)[] {
-  if (!l) return ['', '', '', '', '', '']
+  if (!l) return ['', '', '', '', '', '', '']
   const r = l.result as Partial<LogisticsResult>
   const comp = r.comp
   return [
@@ -123,6 +123,7 @@ function logisticsCells(l: { result: unknown; hardMismatch: boolean } | null): (
     comp?.asSaid ?? (comp?.amount != null ? fmtMoney(comp.amount, comp.currency ?? null, comp.period ?? null) : ''),
     comp ? COMP_LABEL[comp.verdict] ?? comp.verdict : '',
     r.workAuth?.summary ?? '',
+    (r.knockouts ?? []).filter((k) => k.verdict === 'not_met').map((k) => k.question).join('; '),
   ]
 }
 const COMP_LABEL: Record<string, string> = { within: 'Within band', above: 'Above band', below: 'Below band', recorded: 'No band set', not_disclosed: 'Not shared' }

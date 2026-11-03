@@ -5,8 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { LIVE_INTERVIEW_MODEL } from '@/lib/screen/interview/model'
 import { readLogisticsConfig } from '@/lib/screen/logistics/config'
 import {
-  LOGISTICS_MAX_CANDIDATE_TURNS, SegmentTurn, extractionSystem, logisticsTurnSystem, logisticsTurnUser, scriptedTurn,
+  SegmentTurn, extractionSystem, logisticsBudget, logisticsTurnSystem, logisticsTurnUser, scriptedTurn,
 } from '@/lib/screen/logistics/prompts'
+import { sanitizeKnockouts } from '@/lib/screen/position-config'
 import { computeVerdicts, sanitizeExtraction } from '@/lib/screen/logistics/result'
 
 export const dynamic = 'force-dynamic'
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { status: true, isDemo: true, completedAt: true, position: { select: { logistics: true } } },
+      select: { status: true, isDemo: true, completedAt: true, position: { select: { logistics: true, knockoutQuestions: true } } },
     })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
     const live = interview.status === 'in_progress'
@@ -56,6 +57,10 @@ export async function POST(req: NextRequest) {
     if (!live || interview.isDemo) return NextResponse.json({ error: 'not_available' }, { status: 409 })
 
     const cfg = readLogisticsConfig(interview.position.logistics)
+    // Recruiter knockout questions (#14) — asked verbatim at the end of the
+    // segment; answers are surfaced in the report, never used to auto-reject.
+    const knockouts = sanitizeKnockouts(interview.position.knockoutQuestions)
+    const budget = logisticsBudget(knockouts.length)
     const turns = cleanTurns(body.turns)
     const candidateTurns = turns.filter((t) => t.speaker === 'candidate').length
     const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null
@@ -69,7 +74,7 @@ export async function POST(req: NextRequest) {
         try {
           const r = await client.messages.create({
             model: LIVE_INTERVIEW_MODEL, max_tokens: 500, temperature: 0,
-            system: extractionSystem(cfg, defaultCurrency, new Date().toISOString().slice(0, 10)),
+            system: extractionSystem(cfg, defaultCurrency, new Date().toISOString().slice(0, 10), knockouts),
             messages: [{ role: 'user', content: logisticsTurnUser(turns, false).replace(/\n\nWRAP_NOW[\s\S]*$/, '') + '\n\nExtract the JSON now.' }],
           })
           const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
           console.error('[interview/logistics] extraction failed:', e instanceof Error ? e.message : e)
         }
       }
-      const result = computeVerdicts(cfg, extracted, { completed: body.completed !== false })
+      const result = computeVerdicts(cfg, extracted, { completed: body.completed !== false, knockouts })
       const data = {
         result: result as unknown as Prisma.InputJsonValue,
         constraints: cfg as unknown as Prisma.InputJsonValue,
@@ -89,22 +94,22 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Turn ──
-    const wrapNow = body.wrapNow === true || candidateTurns >= LOGISTICS_MAX_CANDIDATE_TURNS
-    if (!client) return NextResponse.json(scriptedTurn(cfg, candidateTurns, wrapNow))
+    const wrapNow = body.wrapNow === true || candidateTurns >= budget.maxReplies
+    if (!client) return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
     try {
       const r = await client.messages.create({
         model: LIVE_INTERVIEW_MODEL, max_tokens: 220, temperature: 0.6,
-        system: logisticsTurnSystem(cfg),
+        system: logisticsTurnSystem(cfg, knockouts),
         messages: [{ role: 'user', content: logisticsTurnUser(turns, wrapNow) }],
       })
       const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
       const j = parseJson(text)
       const say = typeof j?.say === 'string' ? j.say.trim() : ''
-      if (!say) return NextResponse.json(scriptedTurn(cfg, candidateTurns, wrapNow))
-      return NextResponse.json({ say, done: j?.done === true || wrapNow })
+      if (!say) return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
+      return NextResponse.json({ say, done: j?.done === true || wrapNow, budgetMs: budget.maxMs })
     } catch (e) {
       console.error('[interview/logistics] turn failed:', e instanceof Error ? e.message : e)
-      return NextResponse.json(scriptedTurn(cfg, candidateTurns, wrapNow))
+      return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
     }
   } catch (err) {
     console.error('[interview/logistics]', err instanceof Error ? err.message : err)

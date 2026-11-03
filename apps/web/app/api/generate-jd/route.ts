@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { formatExperience, parseExperience, sanitizeExperience } from "@/lib/screen/position-config";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -8,14 +9,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       positionTitle, company, department, roleType, experienceLevel,
-      teamSize, hasBudgetOwnership, hasHiringResponsibility, interviewDuration,
+      teamSize, hasBudgetOwnership, hasHiringResponsibility,
       primaryDomain, mustHaveTech, niceToHaveTech, domainContext, companyStage,
       workMode, isNewRole, redFlags,
-      weights, interviewStyle, behavioralFramework,
+      weights,
     } = body;
 
     const isManager = ["Team Lead","People Manager","Director","VP","Engineering Manager"].includes(roleType);
-    const isSenior  = ["8–12 years","12–18 years","18+ years"].includes(experienceLevel);
+    // Experience is a min–max range now (#4); seniority is derived numerically.
+    const exp = sanitizeExperience(body.experienceMin, body.experienceMax) ?? parseExperience(experienceLevel);
+    const experienceText = exp ? formatExperience(exp) : (experienceLevel || "Not specified");
 
     const systemPrompt = `You are a senior technical recruiter and talent strategist with 20+ years of experience writing job descriptions for top-tier tech companies. Write clear, compelling, professional job descriptions that attract exactly the right candidates.
 
@@ -26,6 +29,8 @@ Guidelines:
 - For oversight/management roles: emphasize team building, strategy, cross-functional influence, org design
 - Use markdown headers (## Section Name)
 - Be specific — avoid generic buzzwords
+- Do NOT include a "Why Join Us" / perks / culture-pitch section
+- Do NOT describe the hiring or interview process, its format, or its duration anywhere in the JD
 - Output ONLY the JD text, no preamble`;
 
     const userPrompt = `Write a professional job description for the following role:
@@ -34,11 +39,10 @@ Guidelines:
 **Company:** ${company}
 **Department:** ${department}
 **Role Type:** ${roleType}
-**Experience Required:** ${experienceLevel}
+**Experience Required:** ${experienceText}
 ${isManager ? `**Team Size:** ${teamSize}` : ""}
 **Budget Ownership:** ${hasBudgetOwnership ? "Yes" : "No"}
 **Hiring Responsibility:** ${hasHiringResponsibility ? "Yes" : "No"}
-**Interview Duration:** ${interviewDuration} minutes
 
 **Technical Context:**
 - Primary Domain: ${primaryDomain}
@@ -57,8 +61,6 @@ ${redFlags ? `- Key probing areas: ${redFlags}` : ""}
 - Problem Solving: ${weights?.problemSolving ?? 65}/100
 - Culture Fit: ${weights?.cultureFit ?? 55}/100
 
-**Interview Style:** ${interviewStyle}
-**Behavioral Framework:** ${behavioralFramework}
 
 Include these sections:
 ## About the Role
@@ -67,9 +69,8 @@ Include these sections:
 ${isManager ? "## Leadership & Management Requirements" : ""}
 ## Nice to Have
 ## What Success Looks Like (First 90 Days)
-${isSenior ? "## Why Join Us" : ""}
 
-Make it compelling, specific, and appropriately senior for a ${experienceLevel} ${roleType} in the ${domainContext} space.`;
+Make it compelling, specific, and appropriately senior for a ${experienceText} ${roleType} in the ${domainContext} space.`;
 
     const message = await client.messages.create({
       model: "claude-opus-4-7",

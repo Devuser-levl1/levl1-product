@@ -1694,6 +1694,7 @@ export default function InterviewPage() {
 
     await say(logisticsIntro())
     let silent = 0
+    let budgetMs = LOGISTICS_MAX_MS   // server may extend it for recruiter knockout questions
     while (!wrapUpFiredRef.current) {
       const reply = await awaitWarmupReply(20000)
       if (wrapUpFiredRef.current) break
@@ -1704,9 +1705,9 @@ export default function InterviewPage() {
         turns.push({ speaker: 'candidate', text: reply })
         addTranscript({ speaker: 'candidate', text: reply, type: 'transition', segment: 'logistics' })
       } else silent += 1
-      const wrapNow = silent >= 2 || Date.now() - startedAt > LOGISTICS_MAX_MS
+      const wrapNow = silent >= 2 || Date.now() - startedAt > budgetMs
       setPhase('processing')
-      let next: { say?: string; done?: boolean } = {}
+      let next: { say?: string; done?: boolean; budgetMs?: number } = {}
       try {
         const r = await fetch('/api/interview/logistics', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1714,6 +1715,7 @@ export default function InterviewPage() {
         })
         if (r.ok) next = await r.json()
       } catch { /* fall through — never block the interview */ }
+      if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, 5 * 60_000)
       if (wrapUpFiredRef.current) break
       if (!next.say) break
       await say(next.say)

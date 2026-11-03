@@ -1,5 +1,6 @@
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { LogisticsConfig, constraintsForModel, workAuthQuestion } from './config'
+import type { KnockoutQuestion } from '@/lib/screen/position-config'
 
 // ── Logistics segment prompts (Screen-scoped) ──────────────────────────────
 // THE home for the logistics persona. The model never receives the comp band:
@@ -7,6 +8,12 @@ import { LogisticsConfig, constraintsForModel, workAuthQuestion } from './config
 
 export const LOGISTICS_MAX_CANDIDATE_TURNS = 7   // hard cap on candidate replies
 export const LOGISTICS_MAX_MS = 150_000          // ~2.5 min wall clock
+export const KNOCKOUT_EXTRA_MS = 25_000          // per recruiter knockout question
+
+/** Wall-clock + reply caps for this segment (knockouts get their own time). */
+export function logisticsBudget(knockouts: number): { maxMs: number; maxReplies: number } {
+  return { maxMs: LOGISTICS_MAX_MS + knockouts * KNOCKOUT_EXTRA_MS, maxReplies: LOGISTICS_MAX_CANDIDATE_TURNS + knockouts }
+}
 
 export interface SegmentTurn { speaker: 'ai' | 'candidate'; text: string }
 
@@ -17,17 +24,18 @@ export function logisticsIntro(): string {
 }
 
 /** Scripted fallback if the model is unavailable — records, never negotiates. */
-export function scriptedTurn(cfg: LogisticsConfig, candidateTurns: number, wrapNow = false): { say: string; done: boolean } {
+export function scriptedTurn(cfg: LogisticsConfig, candidateTurns: number, wrapNow = false, knockouts: KnockoutQuestion[] = []): { say: string; done: boolean } {
   const script = [
     `Thanks. What's your current notice period, and what's the earliest you could start?`,
     `Got it. And what are your compensation expectations for this role?`,
     `Noted, thank you. ${workAuthQuestion(cfg)}`,
+    ...knockouts.map((k, i) => `${i === 0 ? 'Thanks. A couple of quick ones from the hiring team.' : 'Noted.'} ${k.question}`),
   ]
   if (!wrapNow && candidateTurns - 1 < script.length) return { say: script[candidateTurns - 1], done: false }
   return { say: `Thanks — I've noted all of that for the team.`, done: true }
 }
 
-export function logisticsTurnSystem(cfg: LogisticsConfig): string {
+export function logisticsTurnSystem(cfg: LogisticsConfig, knockouts: KnockoutQuestion[] = []): string {
   return `You are ${INTERVIEWER_NAME}, a warm, efficient, enterprise-professional recruiter running the short LOGISTICS part of a screening interview (voice). ` +
 `Your job: resolve four practical filters conversationally, like a good human recruiter, in about two minutes.
 
@@ -53,7 +61,11 @@ COVER IN THIS ORDER, one topic at a time, one question per turn:
    - If the answer is ambiguous you may ask ONE clarifier: "Would you need visa sponsorship to work there?"
    - NEVER ask about nationality, citizenship, country of origin, visa type, immigration status, or anything beyond eligibility to work in that location.
      If they volunteer such details, don't follow up on them or comment on them — acknowledge only the authorization itself ("Thanks, noted.") and move on.
-5. CONFIRM & CLOSE: when all four are covered, briefly confirm back what you've noted in ONE or TWO sentences (work arrangement agreed, notice/start,
+${knockouts.length ? `4b. HIRING-TEAM QUESTIONS (after work authorization): ask EACH of these exactly as written, one per turn, introduced lightly once ("A couple of quick ones from the hiring team."):
+${knockouts.map((k, i) => `   ${i + 1}. ${k.question}`).join('\n')}
+   - Accept whatever they answer and move on. NEVER react, evaluate, explain why it's asked, or suggest an answer is good, bad or disqualifying — the hiring team reviews these.
+   - If an answer is ambiguous, ask ONE short neutral clarifier, then move on.
+` : ''}5. CONFIRM & CLOSE: when all ${knockouts.length ? 'topics and hiring-team questions' : 'four'} are covered, briefly confirm back what you've noted in ONE or TWO sentences (work arrangement agreed, notice/start,
    and that you've noted their authorization and compensation expectations — do NOT repeat their salary figure), then set done=true.
    Do NOT ask another question in the closing turn, and do NOT announce what comes next — the interviewer's next line handles that transition.
 
@@ -74,7 +86,7 @@ export function logisticsTurnUser(turns: SegmentTurn[], wrapNow: boolean): strin
   return `Logistics segment so far:\n${convo}\n\nWRAP_NOW: ${wrapNow}\nWrite your next turn as JSON.`
 }
 
-export function extractionSystem(cfg: LogisticsConfig, defaultCurrency: string, today: string): string {
+export function extractionSystem(cfg: LogisticsConfig, defaultCurrency: string, today: string, knockouts: KnockoutQuestion[] = []): string {
   return `You extract structured facts from the LOGISTICS part of a screening interview transcript. Record ONLY what the candidate actually said; never infer or guess.
 Today is ${today}. Default currency if the candidate doesn't name one: ${defaultCurrency}.
 
@@ -88,11 +100,16 @@ Return ONLY this JSON:
     "preferredMode": "<onsite|hybrid|remote|flexible|null — what they WANT>",
     "willingToRelocate": "<yes|no|conditional|null>",
     "agreedArrangement": "<one sentence: the concrete arrangement agreed OR proposed by the candidate, e.g. 'Remote for 3 months, then relocate to Pune' — just the arrangement, no commentary about approval — or null>",
-    "resolved": <true only if they accepted an arrangement the role's constraints already allow; false if they proposed something outside the constraints or refused>
+    "resolved": <true only if they accepted an arrangement the role's constraints already allow; false if they proposed something outside the constraints or refused>,
+    "acceptsOfficeDays": <true if they agreed to the role's in-office days, false if they said they can't, null if not discussed>
   },
   "notice": { "noticeDays": <number of days or null — convert '2 months' to 60>, "earliestStart": "<YYYY-MM-DD or null — resolve relative dates against today>", "note": "<e.g. 'notice negotiable / buyout possible', or null>" },
   "comp": { "amount": <number in full units or null — '18 LPA' → 1800000; '1.5 lakh a month' → 150000; '$120k' → 120000; if a range, use the LOWER end>, "currency": "<ISO code or null>", "period": "<annual|monthly|null>", "asSaid": "<their words, short, e.g. '18-20 LPA'>" },
-  "workAuth": { "status": "<authorized|needs_sponsorship|not_authorized|unclear>" }
-}
+  "workAuth": { "status": "<authorized|needs_sponsorship|not_authorized|unclear>" }${knockouts.length ? `,
+  "knockouts": [ { "id": "<id>", "answer": "<their answer, short, or null if never asked>", "verdict": "<met|not_met|unclear|not_asked>" } ]` : ''}
+}${knockouts.length ? `
+Hiring-team questions — compare the candidate's answer to the REQUIRED answer and judge only whether it matches:
+${knockouts.map((k) => `- id ${k.id}: "${k.question}" — required answer: "${k.requiredAnswer}"`).join('\n')}
+"met" = their answer satisfies the required answer; "not_met" = it clearly doesn't; "unclear" = ambiguous or conditional; "not_asked" = the question never came up.` : ''}
 Work authorization: record ONLY the status. Do not record nationality, visa type, origin or any other detail even if mentioned.`
 }

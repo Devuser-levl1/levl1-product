@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         <td style="padding:10px 14px;border:1px solid #E2E8F0;font-size:16px;font-weight:800;color:#4F46E5;text-align:right">${rubric.problemSolving ?? 30}%</td>
       </tr>
       <tr style="background:#F8FAFC">
-        <td style="padding:10px 14px;border:1px solid #E2E8F0;font-size:14px;color:#475569">Behavioral / STAR</td>
+        <td style="padding:10px 14px;border:1px solid #E2E8F0;font-size:14px;color:#475569">Behavioral / EQ</td>
         <td style="padding:10px 14px;border:1px solid #E2E8F0;font-size:16px;font-weight:800;color:#4F46E5;text-align:right">${rubric.behavioral ?? 20}%</td>
       </tr>
       <tr>

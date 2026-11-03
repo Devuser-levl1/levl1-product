@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import {
   CompetencyRadar, CommunicationDial, SkillEvidenceList, IntegrityPanel,
   CultureFitPanel, CultureFitShape, MustHavePanel, MustHaveShape, LogisticsPanel, LogisticsShape,
+  ConceptRubricPanel, ConceptAssessmentShape, KnockoutPanel,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -38,6 +39,7 @@ interface ReportPayload {
   integrity: IntegritySummaryShape | null
   cultureFit: CultureFitShape | null
   mustHaveAssessment?: MustHaveShape[] | null
+  conceptAssessment?: ConceptAssessmentShape[] | null
   terminationReason: string | null
   isDemo?: boolean
   candidateName?: string; positionTitle?: string; company?: string; interviewDate?: string; duration?: number
@@ -218,8 +220,14 @@ export default function ReportPage() {
         {/* R1a — Logistics: early filters (location, notice, comp, work-auth) */}
         <LogisticsPanel logistics={logistics} />
 
+        {/* R1a2 — Recruiter knockout questions: surfaced for review, never auto-reject */}
+        <KnockoutPanel items={logistics?.knockouts} />
+
         {/* R1b — Must-have requirements: the pass/fail lens on non-negotiables */}
         <MustHavePanel items={R.mustHaveAssessment} />
+
+        {/* R1c — JD-based concept rubric ratings */}
+        <ConceptRubricPanel items={R.conceptAssessment} />
 
         {/* R2 — Two-axis scoring (visually distinct) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }} className="report-grid2">

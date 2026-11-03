@@ -5,6 +5,8 @@ import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
 import { effectiveAccountType, type AccountType } from "@/lib/screen/account-type";
+import { DEFAULT_MIX, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
+import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
@@ -257,7 +259,17 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const setHiringContact = (v: string) => { setTechLeadEmail(v); setHrEmail(v); setClientManagerEmail(v); };
   const [department,              setDepartment]              = useState("");
   const [roleType,                setRoleType]                = useState("Individual Contributor");
-  const [experienceLevel,         setExperienceLevel]         = useState("5–8 years");
+  // #4 — experience is a min–max range; experienceLevel is the derived display string.
+  const [expMin, setExpMin] = useState<number | "">(5);
+  const [expMax, setExpMax] = useState<number | "">(8);
+  const expOk = experienceValid(expMin, expMax);
+  const experienceLevel = expOk ? formatExperience({ min: expMin as number, max: expMax as number }) : "";
+  const expPayload = expOk ? { experienceMin: expMin, experienceMax: expMax } : {};
+  // #15 question mix · #13 JD concept rubric · #14 knockout questions
+  const [questionMix, setQuestionMix] = useState<QuestionMix>(DEFAULT_MIX);
+  const [conceptRubric, setConceptRubric] = useState<ConceptRubricItem[]>([]);
+  const [rubricGenerating, setRubricGenerating] = useState(false);
+  const [knockouts, setKnockouts] = useState<KnockoutQuestion[]>([]);
   const [teamSize,                setTeamSize]                = useState("2–5");
   const [hasBudgetOwnership,      setHasBudgetOwnership]      = useState(false);
   const [hasHiringResponsibility, setHasHiringResponsibility] = useState(false);
@@ -297,7 +309,6 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // ── Step 3: Settings ───────────────────────────────────────────────────
   const [weights, setWeights]                 = useState({ technical: 70, leadership: 50, communication: 60, problemSolving: 65, cultureFit: 55 });
   const [interviewStyle,      setInterviewStyle]      = useState("Structured");
-  const [behavioralFramework, setBehavioralFramework] = useState("STAR method");
   const [dynamicIntensity,    setDynamicIntensity]    = useState<"light" | "standard" | "deep">("standard");
   const [l2ScoreThreshold,    setL2ScoreThreshold]    = useState(75);
   const [scoringRubric,       setScoringRubric]       = useState({ technical: 40, problemSolving: 30, behavioral: 20, eq: 10 });
@@ -334,9 +345,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
   // ── Canary ────────────────────────────────────────────────────────────
   const canContinue = () => {
-    if (step === 0) return positionTitle.trim() !== "" && company.trim() !== "";
+    if (step === 0) return positionTitle.trim() !== "" && company.trim() !== "" && expOk;
     if (step === 1) return finalJD.trim().length > 50;
-    if (step === 2) return true;
+    if (step === 2) return expOk;
     if (step === 3) return true;
     if (step === 4) return !requiresJDApproval || jdApproved; // auto-pass for pasted/uploaded JDs
     if (step === 5) return questions !== null;
@@ -380,14 +391,35 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       if (data.requiredSkills?.length)   setMustHaveTech(data.extractedTechStack ?? data.requiredSkills);
       if (data.niceToHaveSkills?.length) setNiceToHaveTech(data.niceToHaveSkills);
       if (data.primaryDomain)            setPrimaryDomain(data.primaryDomain);
-      if (data.experienceLevel)          setExperienceLevel(data.experienceLevel);
+      if (typeof data.experienceMin === "number" && typeof data.experienceMax === "number") { setExpMin(data.experienceMin); setExpMax(data.experienceMax); }
+      if (Array.isArray(data.mustHaves) && data.mustHaves.length) setMustHaves((cur) => Array.from(new Set([...cur, ...data.mustHaves])).slice(0, 8));
       if (data.roleType)                 setRoleType(data.roleType);
       setJdParsed(true);
-      toast.success("JD parsed — review extracted details in Step 3");
+      toast.success("JD parsed — review the auto-filled details");
+      setStep(2);  // #6 — land on the auto-filled Skills page
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "JD parsing failed");
     } finally {
       setJdParsing(false);
+    }
+  };
+
+  // ── #13 Generate the JD-based concept rubric ──────────────────────────
+  const generateConceptRubric = async () => {
+    setRubricGenerating(true);
+    try {
+      const res = await fetch("/api/positions/concept-rubric", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jdText: finalJD, positionTitle, ...expPayload, skills: mustHaveTech, mustHaves }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Rubric generation failed");
+      setConceptRubric(data.rubric);
+      toast.success("Concept rubric generated — review and edit");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Rubric generation failed");
+    } finally {
+      setRubricGenerating(false);
     }
   };
 
@@ -401,7 +433,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           positionTitle, company, department, roleType, experienceLevel,
           primaryDomain: genDomain, mustHaveTech: genKeys,
-          interviewDuration: 30, weights, interviewStyle, behavioralFramework,
+          ...expPayload, weights, interviewStyle,
         }),
       });
       const data = await res.json();
@@ -425,7 +457,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           positionTitle, company, experienceLevel, roleType,
           primaryDomain, mustHaveTech, niceToHaveTech, domainContext,
-          workMode, weights, interviewStyle, behavioralFramework,
+          workMode, weights, interviewStyle, ...expPayload, questionMix, conceptRubric,
           interviewDuration: 30, redFlags, approvedJD: finalJD, mustHaves,
         }),
       });
@@ -523,7 +555,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: positionTitle, company, department, experienceLevel, roleType,
-            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics,
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
             domainContext, workMode, interviewDuration: 30,
             dynamicIntensity, voiceAccent: voiceAccent ?? "american",
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
@@ -580,7 +612,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: positionTitle, company, department, experienceLevel, roleType,
-          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics,
+          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
           domainContext, workMode, interviewDuration: 30,
           dynamicIntensity, voiceAccent: voiceAccent ?? "american",
           jdText: finalJD,
@@ -712,10 +744,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                     {["Individual Contributor","Team Lead","People Manager","Architect","Director","VP","Product Manager","Engineering Manager"].map((r) => <option key={r}>{r}</option>)}
                   </select>
                 </Field>
-                <Field label="Experience Level">
-                  <select style={SELECT_STYLE} value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value)}>
-                    {["0–2 years","2–5 years","5–8 years","8–12 years","12–18 years","18+ years"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
+                <Field label="Experience (years) *">
+                  <ExperienceRangeInput min={expMin} max={expMax} onChange={(a, b) => { setExpMin(a); setExpMax(b); }} />
                 </Field>
                 {isManagerRole(roleType) && (
                   <Field label="Team Size to Manage">
@@ -968,11 +998,14 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <LogisticsEditor value={logistics} onChange={setLogistics} />
               </div>
 
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <FieldLabel label="Knockout questions (optional)" hint="Asked word-for-word; a failing answer is flagged for you — never an auto-reject" />
+                <KnockoutEditor value={knockouts} onChange={setKnockouts} />
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                <Field label="Experience Level">
-                  <select style={SELECT_STYLE} value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value)}>
-                    {["0–2 years","2–5 years","5–8 years","8–12 years","12–18 years","18+ years"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
+                <Field label="Experience (years) *">
+                  <ExperienceRangeInput min={expMin} max={expMax} onChange={(a, b) => { setExpMin(a); setExpMax(b); }} />
                 </Field>
                 <Field label="Role Type">
                   <select style={SELECT_STYLE} value={roleType} onChange={(e) => setRoleType(e.target.value)}>
@@ -999,7 +1032,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 </Field>
               </div>
 
-              <Field label="Work Mode">
+              <Field label="Hands-on involvement">
                 <RadioGroup options={["Hands-on (writes code/does the work)","Hybrid (leads + contributes)","Oversight (leads, does not execute)"]} value={workMode} onChange={setWorkMode} />
               </Field>
 
@@ -1038,9 +1071,18 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               <Field label="Interview Style">
                 <RadioGroup options={["Conversational","Structured","Pressure test"]} value={interviewStyle} onChange={setInterviewStyle} />
               </Field>
-              <Field label="Behavioral Framework">
-                <RadioGroup options={["STAR method","Situational","Free-form"]} value={behavioralFramework} onChange={setBehavioralFramework} />
-              </Field>
+
+              {/* #15 — question mix */}
+              <div>
+                <FieldLabel label="Question mix" hint="Basic-concept checks test fundamentals; applied & scenario questions test reasoning" />
+                <QuestionMixEditor value={questionMix} onChange={setQuestionMix} />
+              </div>
+
+              {/* #13 — JD-based concept rubric */}
+              <div>
+                <FieldLabel label="Role concept rubric" hint="Generated from your JD — edit freely" />
+                <ConceptRubricEditor value={conceptRubric} onChange={setConceptRubric} onGenerate={generateConceptRubric} generating={rubricGenerating} canGenerate={finalJD.trim().length > 50 || positionTitle.trim() !== ""} />
+              </div>
 
               {/* Dynamic intensity */}
               <div>
@@ -1088,7 +1130,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <SliderField label="Technical Depth" hint="" value={scoringRubric.technical} onChange={(v) => setScoringRubric(r => ({ ...r, technical: v }))} color="#4F46E5" />
                   <SliderField label="Problem Solving" hint="" value={scoringRubric.problemSolving} onChange={(v) => setScoringRubric(r => ({ ...r, problemSolving: v }))} color="#7C3AED" />
-                  <SliderField label="Behavioral / STAR" hint="" value={scoringRubric.behavioral} onChange={(v) => setScoringRubric(r => ({ ...r, behavioral: v }))} color="#10B981" />
+                  <SliderField label="Behavioral / EQ" hint="" value={scoringRubric.behavioral} onChange={(v) => setScoringRubric(r => ({ ...r, behavioral: v }))} color="#10B981" />
                   <SliderField label="EQ & Soft Skills" hint="" value={scoringRubric.eq} onChange={(v) => setScoringRubric(r => ({ ...r, eq: v }))} color="#F59E0B" />
                 </div>
                 <div style={{ marginTop: 16, padding: "12px", background: "#F8FAFC", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
@@ -1335,7 +1377,15 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         <div style={{ background: "#fff", borderTop: "1px solid #E2E8F0", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <button type="button" className="btn-ghost" onClick={back} disabled={step === 0} style={{ opacity: step === 0 ? 0.4 : 1 }}><ChevronLeft size={15} /> Back</button>
           <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "var(--font-mono)" }}>Step {step + 1} of {STEPS.length}</span>
-          {step === 6 ? null : (
+          {step === 1 && !jdParsed && finalJD.trim().length > 50 ? (
+            // #6 — two clear paths: auto-fill the next page from the JD, or do it by hand.
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" className="btn-ghost" onClick={next} disabled={jdParsing}>Continue without parsing</button>
+              <button type="button" className="btn-primary" onClick={parseJD} disabled={jdParsing}>
+                {jdParsing ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Parsing JD…</> : <><Search size={14} /> Parse JD &amp; auto-fill</>}
+              </button>
+            </div>
+          ) : step === 6 ? null : (
             <button type="button" className="btn-primary" onClick={next} disabled={(step === 5 && questionsLoading) || (step === 3 && rubricTotal !== 100)}>
               {step === 5 && questionsLoading ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
                 : step === 5 && !questions ? <><Sparkles size={14} /> Generate Questions</>

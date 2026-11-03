@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
+import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
       'jdApprovedBy', 'jdApprovedAt', 'techLeadApproved', 'hrApproved',
       'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
-      'softSkillWeightage', 'clientId', 'mustHaves', 'logistics',
+      'softSkillWeightage', 'clientId', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
     ])
     const data: Record<string, unknown> = { agencyId }
     for (const [k, v] of Object.entries(body)) {
@@ -86,6 +87,16 @@ export async function POST(req: NextRequest) {
     data.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
     if ('mustHaves' in data) data.mustHaves = sanitizeMustHaves(data.mustHaves)
     if ('logistics' in data) data.logistics = sanitizeLogisticsConfig(data.logistics)
+    // Fixpack 3 — validated shapes (lib/screen/position-config.ts)
+    if ('experienceMin' in data || 'experienceMax' in data) {
+      const exp = sanitizeExperience(data.experienceMin, data.experienceMax)
+      if (!exp) return NextResponse.json({ error: 'Experience range is invalid — min must be 0–40 and not more than max.' }, { status: 400 })
+      data.experienceMin = exp.min; data.experienceMax = exp.max
+      data.experienceLevel = formatExperience(exp)
+    }
+    if ('questionMix' in data) data.questionMix = sanitizeMix(data.questionMix)
+    if ('conceptRubric' in data) data.conceptRubric = sanitizeConceptRubric(data.conceptRubric)
+    if ('knockoutQuestions' in data) data.knockoutQuestions = sanitizeKnockouts(data.knockoutQuestions)
 
     const position = await prisma.position.create({ data: data as never })
     return NextResponse.json(position, { status: 201 })

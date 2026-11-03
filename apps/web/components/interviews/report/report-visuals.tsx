@@ -411,6 +411,7 @@ export interface LogisticsShape {
   workAuth: { verdict: LgVerdict; summary: string }
   hardMismatch: boolean
   completed: boolean
+  knockouts?: KnockoutShape[]
 }
 
 const LG_TONE: Record<string, { label: string; fg: string; bg: string }> = {
@@ -460,6 +461,88 @@ export function LogisticsPanel({ logistics }: { logistics: LogisticsShape | null
                 <div style={{ fontSize: 13.5, color: '#0F172A', marginTop: 3, lineHeight: 1.5 }}>{r.summary}</div>
               </div>
               <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: t.fg, background: t.bg, borderRadius: 100, padding: '3px 10px', fontSize: 11.5 }}>{t.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── JD-based concept rubric ratings (#13) ──────────────────────────────────
+export interface ConceptAssessmentShape { concept: string; rating: 'strong' | 'adequate' | 'weak' | 'not_assessed'; evidence: string }
+const CR_STYLE: Record<ConceptAssessmentShape['rating'], { label: string; fg: string; bg: string }> = {
+  strong: { label: 'Strong', fg: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  adequate: { label: 'Adequate', fg: '#4F46E5', bg: 'rgba(79,70,229,0.10)' },
+  weak: { label: 'Weak', fg: '#DC2626', bg: 'rgba(239,68,68,0.10)' },
+  not_assessed: { label: 'Not assessed', fg: '#64748B', bg: '#F1F5F9' },
+}
+
+export function ConceptRubricPanel({ items }: { items: ConceptAssessmentShape[] | null | undefined }) {
+  if (!Array.isArray(items) || items.length === 0) return null
+  const strong = items.filter((i) => i.rating === 'strong').length
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Role concepts</h3>
+        <span style={{ fontSize: 13, fontWeight: 800, color: INDIGO, background: 'rgba(79,70,229,0.10)', borderRadius: 100, padding: '4px 12px' }}>{strong}/{items.length} strong</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Rubric derived from the JD · rated from the transcript</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>How the candidate did on the concepts this role actually needs, against the strong/weak anchors set for this position.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((c, i) => {
+          const st = CR_STYLE[c.rating] ?? CR_STYLE.not_assessed
+          return (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{c.concept}</div>
+                {c.evidence && <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 2, lineHeight: 1.5 }}>{c.evidence}</div>}
+              </div>
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: st.fg, background: st.bg, borderRadius: 100, padding: '3px 10px', fontSize: 11.5 }}>{st.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Recruiter knockout questions (#14) — surfaced, NEVER auto-reject ───────
+export interface KnockoutShape { id: string; question: string; requiredAnswer: string; answer: string | null; verdict: 'met' | 'not_met' | 'unclear' | 'not_asked' }
+const KO_STYLE: Record<KnockoutShape['verdict'], { label: string; fg: string; bg: string }> = {
+  met: { label: 'Met', fg: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  not_met: { label: 'Not met', fg: '#DC2626', bg: 'rgba(239,68,68,0.10)' },
+  unclear: { label: 'Unclear', fg: '#D97706', bg: 'rgba(245,158,11,0.12)' },
+  not_asked: { label: 'Not asked', fg: '#64748B', bg: '#F1F5F9' },
+}
+
+export function KnockoutPanel({ items }: { items: KnockoutShape[] | null | undefined }) {
+  if (!Array.isArray(items) || items.length === 0) return null
+  const notMet = items.filter((k) => k.verdict === 'not_met').length
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${notMet ? '#FECACA' : '#E2E8F0'}`, borderRadius: 14, padding: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Knockout questions</h3>
+        <span style={{ fontSize: 12.5, fontWeight: 800, color: notMet ? '#DC2626' : '#059669', background: notMet ? 'rgba(239,68,68,0.10)' : 'rgba(16,185,129,0.10)', borderRadius: 100, padding: '4px 12px' }}>
+          {notMet ? `${notMet} not met` : 'None failed'}
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: '#94A3B8' }}>Your call — never an automatic rejection</span>
+      </div>
+      <p style={{ fontSize: 12.5, color: '#64748B', margin: '0 0 14px' }}>
+        {notMet ? 'The candidate gave a disqualifying answer to at least one of your knockout questions. Review before deciding.' : 'Answers to the yes/no criteria you set for this position.'}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((k) => {
+          const st = KO_STYLE[k.verdict] ?? KO_STYLE.unclear
+          return (
+            <div key={k.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${k.verdict === 'not_met' ? '#FECACA' : '#F1F5F9'}`, borderRadius: 10, background: k.verdict === 'not_met' ? '#FFFBFB' : '#fff' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{k.question}</div>
+                <div style={{ fontSize: 12.5, color: '#64748B', marginTop: 2 }}>
+                  Answered: <strong style={{ color: '#334155' }}>{k.answer ?? '—'}</strong> · Required: {k.requiredAnswer}
+                </div>
+              </div>
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: st.fg, background: st.bg, borderRadius: 100, padding: '3px 10px', fontSize: 11.5 }}>{st.label}</span>
             </div>
           )
         })}

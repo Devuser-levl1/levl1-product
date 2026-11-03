@@ -5,6 +5,7 @@ import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/s
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
+import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'techLeadApproved', 'hrApproved', 'jdApprovedAt', 'jdApprovedBy',
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
       'dynamicIntensity', 'voiceAccent', 'wonCandidateId', 'wonNotes',
-      'lostReason', 'lostNotes', 'closedAt', 'mustHaves', 'logistics',
+      'lostReason', 'lostNotes', 'closedAt', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
     ])
     const safe: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
@@ -56,6 +57,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
     if ('mustHaves' in safe) safe.mustHaves = sanitizeMustHaves(safe.mustHaves)
     if ('logistics' in safe) safe.logistics = sanitizeLogisticsConfig(safe.logistics)
+    // Fixpack 3 — validated shapes (lib/screen/position-config.ts)
+    if ('experienceMin' in safe || 'experienceMax' in safe) {
+      const exp = sanitizeExperience(safe.experienceMin, safe.experienceMax)
+      if (!exp) return NextResponse.json({ error: 'Experience range is invalid — min must be 0–40 and not more than max.' }, { status: 400 })
+      safe.experienceMin = exp.min; safe.experienceMax = exp.max
+      safe.experienceLevel = formatExperience(exp)
+    }
+    if ('questionMix' in safe) safe.questionMix = sanitizeMix(safe.questionMix)
+    if ('conceptRubric' in safe) safe.conceptRubric = sanitizeConceptRubric(safe.conceptRubric)
+    if ('knockoutQuestions' in safe) safe.knockoutQuestions = sanitizeKnockouts(safe.knockoutQuestions)
 
     const position = await prisma.position.update({
       where: { id: params.id },

@@ -289,6 +289,12 @@ model Position {
   // → the segment just records that filter. The comp band is RECRUITER-ONLY:
   // it is never sent to the model or to any candidate-facing response.
   logistics          Json?
+  // Fixpack 3 (Screen) — shapes in lib/screen/position-config.ts.
+  experienceMin      Int?      // years; experienceLevel keeps the "3–6 years" display string
+  experienceMax      Int?
+  questionMix        Json?     // { concept, technical, scenario, behavioral, eq } counts
+  conceptRubric      Json?     // [{ id, concept, strong, weak }] — JD-derived, recruiter-editable
+  knockoutQuestions  Json?     // [{ id, question, requiredAnswer }] — surfaced in report, never auto-reject
   voiceAccent        String?
   softSkillWeightage Json?
   agencyId           String?
@@ -617,6 +623,9 @@ model Report {
   // [{ requirement, status: met|not_met|insufficient_evidence, evidence }]
   // One entry per Position.mustHaves at generation time.
   mustHaveAssessment     Json?
+  // [{ concept, rating: strong|adequate|weak|not_assessed, evidence }] — one per
+  // Position.conceptRubric entry at generation time.
+  conceptAssessment      Json?
   generatedAt            DateTime  @default(now())
 }
 
