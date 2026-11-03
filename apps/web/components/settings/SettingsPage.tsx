@@ -273,12 +273,30 @@ export default function SettingsPage() {
     }
   }
 
+  // Account type saves on change (not via "Save Profile") and updates the shared
+  // store, so the Clients tab / job form switch without a refresh.
+  const setAccount = useAppStore((s) => s.setAccount);
+  const [savingType, setSavingType] = useState(false);
+  async function saveAccountType(next: AccountType) {
+    const prev = accountType
+    setAccountType(next); setSavingType(true)
+    try {
+      const res = await fetch('/api/agency/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountType: next }) })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Could not save')
+      setAccount({ type: next, orgName: agencyName })
+      toast.success(next === 'company' ? 'Switched to in-house — Clients tab and client fields hidden' : 'Switched to agency — Clients tab and client fields restored')
+    } catch (e) {
+      setAccountType(prev)
+      toast.error(e instanceof Error ? e.message : 'Could not save account type')
+    } finally { setSavingType(false) }
+  }
+
   async function handleSaveSettings() {
     try {
       const res = await fetch('/api/agency/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, website: agencyWebsite, senderName, senderEmail, ...(accountType ? { accountType } : {}) }),
+        body: JSON.stringify({ name: agencyName, website: agencyWebsite, senderName, senderEmail }),
       })
       if (res.ok) {
         toast.success('Settings saved')
@@ -418,10 +436,13 @@ export default function SettingsPage() {
           <input className="input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
         </Field>
         <Field label="Account type">
-          <select className="input" value={accountType ?? ""} onChange={(e) => setAccountType(isAccountType(e.target.value) ? e.target.value : null)}>
+          <select className="input" value={accountType ?? ""} disabled={savingType} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
             {accountType === null && <option value="">Not set — job setup asks for client details</option>}
             {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
           </select>
+          <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 5 }}>
+            Saves immediately. In-house accounts don&apos;t see the Clients tab or client fields; existing client records are kept and come back if you switch to agency.
+          </div>
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Field label="Sender Name (for emails)">

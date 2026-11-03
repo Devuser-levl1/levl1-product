@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import dynamic from "next/dynamic";
 import { useAppStore } from "@/store/appStore";
 import { useDataLoader } from "@/hooks/useDataLoader";
@@ -22,6 +24,7 @@ const ProductTour = dynamic(
 );
 import { FeedbackWidget } from "./ui/FeedbackWidget";
 import { BottomNav } from "./layout/BottomNav";
+import { useAccountType } from "@/hooks/useAccountType";
 
 // Loaded client-side only — uses window.matchMedia, localStorage, navigator
 const InstallPrompt = dynamic(
@@ -38,6 +41,11 @@ export default function DashboardShell() {
 
   const ml = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
+  // Agency → company while on the Clients tab: fall back to the dashboard.
+  // Client records are untouched — switching back to agency restores the tab.
+  const { isCompany } = useAccountType();
+  useEffect(() => { if (isCompany && activeSection === "clients") setActiveSection("dashboard"); }, [isCompany, activeSection, setActiveSection]);
+
   const handleOpenNewPosition = () => {
     setActiveSection("positions");
     setShowNewPositionFlow(true);
@@ -47,7 +55,7 @@ export default function DashboardShell() {
     switch (activeSection) {
       case "dashboard":  return <DashboardPage />;
       case "positions":  return <PositionsPage />;
-      case "clients":    return <ClientsPage />;
+      case "clients":    return isCompany ? <DashboardPage /> : <ClientsPage />;
       case "candidates": return <CandidatesPage />;
       case "interviews": return <InterviewsPage />;
       case "control-room": return <ControlRoomPage />;

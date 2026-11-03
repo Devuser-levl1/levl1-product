@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Briefcase, Building2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { ACCOUNT_TYPES, type AccountType } from "@/lib/screen/account-type";
+import { useAccountType } from "@/hooks/useAccountType";
+import { useAppStore } from "@/store/appStore";
 
 // ── One-time "agency or company?" prompt (Screen) ──────────────────────────
 // Shown on the dashboard only for existing accounts that never chose (created
@@ -13,16 +15,12 @@ import { ACCOUNT_TYPES, type AccountType } from "@/lib/screen/account-type";
 const SNOOZE_KEY = "levl1_account_type_snooze";
 
 export function AccountTypePrompt() {
-  const [show, setShow] = useState(false);
+  const { loaded, raw, orgName } = useAccountType();
+  const setAccount = useAppStore((s) => s.setAccount);
+  const [snoozed, setSnoozed] = useState(true);
   const [saving, setSaving] = useState<AccountType | null>(null);
-
-  useEffect(() => {
-    try { if (sessionStorage.getItem(SNOOZE_KEY)) return; } catch { /* storage blocked */ }
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.agency && d.agency.accountType == null) setShow(true); })
-      .catch(() => {});
-  }, []);
+  useEffect(() => { try { setSnoozed(!!sessionStorage.getItem(SNOOZE_KEY)); } catch { setSnoozed(false); } }, []);
+  const show = loaded && raw === null && !snoozed;
 
   const choose = async (t: AccountType) => {
     setSaving(t);
@@ -30,7 +28,7 @@ export function AccountTypePrompt() {
       const r = await fetch("/api/agency/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountType: t }) });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Could not save");
       toast.success(t === "company" ? "Got it — job setup will use your company and one hiring contact" : "Got it — job setup will ask for the client company and client contacts");
-      setShow(false);
+      setAccount({ type: t, orgName });   // every agency/company conditional updates now
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
     } finally { setSaving(null); }
@@ -56,7 +54,7 @@ export function AccountTypePrompt() {
         })}
       </div>
       <button type="button" aria-label="Ask me later" title="Ask me later"
-        onClick={() => { try { sessionStorage.setItem(SNOOZE_KEY, "1"); } catch {} setShow(false); }}
+        onClick={() => { try { sessionStorage.setItem(SNOOZE_KEY, "1"); } catch {} setSnoozed(true); }}
         style={{ border: "none", background: "none", color: "#94A3B8", cursor: "pointer", padding: 4 }}>
         <X size={16} />
       </button>

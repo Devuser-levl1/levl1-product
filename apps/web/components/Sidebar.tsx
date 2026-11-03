@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { SupportModal } from "@/components/ui/SupportModal";
+import { useAccountType } from "@/hooks/useAccountType";
 
 interface NavItem {
   section: NavSection;
@@ -51,6 +52,10 @@ export default function Sidebar() {
   const [supportOpen, setSupportOpen] = useState(false);
 
   const sidebarWidth = sidebarCollapsed ? 64 : 240;
+  // Clients is an agency concept — hidden for in-house (company) accounts.
+  // Reads the live account type, so a Settings change applies immediately.
+  const { isCompany } = useAccountType();
+  const navMain = isCompany ? NAV_MAIN.filter((n) => n.section !== "clients") : NAV_MAIN;
 
   return (
     <motion.aside
@@ -264,7 +269,7 @@ export default function Sidebar() {
         </AnimatePresence>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {NAV_MAIN.map(({ section, icon: Icon, label }) => {
+          {navMain.map(({ section, icon: Icon, label }) => {
             const isActive = activeSection === section;
             return (
               <button

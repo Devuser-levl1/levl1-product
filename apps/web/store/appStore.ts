@@ -207,6 +207,11 @@ export interface AgencyPlan {
 interface AppStore {
   activeSection: NavSection
   setActiveSection: (s: NavSection) => void
+  // Account type — THE client-side source of truth for agency vs in-house UI
+  // (Clients tab, client-company field, contact labels). undefined = not loaded
+  // yet; null = account never chose (behaves as agency). Read via useAccountType().
+  account: { type: 'agency' | 'company' | null; orgName: string } | undefined
+  setAccount: (a: { type: 'agency' | 'company' | null; orgName: string }) => void
   sidebarCollapsed: boolean
   toggleSidebar: () => void
   positions: Position[]
@@ -277,6 +282,8 @@ const MOCK_INTERVIEWS: Interview[] = [
 export const useAppStore = create<AppStore>((set) => ({
   activeSection: 'dashboard',
   setActiveSection: (s) => set({ activeSection: s }),
+  account: undefined,
+  setAccount: (a) => set({ account: a }),
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   positions: [],         // populated by useDataLoader from DB; never seed with mocks

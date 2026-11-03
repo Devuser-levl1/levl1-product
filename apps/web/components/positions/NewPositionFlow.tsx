@@ -4,7 +4,6 @@ import { useEffect, useState, KeyboardEvent } from "react";
 import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
-import { effectiveAccountType, type AccountType } from "@/lib/screen/account-type";
 import { DEFAULT_MIX, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
 import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
 import { useAppStore } from "@/store/appStore";
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS } from "@/lib/voiceOptions";
+import { useAccountType } from "@/hooks/useAccountType";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -246,15 +246,10 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // Account type (agency vs in-house company) — decides whether we ask for a
   // client company + client contacts, or use the account's own org + one
   // in-house hiring contact. Unknown/legacy accounts behave as 'agency'.
-  const [acct, setAcct] = useState<{ type: AccountType; orgName: string } | null>(null);
-  useEffect(() => {
-    fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
-      if (d?.agency) setAcct({ type: effectiveAccountType(d.agency.accountType), orgName: d.agency.name ?? "" });
-    }).catch(() => {});
-  }, []);
-  const isCompany = acct?.type === "company";
+  const acct = useAccountType();   // live, shared account type (Settings changes apply immediately)
+  const isCompany = acct.isCompany;
   // In-house: the hiring company IS the account — fill it, don't ask.
-  useEffect(() => { if (isCompany && acct?.orgName) setCompany(acct.orgName); }, [isCompany, acct?.orgName]);
+  useEffect(() => { if (isCompany && acct.orgName) setCompany(acct.orgName); }, [isCompany, acct.orgName]);
   // In-house: one hiring contact handles every approval (JD, rubric, questions).
   const setHiringContact = (v: string) => { setTechLeadEmail(v); setHrEmail(v); setClientManagerEmail(v); };
   const [department,              setDepartment]              = useState("");

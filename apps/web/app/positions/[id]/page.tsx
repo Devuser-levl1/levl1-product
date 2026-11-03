@@ -15,6 +15,7 @@ import { readLogisticsConfig, type LogisticsConfig } from '@/lib/screen/logistic
 import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/SetupFields'
 import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
+import { useAccountType } from '@/hooks/useAccountType'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -203,6 +204,7 @@ export default function PositionDetailPage() {
   const [mhDraft, setMhDraft]   = useState<string[] | null>(null)
   const [mhSaving, setMhSaving] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const { isCompany } = useAccountType()
   // Concept rubric (#13) + knockout questions (#14): draft → PATCH
   const [crDraft, setCrDraft]   = useState<ConceptRubricItem[] | null>(null)
   const [koDraft, setKoDraft]   = useState<KnockoutQuestion[] | null>(null)
@@ -547,7 +549,7 @@ export default function PositionDetailPage() {
               {position.clientManagerEmail && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
                   <Mail size={13} color="#94A3B8" />
-                  <span style={{ fontSize: 12, color: '#64748B' }}>Client: {position.clientManagerEmail}</span>
+                  <span style={{ fontSize: 12, color: '#64748B' }}>{isCompany ? 'Hiring contact' : 'Client'}: {position.clientManagerEmail}</span>
                 </div>
               )}
             </div>

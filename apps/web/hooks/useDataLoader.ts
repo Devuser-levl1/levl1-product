@@ -12,10 +12,14 @@ export function useDataLoader() {
   // finds out via an "Unauthenticated" error on their next action.
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
-      .then((r) => {
+      .then(async (r) => {
         if (r.status === 401 && typeof window !== 'undefined') {
           window.location.replace('/interviews/login?expired=1')
+          return
         }
+        // Seed the single source of truth for agency-vs-company UI.
+        const d = r.ok ? await r.json().catch(() => null) : null
+        if (d?.agency) useAppStore.getState().setAccount({ type: d.agency.accountType === 'agency' || d.agency.accountType === 'company' ? d.agency.accountType : null, orgName: d.agency.name ?? '' })
       })
       .catch(() => { /* offline — don't bounce */ })
   }, [])
