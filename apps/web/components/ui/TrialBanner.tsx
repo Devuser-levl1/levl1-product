@@ -15,24 +15,24 @@ export default function TrialBanner() {
   const pctUsed = interviewsUsed / interviewsLimit // 0–1
 
   // Color logic: red when exhausted or <2 days, amber when 4+ used or <7 days, else green
-  let bg = 'rgba(16,185,129,0.08)'
-  let border = 'rgba(16,185,129,0.25)'
-  let text = '#047857'
-  let accent = '#10B981'
+  let bg = 'color-mix(in srgb, var(--lv-success) 8%, transparent)'
+  let border = 'color-mix(in srgb, var(--lv-success) 25%, transparent)'
+  let text = 'var(--lv-success)'
+  let accent = 'var(--lv-success)'
   let urgency = 'info'
 
   if (remaining === 0 || trialDaysLeft <= 2) {
     urgency = 'danger'
-    bg = 'rgba(239,68,68,0.07)'
-    border = 'rgba(239,68,68,0.25)'
-    text = '#DC2626'
-    accent = '#EF4444'
+    bg = 'color-mix(in srgb, var(--lv-danger) 7%, transparent)'
+    border = 'color-mix(in srgb, var(--lv-danger) 25%, transparent)'
+    text = 'var(--lv-danger)'
+    accent = 'var(--lv-danger)'
   } else if (remaining <= 1 || trialDaysLeft <= 7) {
     urgency = 'warn'
-    bg = 'rgba(245,158,11,0.08)'
-    border = 'rgba(245,158,11,0.25)'
-    text = '#B45309'
-    accent = '#F59E0B'
+    bg = 'color-mix(in srgb, var(--lv-warning) 8%, transparent)'
+    border = 'color-mix(in srgb, var(--lv-warning) 25%, transparent)'
+    text = 'var(--lv-warning)'
+    accent = 'var(--lv-warning)'
   }
 
   const label =
@@ -79,7 +79,7 @@ export default function TrialBanner() {
           display: 'flex',
           alignItems: 'center',
           gap: 5,
-          background: urgency === 'danger' ? '#DC2626' : urgency === 'warn' ? '#F59E0B' : '#4F46E5',
+          background: urgency === 'danger' ? 'var(--lv-danger)' : urgency === 'warn' ? 'var(--lv-warning)' : 'var(--lv-brand)',
           color: '#fff',
           border: 'none',
           borderRadius: 7,

@@ -19,6 +19,7 @@ import "./screen-tokens.css";  // Screen design tokens (--lv-*) — additive, na
 import "./screen-ui.css";      // Screen canonical component styles (.lv-*) — namespaced
 import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegistrar } from "@/components/layout/ServiceWorkerRegistrar";
+import { ScreenThemeScope, screenThemeScript } from "@/components/screen/ScreenTheme";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://levl1.io"),
@@ -59,14 +60,18 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: screenThemeScript may add data-lv-app (Screen
+    // recruiter routes only) before hydration. Hire/marketing never get it.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: screenThemeScript }} />
         <meta name="mobile-web-app-capable" content="yes" />
         {/* Cashfree Payment SDK */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async />
       </head>
       <body>
         <ServiceWorkerRegistrar />
+        <ScreenThemeScope />
         {children}
         <Toaster
           position="bottom-right"

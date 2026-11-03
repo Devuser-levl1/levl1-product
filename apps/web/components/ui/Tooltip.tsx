@@ -105,8 +105,8 @@ export function Tooltip({
             top:          coords.top,
             left:         coords.left,
             zIndex:       9999,
-            background:   '#1E293B',
-            color:        '#F1F5F9',
+            background:   'var(--lv-text)',
+            color:        'var(--lv-text-inverse)',
             fontSize:     12,
             fontWeight:   500,
             lineHeight:   1.5,
@@ -143,7 +143,7 @@ export function Tooltip({
 
 function arrowStyle(pos: TooltipPosition): React.CSSProperties {
   const base = 'transparent'
-  const solid = '#1E293B'
+  const solid = 'var(--lv-text)'
   switch (pos) {
     case 'top':
       return { bottom: -5, left: '50%', transform: 'translateX(-50%)', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: `5px solid ${solid}` }
@@ -170,9 +170,9 @@ export function HelpIcon({ content, position = 'top' }: { content: string; posit
           width:        18,
           height:       18,
           borderRadius: '50%',
-          border:       '1.5px solid #CBD5E1',
-          background:   '#F8FAFC',
-          color:        '#94A3B8',
+          border:       '1.5px solid var(--lv-border-strong)',
+          background:   'var(--lv-surface-sunken)',
+          color:        'var(--lv-text-muted)',
           fontSize:     10,
           fontWeight:   700,
           cursor:       'pointer',
@@ -185,14 +185,14 @@ export function HelpIcon({ content, position = 'top' }: { content: string; posit
           padding:      0,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#7C3AED'
-          e.currentTarget.style.color       = '#7C3AED'
-          e.currentTarget.style.background  = 'rgba(124,58,237,0.06)'
+          e.currentTarget.style.borderColor = 'var(--lv-accent)'
+          e.currentTarget.style.color       = 'var(--lv-accent)'
+          e.currentTarget.style.background  = 'color-mix(in srgb, var(--lv-accent) 6%, transparent)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#CBD5E1'
-          e.currentTarget.style.color       = '#94A3B8'
-          e.currentTarget.style.background  = '#F8FAFC'
+          e.currentTarget.style.borderColor = 'var(--lv-border-strong)'
+          e.currentTarget.style.color       = 'var(--lv-text-muted)'
+          e.currentTarget.style.background  = 'var(--lv-surface-sunken)'
         }}
       >
         ?

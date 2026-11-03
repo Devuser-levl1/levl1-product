@@ -11,10 +11,9 @@
    • Text uses an INK scale (not brand blue). --lv-text-subtle (#94A3B8) fails
      AA for body text — placeholders / decorative only; use --lv-text-muted
      for secondary text.
-   • Dark values are defined now but INERT: they apply only under
-     [data-lv-theme="dark"], which nothing sets. They get switched on (via
-     prefers-color-scheme) once every Screen screen reads tokens (end of Pass 3),
-     so no screen is ever half light / half dark.
+   • Dark values apply to Screen recruiter routes when the OS prefers dark
+     (see the dark section below) — never to Hire, marketing, login or
+     candidate-facing pages.
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -129,9 +128,19 @@
   --lv-z-overlay: 80;
   --lv-z-modal:   90;
   --lv-z-toast:   100;
+
+  /* ── App shell (brand panel) ───────────────────────────────────────── */
+  --lv-sidebar-bg:     #4F46E5;
+  --lv-sidebar-accent: linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%);
 }
 
-/* ── Dark values — INERT until Pass 3 completes (nothing sets this attr) ── */
+/* ── Dark values ──────────────────────────────────────────────────────────
+   Applied two ways:
+   1. [data-lv-theme="dark"] — forced (e.g. the live monitor console).
+   2. html[data-lv-app] under prefers-color-scheme: dark — the Screen recruiter
+      app follows the OS. data-lv-app is set only on Screen recruiter routes
+      (see components/screen/ScreenTheme.tsx), so Hire, marketing, login and
+      candidate-facing pages never change. data-lv-theme="light" opts out. */
 [data-lv-theme="dark"] {
   --lv-brand:              #818CF8;
   --lv-brand-hover:        #A5B4FC;
@@ -181,6 +190,69 @@
   --lv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --lv-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --lv-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+
+  --lv-sidebar-bg:         #1E1B4B;
+  --lv-sidebar-accent:     linear-gradient(135deg, #6D28D9 0%, #A78BFA 100%);
+  color-scheme: dark;
+}
+
+
+@media screen and (prefers-color-scheme: dark) {   /* screen only — printed reports stay light */
+  html[data-lv-app]:not([data-lv-theme="light"]) {
+    --lv-brand:              #818CF8;
+    --lv-brand-hover:        #A5B4FC;
+    --lv-brand-active:       #6366F1;
+    --lv-brand-soft:         #1E1B4B;
+    --lv-brand-soft-border:  #3730A3;
+    --lv-brand-text:         #A5B4FC;
+    --lv-on-brand:           #0B1020;
+    --lv-accent:             #A78BFA;
+    --lv-accent-soft:        #2E1065;
+    --lv-gradient-brand:     linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+
+    --lv-text:               #F1F5F9;
+    --lv-text-body:          #CBD5E1;
+    --lv-text-muted:         #94A3B8;
+    --lv-text-subtle:        #64748B;
+    --lv-text-inverse:       #0F172A;
+
+    --lv-bg:                 #0B1020;
+    --lv-surface:            #111827;
+    --lv-surface-sunken:     #0F172A;
+    --lv-surface-muted:      #1F2937;
+    --lv-overlay:            rgba(2, 6, 23, 0.65);
+
+    --lv-border:             #1F2937;
+    --lv-border-strong:      #334155;
+    --lv-border-control:     #64748B;
+    --lv-border-focus:       #818CF8;
+
+    --lv-success:            #34D399;
+    --lv-success-soft:       #052E2B;
+    --lv-success-border:     #065F46;
+    --lv-warning:            #FBBF24;
+    --lv-warning-soft:       #2A1F05;
+    --lv-warning-border:     #78350F;
+    --lv-danger:             #F87171;
+    --lv-danger-hover:       #FCA5A5;
+    --lv-danger-soft:        #2A0A0A;
+    --lv-danger-border:      #7F1D1D;
+    --lv-info:               #A5B4FC;
+    --lv-info-soft:          #1E1B4B;
+    --lv-info-border:        #3730A3;
+
+    --lv-focus-ring:         0 0 0 3px rgba(129, 140, 248, 0.45);
+    --lv-focus-outline:      3px solid #818CF8;
+
+    --lv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --lv-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --lv-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+
+    --lv-sidebar-bg:         #1E1B4B;
+    --lv-sidebar-accent:     linear-gradient(135deg, #6D28D9 0%, #A78BFA 100%);
+    color-scheme: dark;
+  }
+  html[data-lv-app]:not([data-lv-theme="light"]) body { background: var(--lv-bg); color: var(--lv-text); }
 }
 
 /* One shared spinner keyframe for the Screen design system (replaces the six

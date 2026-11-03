@@ -75,10 +75,10 @@ export function InstallPrompt() {
         left:          16,
         right:         16,
         zIndex:        200,
-        background:    '#fff',
+        background:    'var(--lv-surface)',
         borderRadius:  14,
-        border:        '1px solid #E2E8F0',
-        boxShadow:     '0 8px 32px rgba(79,70,229,0.18)',
+        border:        '1px solid var(--lv-border)',
+        boxShadow:     '0 8px 32px color-mix(in srgb, var(--lv-brand) 18%, transparent)',
         padding:       '14px 16px',
         display:       'flex',
         flexDirection: 'column',
@@ -92,23 +92,23 @@ export function InstallPrompt() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 9,
-          background: 'linear-gradient(135deg,#4F46E5,#7C3AED)',
+          background: 'linear-gradient(135deg,var(--lv-brand),var(--lv-accent))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <Smartphone size={18} color="#fff" />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-text)' }}>
             Add Levl1 to Home Screen
           </div>
-          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>
+          <div style={{ fontSize: 11, color: 'var(--lv-text-muted)', marginTop: 1 }}>
             For the fastest interview experience
           </div>
         </div>
         <button
           onClick={dismiss}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--lv-text-muted)', padding: 4 }}
         >
           <X size={16} />
         </button>
@@ -116,7 +116,7 @@ export function InstallPrompt() {
 
       {isIOS ? (
         /* iOS instructions */
-        <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 12, color: 'var(--lv-text-body)', lineHeight: 1.6 }}>
           Tap the <strong>Share</strong> button <span style={{ fontSize: 14 }}>⬆</span> in Safari,
           then choose <strong>&ldquo;Add to Home Screen&rdquo;</strong>.
         </div>
@@ -131,7 +131,7 @@ export function InstallPrompt() {
             gap:          8,
             width:        '100%',
             padding:      '10px 0',
-            background:   'linear-gradient(135deg,#4F46E5,#7C3AED)',
+            background:   'linear-gradient(135deg,var(--lv-brand),var(--lv-accent))',
             border:       'none',
             borderRadius: 8,
             color:        '#fff',

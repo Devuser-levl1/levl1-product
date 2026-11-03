@@ -21,7 +21,7 @@ const PLANS = [
     ],
     popular: false,
     cta: 'Upgrade to Starter',
-    color: '#4F46E5',
+    color: 'var(--lv-brand)',
   },
   {
     id: 'professional',
@@ -39,7 +39,7 @@ const PLANS = [
     ],
     popular: true,
     cta: 'Upgrade to Professional',
-    color: '#7C3AED',
+    color: 'var(--lv-accent)',
   },
 ]
 
@@ -108,19 +108,19 @@ export default function UpgradeWallModal() {
     >
       <div
         style={{
-          background: '#fff',
+          background: 'var(--lv-surface)',
           borderRadius: 20,
           width: '100%',
           maxWidth: 720,
-          boxShadow: '0 40px 100px rgba(79,70,229,0.22)',
+          boxShadow: '0 40px 100px color-mix(in srgb, var(--lv-brand) 22%, transparent)',
           overflow: 'hidden',
-          border: '1px solid #E2E8F0',
+          border: '1px solid var(--lv-border)',
         }}
       >
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+            background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
             padding: '28px 32px 24px',
             position: 'relative',
           }}
@@ -166,11 +166,11 @@ export default function UpgradeWallModal() {
             <div
               key={plan.id}
               style={{
-                border: plan.popular ? '2px solid #7C3AED' : '1px solid #E2E8F0',
+                border: plan.popular ? '2px solid var(--lv-accent)' : '1px solid var(--lv-border)',
                 borderRadius: 14,
                 padding: '22px 20px',
                 position: 'relative',
-                background: plan.popular ? 'rgba(124,58,237,0.02)' : '#fff',
+                background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : '#fff',
               }}
             >
               {plan.popular && (
@@ -180,7 +180,7 @@ export default function UpgradeWallModal() {
                     top: -12,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: '#7C3AED',
+                    background: 'var(--lv-accent)',
                     color: '#fff',
                     fontSize: 11,
                     fontWeight: 700,
@@ -199,10 +199,10 @@ export default function UpgradeWallModal() {
 
               <div style={{ fontSize: 15, fontWeight: 800, color: plan.color, fontFamily: 'var(--font-display)', marginBottom: 4 }}>{plan.name}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 4 }}>
-                <span style={{ fontSize: 26, fontWeight: 800, color: '#1E293B', fontFamily: 'var(--font-display)' }}>{plan.price}</span>
-                <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>{plan.period}</span>
+                <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--lv-text)', fontFamily: 'var(--font-display)' }}>{plan.price}</span>
+                <span style={{ fontSize: 13, color: 'var(--lv-text-muted)', fontWeight: 500 }}>{plan.period}</span>
               </div>
-              <div style={{ fontSize: 12, color: '#64748B', marginBottom: 16, fontWeight: 500 }}>
+              <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 16, fontWeight: 500 }}>
                 {plan.interviews} AI interviews / month
               </div>
 
@@ -210,7 +210,7 @@ export default function UpgradeWallModal() {
                 {plan.features.map((f) => (
                   <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
                     <CheckCircle2 size={14} color={plan.color} style={{ marginTop: 1, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>{f}</span>
+                    <span style={{ fontSize: 12, color: 'var(--lv-text-body)', fontWeight: 500, lineHeight: 1.5 }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -220,7 +220,7 @@ export default function UpgradeWallModal() {
                 disabled={loading === plan.id}
                 style={{
                   width: '100%',
-                  background: loading === plan.id ? '#94A3B8' : plan.popular ? '#7C3AED' : '#4F46E5',
+                  background: loading === plan.id ? 'var(--lv-text-muted)' : plan.popular ? 'var(--lv-accent)' : 'var(--lv-brand)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 9,
@@ -229,7 +229,7 @@ export default function UpgradeWallModal() {
                   fontWeight: 700,
                   cursor: loading === plan.id ? 'not-allowed' : 'pointer',
                   fontFamily: 'var(--font-sans)',
-                  boxShadow: loading === plan.id ? 'none' : `0 4px 14px rgba(124,58,237,0.25)`,
+                  boxShadow: loading === plan.id ? 'none' : `0 4px 14px color-mix(in srgb, var(--lv-accent) 25%, transparent)`,
                   transition: 'all 0.2s',
                 }}
               >
@@ -245,7 +245,7 @@ export default function UpgradeWallModal() {
             padding: '0 32px 24px',
             textAlign: 'center',
             fontSize: 12,
-            color: '#94A3B8',
+            color: 'var(--lv-text-muted)',
           }}
         >
           Secure payment via Cashfree · Cancel anytime · GST applicable

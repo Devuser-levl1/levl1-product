@@ -95,7 +95,7 @@ export function CommunicationDial({ communication }: { communication: Communicat
         {!insufficient && communication?.cefr && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CEFR</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', background: VIOLET, borderRadius: 7, padding: '3px 10px' }}>{communication.cefr}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--lv-on-brand)', background: VIOLET, borderRadius: 7, padding: '3px 10px' }}>{communication.cefr}</span>
           </div>
         )}
         {insufficient ? <div style={{ marginTop: 4 }}><InsufficientTag /></div> : (

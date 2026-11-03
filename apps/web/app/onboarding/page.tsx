@@ -19,7 +19,7 @@ function StepDot({ n, active, done }: { n: number; active: boolean; done: boolea
     <div style={{
       width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: done ? 'var(--lv-success)' : active ? 'var(--lv-brand)' : 'var(--lv-border)',
-      color: done || active ? '#fff' : 'var(--lv-text-muted)',
+      color: done || active ? 'var(--lv-on-brand)' : 'var(--lv-text-muted)',
       fontSize: 12, fontWeight: 700, flexShrink: 0, transition: 'all 0.2s',
     }}>
       {done ? '✓' : n}
@@ -208,9 +208,9 @@ export default function OnboardingPage() {
                       const Icon = t.value === 'agency' ? Briefcase : Building2
                       return (
                         <button key={t.value} type="button" role="radio" aria-checked={on} onClick={() => setAccountType(t.value)}
-                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : '#fff', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
+                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
                           <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? 'var(--lv-brand)' : 'color-mix(in srgb, var(--lv-brand) 8%, transparent)' }}>
-                            <Icon size={16} color={on ? '#fff' : 'var(--lv-brand)'} />
+                            <Icon size={16} color={on ? 'var(--lv-on-brand)' : 'var(--lv-brand)'} />
                           </span>
                           <span>
                             <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{t.label}</span>
@@ -246,7 +246,7 @@ export default function OnboardingPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                     {TEAM_SIZES.map(ts => (
                       <button key={ts} type="button" aria-pressed={teamSize === ts} onClick={() => setTeamSize(ts)}
-                        style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: teamSize === ts ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : '#fff', fontSize: 13, fontWeight: 600, color: teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-text-muted)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
+                        style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: teamSize === ts ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface)', fontSize: 13, fontWeight: 600, color: teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-text-muted)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
                         {ts}
                       </button>
                     ))}
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                     {VOICE_OPTIONS.map(v => {
                       const on = voiceKey === v.key
                       return (
-                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : '#fff' }}>
+                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : 'var(--lv-surface)' }}>
                           <button type="button" role="radio" aria-checked={on} onClick={() => setVoiceKey(v.key)}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--lv-font-sans)' }}>
                             <span style={{ fontSize: 18 }}>{v.flag}</span>
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                             </span>
                           </button>
                           <button type="button" onClick={() => previewVoice(v.key)} aria-label={`Preview ${v.interviewerName}`} disabled={!!previewing}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--lv-border)', background: '#fff', fontSize: 12, fontWeight: 600, color: 'var(--lv-brand)', cursor: previewing ? 'default' : 'pointer' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', fontSize: 12, fontWeight: 600, color: 'var(--lv-brand)', cursor: previewing ? 'default' : 'pointer' }}>
                             {previewing === v.key ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={12} />} Preview
                           </button>
                         </div>

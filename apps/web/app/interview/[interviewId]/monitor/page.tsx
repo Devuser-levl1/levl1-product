@@ -58,6 +58,14 @@ export default function MonitorPage() {
     return () => clearInterval(iv)
   }, [activeSession?.startedAt])
 
+  /* ── Dark console: scope the dark tokens to <html> so portalled dialogs match ── */
+  useEffect(() => {
+    const el = document.documentElement
+    const prev = el.getAttribute('data-lv-theme')
+    el.setAttribute('data-lv-theme', 'dark')
+    return () => { if (prev === null) el.removeAttribute('data-lv-theme'); else el.setAttribute('data-lv-theme', prev) }
+  }, [])
+
   /* ── Auto-scroll transcript ─────────────────────────────────── */
   useEffect(() => {
     if (transcriptRef.current) {
@@ -359,7 +367,7 @@ export default function MonitorPage() {
         </aside>
       </div>
 
-      {/* ── Send Message modal ── (portals to <body>, so it renders in the light theme until app-wide dark mode lands) */}
+      {/* ── Send Message modal ── (portals to <body>; dark via the <html> data-lv-theme set above) */}
       <Modal open={showMessage} onClose={() => setShowMessage(false)} size="sm" title="Send message to candidate"
         description={<>For emergencies only. The message appears as a banner overlay in the candidate&apos;s interview window.</>}
         footer={<ActionBar>

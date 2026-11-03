@@ -746,7 +746,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
             return (
               <li key={i} aria-current={current ? "step" : undefined} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
-                  <div aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 700, flexShrink: 0, background: done ? lv.success : current ? lv.brand : lv.surfaceMuted, color: done || current ? "#fff" : lv.textMuted, boxShadow: current ? lv.focusRing : "none", transition: `all ${lv.dur}` }}>
+                  <div aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 700, flexShrink: 0, background: done ? lv.success : current ? lv.brand : lv.surfaceMuted, color: done || current ? lv.onBrand : lv.textMuted, boxShadow: current ? lv.focusRing : "none", transition: `all ${lv.dur}` }}>
                     {done ? <Check size={12} /> : i + 1}
                   </div>
                   <span className="step-label" style={{ fontSize: text.xs, fontWeight: current ? 700 : 500, color: current ? lv.brandText : done ? lv.success : lv.textMuted, whiteSpace: "nowrap" }}>{s.short}</span>

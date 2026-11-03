@@ -67,7 +67,7 @@ export default function DashboardShell() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--lv-bg)" }}>
       {/* Sidebar: hidden on mobile via CSS [data-sidebar] selector */}
       <div data-sidebar>
         <Sidebar />

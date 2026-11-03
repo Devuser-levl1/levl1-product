@@ -163,14 +163,14 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
 
       .levl1-tour-step.shepherd-element {
         border-radius: 12px !important;
-        box-shadow: 0 8px 40px rgba(79, 70, 229, 0.18), 0 2px 8px rgba(0,0,0,0.12) !important;
-        border: 1.5px solid rgba(124, 58, 237, 0.22) !important;
+        box-shadow: 0 8px 40px color-mix(in srgb, var(--lv-brand) 18%, transparent), 0 2px 8px rgba(0,0,0,0.12) !important;
+        border: 1.5px solid color-mix(in srgb, var(--lv-accent) 22%, transparent) !important;
         max-width: 340px !important;
         font-family: var(--font-sans, system-ui, sans-serif) !important;
       }
 
       .levl1-tour-step .shepherd-header {
-        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
+        background: linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%) !important;
         border-radius: 10px 10px 0 0 !important;
         padding: 14px 18px 12px !important;
         display: flex !important;
@@ -212,7 +212,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
       .levl1-tour-step .shepherd-text {
         padding: 16px 18px 4px !important;
         font-size: 13px !important;
-        color: #475569 !important;
+        color: var(--lv-text-body) !important;
         line-height: 1.65 !important;
       }
 
@@ -226,7 +226,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
       .shepherd-skip-btn {
         background: none !important;
         border: none !important;
-        color: #94A3B8 !important;
+        color: var(--lv-text-muted) !important;
         font-size: 12px !important;
         font-weight: 500 !important;
         cursor: pointer !important;
@@ -235,13 +235,13 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
         text-decoration: underline !important;
         font-family: inherit !important;
       }
-      .shepherd-skip-btn:hover { color: #64748B !important; }
+      .shepherd-skip-btn:hover { color: var(--lv-text-muted) !important; }
 
       .shepherd-back-btn {
-        background: #F1F5F9 !important;
-        border: 1px solid #E2E8F0 !important;
+        background: var(--lv-surface-muted) !important;
+        border: 1px solid var(--lv-border) !important;
         border-radius: 7px !important;
-        color: #475569 !important;
+        color: var(--lv-text-body) !important;
         font-size: 13px !important;
         font-weight: 600 !important;
         padding: 7px 14px !important;
@@ -249,10 +249,10 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
         font-family: inherit !important;
         transition: background 0.15s !important;
       }
-      .shepherd-back-btn:hover { background: #E2E8F0 !important; }
+      .shepherd-back-btn:hover { background: var(--lv-border) !important; }
 
       .shepherd-next-btn {
-        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
+        background: linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%) !important;
         border: none !important;
         border-radius: 7px !important;
         color: #fff !important;
@@ -261,14 +261,14 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
         padding: 7px 16px !important;
         cursor: pointer !important;
         font-family: inherit !important;
-        box-shadow: 0 2px 8px rgba(124,58,237,0.25) !important;
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-accent) 25%, transparent) !important;
         transition: box-shadow 0.15s !important;
       }
-      .shepherd-next-btn:hover { box-shadow: 0 4px 14px rgba(124,58,237,0.38) !important; }
+      .shepherd-next-btn:hover { box-shadow: 0 4px 14px color-mix(in srgb, var(--lv-accent) 38%, transparent) !important; }
 
       .shepherd-arrow::before {
         background: #fff !important;
-        border: 1.5px solid rgba(124,58,237,0.18) !important;
+        border: 1.5px solid color-mix(in srgb, var(--lv-accent) 18%, transparent) !important;
       }
     `}</style>
   )

@@ -70,7 +70,7 @@ export default function Sidebar() {
         top: 0,
         left: 0,
         height: "100vh",
-        background: "#4F46E5",
+        background: "var(--lv-sidebar-bg)",
         borderRight: "1px solid rgba(255,255,255,0.07)",
         zIndex: 50,
         overflow: "hidden",
@@ -105,7 +105,7 @@ export default function Sidebar() {
             width: 32,
             height: 32,
             borderRadius: 9,
-            background: "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
+            background: "var(--lv-sidebar-accent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -180,7 +180,7 @@ export default function Sidebar() {
             minHeight: 40,
             background: "#FFFFFF",            /* the primary action on the brand panel */
             border: "1px solid #FFFFFF",
-            color: "var(--lv-brand-text)",
+            color: "#4338CA",                 /* fixed: white button on the brand panel in both themes */
             cursor: "pointer",
             fontSize: 13,
             fontWeight: 700,
@@ -190,7 +190,7 @@ export default function Sidebar() {
             marginBottom: 10,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--lv-brand-soft)";
+            e.currentTarget.style.background = "#EEF2FF";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#FFFFFF";
@@ -392,7 +392,7 @@ export default function Sidebar() {
                   width: 30,
                   height: 30,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7C3AED 0%, #C4B5FD 100%)",
+                  background: "var(--lv-sidebar-accent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

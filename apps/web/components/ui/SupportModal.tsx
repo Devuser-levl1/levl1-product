@@ -22,12 +22,12 @@ const ISSUE_TYPES = [
 const INPUT_STYLE: React.CSSProperties = {
   width:        '100%',
   padding:      '10px 12px',
-  border:       '1px solid #E2E8F0',
+  border:       '1px solid var(--lv-border)',
   borderRadius: 8,
   fontSize:     13,
-  color:        '#4F46E5',
+  color:        'var(--lv-brand)',
   fontFamily:   'var(--font-sans)',
-  background:   '#F8FAFC',
+  background:   'var(--lv-surface-sunken)',
   outline:      'none',
   boxSizing:    'border-box',
   transition:   'border-color 0.15s',
@@ -95,9 +95,9 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
           left:          '50%',
           transform:     'translate(-50%,-50%)',
           zIndex:        851,
-          background:    '#fff',
+          background:    'var(--lv-surface)',
           borderRadius:  14,
-          boxShadow:     '0 16px 60px rgba(79,70,229,0.18)',
+          boxShadow:     '0 16px 60px color-mix(in srgb, var(--lv-brand) 18%, transparent)',
           width:         '100%',
           maxWidth:      480,
           maxHeight:     '90vh',
@@ -108,7 +108,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
         {/* Header */}
         <div
           style={{
-            background:   'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+            background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
             padding:      '18px 22px 16px',
             display:      'flex',
             alignItems:   'center',
@@ -155,8 +155,8 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
 
           {/* Issue type */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 8 }}>
-              Issue Type <span style={{ color: '#EF4444' }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', display: 'block', marginBottom: 8 }}>
+              Issue Type <span style={{ color: 'var(--lv-danger)' }}>*</span>
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {ISSUE_TYPES.map((type) => (
@@ -169,8 +169,8 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                     cursor:      'pointer',
                     padding:     '8px 10px',
                     borderRadius: 8,
-                    border:      `1px solid ${issueType === type ? 'rgba(124,58,237,0.30)' : '#E2E8F0'}`,
-                    background:  issueType === type ? 'rgba(124,58,237,0.06)' : '#F8FAFC',
+                    border:      `1px solid ${issueType === type ? 'color-mix(in srgb, var(--lv-accent) 30%, transparent)' : 'var(--lv-border)'}`,
+                    background:  issueType === type ? 'color-mix(in srgb, var(--lv-accent) 6%, transparent)' : 'var(--lv-surface-sunken)',
                     transition:  'all 0.12s',
                   }}
                 >
@@ -180,9 +180,9 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                     value={type}
                     checked={issueType === type}
                     onChange={() => setIssueType(type)}
-                    style={{ accentColor: '#7C3AED', flexShrink: 0 }}
+                    style={{ accentColor: 'var(--lv-accent)', flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 13, color: issueType === type ? '#6D28D9' : '#475569', fontWeight: issueType === type ? 600 : 400 }}>
+                  <span style={{ fontSize: 13, color: issueType === type ? 'var(--lv-accent)' : 'var(--lv-text-body)', fontWeight: issueType === type ? 600 : 400 }}>
                     {type}
                   </span>
                 </label>
@@ -192,8 +192,8 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
 
           {/* Subject */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
-              Subject <span style={{ color: '#EF4444' }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', display: 'block', marginBottom: 6 }}>
+              Subject <span style={{ color: 'var(--lv-danger)' }}>*</span>
             </label>
             <input
               type="text"
@@ -201,15 +201,15 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Brief description of the issue"
               style={INPUT_STYLE}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#7C3AED' }}
-              onBlur={(e)  => { e.currentTarget.style.borderColor = '#E2E8F0' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
-              Description <span style={{ color: '#EF4444' }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', display: 'block', marginBottom: 6 }}>
+              Description <span style={{ color: 'var(--lv-danger)' }}>*</span>
             </label>
             <textarea
               value={description}
@@ -217,15 +217,15 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               placeholder="Describe the issue in detail. Include steps to reproduce if reporting a bug."
               rows={4}
               style={{ ...INPUT_STYLE, resize: 'vertical', minHeight: 90 }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#7C3AED' }}
-              onBlur={(e)  => { e.currentTarget.style.borderColor = '#E2E8F0' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
 
           {/* Screenshot */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
-              Attach screenshot <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional)</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', display: 'block', marginBottom: 6 }}>
+              Attach screenshot <span style={{ color: 'var(--lv-text-muted)', fontWeight: 400 }}>(optional)</span>
             </label>
             <label
               style={{
@@ -233,16 +233,16 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                 alignItems:   'center',
                 gap:          8,
                 padding:      '9px 12px',
-                border:       '1px dashed #CBD5E1',
+                border:       '1px dashed var(--lv-border-strong)',
                 borderRadius: 8,
-                background:   '#F8FAFC',
+                background:   'var(--lv-surface-sunken)',
                 cursor:       'pointer',
                 fontSize:     13,
-                color:        '#64748B',
+                color:        'var(--lv-text-muted)',
                 transition:   'all 0.15s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#7C3AED'; e.currentTarget.style.color = '#7C3AED' }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.color = '#64748B' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)'; e.currentTarget.style.color = 'var(--lv-accent)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lv-border-strong)'; e.currentTarget.style.color = 'var(--lv-text-muted)' }}
             >
               <Paperclip size={14} />
               {fileName || 'Choose file…'}
@@ -257,16 +257,16 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
 
           {/* Email */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
-              Your email <span style={{ color: '#EF4444' }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', display: 'block', marginBottom: 6 }}>
+              Your email <span style={{ color: 'var(--lv-danger)' }}>*</span>
             </label>
             <input
               type="email"
               value={userEmail}
               onChange={(e) => setUserEmail(e.target.value)}
               style={INPUT_STYLE}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#7C3AED' }}
-              onBlur={(e)  => { e.currentTarget.style.borderColor = '#E2E8F0' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
 
@@ -277,7 +277,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
             style={{
               width:        '100%',
               padding:      '12px 0',
-              background:   'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+              background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
               border:       'none',
               borderRadius: 9,
               color:        '#fff',
@@ -285,12 +285,12 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               fontWeight:   700,
               cursor:       sending ? 'wait' : 'pointer',
               fontFamily:   'var(--font-sans)',
-              boxShadow:    '0 2px 10px rgba(124,58,237,0.28)',
+              boxShadow:    '0 2px 10px color-mix(in srgb, var(--lv-accent) 28%, transparent)',
               transition:   'box-shadow 0.15s',
               marginTop:    4,
             }}
-            onMouseEnter={(e) => { if (!sending) e.currentTarget.style.boxShadow = '0 4px 18px rgba(124,58,237,0.42)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 10px rgba(124,58,237,0.28)' }}
+            onMouseEnter={(e) => { if (!sending) e.currentTarget.style.boxShadow = '0 4px 18px color-mix(in srgb, var(--lv-accent) 42%, transparent)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 10px color-mix(in srgb, var(--lv-accent) 28%, transparent)' }}
           >
             {sending ? 'Submitting…' : 'Submit Ticket'}
           </button>
