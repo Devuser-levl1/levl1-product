@@ -8,12 +8,6 @@ import { VOICE_OPTIONS, DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
 import { Play, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const INPUT: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', borderRadius: 8,
-  border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)',
-  outline: 'none', boxSizing: 'border-box', background: '#F8FAFC',
-  transition: 'border-color 0.15s',
-}
 
 const TEAM_SIZES = ['1-5', '6-20', '21-50', '50+']
 
@@ -24,8 +18,8 @@ function StepDot({ n, active, done }: { n: number; active: boolean; done: boolea
   return (
     <div style={{
       width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: done ? '#10B981' : active ? '#4F46E5' : '#E2E8F0',
-      color: done || active ? '#fff' : '#94A3B8',
+      background: done ? 'var(--lv-success)' : active ? 'var(--lv-brand)' : 'var(--lv-border)',
+      color: done || active ? '#fff' : 'var(--lv-text-muted)',
       fontSize: 12, fontWeight: 700, flexShrink: 0, transition: 'all 0.2s',
     }}>
       {done ? '✓' : n}
@@ -163,14 +157,14 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8F9FF', fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--lv-bg)', fontFamily: 'var(--lv-font-sans)', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
-      <header style={{ height: 60, background: '#fff', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', padding: '0 32px', gap: 12, flexShrink: 0 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <header style={{ height: 60, background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', padding: '0 clamp(16px, 4vw, 32px)', gap: 12, flexShrink: 0 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
-        <span style={{ marginLeft: 8, fontSize: 13, color: '#94A3B8' }}>· Account Setup</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 15, fontWeight: 700, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}>· Account Setup</span>
       </header>
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px 80px' }}>
@@ -181,11 +175,11 @@ export default function OnboardingPage() {
             {STEPS.map((s, i) => (
               <div key={s.n} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <StepDot n={s.n} active={step === s.n} done={step > s.n} />
-                  <span style={{ fontSize: 11, color: step >= s.n ? '#4F46E5' : '#94A3B8', fontWeight: step === s.n ? 700 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
+                  <StepDot n={s.n} active={step === s.n} done={step > s.n} /><span className="lv-sr-only">{`Step ${s.n} of ${STEPS.length}${step === s.n ? ' (current)' : step > s.n ? ' (done)' : ''}: `}</span>
+                  <span className="ob-step-label" style={{ fontSize: 11, color: step >= s.n ? 'var(--lv-brand-text)' : 'var(--lv-text-muted)', fontWeight: step === s.n ? 700 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div style={{ width: 72, height: 2, background: step > s.n ? '#10B981' : '#E2E8F0', margin: '0 8px', marginBottom: 20, transition: 'background 0.3s', flexShrink: 0 }} />
+                  <div aria-hidden="true" style={{ width: 'clamp(12px, 6vw, 72px)', height: 2, background: step > s.n ? 'var(--lv-success)' : 'var(--lv-border)', margin: '0 8px', marginBottom: 20, transition: 'background 0.3s', flexShrink: 0 }} />
                 )}
               </div>
             ))}
@@ -193,34 +187,34 @@ export default function OnboardingPage() {
 
           {/* ── STEP 1: Agency Details ── */}
           {step === 1 && (
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '36px 40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(79,70,229,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={18} color="#4F46E5" />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>{accountType === 'company' ? 'Tell us about your company' : accountType === 'agency' ? 'Tell us about your recruitment agency' : 'First — how do you hire?'}</p>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
+                  <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>{accountType === 'company' ? 'Tell us about your company' : accountType === 'agency' ? 'Tell us about your recruitment agency' : 'First — how do you hire?'}</p>
                 </div>
               </div>
 
               <form onSubmit={saveStep1} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 {/* Account type — drives which fields job setup shows later */}
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>How do you hire? *</label>
-                  <div role="radiogroup" aria-label="Account type" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="lv-label" style={{ display: 'block', marginBottom: 8 }}>How do you hire? *</div>
+                  <div role="radiogroup" aria-label="Account type" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
                     {ACCOUNT_TYPES.map(t => {
                       const on = accountType === t.value
                       const Icon = t.value === 'agency' ? Briefcase : Building2
                       return (
                         <button key={t.value} type="button" role="radio" aria-checked={on} onClick={() => setAccountType(t.value)}
-                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? '#4F46E5' : '#E2E8F0'}`, background: on ? 'rgba(79,70,229,0.06)' : '#fff', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-sans)' }}>
-                          <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? '#4F46E5' : 'rgba(79,70,229,0.08)' }}>
-                            <Icon size={16} color={on ? '#fff' : '#4F46E5'} />
+                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : '#fff', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
+                          <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? 'var(--lv-brand)' : 'color-mix(in srgb, var(--lv-brand) 8%, transparent)' }}>
+                            <Icon size={16} color={on ? '#fff' : 'var(--lv-brand)'} />
                           </span>
                           <span>
-                            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? '#4F46E5' : '#1E293B' }}>{t.label}</span>
-                            <span style={{ display: 'block', fontSize: 12, color: '#64748B', marginTop: 2, lineHeight: 1.4 }}>{t.desc}</span>
+                            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{t.label}</span>
+                            <span style={{ display: 'block', fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2, lineHeight: 1.4 }}>{t.desc}</span>
                           </span>
                         </button>
                       )
@@ -228,31 +222,31 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 16 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>{accountType === 'company' ? 'Company Name *' : accountType === 'agency' ? 'Agency Name *' : 'Agency / Company Name *'}</label>
-                    <input required style={INPUT} value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder={accountType === 'company' ? 'FinEdge Technologies Pvt Ltd' : 'HireEdge Recruitment Pvt Ltd'} />
+                    <label htmlFor="ob-f1" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>{accountType === 'company' ? 'Company Name *' : accountType === 'agency' ? 'Agency Name *' : 'Agency / Company Name *'}</label>
+                    <input id="ob-f1" required className="lv-input" value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder={accountType === 'company' ? 'FinEdge Technologies Pvt Ltd' : 'HireEdge Recruitment Pvt Ltd'} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Website</label>
-                    <input style={INPUT} value={website} onChange={e => setWebsite(e.target.value)} placeholder="www.hireedge.in" />
+                    <label htmlFor="ob-f2" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>Website</label>
+                    <input id="ob-f2" className="lv-input" value={website} onChange={e => setWebsite(e.target.value)} placeholder="www.hireedge.in" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Founded Year</label>
-                    <input style={INPUT} type="number" value={foundedYear} onChange={e => setFoundedYear(e.target.value)} placeholder="2018" min="1900" max="2025" />
+                    <label htmlFor="ob-f3" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>Founded Year</label>
+                    <input id="ob-f3" className="lv-input" type="number" value={foundedYear} onChange={e => setFoundedYear(e.target.value)} placeholder="2018" min="1900" max="2025" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Headquarters City</label>
-                    <input style={INPUT} value={hqCity} onChange={e => setHqCity(e.target.value)} placeholder="Bengaluru" />
+                    <label htmlFor="ob-f4" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>Headquarters City</label>
+                    <input id="ob-f4" className="lv-input" value={hqCity} onChange={e => setHqCity(e.target.value)} placeholder="Bengaluru" />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Team Size</label>
+                  <div className="lv-label" style={{ display: 'block', marginBottom: 8 }}>Team Size</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                     {TEAM_SIZES.map(ts => (
-                      <button key={ts} type="button" onClick={() => setTeamSize(ts)}
-                        style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${teamSize === ts ? '#4F46E5' : '#E2E8F0'}`, background: teamSize === ts ? 'rgba(79,70,229,0.06)' : '#fff', fontSize: 13, fontWeight: 600, color: teamSize === ts ? '#4F46E5' : '#64748B', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-sans)' }}>
+                      <button key={ts} type="button" aria-pressed={teamSize === ts} onClick={() => setTeamSize(ts)}
+                        style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: teamSize === ts ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : '#fff', fontSize: 13, fontWeight: 600, color: teamSize === ts ? 'var(--lv-brand)' : 'var(--lv-text-muted)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
                         {ts}
                       </button>
                     ))}
@@ -261,23 +255,23 @@ export default function OnboardingPage() {
 
                 {/* Default interviewer voice — candidates hear this voice (and name) */}
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Interviewer voice</label>
-                  <p style={{ fontSize: 12, color: '#94A3B8', margin: '0 0 8px' }}>The voice your candidates hear. You can change it any time in Settings.</p>
+                  <div className="lv-label" style={{ display: 'block', marginBottom: 4 }}>Interviewer voice</div>
+                  <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: '0 0 8px' }}>The voice your candidates hear. You can change it any time in Settings.</p>
                   <div role="radiogroup" aria-label="Interviewer voice" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {VOICE_OPTIONS.map(v => {
                       const on = voiceKey === v.key
                       return (
-                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? '#4F46E5' : '#E2E8F0'}`, background: on ? 'rgba(79,70,229,0.05)' : '#fff' }}>
+                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : '#fff' }}>
                           <button type="button" role="radio" aria-checked={on} onClick={() => setVoiceKey(v.key)}
-                            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font-sans)' }}>
+                            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--lv-font-sans)' }}>
                             <span style={{ fontSize: 18 }}>{v.flag}</span>
                             <span>
-                              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: on ? '#4F46E5' : '#1E293B' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
-                              <span style={{ display: 'block', fontSize: 12, color: '#64748B' }}>{v.description}</span>
+                              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
+                              <span style={{ display: 'block', fontSize: 12, color: 'var(--lv-text-muted)' }}>{v.description}</span>
                             </span>
                           </button>
                           <button type="button" onClick={() => previewVoice(v.key)} aria-label={`Preview ${v.interviewerName}`} disabled={!!previewing}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#4F46E5', cursor: previewing ? 'default' : 'pointer' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--lv-border)', background: '#fff', fontSize: 12, fontWeight: 600, color: 'var(--lv-brand)', cursor: previewing ? 'default' : 'pointer' }}>
                             {previewing === v.key ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={12} />} Preview
                           </button>
                         </div>
@@ -287,7 +281,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <button type="submit" disabled={saving}
-                  style={{ background: saving ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, boxShadow: saving ? 'none' : '0 4px 14px rgba(124,58,237,0.30)', fontFamily: 'var(--font-sans)' }}>
+                  className="lv-btn lv-btn--primary" style={{ height: 48, fontSize: 15 }}>
                   {saving ? 'Saving…' : <><span>Continue</span><ChevronRight size={16} /></>}
                 </button>
               </form>
@@ -296,63 +290,63 @@ export default function OnboardingPage() {
 
           {/* ── STEP 2: GST & Business Details ── */}
           {step === 2 && (
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '36px 40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(79,70,229,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={18} color="#4F46E5" />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>GST & Business Details</h2>
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>Required for billing and invoicing</p>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>GST & Business Details</h2>
+                  <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>Required for billing and invoicing</p>
                 </div>
               </div>
 
               <form onSubmit={saveStep2} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>GST Number</label>
-                    <input style={INPUT} value={gstNumber} onChange={e => setGstNumber(e.target.value.toUpperCase())} placeholder="29AABCU9603R1ZX" maxLength={15} />
+                    <label htmlFor="ob-f5" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>GST Number</label>
+                    <input id="ob-f5" className="lv-input" value={gstNumber} onChange={e => setGstNumber(e.target.value.toUpperCase())} placeholder="29AABCU9603R1ZX" maxLength={15} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>PAN Number</label>
-                    <input style={INPUT} value={panNumber} onChange={e => setPanNumber(e.target.value.toUpperCase())} placeholder="AABCU9603R" maxLength={10} />
+                    <label htmlFor="ob-f6" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>PAN Number</label>
+                    <input id="ob-f6" className="lv-input" value={panNumber} onChange={e => setPanNumber(e.target.value.toUpperCase())} placeholder="AABCU9603R" maxLength={10} />
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Legal Entity Name</label>
-                    <input style={INPUT} value={legalName} onChange={e => setLegalName(e.target.value)} placeholder="HireEdge Recruitment Pvt Ltd" />
+                    <label htmlFor="ob-f7" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>Legal Entity Name</label>
+                    <input id="ob-f7" className="lv-input" value={legalName} onChange={e => setLegalName(e.target.value)} placeholder="HireEdge Recruitment Pvt Ltd" />
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Registered Address</label>
-                    <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical' }} value={regAddress} onChange={e => setRegAddress(e.target.value)} placeholder="Flat/Suite/Building, Street" />
+                    <label htmlFor="ob-f8" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>Registered Address</label>
+                    <textarea id="ob-f8" className="lv-textarea" style={{ minHeight: 72, resize: 'vertical' }} value={regAddress} onChange={e => setRegAddress(e.target.value)} placeholder="Flat/Suite/Building, Street" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>City</label>
-                    <input style={INPUT} value={city} onChange={e => setCity(e.target.value)} placeholder="Bengaluru" />
+                    <label htmlFor="ob-f9" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>City</label>
+                    <input id="ob-f9" className="lv-input" value={city} onChange={e => setCity(e.target.value)} placeholder="Bengaluru" />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>State</label>
-                      <input style={INPUT} value={state} onChange={e => setState(e.target.value)} placeholder="Karnataka" />
+                      <label htmlFor="ob-f10" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>State</label>
+                      <input id="ob-f10" className="lv-input" value={state} onChange={e => setState(e.target.value)} placeholder="Karnataka" />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>PIN</label>
-                      <input style={INPUT} value={pinCode} onChange={e => setPinCode(e.target.value)} placeholder="560001" maxLength={6} />
+                      <label htmlFor="ob-f11" className="lv-label" style={{ display: 'block', marginBottom: 5 }}>PIN</label>
+                      <input id="ob-f11" className="lv-input" value={pinCode} onChange={e => setPinCode(e.target.value)} placeholder="560001" maxLength={6} />
                     </div>
                   </div>
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 4 }}>
-                  <input type="checkbox" checked={sameBilling} onChange={e => setSameBilling(e.target.checked)} style={{ accentColor: '#7C3AED', width: 16, height: 16 }} />
-                  <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>Same as business address for billing</span>
+                  <input type="checkbox" checked={sameBilling} onChange={e => setSameBilling(e.target.checked)} style={{ accentColor: 'var(--lv-brand)', width: 18, height: 18 }} />
+                  <span style={{ fontSize: 13, color: 'var(--lv-text-body)', fontWeight: 500 }}>Same as business address for billing</span>
                 </label>
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                   <button type="button" onClick={() => setStep(1)}
-                    style={{ padding: '12px 20px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                    className="lv-btn lv-btn--secondary" style={{ height: 48 }}>
                     Back
                   </button>
                   <button type="submit" disabled={saving}
-                    style={{ flex: 1, background: saving ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: saving ? 'none' : '0 4px 14px rgba(124,58,237,0.30)', fontFamily: 'var(--font-sans)' }}>
+                    className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 15 }}>
                     {saving ? 'Saving…' : <><span>Continue</span><ChevronRight size={16} /></>}
                   </button>
                 </div>
@@ -362,20 +356,20 @@ export default function OnboardingPage() {
 
           {/* ── STEP 3: Team Members ── */}
           {step === 3 && (
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '36px 40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(79,70,229,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={18} color="#4F46E5" />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>Invite Your Team</h2>
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>Invite your team to Levl1</p>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>Invite Your Team</h2>
+                  <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>Invite your team to Levl1</p>
                 </div>
               </div>
 
               {/* Role legend */}
-              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: '#64748B', lineHeight: 1.8 }}>
-                <strong style={{ color: '#475569' }}>Roles:</strong>{' '}
+              <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: 'var(--lv-text-muted)', lineHeight: 1.8 }}>
+                <strong style={{ color: 'var(--lv-text-body)' }}>Roles:</strong>{' '}
                 <strong>Admin</strong> — full access incl. billing &nbsp;·&nbsp;
                 <strong>Recruiter</strong> — create positions, manage candidates &nbsp;·&nbsp;
                 <strong>Viewer</strong> — view reports only
@@ -384,45 +378,45 @@ export default function OnboardingPage() {
               {/* Member rows */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                 {/* Header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 120px 36px', gap: 8, paddingBottom: 4 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr) minmax(96px, 120px) 40px', gap: 8, paddingBottom: 4 }}>
                   {['Name', 'Email', 'Role', ''].map(h => (
-                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
+                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
                   ))}
                 </div>
                 {members.map((m, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 120px 36px', gap: 8, alignItems: 'center' }}>
-                    <input style={INPUT} value={m.name} onChange={e => updateMember(i, 'name', e.target.value)} placeholder="Priya Sharma" />
-                    <input style={INPUT} type="email" value={m.email} onChange={e => updateMember(i, 'email', e.target.value)} placeholder="priya@agency.in" />
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr) minmax(96px, 120px) 40px', gap: 8, alignItems: 'center' }}>
+                    <input className="lv-input" aria-label={`Team member ${i + 1} name`} value={m.name} onChange={e => updateMember(i, 'name', e.target.value)} placeholder="Priya Sharma" />
+                    <input className="lv-input" aria-label={`Team member ${i + 1} email`} type="email" value={m.email} onChange={e => updateMember(i, 'email', e.target.value)} placeholder="priya@agency.in" />
                     <select value={m.role} onChange={e => updateMember(i, 'role', e.target.value as MemberRole)}
-                      style={{ ...INPUT, cursor: 'pointer', paddingRight: 8 }}>
+                      className="lv-select" aria-label={`Team member ${i + 1} role`}>
                       <option value="recruiter">Recruiter</option>
                       <option value="admin">Admin</option>
                       <option value="viewer">Viewer</option>
                     </select>
                     <button type="button" onClick={() => removeMember(i)} disabled={members.length === 1}
-                      style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: members.length === 1 ? 'not-allowed' : 'pointer', opacity: members.length === 1 ? 0.4 : 1, flexShrink: 0 }}>
-                      <Trash2 size={14} />
+                      className="lv-btn lv-btn--ghost lv-btn--icon" aria-label={`Remove team member ${i + 1}`}>
+                      <Trash2 size={15} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
               </div>
 
               <button type="button" onClick={addMember}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px dashed #C7D2FE', background: 'rgba(79,70,229,0.04)', color: '#4F46E5', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', marginBottom: 24 }}>
-                <Plus size={14} /> Add another team member
+                className="lv-btn lv-btn--secondary lv-btn--sm" style={{ borderStyle: 'dashed', marginBottom: 24 }}>
+                <Plus size={14} aria-hidden="true" /> Add another team member
               </button>
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" onClick={() => setStep(2)}
-                  style={{ padding: '12px 20px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  className="lv-btn lv-btn--secondary" style={{ height: 48 }}>
                   Back
                 </button>
                 <button type="button" onClick={() => setStep(4)}
-                  style={{ padding: '12px 18px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#94A3B8', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  className="lv-btn lv-btn--tertiary" style={{ height: 48 }}>
                   Skip for now
                 </button>
                 <button type="button" onClick={saveStep3} disabled={inviting}
-                  style={{ flex: 1, background: inviting ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: inviting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: inviting ? 'none' : '0 4px 14px rgba(124,58,237,0.30)', fontFamily: 'var(--font-sans)' }}>
+                  className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 15 }}>
                   {inviting ? 'Sending…' : <><span>Send Invites & Continue</span><ChevronRight size={16} /></>}
                 </button>
               </div>
@@ -431,40 +425,40 @@ export default function OnboardingPage() {
 
           {/* ── STEP 4: Payment Setup ── */}
           {step === 4 && (
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '36px 40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CreditCard size={18} color="#10B981" />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CreditCard size={18} color="var(--lv-success)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>Start Your Free Trial</h2>
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>No payment needed right now</p>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>Start Your Free Trial</h2>
+                  <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>No payment needed right now</p>
                 </div>
               </div>
 
               {/* Trial perks */}
-              <div style={{ background: 'linear-gradient(135deg, rgba(79,70,229,0.04) 0%, rgba(124,58,237,0.04) 100%)', border: '1px solid rgba(79,70,229,0.12)', borderRadius: 12, padding: '20px 24px', marginBottom: 28 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', marginBottom: 12 }}>Trial includes:</div>
+              <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 4%, transparent) 100%)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 12, padding: '20px 24px', marginBottom: 28 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-brand)', marginBottom: 12 }}>Trial includes:</div>
                 {[
                   '✓  5 AI interviews',
                   '✓  14 days full access',
                   '✓  All features — question generation, reports, approvals',
                 ].map(p => (
-                  <div key={p} style={{ fontSize: 14, color: '#475569', fontWeight: 500, marginBottom: 8 }}>{p}</div>
+                  <div key={p} style={{ fontSize: 14, color: 'var(--lv-text-body)', fontWeight: 500, marginBottom: 8 }}>{p}</div>
                 ))}
-                <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 8, fontSize: 13, color: '#059669', fontWeight: 600 }}>
+                <div style={{ marginTop: 16, padding: '10px 14px', background: 'color-mix(in srgb, var(--lv-success) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 15%, transparent)', borderRadius: 8, fontSize: 13, color: 'var(--lv-success)', fontWeight: 600 }}>
                   Your trial ends: {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
               </div>
 
               <button onClick={completeOnboarding} disabled={saving}
-                style={{ width: '100%', background: saving ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '15px 20px', fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: saving ? 'none' : '0 4px 14px rgba(124,58,237,0.30)', fontFamily: 'var(--font-sans)' }}>
+                className="lv-btn lv-btn--primary" style={{ width: '100%', height: 48, fontSize: 15 }}>
                 {saving ? 'Setting up…' : <><span>Complete Setup & Go to Dashboard</span><ChevronRight size={16} /></>}
               </button>
 
-              <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#94A3B8' }}>
+              <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--lv-text-muted)' }}>
                 Want to set up billing now?{' '}
-                <button onClick={() => toast('Billing setup available in Settings after dashboard')} style={{ color: '#7C3AED', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-sans)', fontSize: 13, padding: 0 }}>
+                <button type="button" className="lv-btn lv-btn--tertiary lv-btn--sm" onClick={() => toast('Billing setup available in Settings after dashboard')}>
                   Add payment method
                 </button>
               </div>
@@ -473,6 +467,7 @@ export default function OnboardingPage() {
 
         </div>
       </div>
+      <style>{`@media (max-width: 480px) { .ob-step-label { display: none; } }`}</style>
     </div>
   )
 }

@@ -3,8 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
+import { Zap, ArrowRight, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Button, Field, Input, Alert } from '@/components/screen/ui'
+
+// Design-System Pass 3 (group 6b): form on canonical fields/buttons; the
+// two-step passwordless signup flow is unchanged.
 
 const PERKS = [
   '5 free AI interviews — no credit card',
@@ -12,13 +16,6 @@ const PERKS = [
   'AI question generation per role',
   'Evaluation reports in minutes',
 ]
-
-const INPUT: React.CSSProperties = {
-  width: '100%', padding: '10px 14px', borderRadius: 8,
-  border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)',
-  outline: 'none', boxSizing: 'border-box', background: '#F8FAFC',
-  transition: 'border-color 0.15s',
-}
 
 export default function SignupPage() {
   const router = useRouter()
@@ -75,89 +72,66 @@ export default function SignupPage() {
         <div style={{ maxWidth: 400, width: '100%' }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(124,58,237,0.25)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px color-mix(in srgb, var(--lv-accent) 25%, transparent)' }}>
               <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--lv-brand)' }}>Levl1</span>
           </Link>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: '#1E293B', letterSpacing: '-0.025em', marginBottom: 6 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--lv-text)', letterSpacing: '-0.025em', marginBottom: 6 }}>
             Start your free trial
           </h1>
-          <p style={{ fontSize: 14, color: '#94A3B8', marginBottom: 32, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', marginBottom: 32, lineHeight: 1.5 }}>
             {step === 'details' ? '5 interviews · 14 days · No credit card required' : `We sent a 6-digit code to ${email}. Enter it to create your account.`}
           </p>
 
           {step === 'code' ? (
             <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>6-digit code</label>
-                <input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ ...INPUT, letterSpacing: 8, fontSize: 20, textAlign: 'center', fontWeight: 700 }}
+              <Field label="6-digit code">
+                <Input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ letterSpacing: 8, fontSize: 20, textAlign: 'center', fontWeight: 700, height: 52 }}
                   value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" />
-              </div>
-              {error && (
-                <p style={{ fontSize: 13, color: '#DC2626', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '10px 14px' }}>{error}</p>
-              )}
-              <button type="submit" disabled={loading}
-                style={{ background: loading ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.30)' }}>
-                {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Creating your account…</> : <><span>Verify &amp; create account</span><ArrowRight size={16} /></>}
-              </button>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <button type="button" onClick={() => { setStep('details'); setCode(''); setError('') }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: 0 }}>← Edit details</button>
-                <button type="button" disabled={loading} onClick={() => { setCode(''); void submit(false) }} style={{ background: 'none', border: 'none', color: '#7C3AED', cursor: 'pointer', fontWeight: 600, padding: 0 }}>Resend code</button>
+              </Field>
+              {error && <Alert tone="danger">{error}</Alert>}
+              <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 15, marginTop: 4 }}>
+                {loading ? 'Creating your account…' : 'Verify & create account'}
+              </Button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <Button variant="tertiary" size="sm" onClick={() => { setStep('details'); setCode(''); setError('') }}>← Edit details</Button>
+                <Button variant="tertiary" size="sm" disabled={loading} onClick={() => { setCode(''); void submit(false) }}>Resend code</Button>
               </div>
             </form>
           ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Agency / Company name *</label>
-              <input required style={INPUT} value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder="HireEdge Recruitment" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Your name *</label>
-              <input required style={INPUT} value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 5 }}>Work email *</label>
-              <input required type="email" style={INPUT} value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@hireedge.in" autoComplete="email" />
-              <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Use your company email — personal addresses (Gmail, Outlook, etc.) aren&apos;t supported. We&apos;ll email you a code to verify it.</div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 5 }}>Phone (optional)</label>
-              <input style={INPUT} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" type="tel" />
-            </div>
+            <Field label="Agency / Company name" required>
+              <Input value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder="HireEdge Recruitment" autoComplete="organization" />
+            </Field>
+            <Field label="Your name" required>
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith" autoComplete="name" />
+            </Field>
+            <Field label="Work email" required hint={<>Use your company email — personal addresses (Gmail, Outlook, etc.) aren&apos;t supported. We&apos;ll email you a code to verify it.</>}>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@hireedge.in" autoComplete="email" />
+            </Field>
+            <Field label="Phone (optional)">
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" type="tel" autoComplete="tel" />
+            </Field>
 
-            {error && (
-              <p style={{ fontSize: 13, color: '#DC2626', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '10px 14px' }}>
-                {error}
-              </p>
-            )}
+            {error && <Alert tone="danger">{error}</Alert>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                background: loading ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-                color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px',
-                fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 8, marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.30)',
-              }}
-            >
-              {loading ? 'Sending your code…' : <><span>Continue</span><ArrowRight size={16} /></>}
-            </button>
+            <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 15, marginTop: 4 }}>
+              {loading ? 'Sending your code…' : 'Continue'}
+            </Button>
 
-            <p style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
               By signing up you agree to our{' '}
-              <Link href="/terms" style={{ color: '#7C3AED', textDecoration: 'none' }}>Terms</Link> and{' '}
-              <Link href="/privacy" style={{ color: '#7C3AED', textDecoration: 'none' }}>Privacy Policy</Link>.
+              <Link href="/terms" style={{ color: 'var(--lv-brand-text)', textDecoration: 'underline' }}>Terms</Link> and{' '}
+              <Link href="/privacy" style={{ color: 'var(--lv-brand-text)', textDecoration: 'underline' }}>Privacy Policy</Link>.
             </p>
           </form>
           )}
 
-          <p style={{ textAlign: 'center', fontSize: 13, color: '#94A3B8', marginTop: 24 }}>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--lv-text-muted)', marginTop: 24 }}>
             Already have an account?{' '}
-            <Link href="/interviews/login" style={{ color: '#7C3AED', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
+            <Link href="/interviews/login" style={{ color: 'var(--lv-brand-text)', fontWeight: 600 }}>Sign in</Link>
           </p>
         </div>
       </div>
@@ -165,7 +139,7 @@ export default function SignupPage() {
       {/* ── RIGHT: Value prop panel ── */}
       <div
         className="login-right-panel"
-        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', position: 'relative', overflow: 'hidden' }}
+        style={{ background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', position: 'relative', overflow: 'hidden' }}
       >
         {/* Decorative circles */}
         <div style={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
