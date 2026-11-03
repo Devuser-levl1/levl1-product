@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
         trialLimit:      true,
         subscriptionStatus: true,
         currentPeriodEnd:   true,
+        accountType:        true,
+        onboardingComplete: true,
       },
     })
     if (!agency) {
@@ -49,6 +51,10 @@ export async function GET(req: NextRequest) {
         trialDaysLeft,
         subscriptionStatus: agency.subscriptionStatus,
         currentPeriodEnd:   agency.currentPeriodEnd?.toISOString() ?? null,
+        // null = not chosen yet (existing account) — UI treats it as 'agency'
+        // and shows the one-time prompt.
+        accountType:        agency.accountType ?? null,
+        onboardingComplete: agency.onboardingComplete,
       },
     })
   } catch (err: unknown) {

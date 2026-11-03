@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight } from 'lucide-react'
+import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase } from 'lucide-react'
+import { ACCOUNT_TYPES, type AccountType } from '@/lib/screen/account-type'
 import toast from 'react-hot-toast'
 
 const INPUT: React.CSSProperties = {
@@ -13,7 +14,6 @@ const INPUT: React.CSSProperties = {
 }
 
 const TEAM_SIZES = ['1-5', '6-20', '21-50', '50+']
-const PRIMARY_SERVICES = ['RPO', 'Staffing', 'Executive Search', 'Mixed']
 
 type MemberRole = 'admin' | 'recruiter' | 'viewer'
 interface TeamMemberRow { name: string; email: string; role: MemberRole }
@@ -32,7 +32,7 @@ function StepDot({ n, active, done }: { n: number; active: boolean; done: boolea
 }
 
 const STEPS = [
-  { n: 1, label: 'Agency Details',  icon: Building2  },
+  { n: 1, label: 'Organization',    icon: Building2  },
   { n: 2, label: 'GST & Business',  icon: FileText   },
   { n: 3, label: 'Team Members',    icon: Users      },
   { n: 4, label: 'Payment Setup',   icon: CreditCard },
@@ -48,7 +48,7 @@ export default function OnboardingPage() {
   const [website,       setWebsite]       = useState('')
   const [foundedYear,   setFoundedYear]   = useState('')
   const [teamSize,      setTeamSize]      = useState('')
-  const [primaryService,setPrimaryService]= useState('')
+  const [accountType,   setAccountType]   = useState<AccountType | null>(null)
   const [hqCity,        setHqCity]        = useState('')
 
   // Step 2 — GST & Business
@@ -80,13 +80,14 @@ export default function OnboardingPage() {
   // ── Save Step 1 ──────────────────────────────────────────────────────────
   async function saveStep1(e: React.FormEvent) {
     e.preventDefault()
-    if (!teamSize || !primaryService) { toast.error('Please select team size and primary service'); return }
+    if (!accountType) { toast.error('Please choose agency or company'); return }
+    if (!teamSize) { toast.error('Please select your team size'); return }
     setSaving(true)
     try {
       await fetch('/api/agency/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: 1, agencyName, website, foundedYear: foundedYear ? parseInt(foundedYear) : undefined, teamSize, primaryService, city: hqCity }),
+        body: JSON.stringify({ step: 1, agencyName, website, foundedYear: foundedYear ? parseInt(foundedYear) : undefined, teamSize, accountType, city: hqCity }),
       })
       setStep(2)
     } catch { toast.error('Failed to save — please retry') }
@@ -150,7 +151,7 @@ export default function OnboardingPage() {
           <Zap size={14} color="white" fill="white" />
         </div>
         <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
-        <span style={{ marginLeft: 8, fontSize: 13, color: '#94A3B8' }}>· Agency Setup</span>
+        <span style={{ marginLeft: 8, fontSize: 13, color: '#94A3B8' }}>· Account Setup</span>
       </header>
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px 80px' }}>
@@ -179,16 +180,39 @@ export default function OnboardingPage() {
                   <Building2 size={18} color="#4F46E5" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>Agency Details</h2>
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>Tell us about your recruitment agency</p>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#1E293B', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
+                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>{accountType === 'company' ? 'Tell us about your company' : accountType === 'agency' ? 'Tell us about your recruitment agency' : 'First — how do you hire?'}</p>
                 </div>
               </div>
 
               <form onSubmit={saveStep1} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {/* Account type — drives which fields job setup shows later */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>How do you hire? *</label>
+                  <div role="radiogroup" aria-label="Account type" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    {ACCOUNT_TYPES.map(t => {
+                      const on = accountType === t.value
+                      const Icon = t.value === 'agency' ? Briefcase : Building2
+                      return (
+                        <button key={t.value} type="button" role="radio" aria-checked={on} onClick={() => setAccountType(t.value)}
+                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? '#4F46E5' : '#E2E8F0'}`, background: on ? 'rgba(79,70,229,0.06)' : '#fff', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-sans)' }}>
+                          <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? '#4F46E5' : 'rgba(79,70,229,0.08)' }}>
+                            <Icon size={16} color={on ? '#fff' : '#4F46E5'} />
+                          </span>
+                          <span>
+                            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? '#4F46E5' : '#1E293B' }}>{t.label}</span>
+                            <span style={{ display: 'block', fontSize: 12, color: '#64748B', marginTop: 2, lineHeight: 1.4 }}>{t.desc}</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Agency / Company Name *</label>
-                    <input required style={INPUT} value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder="HireEdge Recruitment Pvt Ltd" />
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>{accountType === 'company' ? 'Company Name *' : accountType === 'agency' ? 'Agency Name *' : 'Agency / Company Name *'}</label>
+                    <input required style={INPUT} value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder={accountType === 'company' ? 'FinEdge Technologies Pvt Ltd' : 'HireEdge Recruitment Pvt Ltd'} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Website</label>
@@ -211,18 +235,6 @@ export default function OnboardingPage() {
                       <button key={ts} type="button" onClick={() => setTeamSize(ts)}
                         style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${teamSize === ts ? '#4F46E5' : '#E2E8F0'}`, background: teamSize === ts ? 'rgba(79,70,229,0.06)' : '#fff', fontSize: 13, fontWeight: 600, color: teamSize === ts ? '#4F46E5' : '#64748B', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-sans)' }}>
                         {ts}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Primary Service</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                    {PRIMARY_SERVICES.map(ps => (
-                      <button key={ps} type="button" onClick={() => setPrimaryService(ps)}
-                        style={{ padding: '10px 16px', borderRadius: 8, border: `2px solid ${primaryService === ps ? '#4F46E5' : '#E2E8F0'}`, background: primaryService === ps ? 'rgba(79,70,229,0.06)' : '#fff', fontSize: 13, fontWeight: 600, color: primaryService === ps ? '#4F46E5' : '#64748B', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-sans)' }}>
-                        {ps}
                       </button>
                     ))}
                   </div>

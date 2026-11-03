@@ -11,6 +11,7 @@ import ClientsPage from "./clients/ClientsPage";
 import CandidatesPage from "./candidates/CandidatesPage";
 import InterviewsPage from "./interviews/InterviewsPage";
 import ReportsPage from "./reports/ReportsPage";
+import { AccountTypePrompt } from "./AccountTypePrompt";
 import { ControlRoomPage } from "./control-room/ControlRoomPage";
 import AnalyticsPage from "./analytics/AnalyticsPage";
 import SettingsPage from "./settings/SettingsPage";
@@ -79,6 +80,7 @@ export default function DashboardShell() {
       >
         <Header />
         <div style={{ flex: 1 }}>
+          <AccountTypePrompt />
           {renderPage()}
         </div>
       </main>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { isAccountType } from '@/lib/screen/account-type'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
       if (data.website)       updateData.website        = data.website
       if (data.foundedYear)   updateData.foundedYear    = data.foundedYear
       if (data.teamSize)      updateData.teamSize       = data.teamSize
-      if (data.primaryService)updateData.primaryService = data.primaryService
+      // "Primary service" retired → replaced by the account type choice.
+      if (isAccountType(data.accountType)) updateData.accountType = data.accountType
       if (data.city)          updateData.city           = data.city
     }
 

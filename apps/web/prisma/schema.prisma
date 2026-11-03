@@ -52,7 +52,12 @@ model Agency {
   panNumber      String?
   foundedYear    Int?
   teamSize       String?
-  primaryService String?
+  primaryService String?  // retired from onboarding (kept so existing data isn't lost)
+  // Screen account type: 'agency' (hires on behalf of client companies) |
+  // 'company' (in-house / enterprise team). null = existing account that
+  // hasn't chosen yet → treated as 'agency' (the original, all-fields form)
+  // and asked once on the dashboard. See lib/screen/account-type.ts.
+  accountType    String?
 
   // Registered address
   registeredAddress String?

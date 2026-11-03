@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { isAccountType } from '@/lib/screen/account-type'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const agency = await prisma.agency.findUnique({
       where: { id: session.agencyId },
-      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true, voiceAccent: true, resendDomainVerified: true },
+      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true, voiceAccent: true, resendDomainVerified: true, accountType: true },
     })
     return NextResponse.json(agency ?? {})
   } catch {
@@ -26,17 +27,22 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json()
     const ALLOWED = ['name', 'website', 'senderName', 'senderEmail', 'brandColor', 'logoUrl'] as const
-    const data: Partial<Record<typeof ALLOWED[number], string>> = {}
+    const data: Partial<Record<typeof ALLOWED[number] | 'accountType', string>> = {}
     for (const key of ALLOWED) {
       if (key in body && typeof body[key] === 'string') {
         data[key] = body[key] as string
       }
     }
+    // Agency vs in-house company — drives the job-setup form (validated enum).
+    if ('accountType' in body) {
+      if (!isAccountType(body.accountType)) return NextResponse.json({ error: 'accountType must be "agency" or "company"' }, { status: 400 })
+      data.accountType = body.accountType
+    }
 
     const agency = await prisma.agency.update({
       where: { id: session.agencyId },
       data,
-      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true },
+      select: { id: true, name: true, website: true, senderName: true, senderEmail: true, brandColor: true, logoUrl: true, accountType: true },
     })
     return NextResponse.json(agency)
   } catch {

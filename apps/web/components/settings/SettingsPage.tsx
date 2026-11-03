@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus, Mail } from "lucide-react";
 import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
+import { ACCOUNT_TYPES, isAccountType, type AccountType } from "@/lib/screen/account-type";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
@@ -130,6 +131,7 @@ export default function SettingsPage() {
   const [voiceAccent,    setVoiceAccent]    = useState("american");
   const [previewLoading, setPreviewLoading] = useState<string | null>(null);
   const [savingVoice,    setSavingVoice]    = useState(false);
+  const [accountType,    setAccountType]    = useState<AccountType | null>(null);
 
   // Load agency settings on mount
   useEffect(() => {
@@ -144,6 +146,7 @@ export default function SettingsPage() {
         if (data.resendDomainVerified) setDomainVerified(true)
         if (data.logoUrl)    setLogoUrl(data.logoUrl)
         if (data.brandColor) setBrandColor(data.brandColor)
+        if (isAccountType(data.accountType)) setAccountType(data.accountType)
       })
       .catch(() => {});
   }, []);
@@ -275,7 +278,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/agency/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, website: agencyWebsite, senderName, senderEmail }),
+        body: JSON.stringify({ name: agencyName, website: agencyWebsite, senderName, senderEmail, ...(accountType ? { accountType } : {}) }),
       })
       if (res.ok) {
         toast.success('Settings saved')
@@ -413,6 +416,12 @@ export default function SettingsPage() {
         </div>
         <Field label="Website">
           <input className="input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
+        </Field>
+        <Field label="Account type">
+          <select className="input" value={accountType ?? ""} onChange={(e) => setAccountType(isAccountType(e.target.value) ? e.target.value : null)}>
+            {accountType === null && <option value="">Not set — job setup asks for client details</option>}
+            {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
+          </select>
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Field label="Sender Name (for emails)">

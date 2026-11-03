@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useEffect, useState, KeyboardEvent } from "react";
 import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
+import { effectiveAccountType, type AccountType } from "@/lib/screen/account-type";
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
@@ -240,6 +241,20 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // ── Step 0: Basic Info ─────────────────────────────────────────────────
   const [positionTitle,           setPositionTitle]           = useState("");
   const [company,                 setCompany]                 = useState("");
+  // Account type (agency vs in-house company) — decides whether we ask for a
+  // client company + client contacts, or use the account's own org + one
+  // in-house hiring contact. Unknown/legacy accounts behave as 'agency'.
+  const [acct, setAcct] = useState<{ type: AccountType; orgName: string } | null>(null);
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d?.agency) setAcct({ type: effectiveAccountType(d.agency.accountType), orgName: d.agency.name ?? "" });
+    }).catch(() => {});
+  }, []);
+  const isCompany = acct?.type === "company";
+  // In-house: the hiring company IS the account — fill it, don't ask.
+  useEffect(() => { if (isCompany && acct?.orgName) setCompany(acct.orgName); }, [isCompany, acct?.orgName]);
+  // In-house: one hiring contact handles every approval (JD, rubric, questions).
+  const setHiringContact = (v: string) => { setTechLeadEmail(v); setHrEmail(v); setClientManagerEmail(v); };
   const [department,              setDepartment]              = useState("");
   const [roleType,                setRoleType]                = useState("Individual Contributor");
   const [experienceLevel,         setExperienceLevel]         = useState("5–8 years");
@@ -684,9 +699,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <Field label="Position Title *">
                   <input className="input" placeholder="e.g. Senior Java Engineer" value={positionTitle} onChange={(e) => setPositionTitle(e.target.value)} />
                 </Field>
-                <Field label="Company Name *">
-                  <input className="input" placeholder="e.g. FinEdge Technologies" value={company} onChange={(e) => setCompany(e.target.value)} />
-                </Field>
+                {!isCompany && (
+                  <Field label="Client Company *" hint="The company you're hiring for">
+                    <input className="input" placeholder="e.g. FinEdge Technologies" value={company} onChange={(e) => setCompany(e.target.value)} />
+                  </Field>
+                )}
                 <Field label="Department">
                   <input className="input" placeholder="e.g. Engineering, Product" value={department} onChange={(e) => setDepartment(e.target.value)} />
                 </Field>
@@ -720,20 +737,28 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <Toggle checked={hasHiringResponsibility} onChange={setHasHiringResponsibility} />
               </div>
 
-              {/* Contact emails */}
+              {/* Contact emails — differ by account type */}
               <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Contact Emails</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <Field label="Tech Lead Email" hint="For question approval">
-                    <input className="input" type="email" placeholder="techteam@client.com" value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
-                  </Field>
-                  <Field label="HR Contact Email" hint="For behavioral question approval">
-                    <input className="input" type="email" placeholder="hr@client.com" value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
-                  </Field>
-                  <Field label="Client Manager Email" hint="For JD approval">
-                    <input className="input" type="email" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
-                  </Field>
-                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{isCompany ? "Hiring Contact" : "Client Contacts"}</div>
+                {isCompany ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <Field label="Hiring contact email" hint="Approves the JD, rubric and interview questions">
+                      <input className="input" type="email" placeholder="hiring.manager@yourcompany.com" value={clientManagerEmail} onChange={(e) => setHiringContact(e.target.value)} />
+                    </Field>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <Field label="Client hiring manager email" hint="Approves the JD and rubric">
+                      <input className="input" type="email" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
+                    </Field>
+                    <Field label="Client tech lead email" hint="Approves technical questions">
+                      <input className="input" type="email" placeholder="techlead@client.com" value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
+                    </Field>
+                    <Field label="Client HR email" hint="Approves behavioral questions">
+                      <input className="input" type="email" placeholder="hr@client.com" value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
+                    </Field>
+                  </div>
+                )}
               </div>
 
               {/* Voice accent */}
@@ -1069,7 +1094,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <div style={{ marginTop: 16, padding: "12px", background: "#F8FAFC", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
                   <input type="checkbox" id="send-rubric" checked={sendRubricToClient} onChange={(e) => { setSendRubricToClient(e.target.checked); setRubricApproved(e.target.checked); }} style={{ accentColor: "#7C3AED" }} />
                   <label htmlFor="send-rubric" style={{ fontSize: 12, color: "#475569", cursor: "pointer" }}>
-                    Send rubric to client for approval before interviews begin
+                    Send rubric to {isCompany ? "your hiring contact" : "the client"} for approval before interviews begin
                     {clientManagerEmail && <span style={{ color: "#94A3B8" }}> ({clientManagerEmail})</span>}
                   </label>
                 </div>
@@ -1082,24 +1107,24 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
             <>
               <div>
                 <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>JD Approval</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Send the job description to your client manager for review.</p>
+                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Send the job description to your {isCompany ? "hiring contact" : "client hiring manager"} for review.</p>
               </div>
               <div className="card" style={{ maxHeight: 300, overflowY: "auto" }}>
                 <pre style={{ fontSize: 12, color: "#475569", lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "var(--font-sans)", margin: 0 }}>{finalJD}</pre>
               </div>
               {!jdApproved ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <Field label="Client Manager Email">
+                  <Field label={isCompany ? "Hiring contact email" : "Client hiring manager email"}>
                     <div style={{ display: "flex", gap: 10 }}>
-                      <input className="input" type="email" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} style={{ flex: 1 }} placeholder="manager@client.com" />
-                      <button type="button" className="btn-primary" onClick={() => { setJdSent(true); toast.success("JD sent to client manager"); }} disabled={jdSent || !clientManagerEmail} style={{ flexShrink: 0 }}>
+                      <input className="input" type="email" value={clientManagerEmail} onChange={(e) => (isCompany ? setHiringContact(e.target.value) : setClientManagerEmail(e.target.value))} style={{ flex: 1 }} placeholder={isCompany ? "hiring.manager@yourcompany.com" : "manager@client.com"} />
+                      <button type="button" className="btn-primary" onClick={() => { setJdSent(true); toast.success(isCompany ? "JD sent to your hiring contact" : "JD sent to client hiring manager"); }} disabled={jdSent || !clientManagerEmail} style={{ flexShrink: 0 }}>
                         <Mail size={14} /> {jdSent ? "Sent" : "Send for Approval"}
                       </button>
                     </div>
                   </Field>
                   {jdSent && (
                     <div style={{ padding: "16px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#D97706", fontSize: 13, fontWeight: 600 }}><AlertCircle size={15} /> Waiting for client manager approval…</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#D97706", fontSize: 13, fontWeight: 600 }}><AlertCircle size={15} /> Waiting for {isCompany ? "hiring contact" : "client"} approval…</div>
                       <button type="button" style={{ alignSelf: "flex-start", padding: "7px 16px", fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: "pointer", border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.08)", color: "#059669", fontFamily: "var(--font-sans)" }} onClick={() => { setJdApproved(true); setApprovedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); toast.success("JD approved!"); }}>
                         <Check size={12} style={{ display: "inline", marginRight: 4 }} /> Simulate Approval (Demo)
                       </button>
