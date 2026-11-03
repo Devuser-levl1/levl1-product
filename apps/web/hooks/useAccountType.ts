@@ -20,7 +20,7 @@ export function loadAccount(force = false): Promise<void> {
   inflight = fetch('/api/auth/me', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
-      if (d?.agency) setAccount({ type: isAccountType(d.agency.accountType) ? d.agency.accountType : null, orgName: d.agency.name ?? '' })
+      if (d?.agency) setAccount({ type: isAccountType(d.agency.accountType) ? d.agency.accountType : null, orgName: d.agency.name ?? '', user: d.user ? { name: d.user.name ?? '', email: d.user.email ?? '' } : undefined })
     })
     .catch(() => {})
     .finally(() => { inflight = null })

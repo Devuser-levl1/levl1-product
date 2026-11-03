@@ -19,7 +19,7 @@ export function useDataLoader() {
         }
         // Seed the single source of truth for agency-vs-company UI.
         const d = r.ok ? await r.json().catch(() => null) : null
-        if (d?.agency) useAppStore.getState().setAccount({ type: d.agency.accountType === 'agency' || d.agency.accountType === 'company' ? d.agency.accountType : null, orgName: d.agency.name ?? '' })
+        if (d?.agency) useAppStore.getState().setAccount({ type: d.agency.accountType === 'agency' || d.agency.accountType === 'company' ? d.agency.accountType : null, orgName: d.agency.name ?? '', user: d.user ? { name: d.user.name ?? '', email: d.user.email ?? '' } : undefined })
       })
       .catch(() => { /* offline — don't bounce */ })
   }, [])

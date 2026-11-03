@@ -55,6 +55,9 @@ export default function Sidebar() {
   // Clients is an agency concept — hidden for in-house (company) accounts.
   // Reads the live account type, so a Settings change applies immediately.
   const { isCompany } = useAccountType();
+  // Signed-in user for the footer (was hard-coded to one person's email).
+  const accountUser = useAppStore((s) => s.account?.user);
+  const userInitials = (accountUser?.name || accountUser?.email || "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
   const navMain = isCompany ? NAV_MAIN.filter((n) => n.section !== "clients") : NAV_MAIN;
 
   return (
@@ -173,22 +176,24 @@ export default function Sidebar() {
             justifyContent: sidebarCollapsed ? "center" : "flex-start",
             gap: 8,
             padding: sidebarCollapsed ? "9px" : "9px 12px",
-            borderRadius: 8,
-            background: "rgba(124,58,237,0.18)",
-            border: "1px solid rgba(124,58,237,0.30)",
-            color: "#C4B5FD",
+            borderRadius: 10,
+            minHeight: 40,
+            background: "#FFFFFF",            /* the primary action on the brand panel */
+            border: "1px solid #FFFFFF",
+            color: "var(--lv-brand-text)",
             cursor: "pointer",
             fontSize: 13,
-            fontWeight: 600,
+            fontWeight: 700,
             fontFamily: "var(--font-sans)",
+            boxShadow: "0 2px 8px rgba(15,23,42,0.18)",
             transition: "all 0.15s",
             marginBottom: 10,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(124,58,237,0.28)";
+            e.currentTarget.style.background = "var(--lv-brand-soft)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(124,58,237,0.18)";
+            e.currentTarget.style.background = "#FFFFFF";
           }}
         >
           <Plus size={16} style={{ flexShrink: 0 }} />
@@ -382,6 +387,7 @@ export default function Sidebar() {
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
             >
               <div
+                aria-hidden="true"
                 style={{
                   width: 30,
                   height: 30,
@@ -396,7 +402,7 @@ export default function Sidebar() {
                   flexShrink: 0,
                 }}
               >
-                R
+                {userInitials}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
@@ -410,12 +416,12 @@ export default function Sidebar() {
                     fontFamily: "var(--font-sans)",
                   }}
                 >
-                  Recruiter
+                  {accountUser?.name || "Your account"}
                 </div>
                 <div
                   style={{
                     fontSize: 11,
-                    color: "rgba(255,255,255,0.40)",
+                    color: "rgba(255,255,255,0.72)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -423,7 +429,7 @@ export default function Sidebar() {
                     fontFamily: "var(--font-sans)",
                   }}
                 >
-                  abma3005@gmail.com
+                  {accountUser?.email || "Settings"}
                 </div>
               </div>
             </motion.button>

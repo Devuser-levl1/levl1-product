@@ -7,6 +7,7 @@ import { useAppStore } from "@/store/appStore";
 import toast from "react-hot-toast";
 import TrialBanner from "@/components/ui/TrialBanner";
 import UpgradeWallModal from "@/components/ui/UpgradeWallModal";
+import { lv } from "@/lib/screen/ui/tokens";
 
 export default function Header() {
   const router = useRouter();
@@ -115,14 +116,15 @@ export default function Header() {
     <>
       <UpgradeWallModal />
     <header
+      className="app-header"
       style={{
-        background: "#fff",
-        borderBottom: "1px solid #E2E8F0",
+        background: lv.surface,
+        borderBottom: `1px solid ${lv.border}`,
         padding: "0 32px",
         position: "sticky",
         top: 0,
         zIndex: 40,
-        boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
+        boxShadow: lv.shadowSm,
       }}
     >
       {/* Trial banner — only shown on trial plan */}
@@ -142,19 +144,19 @@ export default function Header() {
             alignItems: "center",
             gap: 10,
             padding: "9px 14px",
-            borderRadius: 9,
-            border: "1px solid #E2E8F0",
-            background: "#F8FAFC",
+            borderRadius: 10,
+            border: `1px solid ${lv.border}`,
+            background: lv.surfaceSunken,
             cursor: "pointer",
             fontFamily: "var(--font-sans)",
             transition: "border-color 0.15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#CBD5E1"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--lv-border-strong)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--lv-border)"; }}
         >
-          <Search size={14} color="#94A3B8" />
-          <span style={{ fontSize: 13, color: "#94A3B8" }}>Search candidates, positions…</span>
-          <span style={{ marginLeft: "auto", fontSize: 11, color: "#CBD5E1", fontFamily: "var(--font-mono)", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 4, padding: "1px 6px" }}>⌘K</span>
+          <Search size={14} color={lv.textMuted} />
+          <span style={{ fontSize: 13, color: lv.textMuted }}>Search candidates, positions…</span>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: lv.textMuted, fontFamily: lv.fontMono, background: lv.surfaceMuted, border: `1px solid ${lv.border}`, borderRadius: 4, padding: "1px 6px" }}>⌘K</span>
         </button>
       </div>
 
@@ -165,23 +167,26 @@ export default function Header() {
         <div ref={notifsRef} style={{ position: "relative" }}>
           <button
             onClick={handleOpenNotifs}
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+            aria-expanded={showNotifs}
+            aria-haspopup="true"
             style={{
-              width: 36, height: 36, borderRadius: 9,
-              background: showNotifs ? "#EEF2FF" : "transparent",
+              width: 40, height: 40, borderRadius: 10,
+              background: showNotifs ? "var(--lv-brand-soft)" : "transparent",
               border: "1px solid transparent",
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", position: "relative", transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = showNotifs ? "#EEF2FF" : "transparent"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-surface-muted)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = showNotifs ? "var(--lv-brand-soft)" : "transparent"; }}
           >
-            <Bell size={17} color={showNotifs ? "#4F46E5" : "#64748B"} />
+            <Bell size={18} color={showNotifs ? lv.brand : lv.textMuted} aria-hidden="true" />
             {unreadCount > 0 && (
-              <span style={{
-                position: "absolute", top: 6, right: 6,
+              <span aria-hidden="true" style={{
+                position: "absolute", top: 8, right: 8,
                 width: 8, height: 8, borderRadius: "50%",
-                background: "#EF4444",
-                border: "1.5px solid #fff",
+                background: lv.danger,
+                border: `1.5px solid ${lv.surface}`,
               }} />
             )}
           </button>
@@ -189,85 +194,88 @@ export default function Header() {
           {showNotifs && (
             <div className="header-notif-panel" style={{
               position: "absolute", top: "calc(100% + 8px)", right: 0,
-              width: 340, background: "#fff",
-              border: "1px solid #E2E8F0", borderRadius: 14,
-              boxShadow: "0 12px 40px rgba(79,70,229,0.12)",
+              width: 340, background: lv.surface,
+              border: `1px solid ${lv.border}`, borderRadius: 14,
+              boxShadow: lv.shadowLg,
               zIndex: 100, overflow: "hidden",
             }}>
-              <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>Notifications</span>
-                <button onClick={handleMarkAllRead} style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>Mark all read</button>
+              <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${lv.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: lv.fontDisplay, fontSize: 14, fontWeight: 700, color: lv.text }}>Notifications</span>
+                <button onClick={handleMarkAllRead} className="lv-btn lv-btn--tertiary lv-btn--sm" style={{ height: 28 }}>Mark all read</button>
               </div>
               {notifications.length === 0 ? (
-                <div style={{ padding: "24px 18px", textAlign: "center", fontSize: 13, color: "#94A3B8" }}>
-                  No notifications yet
+                <div style={{ padding: "24px 18px", textAlign: "center", fontSize: 13, color: lv.textMuted }}>
+                  You&apos;re all caught up — no notifications yet.
                 </div>
               ) : notifications.map((n) => (
                 <div key={n.id} style={{
                   padding: "12px 18px",
-                  borderBottom: "1px solid #F8FAFC",
-                  background: !n.isRead ? "rgba(79,70,229,0.02)" : "#fff",
+                  borderBottom: `1px solid ${lv.border}`,
+                  background: !n.isRead ? "var(--lv-brand-soft)" : "var(--lv-surface)",
                   cursor: "pointer", transition: "background 0.15s",
                   display: "flex", gap: 12, alignItems: "flex-start",
                 }}
                   onClick={() => { if (n.link) router.push(n.link) }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFF"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = !n.isRead ? "rgba(79,70,229,0.02)" : "#fff"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-surface-muted)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = !n.isRead ? "var(--lv-brand-soft)" : "var(--lv-surface)"; }}
                 >
-                  {!n.isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4F46E5", marginTop: 6, flexShrink: 0 }} />}
+                  {!n.isRead && <div aria-label="Unread" style={{ width: 6, height: 6, borderRadius: "50%", background: lv.brand, marginTop: 6, flexShrink: 0 }} />}
                   {n.isRead && <div style={{ width: 6, height: 6, marginTop: 6, flexShrink: 0 }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", marginBottom: 2 }}>{n.title}</div>
-                    <div style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{n.body}</div>
-                    <div style={{ fontSize: 11, color: "#CBD5E1", marginTop: 4 }}>{formatRelativeTime(n.createdAt)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: lv.text, marginBottom: 2 }}>{n.title}</div>
+                    <div style={{ fontSize: 12, color: lv.textBody, lineHeight: 1.5 }}>{n.body}</div>
+                    <div style={{ fontSize: 12, color: lv.textMuted, marginTop: 4 }}>{formatRelativeTime(n.createdAt)}</div>
                   </div>
                 </div>
               ))}
               <div style={{ padding: "10px 18px" }}>
-                <button onClick={() => setShowNotifs(false)} style={{ width: "100%", fontSize: 12, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 0", fontFamily: "var(--font-sans)" }}>View all notifications</button>
+                <button onClick={() => setShowNotifs(false)} className="lv-btn lv-btn--tertiary lv-btn--sm lv-btn--full">View all notifications</button>
               </div>
             </div>
           )}
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 20, background: "#E2E8F0" }} />
+        <div aria-hidden="true" style={{ width: 1, height: 20, background: lv.border }} />
 
         {/* User avatar/name dropdown */}
         <div ref={userRef} style={{ position: "relative" }}>
           <button
             onClick={() => { setShowUser(!showUser); setShowNotifs(false); }}
+            aria-label="Account menu"
+            aria-expanded={showUser}
+            aria-haspopup="menu"
             style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 10px", borderRadius: 9,
-              background: showUser ? "#EEF2FF" : "transparent",
+              display: "flex", alignItems: "center", gap: 8, minHeight: 44,
+              padding: "6px 10px", borderRadius: 10,
+              background: showUser ? "var(--lv-brand-soft)" : "transparent",
               border: "1px solid transparent",
               cursor: "pointer", transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = showUser ? "#EEF2FF" : "transparent"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-surface-muted)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = showUser ? "var(--lv-brand-soft)" : "transparent"; }}
           >
-            <div style={{
+            <div aria-hidden="true" style={{
               width: 30, height: 30, borderRadius: "50%",
-              background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+              background: lv.gradientBrand,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0,
             }}>
               {userInitials || '?'}
             </div>
             <div className="header-user-text" style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", lineHeight: 1.2 }}>{userName || 'User'}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.2 }}>{agencyPlan?.plan === 'trial' ? 'Trial' : 'Admin'}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: lv.text, lineHeight: 1.2 }}>{userName || 'User'}</div>
+              <div style={{ fontSize: 12, color: lv.textMuted, lineHeight: 1.2 }}>{agencyPlan?.plan === 'trial' ? 'Trial' : 'Admin'}</div>
             </div>
-            <ChevronDown className="header-user-chevron" size={13} color="#94A3B8" />
+            <ChevronDown className="header-user-chevron" size={13} color={lv.textMuted} aria-hidden="true" />
           </button>
 
           {showUser && (
-            <div style={{
+            <div role="menu" style={{
               position: "absolute", top: "calc(100% + 8px)", right: 0,
-              width: 220, background: "#fff",
-              border: "1px solid #E2E8F0", borderRadius: 12,
-              boxShadow: "0 8px 32px rgba(79,70,229,0.10)",
+              width: 220, background: lv.surface,
+              border: `1px solid ${lv.border}`, borderRadius: 12,
+              boxShadow: lv.shadowLg,
               zIndex: 100, overflow: "hidden",
               padding: "6px",
             }}>
@@ -277,32 +285,34 @@ export default function Header() {
               ].map(({ icon: Icon, label, action }) => (
                 <button
                   key={label}
+                  role="menuitem"
                   onClick={action}
                   style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 40,
                     padding: "9px 12px", borderRadius: 8,
                     background: "transparent", border: "none", cursor: "pointer",
-                    fontSize: 13, fontWeight: 500, color: "#475569",
+                    fontSize: 13, fontWeight: 500, color: lv.textBody,
                     fontFamily: "var(--font-sans)", transition: "all 0.12s", textAlign: "left",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#F1F5F9"; e.currentTarget.style.color = "#4F46E5"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-surface-muted)"; e.currentTarget.style.color = "var(--lv-text)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--lv-text-body)"; }}
                 >
                   <Icon size={14} />
                   {label}
                 </button>
               ))}
-              <div style={{ height: 1, background: "#F1F5F9", margin: "4px 0" }} />
+              <div role="separator" style={{ height: 1, background: lv.border, margin: "4px 0" }} />
               <button
+                role="menuitem"
                 onClick={handleSignOut}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 40,
                   padding: "9px 12px", borderRadius: 8,
                   background: "transparent", border: "none", cursor: "pointer",
-                  fontSize: 13, fontWeight: 500, color: "#EF4444",
+                  fontSize: 13, fontWeight: 500, color: lv.danger,
                   fontFamily: "var(--font-sans)", transition: "all 0.12s", textAlign: "left",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-danger-soft)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <LogOut size={14} />

@@ -190,3 +190,8 @@
 
 /* Visually hidden but available to assistive tech. */
 .lv-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* ── App shell focus states (Pass 3 · group 1) ────────────────────────────── */
+/* Sidebar sits on the brand panel → white ring; header → standard ring. */
+.app-sidebar button:focus-visible, .app-sidebar a:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }
+.app-header button:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }

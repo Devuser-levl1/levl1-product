@@ -210,8 +210,8 @@ interface AppStore {
   // Account type — THE client-side source of truth for agency vs in-house UI
   // (Clients tab, client-company field, contact labels). undefined = not loaded
   // yet; null = account never chose (behaves as agency). Read via useAccountType().
-  account: { type: 'agency' | 'company' | null; orgName: string } | undefined
-  setAccount: (a: { type: 'agency' | 'company' | null; orgName: string }) => void
+  account: { type: 'agency' | 'company' | null; orgName: string; user?: { name: string; email: string } } | undefined
+  setAccount: (a: { type: 'agency' | 'company' | null; orgName: string; user?: { name: string; email: string } }) => void
   sidebarCollapsed: boolean
   toggleSidebar: () => void
   positions: Position[]
@@ -283,7 +283,8 @@ export const useAppStore = create<AppStore>((set) => ({
   activeSection: 'dashboard',
   setActiveSection: (s) => set({ activeSection: s }),
   account: undefined,
-  setAccount: (a) => set({ account: a }),
+  // Merge so a partial update (e.g. account type from Settings) keeps the user.
+  setAccount: (a) => set((s) => ({ account: { ...s.account, ...a, user: a.user ?? s.account?.user } })),
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   positions: [],         // populated by useDataLoader from DB; never seed with mocks
