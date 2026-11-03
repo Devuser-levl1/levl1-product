@@ -17,25 +17,30 @@ type DbReport = Omit<
   } | null;
 };
 import {
-  BarChart2, Sparkles, Loader2, ChevronRight, Clock,
+  BarChart2, Sparkles, ChevronRight, Clock,
   FileText, Zap,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ExportResults } from "./ExportResults";
+import { Page, PageHeader, Button, Badge, EmptyState, type Tone } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+
+// Design-System Pass 3 (group 5): presentation on the Screen design system.
+// Report loading, manual generation and AI summaries are unchanged.
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
-const REC_CFG = {
-  strong_yes: { label: "Strong Yes", color: "#059669", bg: "rgba(16,185,129,0.10)" },
-  yes:        { label: "Yes",        color: "#4F46E5", bg: "rgba(79,70,229,0.10)"  },
-  maybe:      { label: "Maybe",      color: "#D97706", bg: "rgba(245,158,11,0.10)" },
-  no:         { label: "No",         color: "#DC2626", bg: "rgba(239,68,68,0.10)"  },
-} as const;
+const REC_CFG: Record<string, { label: string; tone: Tone }> = {
+  strong_yes: { label: "Strong Yes", tone: "success" },
+  yes:        { label: "Yes",        tone: "brand"   },
+  maybe:      { label: "Maybe",      tone: "warning" },
+  no:         { label: "No",         tone: "danger"  },
+};
 
 function scoreColor(s: number) {
-  if (s >= 85) return "#10B981";
-  if (s >= 70) return "#4F46E5";
-  if (s >= 55) return "#F59E0B";
-  return "#EF4444";
+  if (s >= 85) return lv.success;
+  if (s >= 70) return lv.brandText;
+  if (s >= 55) return lv.warning;
+  return lv.danger;
 }
 
 function initials(name: string) {
@@ -56,11 +61,11 @@ function Sparkline({ scores }: { scores: number[] }) {
     })
     .join(" ");
   return (
-    <svg width={w} height={h} style={{ overflow: "visible" }}>
+    <svg width={w} height={h} style={{ overflow: "visible" }} role="img" aria-label={`Score trend: ${scores.join(", ")}`}>
       <polyline
         points={pts}
         fill="none"
-        stroke="#7C3AED"
+        stroke={lv.brand}
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -68,7 +73,7 @@ function Sparkline({ scores }: { scores: number[] }) {
       {scores.map((s, i) => {
         const x = (i / (scores.length - 1)) * w;
         const y = h - ((s - min) / range) * h * 0.8 - h * 0.1;
-        return <circle key={i} cx={x} cy={y} r={2.5} fill="#7C3AED" />;
+        return <circle key={i} cx={x} cy={y} r={2.5} fill={lv.brand} />;
       })}
     </svg>
   );
@@ -98,150 +103,71 @@ function PositionCard({
     (c) => c.recommendation === "strong_yes" || c.recommendation === "yes"
   ).length;
 
-  const statusColors: Record<string, { color: string; bg: string }> = {
-    active:           { color: "#059669", bg: "rgba(16,185,129,0.10)" },
-    pending_approval: { color: "#D97706", bg: "rgba(245,158,11,0.10)" },
-    draft:            { color: "#94A3B8", bg: "rgba(148,163,184,0.10)" },
-    paused:           { color: "#F59E0B", bg: "rgba(245,158,11,0.08)" },
-    closed:           { color: "#475569", bg: "rgba(71,85,105,0.08)"  },
+  const statusTone: Record<string, Tone> = {
+    active: "success", pending_approval: "warning", draft: "neutral", paused: "warning", closed: "neutral",
   };
-  const sc = statusColors[position.status] ?? statusColors.draft;
+  const none = completedCandidates.length === 0;
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #E2E8F0",
-        borderRadius: 14,
-        padding: "22px 24px",
-        boxShadow: "0 1px 4px rgba(79,70,229,0.05)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 0,
-        transition: "box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "0 6px 20px rgba(79,70,229,0.10)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "0 1px 4px rgba(79,70,229,0.05)";
-      }}
-    >
+    <article className="lv-card lv-card--hover" aria-label={position.title} style={{ padding: `${space[5]}px ${space[6]}px`, display: "flex", flexDirection: "column" }}>
       {/* Top row */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: space[3] }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span
-              style={{
-                fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                color: sc.color, background: sc.bg, textTransform: "capitalize",
-              }}
-            >
-              {position.status.replace("_", " ")}
-            </span>
+          <div style={{ marginBottom: space[1] }}>
+            <Badge tone={statusTone[position.status] ?? "neutral"}>
+              <span style={{ textTransform: "capitalize" }}>{position.status.replace("_", " ")}</span>
+            </Badge>
           </div>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700,
-              color: "#1E293B", margin: "0 0 3px", letterSpacing: "-0.01em",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}
-          >
+          <h3 style={{
+            fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700,
+            color: lv.text, margin: "0 0 3px", letterSpacing: "-0.01em",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
             {position.title}
           </h3>
-          <p style={{ fontSize: 13, color: "#7C3AED", fontWeight: 600, margin: "0 0 2px" }}>
+          <p style={{ fontSize: text.sm, color: lv.textBody, fontWeight: 600, margin: "0 0 2px" }}>
             {position.company}
           </p>
-          <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>{position.department}</p>
+          <p style={{ fontSize: text.xs, color: lv.textMuted, margin: 0 }}>{position.department}</p>
         </div>
         {scores.length > 0 && (
-          <div style={{ flexShrink: 0, paddingLeft: 16 }}>
+          <div style={{ flexShrink: 0, paddingLeft: space[4] }}>
             <Sparkline scores={scores} />
           </div>
         )}
       </div>
 
       {/* Stats strip */}
-      <div
-        style={{
-          display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0,
-          background: "#F8FAFF", borderRadius: 10, overflow: "hidden",
-          border: "1px solid #E2E8F0", marginBottom: 14,
-        }}
-      >
+      <dl style={{
+        display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0, margin: `0 0 ${space[4]}px`,
+        background: lv.surfaceSunken, borderRadius: radius.md, overflow: "hidden", border: `1px solid ${lv.border}`,
+      }}>
         {[
           { label: "Interviewed", value: completedCandidates.length },
           { label: "Shortlisted", value: shortlisted },
           { label: "Avg Score",   value: completedCandidates.length ? avg : "—" },
         ].map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              padding: "10px 12px", textAlign: "center",
-              borderRight: i < 2 ? "1px solid #E2E8F0" : "none",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800,
-                color: "#4F46E5", lineHeight: 1,
-              }}
-            >
-              {s.value}
-            </div>
-            <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3, fontWeight: 500 }}>
-              {s.label}
-            </div>
+          <div key={s.label} style={{ padding: `${space[2]}px ${space[3]}px`, textAlign: "center", borderRight: i < 2 ? `1px solid ${lv.border}` : "none" }}>
+            <dd style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.lg, fontWeight: 700, color: lv.text, lineHeight: 1 }}>{s.value}</dd>
+            <dt style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, fontWeight: 500 }}>{s.label}</dt>
           </div>
         ))}
-      </div>
+      </dl>
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={onViewRankings}
-          disabled={completedCandidates.length === 0}
-          style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            background: completedCandidates.length > 0 ? "#4F46E5" : "#E2E8F0",
-            color: completedCandidates.length > 0 ? "#fff" : "#94A3B8",
-            border: "none", borderRadius: 9, padding: "10px 14px",
-            fontSize: 13, fontWeight: 700, cursor: completedCandidates.length > 0 ? "pointer" : "not-allowed",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            if (completedCandidates.length > 0)
-              e.currentTarget.style.background = "#4338CA";
-          }}
-          onMouseLeave={(e) => {
-            if (completedCandidates.length > 0)
-              e.currentTarget.style.background = "#4F46E5";
-          }}
-        >
-          <BarChart2 size={13} /> View Rankings <ChevronRight size={12} />
-        </button>
-
-        <button
-          onClick={onGenerateSummary}
-          disabled={generating || completedCandidates.length === 0}
+      <div style={{ display: "flex", gap: space[2], marginTop: "auto" }}>
+        <Button size="sm" style={{ flex: 1 }} onClick={onViewRankings} disabled={none}
+          leftIcon={<BarChart2 size={14} />} rightIcon={<ChevronRight size={14} />}>
+          View Rankings
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onGenerateSummary} disabled={none} loading={generating}
           title={hasReport ? "Regenerate AI summary" : "Generate AI summary"}
-          style={{
-            display: "flex", alignItems: "center", gap: 5,
-            background: generating ? "#E2E8F0" : hasReport ? "rgba(79,70,229,0.08)" : "rgba(124,58,237,0.08)",
-            color: generating ? "#94A3B8" : hasReport ? "#4F46E5" : "#7C3AED",
-            border: `1px solid ${generating ? "transparent" : hasReport ? "rgba(79,70,229,0.2)" : "rgba(124,58,237,0.2)"}`,
-            borderRadius: 9, padding: "10px 12px",
-            fontSize: 12, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {generating
-            ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-            : <Sparkles size={12} />}
+          aria-label={hasReport ? `Regenerate AI summary for ${position.title}` : `Generate AI summary for ${position.title}`}
+          leftIcon={<Sparkles size={14} />}>
           {generating ? "…" : hasReport ? "Regen" : "AI Summary"}
-        </button>
+        </Button>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -385,43 +311,30 @@ export default function ReportsPage() {
     }
   }
 
-  return (
-    <div style={{ padding: "32px 36px", maxWidth: 1100, margin: "0 auto" }}>
+  const sectionHead = (title: string, meta: string, id: string) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], marginBottom: space[4] }}>
+      <h2 id={id} style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text, margin: 0 }}>{title}</h2>
+      <span style={{ fontSize: text.xs, color: lv.textMuted }}>{meta}</span>
+    </div>
+  );
 
-      {/* ── Page header ── */}
-      <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-       <div style={{ flex: 1, minWidth: 260 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <BarChart2 size={15} color="white" />
-          </div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#1E293B", margin: 0, letterSpacing: "-0.02em" }}>
-            Reports
-          </h1>
-        </div>
-        <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>
-          View candidate rankings, AI evaluation reports, and position-level insights.
-        </p>
-       </div>
-        <ExportResults />
-      </div>
+  return (
+    <Page style={{ maxWidth: 1100 }}>
+      <PageHeader
+        title="Reports"
+        description="View candidate rankings, AI evaluation reports, and position-level insights."
+        actions={<ExportResults />}
+      />
 
       {/* ── Position cards grid ── */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#334155", margin: 0 }}>
-            Positions
-          </h2>
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>{allPositions.length} positions total</span>
-        </div>
+      <section aria-labelledby="rp-positions" style={{ marginBottom: space[10] }}>
+        {sectionHead("Positions", `${allPositions.length} positions total`, "rp-positions")}
 
         {allPositions.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 0", color: "#CBD5E1" }}>
-            <BarChart2 size={40} style={{ marginBottom: 12 }} />
-            <p style={{ fontSize: 14, color: "#94A3B8" }}>No positions yet — create one to get started.</p>
-          </div>
+          <EmptyState icon={<BarChart2 size={22} />} title="No positions yet"
+            description="Create a position to get started — rankings and reports appear here once candidates finish their interviews." />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: space[4] }}>
             {allPositions.map((pos) => {
               const posCompleted = candidates.filter(
                 (c) => c.positionId === pos.id && c.status === "completed"
@@ -440,73 +353,40 @@ export default function ReportsPage() {
             })}
           </div>
         )}
-      </div>
+      </section>
 
       {/* ── Completed interviews missing a report ── */}
       {needsReport.length > 0 && (
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#334155", margin: 0 }}>
-              Awaiting Report
-            </h2>
-            <span style={{ fontSize: 12, color: "#94A3B8" }}>{needsReport.length} completed without a report</span>
-          </div>
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 4px rgba(79,70,229,0.05)" }}>
+        <section aria-labelledby="rp-awaiting" style={{ marginBottom: space[10] }}>
+          {sectionHead("Awaiting Report", `${needsReport.length} completed without a report`, "rp-awaiting")}
+          <ul className="lv-card" style={{ padding: 0, overflow: "hidden", listStyle: "none", margin: 0 }}>
             {needsReport.map((c, idx) => (
-              <div key={c.id} style={{
-                display: "flex", alignItems: "center", gap: 14, padding: "14px 24px",
-                borderBottom: idx < needsReport.length - 1 ? "1px solid #F1F5F9" : "none",
+              <li key={c.id} style={{
+                display: "flex", alignItems: "center", gap: space[3], padding: `${space[3]}px ${space[6]}px`, flexWrap: "wrap",
+                borderBottom: idx < needsReport.length - 1 ? `1px solid ${lv.border}` : "none",
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: "#94A3B8" }}>{c.positionTitle}</div>
+                  <div style={{ fontSize: text.base, fontWeight: 700, color: lv.text }}>{c.name}</div>
+                  <div style={{ fontSize: text.xs, color: lv.textMuted }}>{c.positionTitle}</div>
                 </div>
-                <button
-                  onClick={() => generateReportManually(c)}
-                  disabled={reportGenId === c.id}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
-                    padding: "7px 14px", borderRadius: 8, cursor: reportGenId === c.id ? "default" : "pointer",
-                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none",
-                    opacity: reportGenId === c.id ? 0.6 : 1,
-                  }}
-                >
-                  {reportGenId === c.id
-                    ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-                    : <Sparkles size={12} />}
+                <Button size="sm" onClick={() => generateReportManually(c)} loading={reportGenId === c.id} leftIcon={<Sparkles size={14} />}>
                   {reportGenId === c.id ? "Generating…" : "Generate Report"}
-                </button>
-              </div>
+                </Button>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
 
       {/* ── Recent individual reports ── */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#334155", margin: 0 }}>
-            Recent Candidate Reports
-          </h2>
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>{Object.keys(reports).length} reports generated</span>
-        </div>
+      <section aria-labelledby="rp-recent">
+        {sectionHead("Recent Candidate Reports", `${Object.keys(reports).length} reports generated`, "rp-recent")}
 
         {recentReports.length === 0 ? (
-          <div style={{
-            background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14,
-            padding: "40px 32px", textAlign: "center",
-            boxShadow: "0 1px 4px rgba(79,70,229,0.05)",
-          }}>
-            <FileText size={36} color="#CBD5E1" style={{ marginBottom: 12 }} />
-            <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>
-              No evaluation reports yet. Reports are generated automatically after each interview completes.
-            </p>
-          </div>
+          <EmptyState icon={<FileText size={22} />} title="No evaluation reports yet"
+            description="Reports are generated automatically after each interview completes." />
         ) : (
-          <div style={{
-            background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14,
-            overflow: "hidden", boxShadow: "0 1px 4px rgba(79,70,229,0.05)",
-          }}>
+          <ul className="lv-card" style={{ padding: 0, overflow: "hidden", listStyle: "none", margin: 0 }}>
             {recentReports.map((r, idx) => {
               const rec = r.recommendation ? REC_CFG[r.recommendation] : null;
               const sColor = scoreColor(r.overallScore);
@@ -521,82 +401,76 @@ export default function ReportsPage() {
               })();
 
               return (
-                <div
-                  key={r.interviewId}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 14, padding: "16px 24px",
-                    borderBottom: idx < recentReports.length - 1 ? "1px solid #F1F5F9" : "none",
-                    cursor: "pointer", transition: "background 0.15s",
-                  }}
-                  onClick={() => router.push(`/report/${r.interviewId}`)}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#FAFAFA" }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#fff" }}
-                >
-                  {/* Avatar */}
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                    background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 800, color: "#fff",
-                  }}>
-                    {initials(r.candidateName)}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.candidateName}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.positionTitle} · {r.company}
-                    </div>
-                  </div>
-
-                  {/* Score */}
-                  <div style={{ textAlign: "center", flexShrink: 0 }}>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: sColor, lineHeight: 1 }}>
-                      {r.overallScore}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>score</div>
-                  </div>
-
-                  {/* Recommendation */}
-                  {rec && (
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-                      background: rec.bg, color: rec.color, flexShrink: 0,
+                <li key={r.interviewId} style={{ borderBottom: idx < recentReports.length - 1 ? `1px solid ${lv.border}` : "none" }}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="rp-row"
+                    aria-label={`Open report for ${r.candidateName}, score ${r.overallScore}`}
+                    style={{ display: "flex", alignItems: "center", gap: space[3], padding: `${space[4]}px ${space[6]}px`, cursor: "pointer", flexWrap: "wrap" }}
+                    onClick={() => router.push(`/report/${r.interviewId}`)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/report/${r.interviewId}`); } }}
+                  >
+                    {/* Avatar */}
+                    <div aria-hidden="true" style={{
+                      width: 38, height: 38, borderRadius: radius.md, flexShrink: 0,
+                      background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: text.xs, fontWeight: 700, color: lv.brandText,
                     }}>
-                      {rec.label}
-                    </span>
-                  )}
+                      {initials(r.candidateName)}
+                    </div>
 
-                  {/* Time */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <Clock size={11} color="#CBD5E1" />
-                    <span style={{ fontSize: 12, color: "#CBD5E1" }}>{timeAgo}</span>
+                    {/* Info */}
+                    <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+                      <div style={{ fontSize: text.base, fontWeight: 700, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.candidateName}
+                      </div>
+                      <div style={{ fontSize: text.xs, color: lv.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.positionTitle} · {r.company}
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    <div style={{ textAlign: "center", flexShrink: 0 }}>
+                      <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, color: sColor, lineHeight: 1 }}>
+                        {r.overallScore}
+                      </div>
+                      <div style={{ fontSize: 11, color: lv.textMuted, marginTop: 2 }}>score</div>
+                    </div>
+
+                    {/* Recommendation */}
+                    {rec && <Badge tone={rec.tone}>{rec.label}</Badge>}
+
+                    {/* Time */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                      <Clock size={12} color={lv.textMuted} aria-hidden="true" />
+                      <span style={{ fontSize: text.xs, color: lv.textMuted }}>{timeAgo}</span>
+                    </div>
+
+                    <ChevronRight size={16} color={lv.textMuted} aria-hidden="true" />
                   </div>
-
-                  <ChevronRight size={14} color="#CBD5E1" />
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
       {/* ── Quick-access tips ── */}
       {(activePositions.length > 0 || recentReports.length > 0) && (
         <div style={{
-          marginTop: 32, padding: "16px 20px",
-          background: "rgba(79,70,229,0.04)", border: "1px solid rgba(79,70,229,0.12)",
-          borderRadius: 12, display: "flex", alignItems: "center", gap: 12,
+          marginTop: space[8], padding: `${space[4]}px ${space[5]}px`,
+          background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`,
+          borderRadius: radius.md, display: "flex", alignItems: "center", gap: space[3],
         }}>
-          <Zap size={14} color="#7C3AED" fill="#7C3AED" />
-          <span style={{ fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
-            <strong style={{ color: "#4F46E5" }}>Tip:</strong> Click any position card&apos;s &ldquo;View Rankings&rdquo; to see the full candidate table. Click &ldquo;AI Summary&rdquo; to generate talent pool insights for that position.
+          <Zap size={14} color={lv.brand} fill="currentColor" aria-hidden="true" />
+          <span style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.5 }}>
+            <strong style={{ color: lv.brandText }}>Tip:</strong> Click any position card&apos;s &ldquo;View Rankings&rdquo; to see the full candidate table. Click &ldquo;AI Summary&rdquo; to generate talent pool insights for that position.
           </span>
         </div>
       )}
-    </div>
+      <style>{`.rp-row:hover { background: var(--lv-surface-muted); } .rp-row:focus-visible { outline: none; box-shadow: inset var(--lv-focus-ring); }`}</style>
+    </Page>
   );
 }

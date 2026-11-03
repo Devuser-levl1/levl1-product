@@ -245,3 +245,6 @@
 .lv-dropzone--interactive:hover { border-color: var(--lv-brand); }
 .lv-dropzone--interactive:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }
 .lv-stat-tab:focus-visible { outline: none; box-shadow: inset var(--lv-focus-ring); position: relative; z-index: 1; }
+
+/* ── Report visuals (Pass 3 · group 5) ────────────────────────────────────── */
+.lv-skill__toggle:focus-visible { outline: none; box-shadow: inset var(--lv-focus-ring); }
