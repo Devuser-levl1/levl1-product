@@ -2,17 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Pause, Play, Flag, ShieldAlert, ShieldCheck, Loader2, Headphones, SkipBack, SkipForward } from 'lucide-react'
+import { ArrowLeft, Pause, Play, Flag, ShieldAlert, ShieldCheck, Headphones, SkipBack, SkipForward } from 'lucide-react'
 import { HIGH_CONFIDENCE_TYPES, IntegrityEventType } from '@/lib/screen/integrity/events'
+import { Button, ButtonLink, Alert, Checkbox } from '@/components/screen/ui'
+import { lv } from '@/lib/screen/ui/tokens'
 
 // ── Session playback (Screen) ──────────────────────────────────────────────
 // Recorded audio + full transcript + integrity-flag timeline on ONE clock: the
 // recording's wall-clock start. Click a flag marker / transcript line / event
 // to jump there. Agency-gated by the API; demo runs are never retained.
 
+// Design-System Pass 3 (group 4): local palette resolves to the Screen tokens.
 const C = {
-  brand: '#4F46E5', brandSoft: '#EEF2FF', ink: '#0F172A', body: '#475569', muted: '#94A3B8',
-  line: '#E2E8F0', surface: '#FFFFFF', bg: '#F8FAFC', red: '#DC2626', redSoft: '#FEF2F2', amber: '#D97706', amberSoft: '#FFFBEB', green: '#059669',
+  brand: lv.brand, brandText: lv.brandText, brandSoft: lv.brandSoft, ink: lv.text, body: lv.textBody, muted: lv.textMuted,
+  line: lv.border, lineStrong: lv.borderStrong, surface: lv.surface, bg: lv.bg, sunken: lv.surfaceMuted,
+  red: lv.danger, redSoft: lv.dangerSoft, amber: lv.warning, amberSoft: lv.warningSoft, amberLine: lv.warningBorder,
+  green: lv.success, greenSoft: lv.successSoft, greenLine: lv.successBorder,
 }
 
 interface TxEntry { speaker: 'ai' | 'candidate'; text: string; timestamp: string }
@@ -129,8 +134,8 @@ export default function PlaybackPage() {
     if (target !== undefined) seek(Math.max(0, target - 2))
   }
 
-  if (error) return <Shell><div style={{ padding: 60, textAlign: 'center', color: C.body }}>{error}</div></Shell>
-  if (!data) return <Shell><div style={{ padding: 60, display: 'flex', gap: 8, justifyContent: 'center', color: C.muted }}><Loader2 size={16} className="animate-spin" /> Loading session…</div></Shell>
+  if (error) return <Shell><Alert tone="danger" title="Couldn't open this session">{error}</Alert></Shell>
+  if (!data) return <Shell><div role="status" style={{ padding: 60, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', color: C.muted }}><span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading session…</div></Shell>
 
   const flagged = data.integrity.reviewStatus === 'FLAGGED_FOR_REVIEW'
 
@@ -139,52 +144,52 @@ export default function PlaybackPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.brand, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Session playback</div>
-          <h1 style={{ margin: '4px 0 2px', fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>{data.interview.candidate.name}</h1>
+          <div className="lv-eyebrow" style={{ color: C.brandText }}>Session playback</div>
+          <h1 style={{ margin: '4px 0 2px', fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>{data.interview.candidate.name}</h1>
           <div style={{ fontSize: 13.5, color: C.body }}>
             {data.interview.position.title} · {data.interview.position.company}
             {data.interview.startedAt && ` · ${new Date(data.interview.startedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, background: flagged ? C.amberSoft : '#ECFDF5', border: `1px solid ${flagged ? '#FDE68A' : '#A7F3D0'}` }}>
-          {flagged ? <ShieldAlert size={18} color={C.amber} /> : <ShieldCheck size={18} color={C.green} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, background: flagged ? C.amberSoft : C.greenSoft, border: `1px solid ${flagged ? C.amberLine : C.greenLine}` }}>
+          {flagged ? <ShieldAlert size={18} color={C.amber} aria-hidden="true" /> : <ShieldCheck size={18} color={C.green} aria-hidden="true" />}
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: flagged ? C.amber : C.green }}>{flagged ? 'Flagged for human review' : 'No integrity concerns'}</div>
             <div style={{ fontSize: 11.5, color: C.body }}>{events.length} event{events.length === 1 ? '' : 's'} · never an auto-fail</div>
           </div>
         </div>
-        <a href={`/report/${data.interview.id}`} style={{ alignSelf: 'center', fontSize: 13, fontWeight: 600, color: C.brand, textDecoration: 'none' }}>Open report →</a>
+        <span style={{ alignSelf: 'center' }}><ButtonLink href={`/report/${data.interview.id}`} variant="secondary" size="sm">Open report →</ButtonLink></span>
       </div>
 
       {/* Player */}
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 18, padding: 18, marginBottom: 18, boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 18, marginBottom: 18, boxShadow: lv.shadowSm }}>
         {hasAudio ? (
           <audio ref={audioRef} src={`/api/control-room/${interviewId}/audio`} preload="metadata"
             onLoadedMetadata={onLoadedMeta} onDurationChange={onDurationChange}
             onTimeUpdate={(e) => { if (!fixingDurRef.current) setT(e.currentTarget.currentTime) }}
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: C.body, background: C.bg, borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
-            <Headphones size={14} color={C.muted} /> No recording was retained for this session — the transcript and flag timeline are still navigable.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: C.body, background: C.sunken, borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
+            <Headphones size={14} color={C.muted} aria-hidden="true" /> No recording was retained for this session — the transcript and flag timeline are still navigable.
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <IconBtn label="Previous flag" onClick={() => nextFlag(-1)} disabled={!hasAudio}><SkipBack size={16} /></IconBtn>
-          <button onClick={toggle} disabled={!hasAudio} aria-label={playing ? 'Pause' : 'Play'}
-            style={{ width: 46, height: 46, borderRadius: 23, border: 'none', background: hasAudio ? C.brand : C.line, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: hasAudio ? 'pointer' : 'not-allowed', boxShadow: hasAudio ? '0 6px 16px rgba(79,70,229,0.3)' : 'none', flexShrink: 0 }}>
-            {playing ? <Pause size={20} fill="#fff" /> : <Play size={20} fill="#fff" style={{ marginLeft: 2 }} />}
+          <button type="button" onClick={toggle} disabled={!hasAudio} aria-label={playing ? 'Pause' : 'Play'} className="lv-btn lv-btn--primary"
+            style={{ width: 46, height: 46, padding: 0, borderRadius: 23, flexShrink: 0 }}>
+            {playing ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" style={{ marginLeft: 2 }} />}
           </button>
           <IconBtn label="Next flag" onClick={() => nextFlag(1)} disabled={!hasAudio}><SkipForward size={16} /></IconBtn>
           <span style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums', minWidth: 92 }}>{fmt(t)} / {fmt(duration)}</span>
 
           {/* Scrubber + flag markers */}
-          <div style={{ flex: 1, position: 'relative', height: 40 }}>
+          <div style={{ flex: '1 1 240px', position: 'relative', height: 40 }}>
             <div onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); seek(((e.clientX - r.left) / r.width) * duration) }}
               style={{ position: 'absolute', left: 0, right: 0, top: 22, height: 6, borderRadius: 3, background: C.line, cursor: 'pointer' }}>
               <div style={{ width: `${Math.min(100, (t / duration) * 100)}%`, height: '100%', borderRadius: 3, background: C.brand }} />
             </div>
-            <div style={{ position: 'absolute', top: 16, left: `calc(${Math.min(100, (t / duration) * 100)}% - 9px)`, width: 18, height: 18, borderRadius: 9, background: '#fff', border: `3px solid ${C.brand}`, boxShadow: '0 2px 6px rgba(15,23,42,0.2)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: 16, left: `calc(${Math.min(100, (t / duration) * 100)}% - 9px)`, width: 18, height: 18, borderRadius: 9, background: C.surface, border: `3px solid ${C.brand}`, boxShadow: lv.shadowSm, pointerEvents: 'none' }} />
             {events.map((e) => (
               <button key={e.id} onClick={() => seek(Math.max(0, e.sec - 2))} title={`${fmt(e.sec)} · ${e.label}`} aria-label={`Jump to ${e.label} at ${fmt(e.sec)}`}
                 style={{ position: 'absolute', top: 0, left: `calc(${Math.min(100, (e.sec / duration) * 100)}% - 5px)`, width: 10, height: 18, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}>
@@ -193,7 +198,7 @@ export default function PlaybackPage() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11.5, color: C.muted, paddingLeft: 2 }}>
+        <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: C.muted, paddingLeft: 2, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 3, height: 10, background: C.red, borderRadius: 2 }} /> High-confidence flag</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 3, height: 10, background: C.amber, borderRadius: 2 }} /> Other signal</span>
           <span>Space play/pause · ←/→ 5s</span>
@@ -202,11 +207,14 @@ export default function PlaybackPage() {
       </div>
 
       {/* Transcript + flag timeline */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: 18, alignItems: 'start' }}>
+      <div className="pb-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: 18, alignItems: 'start' }}>
+        <style>{`@media (max-width: 860px) { .pb-grid { grid-template-columns: minmax(0, 1fr) !important; } }
+          .pb-line:focus-visible, .pb-ev:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }
+          .pb-line:hover, .pb-ev:not(:disabled):hover { background: var(--lv-surface-muted); }`}</style>
         <Panel title="Transcript" right={
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.body, cursor: 'pointer', textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
-            <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} /> Follow playback
-          </label>}>
+          <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
+            <Checkbox checked={follow} onChange={setFollow}>Follow playback</Checkbox>
+          </span>}>
           {transcript.length === 0 ? <Empty>No transcript was captured for this session.</Empty> : (
             <div style={{ maxHeight: '62vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 4 }}>
               {transcript.map((e, i) => {
@@ -214,10 +222,13 @@ export default function PlaybackPage() {
                 const nearFlag = events.some((ev) => ev.high && ev.sec >= e.sec && (i + 1 >= transcript.length || ev.sec < transcript[i + 1].sec))
                 return (
                   <div key={i} ref={active ? activeRef : undefined} onClick={() => seek(e.sec)}
+                    className="pb-line" role={hasAudio ? 'button' : undefined} tabIndex={hasAudio ? 0 : undefined}
+                    aria-label={hasAudio ? `Play from ${fmt(e.sec)}` : undefined} aria-current={active || undefined}
+                    onKeyDown={hasAudio ? (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); seek(e.sec) } } : undefined}
                     style={{ display: 'flex', gap: 12, padding: '8px 10px', borderRadius: 10, cursor: hasAudio ? 'pointer' : 'default', background: active ? C.brandSoft : 'transparent', borderLeft: `3px solid ${active ? C.brand : nearFlag ? C.red : 'transparent'}` }}>
                     <span style={{ fontSize: 11.5, color: C.muted, fontVariantNumeric: 'tabular-nums', minWidth: 38, paddingTop: 2 }}>{fmt(e.sec)}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: e.speaker === 'ai' ? C.brand : C.ink, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e.speaker === 'ai' ? 'Interviewer' : 'Candidate'}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: e.speaker === 'ai' ? C.brandText : C.ink, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e.speaker === 'ai' ? 'Interviewer' : 'Candidate'}</div>
                       <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.ink }}>{e.text}</div>
                     </div>
                   </div>
@@ -232,13 +243,13 @@ export default function PlaybackPage() {
             <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 2, maxHeight: '62vh', overflowY: 'auto' }}>
               {[...events].sort((a, b) => a.sec - b.sec).map((e) => (
                 <li key={e.id}>
-                  <button onClick={() => seek(Math.max(0, e.sec - 2))} disabled={!hasAudio}
+                  <button type="button" className="pb-ev" onClick={() => seek(Math.max(0, e.sec - 2))} disabled={!hasAudio}
                     style={{ width: '100%', textAlign: 'left', display: 'flex', gap: 10, padding: '8px 10px', borderRadius: 10, border: 'none', background: Math.abs(e.sec - t) < 3 ? C.redSoft : 'transparent', cursor: hasAudio ? 'pointer' : 'default', fontFamily: 'inherit' }}>
-                    <Flag size={14} color={e.high ? C.red : C.amber} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <Flag size={14} color={e.high ? C.red : C.amber} aria-hidden="true" style={{ marginTop: 2, flexShrink: 0 }} />
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: e.high ? C.red : C.ink }}>{e.label}</span>
-                        <span style={{ fontSize: 11.5, color: C.brand, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(e.sec)}</span>
+                        <span style={{ fontSize: 11.5, color: C.brandText, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(e.sec)}</span>
                       </div>
                       {e.detail && <div style={{ fontSize: 12, color: C.body, lineHeight: 1.45, marginTop: 2 }}>{e.detail}</div>}
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Confidence {Math.round(e.confidence * 100)}%</div>
@@ -257,11 +268,11 @@ export default function PlaybackPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: 'var(--font-sans)' }}>
-      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '20px 32px 48px' }}>
-        <a href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: C.body, textDecoration: 'none', marginBottom: 16 }}>
-          <ArrowLeft size={14} /> Back to dashboard
-        </a>
+    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: lv.fontSans }}>
+      <div style={{ maxWidth: 1240, margin: '0 auto', padding: '20px clamp(16px, 3vw, 32px) 48px' }}>
+        <div style={{ marginBottom: 16, marginLeft: -12 }}>
+          <ButtonLink href="/dashboard" variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />}>Back to dashboard</ButtonLink>
+        </div>
         {children}
       </div>
     </div>
@@ -270,12 +281,12 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16, padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, fontSize: 11.5, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        {title}{right}
+    <section className="lv-card" style={{ padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+        <h2 className="lv-eyebrow">{title}</h2>{right}
       </div>
       {children}
-    </div>
+    </section>
   )
 }
 
@@ -285,9 +296,8 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} disabled={disabled} title={label} aria-label={label}
-      style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${C.line}`, background: C.surface, color: disabled ? C.muted : C.body, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: disabled ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
+    <Button variant="secondary" iconOnly onClick={onClick} disabled={disabled} title={label} aria-label={label} style={{ flexShrink: 0 }}>
       {children}
-    </button>
+    </Button>
   )
 }

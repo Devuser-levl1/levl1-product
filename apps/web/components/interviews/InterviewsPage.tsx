@@ -6,6 +6,11 @@ import { Video, Clock, Radio, AlertCircle, Play, Monitor } from "lucide-react";
 import toast from "react-hot-toast";
 import { SchedulingOverview, TodayInterviews } from "../candidates/SchedulingAgent";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
+import { Page, PageHeader, Button, Badge, Card, EmptyState, Table, Eyebrow, type Column } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+
+// Design-System Pass 3 (group 4): presentation on the Screen design system.
+// Start/monitor actions and the interview grouping are unchanged.
 
 function formatDateTime(dt: string) {
   const d = new Date(dt);
@@ -27,26 +32,15 @@ function StatusPill({ on, label, onColor }: { on: boolean; label: string; onColo
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "5px 10px",
-        borderRadius: 8,
-        background: on ? `${onColor}0f` : "#F8FAFC",
-        border: `1px solid ${on ? `${onColor}28` : "#E2E8F0"}`,
+        display: "flex", alignItems: "center", gap: 6,
+        padding: "4px 10px", borderRadius: radius.pill,
+        background: on ? lv.surface : lv.surfaceSunken,
+        border: `1px solid ${on ? lv.borderStrong : lv.border}`,
       }}
     >
-      <div
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: "50%",
-          background: on ? onColor : "#CBD5E1",
-          boxShadow: on ? `0 0 6px ${onColor}` : "none",
-        }}
-      />
-      <span style={{ fontSize: 11, fontWeight: 600, color: on ? onColor : "#94A3B8" }}>
-        {label}
+      <div aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: on ? onColor : lv.borderStrong }} />
+      <span style={{ fontSize: text.xs, fontWeight: 600, color: on ? lv.text : lv.textMuted }}>
+        {label}<span className="lv-sr-only">{on ? " online" : " offline"}</span>
       </span>
     </div>
   );
@@ -58,154 +52,92 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
   const isLive         = interview.status === "in_progress";
 
   return (
-    <div
+    <article
+      className="lv-card"
+      aria-label={`${interview.candidateName}${isLive ? " (live)" : ""}`}
       style={{
-        background: "#fff",
-        border: `1px solid ${isLive ? "rgba(124,58,237,0.4)" : "#E2E8F0"}`,
-        borderRadius: 14,
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        position: "relative",
-        overflow: "hidden",
-        boxShadow: isLive
-          ? "0 0 0 1px rgba(124,58,237,0.15), 0 8px 24px rgba(124,58,237,0.10)"
-          : "0 1px 3px rgba(79,70,229,0.06)",
-        transition: "box-shadow 0.2s",
+        padding: space[5],
+        display: "flex", flexDirection: "column", gap: space[4],
+        position: "relative", overflow: "hidden",
+        borderColor: isLive ? lv.brandSoftBorder : undefined,
+        boxShadow: isLive ? lv.shadowMd : undefined,
       }}
     >
       {/* Top accent bar */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0, left: 0, right: 0,
-          height: 3,
-          background: isLive
-            ? "linear-gradient(90deg, #4F46E5, #7C3AED)"
-            : "transparent",
-        }}
-      />
+      {isLive && <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: lv.gradientBrand }} />}
 
       {/* LIVE badge */}
       {isLive && (
-        <div
-          style={{
-            position: "absolute",
-            top: 16, right: 16,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.22)",
-            borderRadius: 100,
-            padding: "4px 10px",
-            fontSize: 11,
-            fontWeight: 800,
-            color: "#DC2626",
-            letterSpacing: "0.05em",
-          }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#EF4444", boxShadow: "0 0 6px #EF4444", animation: "pulse 1.5s infinite", display: "inline-block" }} />
-          LIVE
-        </div>
+        <span style={{ position: "absolute", top: space[4], right: space[4] }}>
+          <Badge tone="danger" dot>LIVE</Badge>
+        </span>
       )}
 
       {/* Avatar + name */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingTop: 4 }}>
-        <div
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: 12,
-            background: isLive ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))" : "#F1F5F9",
-            border: `1px solid ${isLive ? "rgba(124,58,237,0.25)" : "#E2E8F0"}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 16,
-            fontWeight: 800,
-            color: isLive ? "#6D28D9" : "#64748B",
-            flexShrink: 0,
-            fontFamily: "var(--font-display)",
-          }}
-        >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: space[3], paddingTop: 4 }}>
+        <div aria-hidden="true" style={{
+          width: 46, height: 46, borderRadius: radius.md,
+          background: isLive ? lv.brandSoft : lv.surfaceMuted,
+          border: `1px solid ${isLive ? lv.brandSoftBorder : lv.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: text.md, fontWeight: 700, color: isLive ? lv.brandText : lv.textBody,
+          flexShrink: 0, fontFamily: lv.fontDisplay,
+        }}>
           {interview.candidateName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>
+        <div style={{ flex: 1, minWidth: 0, paddingRight: isLive ? 64 : 0 }}>
+          <h3 style={{ margin: 0, fontSize: text.md, fontWeight: 700, color: lv.text, fontFamily: lv.fontDisplay }}>
             {interview.candidateName}
-          </div>
-          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          </h3>
+          <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {interview.positionTitle}
           </div>
         </div>
       </div>
 
-      <div style={{ height: 1, background: "#F1F5F9" }} />
+      <div aria-hidden="true" style={{ height: 1, background: lv.border }} />
 
       {/* Time info */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: "#F8FAFC",
-              border: "1px solid #E2E8F0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Video size={14} color="#64748B" />
+        <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
+          <div aria-hidden="true" style={{ width: 30, height: 30, borderRadius: radius.sm, background: lv.surfaceSunken, border: `1px solid ${lv.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Video size={14} color={lv.textMuted} />
           </div>
           <div>
-            <div className="font-mono" style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>{time}</div>
-            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{date}</div>
+            <div className="font-mono" style={{ fontSize: text.base, fontWeight: 700, color: lv.text }}>{time}</div>
+            <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 1 }}>{date}</div>
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748B", justifyContent: "flex-end" }}>
-            <Clock size={11} />
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: text.xs, color: lv.textBody, justifyContent: "flex-end" }}>
+            <Clock size={12} aria-hidden="true" />
             <span className="font-mono">{interview.duration} min</span>
           </div>
           {!isLive && (
-            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{until}</div>
+            <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{until}</div>
           )}
         </div>
       </div>
 
       {/* Status pills */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <StatusPill on={interview.agentOnline}      label="AI Agent"  onColor="#10B981" />
-        <StatusPill on={interview.candidateJoined}  label="Candidate" onColor="#7C3AED" />
+      <div style={{ display: "flex", gap: space[2], flexWrap: "wrap" }}>
+        <StatusPill on={interview.agentOnline}      label="AI Agent"  onColor={lv.success} />
+        <StatusPill on={interview.candidateJoined}  label="Candidate" onColor={lv.brand} />
       </div>
 
       {/* CTA */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          className={isLive ? "btn-primary" : "btn-primary"}
-          style={{ flex: 1, justifyContent: "center", fontSize: 13 }}
-          onClick={() => onStart(interview)}
-        >
-          {isLive ? (
-            <><Radio size={14} />Join Live</>
-          ) : (
-            <><Play size={13} fill="white" strokeWidth={0} />Start</>
-          )}
-        </button>
-        <button
-          className="btn-ghost"
-          style={{ justifyContent: "center", fontSize: 13, padding: "9px 12px" }}
-          onClick={() => window.open(`/interview/${interview.id}/monitor`, "_blank")}
-        >
-          <Monitor size={13} />
+      <div style={{ display: "flex", gap: space[2] }}>
+        <Button style={{ flex: 1 }} onClick={() => onStart(interview)}
+          leftIcon={isLive ? <Radio size={14} /> : <Play size={13} fill="currentColor" strokeWidth={0} />}>
+          {isLive ? "Join Live" : "Start"}
+        </Button>
+        <Button variant="secondary" leftIcon={<Monitor size={14} />}
+          aria-label={`Monitor ${interview.candidateName}'s interview (opens in new tab)`}
+          onClick={() => window.open(`/interview/${interview.id}/monitor`, "_blank")}>
           Monitor
-        </button>
+        </Button>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -218,6 +150,21 @@ export default function InterviewsPage() {
   const upcomingInterviews = interviews.filter((i) => i.status === "scheduled");
   const noShowCandidates   = candidates.filter((c) => c.status === "no_show");
   const allActive          = [...liveInterviews, ...upcomingInterviews];
+
+  const noShowColumns: Column<Candidate>[] = [
+    { key: "candidate", header: "Candidate", render: (c) => (
+      <div>
+        <div style={{ fontSize: text.sm, fontWeight: 600, color: lv.text }}>{c.name}</div>
+        <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{c.positionTitle}</div>
+      </div>
+    ) },
+    { key: "scheduled", header: "Scheduled", render: (c) => {
+      const dt = c.scheduledAt ? formatDateTime(c.scheduledAt) : null;
+      return <span className="font-mono" style={{ fontSize: text.xs, color: lv.textBody }}>{dt ? `${dt.date} · ${dt.time}` : "—"}</span>;
+    } },
+    { key: "duration", header: "Duration", width: 100, render: () => <span className="font-mono" style={{ fontSize: text.xs, color: lv.textMuted }}>30 min</span> },
+    { key: "status", header: "Status", width: 110, render: () => <Badge tone="danger">No Show</Badge> },
+  ];
 
   function handleStart(iv: Interview) {
     const candidate = candidates.find((c) => c.id === iv.candidateId);
@@ -239,163 +186,78 @@ export default function InterviewsPage() {
           onClose={() => { setModalCandidate(null); setModalPosition(undefined); }}
         />
       )}
-    <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 28, maxWidth: 1280 }}>
+    <Page style={{ maxWidth: 1280 }}>
+      <PageHeader
+        title="Interviews Monitor"
+        description="Track live and upcoming AI voice interviews in real-time."
+        actions={
+          <div role="status" style={{
+            display: "flex", alignItems: "center", gap: space[2], padding: `${space[2]}px ${space[4]}px`,
+            background: lv.surface, border: `1px solid ${lv.border}`, borderRadius: radius.md, fontSize: text.xs, color: lv.textBody,
+          }}>
+            <div aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: liveInterviews.length > 0 ? lv.success : lv.borderStrong }} />
+            {liveInterviews.length > 0 ? (
+              <span><strong style={{ color: lv.success }}>{liveInterviews.length}</strong> live now</span>
+            ) : (
+              <span>No sessions live</span>
+            )}
+          </div>
+        }
+      />
 
+      <div style={{ display: "flex", flexDirection: "column", gap: space[8] }}>
       {/* Scheduling Overview */}
       <SchedulingOverview />
 
       {/* Today's interviews */}
       <TodayInterviews />
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
-            Interviews Monitor
-          </h1>
-          <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
-            Track live and upcoming AI voice interviews in real-time.
-          </p>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 16px",
-            background: "#fff",
-            border: "1px solid #E2E8F0",
-            borderRadius: 9,
-            fontSize: 12,
-            color: "#64748B",
-            boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
-          }}
-        >
-          <div
-            style={{
-              width: 7, height: 7, borderRadius: "50%",
-              background: liveInterviews.length > 0 ? "#10B981" : "#CBD5E1",
-              boxShadow: liveInterviews.length > 0 ? "0 0 6px rgba(16,185,129,0.5)" : "none",
-            }}
-          />
-          {liveInterviews.length > 0 ? (
-            <span><strong style={{ color: "#10B981" }}>{liveInterviews.length}</strong> live now</span>
-          ) : (
-            <span>No sessions live</span>
-          )}
-        </div>
-      </div>
-
       {/* Stat chips */}
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: space[3] }}>
         {[
-          { label: "Live Now",  value: liveInterviews.length,    color: "#EF4444" },
-          { label: "Upcoming",  value: upcomingInterviews.length, color: "#F59E0B" },
-          { label: "No Shows",  value: noShowCandidates.length,  color: "#94A3B8" },
+          { label: "Live Now",  value: liveInterviews.length,     color: lv.danger  },
+          { label: "Upcoming",  value: upcomingInterviews.length, color: lv.warning },
+          { label: "No Shows",  value: noShowCandidates.length,   color: lv.textMuted },
         ].map((s) => (
-          <div
-            key={s.label}
-            className="card"
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", flex: 1 }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 26,
-                fontWeight: 800,
-                color: "#4F46E5",
-                letterSpacing: "-0.02em",
-              }}
-            >
+          <Card key={s.label} style={{ display: "flex", alignItems: "center", gap: space[3], padding: `${space[3]}px ${space[5]}px` }}>
+            <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />
+            <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 700, color: lv.text, letterSpacing: "-0.02em" }}>
               {s.value}
             </div>
-            <div style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>{s.label}</div>
-          </div>
+            <div style={{ fontSize: text.sm, color: lv.textBody, fontWeight: 600 }}>{s.label}</div>
+          </Card>
         ))}
       </div>
 
       {/* Interview cards */}
       {allActive.length > 0 ? (
-        <div>
-          <h2 style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>
-            {liveInterviews.length > 0 ? "Live & Upcoming" : "Upcoming"}
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+        <section aria-labelledby="iv-active">
+          <Eyebrow style={{ marginBottom: space[3] }}><span id="iv-active">{liveInterviews.length > 0 ? "Live & Upcoming" : "Upcoming"}</span></Eyebrow>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: space[4] }}>
             {allActive.map((iv) => <InterviewCard key={iv.id} interview={iv} onStart={handleStart} />)}
           </div>
-        </div>
+        </section>
       ) : (
-        <div className="card" style={{ textAlign: "center", padding: "48px 0" }}>
-          <Video size={32} color="#CBD5E1" style={{ margin: "0 auto 12px" }} />
-          <div style={{ fontSize: 14, color: "#94A3B8" }}>No interviews scheduled</div>
-        </div>
+        <EmptyState icon={<Video size={22} />} title="No interviews scheduled"
+          description="Invite candidates from the Candidates pipeline — their interviews show up here once booked." />
       )}
 
       {/* No-shows table */}
       {noShowCandidates.length > 0 && (
-        <div>
-          <h2
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#94A3B8",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
-              marginBottom: 14,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <AlertCircle size={14} />
-            No Shows
-          </h2>
-          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1.5fr 100px 100px",
-                padding: "10px 20px",
-                background: "#F8FAFC",
-                borderBottom: "1px solid #E2E8F0",
-              }}
-            >
-              {["Candidate", "Scheduled", "Duration", "Status"].map((h) => (
-                <div key={h} style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  {h}
-                </div>
-              ))}
-            </div>
-            {noShowCandidates.map((c) => {
-              const dt = c.scheduledAt ? formatDateTime(c.scheduledAt) : null;
-              return (
-                <div
-                  key={c.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1.5fr 100px 100px",
-                    alignItems: "center",
-                    padding: "14px 20px",
-                    borderBottom: "1px solid #F1F5F9",
-                    opacity: 0.75,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{c.positionTitle}</div>
-                  </div>
-                  <div className="font-mono" style={{ fontSize: 12, color: "#64748B" }}>
-                    {dt ? `${dt.date} · ${dt.time}` : "—"}
-                  </div>
-                  <div className="font-mono" style={{ fontSize: 12, color: "#94A3B8" }}>30 min</div>
-                  <div><span className="badge badge-danger">No Show</span></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <section aria-labelledby="iv-noshow">
+          <Eyebrow style={{ marginBottom: space[3], display: "flex", alignItems: "center", gap: space[2] }}>
+            <AlertCircle size={14} aria-hidden="true" /><span id="iv-noshow">No Shows</span>
+          </Eyebrow>
+          <Table<Candidate>
+            caption="No-show candidates"
+            rowKey={(c) => c.id}
+            rows={noShowCandidates}
+            columns={noShowColumns}
+          />
+        </section>
       )}
-    </div>
+      </div>
+    </Page>
     </>
   );
 }

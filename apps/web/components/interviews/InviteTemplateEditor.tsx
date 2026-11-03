@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { Loader2, RotateCcw, Eye, Braces } from "lucide-react";
+import { RotateCcw, Eye, Braces } from "lucide-react";
 import {
   INVITE_VARIABLES, InviteVars, renderInviteEmail, sampleVars, validateTemplate, SUBJECT_MAX, BODY_MAX,
 } from "@/lib/screen/recruiter/invite-template";
+import { Button, Badge, Alert, Field, Input, Textarea } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
 
 // ── Candidate invite template editor (Screen F2) ───────────────────────────
 // Used in Settings (org-wide template) and on a position (override). Plain
@@ -81,74 +83,80 @@ export function InviteTemplateEditor({ endpoint, scope, previewVars }: {
     } finally { setSaving(false); }
   };
 
-  if (loading) return <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#94A3B8", fontSize: 13 }}><Loader2 size={14} className="animate-spin" /> Loading template…</div>;
+  if (loading) return <div role="status" style={{ display: "flex", gap: space[2], alignItems: "center", color: lv.textMuted, fontSize: text.sm }}><span className="lv-spinner" aria-hidden="true" style={{ color: lv.brand }} /> Loading template…</div>;
 
   const sourceLabel = source === "position" ? "Custom for this position" : source === "agency" ? (scope === "agency" ? "Custom agency template" : "Inherited from agency template") : "Levl1 default";
   const resettable = scope === "position" ? source === "position" : source === "agency";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: source === "default" ? "#64748B" : "#4F46E5", background: source === "default" ? "#F1F5F9" : "#EEF2FF", borderRadius: 100, padding: "3px 10px" }}>{sourceLabel}</span>
-        {!canEdit && <span style={{ fontSize: 11.5, color: "#94A3B8" }}>Read-only for your role</span>}
-        <button type="button" onClick={() => setShowPreview((v) => !v)} className="btn-ghost" style={{ marginLeft: "auto", fontSize: 12.5, padding: "5px 10px", display: "inline-flex", gap: 6, alignItems: "center" }}>
-          <Eye size={13} /> {showPreview ? "Hide preview" : "Show preview"}
-        </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+      <div style={{ display: "flex", alignItems: "center", gap: space[2], flexWrap: "wrap" }}>
+        <Badge tone={source === "default" ? "neutral" : "brand"}>{sourceLabel}</Badge>
+        {!canEdit && <span style={{ fontSize: text.xs, color: lv.textMuted }}>Read-only for your role</span>}
+        <Button variant="tertiary" size="sm" style={{ marginLeft: "auto" }} aria-expanded={showPreview} leftIcon={<Eye size={14} />} onClick={() => setShowPreview((v) => !v)}>
+          {showPreview ? "Hide preview" : "Show preview"}
+        </Button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: showPreview ? "minmax(0,1fr) minmax(0,1fr)" : "1fr", gap: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 600, color: "#475569" }}>Subject</label>
-          <input ref={subjectRef} className="input" value={subject} disabled={!canEdit} maxLength={SUBJECT_MAX}
-            onFocus={() => (lastFocus.current = "subject")} onChange={(e) => setSubject(e.target.value.replace(/[\r\n]/g, " "))} />
-          <label style={{ fontSize: 12.5, fontWeight: 600, color: "#475569", marginTop: 4 }}>Message</label>
-          <textarea ref={bodyRef} className="input" value={body} disabled={!canEdit} maxLength={BODY_MAX}
-            onFocus={() => (lastFocus.current = "body")} onChange={(e) => setBody(e.target.value)}
-            style={{ minHeight: 240, resize: "vertical", fontFamily: "var(--font-sans)", lineHeight: 1.55 }} />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "#64748B", marginBottom: 6 }}><Braces size={12} /> Insert variable</div>
+      <div style={{ display: "grid", gridTemplateColumns: showPreview ? "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" : "1fr", gap: space[4] }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: space[3], minWidth: 0 }}>
+          <Field label="Subject">
+            <Input ref={subjectRef} value={subject} disabled={!canEdit} maxLength={SUBJECT_MAX}
+              onFocus={() => (lastFocus.current = "subject")} onChange={(e) => setSubject(e.target.value.replace(/[\r\n]/g, " "))} />
+          </Field>
+          <Field label="Message">
+            <Textarea ref={bodyRef} value={body} disabled={!canEdit} maxLength={BODY_MAX}
+              onFocus={() => (lastFocus.current = "body")} onChange={(e) => setBody(e.target.value)}
+              style={{ minHeight: 240, resize: "vertical", lineHeight: 1.55 }} />
+          </Field>
+          <div role="group" aria-labelledby="ite-vars">
+            <div id="ite-vars" className="lv-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}><Braces size={13} aria-hidden="true" /> Insert variable</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {INVITE_VARIABLES.map((v) => (
-                <button key={v.key} type="button" disabled={!canEdit} onClick={() => insert(v.key)} title={v.label}
-                  style={{ border: "1px solid #E0E7FF", background: "#F5F7FF", color: "#4338CA", borderRadius: 7, padding: "3px 8px", fontSize: 11.5, fontFamily: "var(--font-mono)", cursor: canEdit ? "pointer" : "not-allowed" }}>
+                <button key={v.key} type="button" disabled={!canEdit} onClick={() => insert(v.key)} title={v.label} aria-label={`Insert ${v.label}`} className="lv-chip-add"
+                  style={{ minHeight: 28, border: `1px solid ${lv.brandSoftBorder}`, background: lv.brandSoft, color: lv.brandText, borderRadius: radius.sm, padding: "0 8px", fontSize: text.xs, fontFamily: lv.fontMono, cursor: canEdit ? "pointer" : "not-allowed", opacity: canEdit ? 1 : 0.55 }}>
                   {`{{${v.key}}}`}
                 </button>
               ))}
             </div>
           </div>
-          <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0, lineHeight: 1.5 }}>
+          <p className="lv-hint" style={{ margin: 0 }}>
             The AI-interview disclosure and the &ldquo;Select your interview slot&rdquo; button are always included, so candidates can&apos;t miss the consent notice or the scheduling link.
           </p>
           {errors.length > 0 && (
-            <ul style={{ margin: 0, padding: "8px 12px 8px 26px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, color: "#B91C1C", fontSize: 12.5 }}>
-              {errors.map((e) => <li key={e}>{e}</li>)}
-            </ul>
+            <Alert tone="danger">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {errors.map((e) => <li key={e}>{e}</li>)}
+              </ul>
+            </Alert>
           )}
         </div>
 
         {showPreview && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "#475569" }}>Preview <span style={{ fontWeight: 400, color: "#94A3B8" }}>· sample candidate</span></div>
-            <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, padding: "8px 12px", fontSize: 13, background: "#fff" }}>
-              <span style={{ color: "#94A3B8" }}>Subject: </span><strong style={{ color: "#0F172A" }}>{preview.subject || "—"}</strong>
+          <div style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
+            <div className="lv-label">Preview <span style={{ fontWeight: 400, color: lv.textMuted }}>· sample candidate</span></div>
+            <div style={{ border: `1px solid ${lv.border}`, borderRadius: radius.md, padding: `${space[2]}px ${space[3]}px`, fontSize: text.sm, background: lv.surface }}>
+              <span style={{ color: lv.textMuted }}>Subject: </span><strong style={{ color: lv.text }}>{preview.subject || "—"}</strong>
             </div>
             <iframe title="Invite email preview" srcDoc={preview.html} sandbox=""
-              style={{ width: "100%", height: 460, border: "1px solid #E2E8F0", borderRadius: 10, background: "#F8FAFC" }} />
+              style={{ width: "100%", height: 460, border: `1px solid ${lv.border}`, borderRadius: radius.md, background: lv.surfaceSunken }} />
           </div>
         )}
       </div>
 
       {canEdit && (
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+        <div className="lv-actions">
           {resettable && (
-            <button type="button" className="btn-ghost" disabled={saving} onClick={() => save(true)} style={{ display: "inline-flex", gap: 6, alignItems: "center", marginRight: "auto" }}>
-              <RotateCcw size={13} /> {scope === "position" ? "Remove override" : "Reset to default"}
-            </button>
+            <div className="lv-actions__start">
+              <Button variant="tertiary" disabled={saving} onClick={() => save(true)} leftIcon={<RotateCcw size={14} />}>
+                {scope === "position" ? "Remove override" : "Reset to default"}
+              </Button>
+            </div>
           )}
-          {dirty && <button type="button" className="btn-ghost" disabled={saving} onClick={() => saved && (setSubject(saved.subject), setBody(saved.body))}>Discard</button>}
-          <button type="button" className="btn-primary" disabled={saving || !dirty || errors.length > 0} onClick={() => save(false)}>
-            {saving ? <><Loader2 size={13} className="animate-spin" /> Saving…</> : scope === "position" && source !== "position" ? "Save as position override" : "Save template"}
-          </button>
+          {dirty && <Button variant="secondary" disabled={saving} onClick={() => saved && (setSubject(saved.subject), setBody(saved.body))}>Discard</Button>}
+          <Button disabled={!dirty || errors.length > 0} loading={saving} onClick={() => save(false)}>
+            {saving ? "Saving…" : scope === "position" && source !== "position" ? "Save as position override" : "Save template"}
+          </Button>
         </div>
       )}
     </div>

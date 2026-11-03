@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   Radar, ShieldCheck, ShieldAlert, ShieldQuestion, User, Users, UserX, VideoOff, Mic, MicOff,
-  Keyboard, Wifi, WifiOff, Flag, Bell, BellOff, X, PlayCircle, Clock, Loader2, ChevronRight,
+  Keyboard, Wifi, WifiOff, Flag, Bell, BellOff, X, PlayCircle, Clock, ChevronRight,
 } from "lucide-react";
 import type { Health, HealthLevel, HumanPresence } from "@/lib/screen/control-room/health";
+import { Button, ButtonLink, Alert } from "@/components/screen/ui";
+import { lv } from "@/lib/screen/ui/tokens";
 
 // ── Recruiter Control Room (Screen) ────────────────────────────────────────
 // Exception-first: problem sessions sort to the top in large red/amber tiles
@@ -17,13 +19,16 @@ import type { Health, HealthLevel, HumanPresence } from "@/lib/screen/control-ro
 const POLL_MS = 4000;
 const DETAIL_POLL_MS = 3000;
 
+// Design-System Pass 3 (group 4): the local palette now resolves to the Screen
+// tokens, so this page follows the design system (and dark mode, later).
 const C = {
-  brand: "#4F46E5", brandSoft: "#EEF2FF", ink: "#0F172A", body: "#475569", muted: "#94A3B8",
-  line: "#E2E8F0", surface: "#FFFFFF", bg: "#F8FAFC",
-  red: "#DC2626", redSoft: "#FEF2F2", redLine: "#FECACA",
-  amber: "#D97706", amberSoft: "#FFFBEB", amberLine: "#FDE68A",
-  green: "#059669", greenSoft: "#ECFDF5", greenLine: "#A7F3D0",
+  brand: lv.brand, brandSoft: lv.brandSoft, brandLine: lv.brandSoftBorder, ink: lv.text, body: lv.textBody, muted: lv.textMuted,
+  line: lv.border, surface: lv.surface, bg: lv.bg, sunken: lv.surfaceMuted,
+  red: lv.danger, redSoft: lv.dangerSoft, redLine: lv.dangerBorder,
+  amber: lv.warning, amberSoft: lv.warningSoft, amberLine: lv.warningBorder,
+  green: lv.success, greenSoft: lv.successSoft, greenLine: lv.successBorder,
 };
+const softOf = (c: string) => (c === C.green ? C.greenSoft : c === C.red ? C.redSoft : c === C.amber ? C.amberSoft : C.sunken);
 
 interface Tile {
   id: string; isDemo: boolean; candidate: string; position: string; company: string;
@@ -119,27 +124,27 @@ export function ControlRoomPage() {
   }, [data]);
 
   return (
-    <div style={{ padding: "28px 32px 48px", maxWidth: 1480, margin: "0 auto", fontFamily: "var(--font-sans)" }}>
+    <div style={{ padding: "28px clamp(16px, 3vw, 32px) 48px", maxWidth: 1480, margin: "0 auto", fontFamily: lv.fontSans }}>
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 22 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Radar size={18} color={C.brand} />
             </div>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, color: C.ink, letterSpacing: "-0.02em" }}>Control Room</h1>
+            <h1 style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 700, color: C.ink, letterSpacing: "-0.02em" }}>Control Room</h1>
             <LivePulse ok={!error} />
           </div>
-          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: C.body }}>
+          <p style={{ margin: "6px 0 0", fontSize: 14, color: C.muted }}>
             Every live interview at a glance. Problems rise to the top — you only need to look where it&apos;s red.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: C.muted }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span aria-live="off" style={{ fontSize: 12, color: C.muted }}>
             {lastFetch ? `Updated ${Math.max(0, Math.round((now - lastFetch) / 1000))}s ago` : "Connecting…"}
           </span>
-          <ToggleBtn on={sound} onClick={() => setSound((s) => !s)} title={sound ? "Mute alert sound" : "Unmute alert sound"}>
-            {sound ? <Bell size={14} /> : <BellOff size={14} />}
+          <ToggleBtn on={sound} onClick={() => setSound((s) => !s)} title={sound ? "Mute alert sound" : "Unmute alert sound"} label="Alert sound">
+            {sound ? <Bell size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
           </ToggleBtn>
           <ToggleBtn on={showDemo} onClick={() => setShowDemo((s) => !s)} title="Show demo-gallery sessions separately">
             <span style={{ fontSize: 12, fontWeight: 600 }}>Demo sessions</span>
@@ -148,7 +153,7 @@ export function ControlRoomPage() {
       </div>
 
       {/* ── Summary strip ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 26 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 26 }}>
         <Stat label="Live now" value={data?.counts.live} tone="brand" />
         <Stat label="Need attention" value={data?.counts.alert} tone={data?.counts.alert ? "red" : "muted"} />
         <Stat label="Watching" value={data?.counts.watch} tone={data?.counts.watch ? "amber" : "muted"} />
@@ -156,12 +161,12 @@ export function ControlRoomPage() {
       </div>
 
       {error && (
-        <div style={{ background: C.redSoft, border: `1px solid ${C.redLine}`, color: C.red, borderRadius: 12, padding: "10px 14px", fontSize: 13, marginBottom: 18 }}>{error}</div>
+        <Alert tone="danger" style={{ marginBottom: 18 }}>{error}</Alert>
       )}
 
       {!data && !error && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.muted, fontSize: 14, padding: 40, justifyContent: "center" }}>
-          <Loader2 size={16} className="animate-spin" /> Loading live sessions…
+        <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, color: C.muted, fontSize: 14, padding: 40, justifyContent: "center" }}>
+          <span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading live sessions…
         </div>
       )}
 
@@ -172,7 +177,7 @@ export function ControlRoomPage() {
       {/* ── Needs attention (red) ── */}
       {groups.alert.length > 0 && (
         <Section title="Needs attention" count={groups.alert.length} tone="red">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(340px, 100%), 1fr))", gap: 14 }}>
             {groups.alert.map((t) => <BigTile key={t.id} t={t} now={now} onOpen={setOpenId} />)}
           </div>
         </Section>
@@ -181,7 +186,7 @@ export function ControlRoomPage() {
       {/* ── Watch (amber) ── */}
       {groups.watch.length > 0 && (
         <Section title="Keep an eye on" count={groups.watch.length} tone="amber">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: 12 }}>
             {groups.watch.map((t) => <BigTile key={t.id} t={t} now={now} onOpen={setOpenId} compact />)}
           </div>
         </Section>
@@ -210,10 +215,10 @@ export function ControlRoomPage() {
         <Section title="Recently ended · replay" count={data!.recentlyEnded.length} tone="muted">
           <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden" }}>
             {data!.recentlyEnded.map((r, i) => (
-              <a key={r.id} href={`/playback/${r.id}`}
+              <a key={r.id} href={`/playback/${r.id}`} className="cr-row"
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderTop: i ? `1px solid ${C.line}` : "none", textDecoration: "none", color: C.ink }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = C.bg)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                <PlayCircle size={18} color={r.hasRecording ? C.brand : C.muted} />
+              >
+                <PlayCircle size={18} color={r.hasRecording ? C.brand : C.muted} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>{r.candidate}</div>
                   <div style={{ fontSize: 12, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.position} · {r.company}</div>
@@ -241,10 +246,11 @@ export function ControlRoomPage() {
 function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (id: string) => void; compact?: boolean }) {
   const tone = toneFor(t.health.level);
   return (
-    <button onClick={() => onOpen(t.id)}
+    <button type="button" className="cr-tile" onClick={() => onOpen(t.id)}
+      aria-label={`${t.candidate}, ${t.health.level === "alert" ? "needs attention" : t.health.level === "watch" ? "watch" : "all clear"} — open details`}
       style={{
-        textAlign: "left", cursor: "pointer", background: C.surface, borderRadius: 16, padding: compact ? 14 : 16,
-        border: `1px solid ${tone.line}`, boxShadow: t.health.level === "alert" ? `0 0 0 3px ${tone.soft}, 0 8px 24px rgba(220,38,38,0.08)` : "0 1px 3px rgba(15,23,42,0.04)",
+        textAlign: "left", cursor: "pointer", background: C.surface, borderRadius: 14, padding: compact ? 14 : 16,
+        border: `1px solid ${tone.line}`, boxShadow: t.health.level === "alert" ? `0 0 0 3px ${tone.soft}, ${lv.shadowMd}` : lv.shadowSm,
         display: "flex", flexDirection: "column", gap: 12, transition: "transform .12s, box-shadow .12s", fontFamily: "inherit",
         animation: t.health.level === "alert" ? "cr-attn 2.4s ease-in-out infinite" : undefined,
       }}
@@ -287,10 +293,10 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
 function MiniTile({ t, now, onOpen }: { t: Tile; now: number; onOpen: (id: string) => void }) {
   const verified = t.health.presence === "present";
   return (
-    <button onClick={() => onOpen(t.id)} title={t.health.presenceLabel}
+    <button type="button" className="cr-tile" onClick={() => onOpen(t.id)} title={t.health.presenceLabel} aria-label={`${t.candidate} — open details`}
       style={{ textAlign: "left", cursor: "pointer", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.brand)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.line)}>
-      <span style={{ width: 8, height: 8, borderRadius: 4, background: verified ? C.green : C.muted, flexShrink: 0 }} />
+      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: verified ? C.green : C.muted, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.candidate}</div>
         <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.position}</div>
@@ -303,13 +309,13 @@ function MiniTile({ t, now, onOpen }: { t: Tile; now: number; onOpen: (id: strin
 function PresenceBadge({ presence, label, large }: { presence: HumanPresence; label: string; large?: boolean }) {
   const map = {
     present: { Icon: ShieldCheck, fg: C.green, bg: C.greenSoft, line: C.greenLine, head: "Real human present" },
-    unverified: { Icon: ShieldQuestion, fg: C.body, bg: C.bg, line: C.line, head: "Presence unverified" },
+    unverified: { Icon: ShieldQuestion, fg: C.body, bg: C.sunken, line: C.line, head: "Presence unverified" },
     anomaly: { Icon: ShieldAlert, fg: C.red, bg: C.redSoft, line: C.redLine, head: "Presence anomaly" },
   }[presence];
   const { Icon } = map;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, background: map.bg, border: `1px solid ${map.line}`, borderRadius: 12, padding: large ? "12px 14px" : "8px 10px" }}>
-      <Icon size={large ? 22 : 18} color={map.fg} style={{ flexShrink: 0 }} />
+      <Icon size={large ? 22 : 18} color={map.fg} aria-hidden="true" style={{ flexShrink: 0 }} />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: large ? 14 : 12.5, fontWeight: 700, color: map.fg }}>{map.head}</div>
         <div style={{ fontSize: large ? 12.5 : 11.5, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
@@ -341,12 +347,12 @@ function SignalIcons({ h, flags }: { h: Health; flags: number }) {
   return (
     <>
       {[face, audio, conn].map(({ I, c, t }) => (
-        <span key={t} title={t} aria-label={t} style={{ width: 26, height: 26, borderRadius: 8, background: `${c}14`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <I size={14} color={c} />
+        <span key={t} title={t} role="img" aria-label={t} style={{ width: 26, height: 26, borderRadius: 8, background: softOf(c), display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <I size={14} color={c} aria-hidden="true" />
         </span>
       ))}
-      <span title="High-confidence integrity flags this session" style={{ height: 26, padding: "0 8px", borderRadius: 8, background: flags ? C.amberSoft : C.bg, color: flags ? C.amber : C.muted, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600 }}>
-        <Flag size={12} /> {flags}
+      <span title="High-confidence integrity flags this session" aria-label={`${flags} integrity flag${flags === 1 ? "" : "s"}`} style={{ height: 26, padding: "0 8px", borderRadius: 8, background: flags ? C.amberSoft : C.sunken, color: flags ? C.amber : C.muted, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600 }}>
+        <Flag size={12} aria-hidden="true" /> {flags}
       </span>
     </>
   );
@@ -400,12 +406,12 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Live interview detail" style={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", justifyContent: "flex-end" }}>
-      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.32)", backdropFilter: "blur(2px)" }} />
-      <aside style={{ position: "relative", width: "min(560px, 100vw)", height: "100%", background: C.bg, boxShadow: "-12px 0 40px rgba(15,23,42,0.18)", display: "flex", flexDirection: "column", animation: "cr-slide .22s cubic-bezier(.2,.8,.2,1)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: lv.overlay }} />
+      <aside style={{ position: "relative", width: "min(560px, 100vw)", height: "100%", background: C.bg, boxShadow: lv.shadowLg, display: "flex", flexDirection: "column", animation: "cr-slide .22s cubic-bezier(.2,.8,.2,1)" }}>
         {/* header */}
         <div style={{ padding: "18px 20px", background: C.surface, borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: "var(--font-display)" }}>{d?.interview.candidate.name ?? "Loading…"}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: lv.fontDisplay }}>{d?.interview.candidate.name ?? "Loading…"}</div>
             {d && <div style={{ fontSize: 12.5, color: C.body }}>{d.interview.position.title} · {d.interview.position.company}</div>}
           </div>
           {d?.interview.startedAt && !ended && (
@@ -413,19 +419,17 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               <Clock size={14} color={C.muted} /> {clock(d.interview.startedAt, now)}
             </div>
           )}
-          <button onClick={onClose} aria-label="Close" style={{ border: "none", background: C.bg, width: 30, height: 30, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <X size={16} color={C.body} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly aria-label="Close" onClick={onClose}><X size={16} /></Button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-          {err && <div style={{ color: C.red, fontSize: 13 }}>{err}</div>}
-          {!d && !err && <div style={{ color: C.muted, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}><Loader2 size={14} className="animate-spin" /> Loading…</div>}
+          {err && <Alert tone="danger">{err}</Alert>}
+          {!d && !err && <div role="status" style={{ color: C.muted, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}><span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading…</div>}
 
           {ended && d && (
             <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ flex: 1, fontSize: 13, color: C.body }}>This interview has ended.</div>
-              <a href={`/playback/${d.interview.id}`} style={primaryBtn}><PlayCircle size={15} /> Open playback</a>
+              <ButtonLink href={`/playback/${d.interview.id}`} size="sm" leftIcon={<PlayCircle size={15} />}>Open playback</ButtonLink>
             </div>
           )}
 
@@ -504,7 +508,7 @@ function TxLine({ speaker, text, at, interim }: { speaker: "ai" | "candidate"; t
       <div style={{ fontSize: 10.5, color: C.muted, marginBottom: 2 }}>
         {ai ? "Interviewer" : "Candidate"}{at ? ` · ${new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : interim ? " · speaking…" : ""}
       </div>
-      <div style={{ maxWidth: "88%", fontSize: 13, lineHeight: 1.5, padding: "7px 11px", borderRadius: 12, background: ai ? C.surface : C.brandSoft, border: `1px solid ${ai ? C.line : "#C7D2FE"}`, color: C.ink, fontStyle: interim ? "italic" : "normal", opacity: interim ? 0.75 : 1 }}>
+      <div style={{ maxWidth: "88%", fontSize: 13, lineHeight: 1.5, padding: "7px 11px", borderRadius: 12, background: ai ? C.surface : C.brandSoft, border: `1px solid ${ai ? C.line : C.brandLine}`, color: C.ink, fontStyle: interim ? "italic" : "normal", opacity: interim ? 0.75 : 1 }}>
         {text}
       </div>
     </div>
@@ -512,11 +516,6 @@ function TxLine({ speaker, text, at, interim }: { speaker: "ai" | "candidate"; t
 }
 
 /* ── Small primitives ──────────────────────────────────────────────────── */
-
-const primaryBtn: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 6, background: C.brand, color: "#fff", borderRadius: 10,
-  padding: "8px 14px", fontSize: 13, fontWeight: 600, textDecoration: "none",
-};
 
 function toneFor(l: HealthLevel) {
   return l === "alert" ? { line: C.redLine, soft: C.redSoft } : l === "watch" ? { line: C.amberLine, soft: C.amberSoft } : { line: C.line, soft: C.bg };
@@ -527,7 +526,7 @@ function Section({ title, count, tone, children }: { title: string; count: numbe
   return (
     <section style={{ marginBottom: 28 }}>
       <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: C.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        <span style={{ width: 8, height: 8, borderRadius: 4, background: dot }} /> {title}
+        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: dot }} /> {title}
         <span style={{ color: C.muted, fontWeight: 600 }}>{count}</span>
       </h2>
       {children}
@@ -541,7 +540,7 @@ function Stat({ label, value, tone, suffix }: { label: string; value: number | u
   return (
     <div style={{ background: bg, border: `1px solid ${tone === "red" ? C.redLine : tone === "amber" ? C.amberLine : C.line}`, borderRadius: 14, padding: "14px 16px" }}>
       <div style={{ fontSize: 12, color: C.body, fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: fg, fontFamily: "var(--font-display)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontSize: 26, fontWeight: 700, color: fg, fontFamily: lv.fontDisplay, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
         {value ?? "–"}<span style={{ fontSize: 14, color: C.muted, fontWeight: 600 }}>{suffix}</span>
       </div>
     </div>
@@ -560,10 +559,10 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Signal({ label, value, tone }: { label: string; value: string; tone: "green" | "amber" | "red" | "muted" }) {
   const c = { green: C.green, amber: C.amber, red: C.red, muted: C.body }[tone];
   return (
-    <div style={{ background: C.bg, borderRadius: 10, padding: "9px 11px" }}>
+    <div style={{ background: C.sunken, borderRadius: 10, padding: "9px 11px" }}>
       <div style={{ fontSize: 11, color: C.muted }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: 600, color: c, display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ width: 6, height: 6, borderRadius: 3, background: c }} /> {value}
+        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 3, background: c }} /> {value}
       </div>
     </div>
   );
@@ -573,10 +572,10 @@ function Chip({ tone, children }: { tone: "amber"; children: React.ReactNode }) 
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 600, color: tone === "amber" ? C.amber : C.body, background: C.amberSoft, borderRadius: 999, padding: "2px 8px" }}>{children}</span>;
 }
 
-function ToggleBtn({ on, onClick, title, children }: { on: boolean; onClick: () => void; title: string; children: React.ReactNode }) {
+function ToggleBtn({ on, onClick, title, label, children }: { on: boolean; onClick: () => void; title: string; label?: string; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} title={title} aria-pressed={on}
-      style={{ height: 32, padding: "0 10px", borderRadius: 9, border: `1px solid ${on ? "#C7D2FE" : C.line}`, background: on ? C.brandSoft : C.surface, color: on ? C.brand : C.body, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
+    <button type="button" onClick={onClick} title={title} aria-pressed={on} aria-label={label} className="lv-seg__opt"
+      style={{ minHeight: 32, height: 32, padding: "0 10px", display: "inline-flex", alignItems: "center", gap: 6 }}>
       {children}
     </button>
   );
@@ -585,11 +584,14 @@ function ToggleBtn({ on, onClick, title, children }: { on: boolean; onClick: () 
 function LivePulse({ ok }: { ok: boolean }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: ok ? C.green : C.red, background: ok ? C.greenSoft : C.redSoft, borderRadius: 999, padding: "3px 9px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-      <span style={{ width: 7, height: 7, borderRadius: 4, background: ok ? C.green : C.red, animation: ok ? "cr-pulse 1.8s infinite" : undefined }} />
+      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 4, background: ok ? C.green : C.red, animation: ok ? "cr-pulse 1.8s infinite" : undefined }} />
       {ok ? "Live" : "Offline"}
       <style>{`
         @keyframes cr-pulse { 0% { box-shadow: 0 0 0 0 rgba(5,150,105,.55) } 70% { box-shadow: 0 0 0 7px rgba(5,150,105,0) } 100% { box-shadow: 0 0 0 0 rgba(5,150,105,0) } }
-        @keyframes cr-attn { 0%,100% { box-shadow: 0 0 0 3px #FEF2F2, 0 8px 24px rgba(220,38,38,.08) } 50% { box-shadow: 0 0 0 5px #FECACA, 0 8px 24px rgba(220,38,38,.14) } }
+        @keyframes cr-attn { 0%,100% { box-shadow: 0 0 0 3px var(--lv-danger-soft), var(--lv-shadow-md) } 50% { box-shadow: 0 0 0 5px var(--lv-danger-border), var(--lv-shadow-md) } }
+        @media (prefers-reduced-motion: reduce) { .cr-tile { animation: none !important; } }
+        .cr-tile:focus-visible, .cr-row:focus-visible { outline: none; box-shadow: var(--lv-focus-ring) !important; }
+        .cr-row:hover { background: var(--lv-surface-muted); }
         @keyframes cr-slide { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
       `}</style>
     </span>
@@ -599,7 +601,7 @@ function LivePulse({ ok }: { ok: boolean }) {
 function EmptyState() {
   return (
     <div style={{ background: C.surface, border: `1px dashed ${C.line}`, borderRadius: 16, padding: "44px 24px", textAlign: "center", marginBottom: 28 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: C.brandSoft, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12, background: C.brandSoft, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
         <Radar size={22} color={C.brand} />
       </div>
       <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>No interviews running right now</div>
