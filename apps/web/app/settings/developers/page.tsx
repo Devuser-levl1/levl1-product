@@ -8,17 +8,13 @@ const EVENTS = ['interview.completed', 'report.ready'] as const
 interface Key { id: string; name: string; prefix: string; lastUsedAt: string | null; revokedAt: string | null }
 interface Endpoint { id: string; url: string; secret: string; events: string[]; active: boolean }
 
-const ACCENT = '#4F46E5'
-const card: React.CSSProperties = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 22, marginBottom: 20 }
-const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 13, background: '#fff' }
-const btn: React.CSSProperties = { padding: '9px 14px', borderRadius: 8, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }
-const ghost: React.CSSProperties = { ...inp, fontWeight: 600, color: '#475569', cursor: 'pointer' }
+const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 22, marginBottom: 20 }
 
 export default function InterviewsDevelopers() {
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>Developers / API</h1>
-      <p style={{ fontSize: 13, color: '#475569', margin: '0 0 24px' }}>Integrate Levl1 Interviews into your ATS: authenticate the public API (<code>/api/v1</code>) with a key, and receive results via signed webhooks.</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>Developers / API</h1>
+      <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: '0 0 24px' }}>Integrate Levl1 Interviews into your ATS: authenticate the public API (<code>/api/v1</code>) with a key, and receive results via signed webhooks.</p>
       <Keys />
       <Webhooks />
     </div>
@@ -38,28 +34,28 @@ function Keys() {
   async function revoke(id: string) { if (!confirm('Revoke this key?')) return; await fetch(`/api/interviews/api-keys/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>API keys</div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 12 }}>API keys</div>
       {raw && (
-        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#065F46', marginBottom: 6 }}>Copy your key now — shown only once.</div>
+        <div style={{ background: 'var(--lv-success-soft)', border: '1px solid var(--lv-success-border)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-success)', marginBottom: 6 }}>Copy your key now — shown only once.</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <code style={{ flex: 1, background: '#fff', border: '1px solid #A7F3D0', borderRadius: 6, padding: '8px 10px', fontSize: 12.5, overflowX: 'auto', whiteSpace: 'nowrap' }}>{raw}</code>
-            <button style={btn} onClick={() => navigator.clipboard.writeText(raw)}>Copy</button>
-            <button style={ghost} onClick={() => setRaw(null)}>Done</button>
+            <code style={{ flex: 1, background: 'var(--lv-surface)', border: '1px solid var(--lv-success-border)', borderRadius: 6, padding: '8px 10px', fontSize: 12.5, overflowX: 'auto', whiteSpace: 'nowrap' }}>{raw}</code>
+            <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={() => navigator.clipboard.writeText(raw)}>Copy</button>
+            <button className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => setRaw(null)}>Done</button>
           </div>
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input style={{ ...inp, flex: 1 }} placeholder="Key label (e.g. Bullhorn prod)" value={name} onChange={(e) => setName(e.target.value)} />
-        <button style={btn} onClick={create}>+ Generate API key</button>
+        <input className="lv-input" style={{ flex: 1 }} aria-label="API key label" placeholder="Key label (e.g. Bullhorn prod)" value={name} onChange={(e) => setName(e.target.value)} />
+        <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={create}>+ Generate API key</button>
       </div>
-      {keys.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No API keys yet.</div> : keys.map((k) => (
-        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10, marginBottom: 8, opacity: k.revokedAt ? 0.55 : 1 }}>
+      {keys.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>No API keys yet.</div> : keys.map((k) => (
+        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8, opacity: k.revokedAt ? 0.55 : 1 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>{k.name} <code style={{ fontSize: 12, color: '#64748B' }}>{k.prefix}…</code></div>
-            <div style={{ fontSize: 12, color: '#475569' }}>{k.revokedAt ? 'Revoked' : k.lastUsedAt ? `Last used ${new Date(k.lastUsedAt).toLocaleString('en-IN')}` : 'Never used'}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)' }}>{k.name} <code style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{k.prefix}…</code></div>
+            <div style={{ fontSize: 12, color: 'var(--lv-text-body)' }}>{k.revokedAt ? 'Revoked' : k.lastUsedAt ? `Last used ${new Date(k.lastUsedAt).toLocaleString('en-IN')}` : 'Never used'}</div>
           </div>
-          {!k.revokedAt && <button style={{ ...ghost, color: '#DC2626' }} onClick={() => revoke(k.id)}>Revoke</button>}
+          {!k.revokedAt && <button className="lv-btn lv-btn--secondary lv-btn--sm" style={{ color: 'var(--lv-danger)' }} onClick={() => revoke(k.id)}>Revoke</button>}
         </div>
       ))}
     </div>
@@ -81,25 +77,25 @@ function Webhooks() {
   async function remove(id: string) { if (!confirm('Delete endpoint?')) return; await fetch(`/api/interviews/webhooks/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Webhook endpoints</div>
-      <div style={{ fontSize: 12.5, color: '#475569', marginBottom: 14 }}>Signed with <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> using the endpoint secret.</div>
-      <div style={{ border: '1px dashed #CBD5E1', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-        <input style={{ ...inp, width: '100%', boxSizing: 'border-box', marginBottom: 10 }} placeholder="https://your-ats.example.com/levl1/webhook" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 4 }}>Webhook endpoints</div>
+      <div style={{ fontSize: 12.5, color: 'var(--lv-text-body)', marginBottom: 14 }}>Signed with <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> using the endpoint secret.</div>
+      <div style={{ border: '1px dashed var(--lv-border-strong)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+        <input className="lv-input" style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }} aria-label="Webhook endpoint URL" placeholder="https://your-ats.example.com/levl1/webhook" value={url} onChange={(e) => setUrl(e.target.value)} />
         <div style={{ display: 'flex', gap: 14, marginBottom: 10, flexWrap: 'wrap' }}>
-          {EVENTS.map((ev) => <label key={ev} style={{ fontSize: 13, color: '#334155', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={events.includes(ev)} onChange={(e) => setEvents((p) => e.target.checked ? [...p, ev] : p.filter((x) => x !== ev))} /><code>{ev}</code></label>)}
+          {EVENTS.map((ev) => <label key={ev} style={{ fontSize: 13, color: 'var(--lv-text-body)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={events.includes(ev)} onChange={(e) => setEvents((p) => e.target.checked ? [...p, ev] : p.filter((x) => x !== ev))} /><code>{ev}</code></label>)}
         </div>
-        {err && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 8 }}>{err}</div>}
-        <button style={btn} onClick={add} disabled={!url}>+ Add endpoint</button>
+        {err && <div style={{ color: 'var(--lv-danger)', fontSize: 13, marginBottom: 8 }}>{err}</div>}
+        <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={add} disabled={!url}>+ Add endpoint</button>
       </div>
-      {eps.length === 0 ? <div style={{ fontSize: 13, color: '#475569' }}>No endpoints yet.</div> : eps.map((ep) => (
-        <div key={ep.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid #F1F5F9', borderRadius: 10, marginBottom: 8 }}>
+      {eps.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>No endpoints yet.</div> : eps.map((ep) => (
+        <div key={ep.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>
-            <div style={{ fontSize: 12, color: '#475569' }}>{ep.events.join(', ')}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>
+            <div style={{ fontSize: 12, color: 'var(--lv-text-body)' }}>{ep.events.join(', ')}</div>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'rgba(5,150,105,0.1)' : '#F1F5F9', color: ep.active ? '#059669' : '#475569' }}>{ep.active ? 'Active' : 'Paused'}</span>
-          <button style={ghost} onClick={() => toggle(ep)}>{ep.active ? 'Pause' : 'Resume'}</button>
-          <button style={{ ...ghost, color: '#DC2626' }} onClick={() => remove(ep.id)}>Delete</button>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'color-mix(in srgb, var(--lv-success) 10%, transparent)' : 'var(--lv-surface-muted)', color: ep.active ? 'var(--lv-success)' : 'var(--lv-text-body)' }}>{ep.active ? 'Active' : 'Paused'}</span>
+          <button className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => toggle(ep)}>{ep.active ? 'Pause' : 'Resume'}</button>
+          <button className="lv-btn lv-btn--secondary lv-btn--sm" style={{ color: 'var(--lv-danger)' }} onClick={() => remove(ep.id)}>Delete</button>
         </div>
       ))}
     </div>

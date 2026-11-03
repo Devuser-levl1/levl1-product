@@ -37,17 +37,17 @@ export function AccountTypePrompt() {
   if (!show) return null;
   return (
     <div role="dialog" aria-label="Choose account type"
-      style={{ margin: "16px 28px 0", background: "#fff", border: "1px solid #C7D2FE", borderRadius: 14, padding: "16px 18px", boxShadow: "0 4px 18px rgba(79,70,229,0.08)", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      style={{ margin: "16px 28px 0", background: "#fff", border: "1px solid var(--lv-brand-soft-border)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 4px 18px color-mix(in srgb, var(--lv-brand) 8%, transparent)", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
       <div style={{ flex: "1 1 260px" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: "#1E293B" }}>Quick question — how do you hire?</div>
-        <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 2 }}>We&apos;ll tailor job setup: agencies get client company and client contacts; in-house teams skip them.</div>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--lv-text)" }}>Quick question — how do you hire?</div>
+        <div style={{ fontSize: 12.5, color: "var(--lv-text-muted)", marginTop: 2 }}>We&apos;ll tailor job setup: agencies get client company and client contacts; in-house teams skip them.</div>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {ACCOUNT_TYPES.map((t) => {
           const Icon = t.value === "agency" ? Briefcase : Building2;
           return (
             <button key={t.value} type="button" disabled={!!saving} onClick={() => choose(t.value)} title={t.desc}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, border: "1px solid #C7D2FE", background: saving === t.value ? "#4F46E5" : "#EEF2FF", color: saving === t.value ? "#fff" : "#4338CA", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", fontFamily: "var(--font-sans)" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, border: "1px solid var(--lv-brand-soft-border)", background: saving === t.value ? "var(--lv-brand)" : "var(--lv-brand-soft)", color: saving === t.value ? "#fff" : "var(--lv-brand-text)", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", fontFamily: "var(--lv-font-sans)" }}>
               <Icon size={15} /> {t.label}
             </button>
           );
@@ -55,7 +55,7 @@ export function AccountTypePrompt() {
       </div>
       <button type="button" aria-label="Ask me later" title="Ask me later"
         onClick={() => { try { sessionStorage.setItem(SNOOZE_KEY, "1"); } catch {} setSnoozed(true); }}
-        style={{ border: "none", background: "none", color: "#94A3B8", cursor: "pointer", padding: 4 }}>
+        style={{ border: "none", background: "none", color: "var(--lv-text-muted)", cursor: "pointer", padding: 4 }}>
         <X size={16} />
       </button>
     </div>

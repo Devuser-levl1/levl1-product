@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, isValidElement } from "react";
 import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus, Mail } from "lucide-react";
 import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
 import { ACCOUNT_TYPES, isAccountType, type AccountType } from "@/lib/screen/account-type";
@@ -8,73 +8,53 @@ import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
+import { Field as FormField, PageHeader } from "@/components/screen/ui";
 
+// Design-System Pass 3 (group 6): local helpers render the canonical Screen
+// components; settings state, saves and team/billing calls are unchanged.
 function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
   return (
-    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingBottom: 16, borderBottom: "1px solid #F1F5F9" }}>
-        <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={17} color="#7C3AED" />
+    <section className="lv-card lv-card--pad" aria-label={title} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingBottom: 16, borderBottom: "1px solid var(--lv-border)" }}>
+        <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 10, background: "var(--lv-brand-soft)", border: "1px solid var(--lv-brand-soft-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={17} color="var(--lv-brand)" />
         </div>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", fontFamily: "var(--font-display)" }}>{title}</div>
-          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3, fontWeight: 500 }}>{description}</div>
+          <h2 className="lv-card__title">{title}</h2>
+          <div style={{ fontSize: 13, color: "var(--lv-text-muted)", marginTop: 3 }}>{description}</div>
         </div>
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
+/** Single control → canonical Field (label wired to the control); several children → labelled group. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  if (isValidElement(children)) return <FormField label={label}>{children}</FormField>;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
+    <div role="group" aria-label={label} className="lv-field">
+      <span className="lv-label">{label}</span>
       {children}
     </div>
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      style={{
-        width: 44, height: 24, borderRadius: 100,
-        background: checked ? "#7C3AED" : "#E2E8F0",
-        border: "none", cursor: "pointer", transition: "all 0.2s",
-        position: "relative", flexShrink: 0,
-        boxShadow: checked ? "0 2px 8px rgba(124,58,237,0.30)" : "none",
-      }}
-    >
-      <div style={{
-        position: "absolute", top: 3,
-        left: checked ? 22 : 3,
-        width: 18, height: 18, borderRadius: "50%",
-        background: "#fff", transition: "left 0.2s",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
-      }} />
-    </button>
-  );
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className="lv-switch" onClick={() => onChange(!checked)} />;
 }
 
 function ToggleRow({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2, fontWeight: 500 }}>{sub}</div>}
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--lv-text)" }}>{label}</div>
+        {sub && <div style={{ fontSize: 12, color: "var(--lv-text-muted)", marginTop: 2 }}>{sub}</div>}
       </div>
-      <Toggle checked={checked} onChange={onChange} />
+      <Toggle label={label} checked={checked} onChange={onChange} />
     </div>
   );
 }
-
-const SELECT_STYLE: React.CSSProperties = {
-  background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8,
-  padding: "10px 14px", fontSize: 14, color: "#4F46E5", fontFamily: "var(--font-sans)",
-  cursor: "pointer", outline: "none", width: "100%", fontWeight: 500,
-};
 
 interface TeamMemberRecord { id: string; name: string; email: string; role: string; status: string; inviteToken?: string | null }
 interface UserRecord { id: string; name: string; email: string; role: string; lastLoginAt?: string | null }
@@ -400,56 +380,49 @@ export default function SettingsPage() {
     {
       id: 'starter', name: 'Starter', price: '₹15,000/mo', interviews: 50,
       features: ['50 interviews/month', '5 active positions', 'AI question generation', 'Evaluation reports'],
-      color: '#4F46E5',
+      color: 'var(--lv-brand)',
     },
     {
       id: 'professional', name: 'Professional', price: '₹45,000/mo', interviews: 200,
       features: ['200 interviews/month', 'Unlimited positions', 'White-label reports', 'Priority support'],
-      color: '#7C3AED', popular: true,
+      color: 'var(--lv-accent)', popular: true,
     },
   ];
 
   return (
-    <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 760 }}>
+    <div className="lv-page" style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 760, margin: 0 }}>
 
       {/* Header */}
-      <div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
-          Settings
-        </h1>
-        <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
-          Configure your agency profile, notifications, and interview defaults.
-        </p>
-      </div>
+      <PageHeader title="Settings" description="Configure your agency profile, notifications, and interview defaults." />
 
       {/* Agency Profile */}
       <Section icon={Settings} title="Agency Profile" description="Your agency's public identity on the platform">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Agency Name">
-            <input className="input" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} />
+            <input className="lv-input" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} />
           </Field>
           <Field label="Contact Email">
-            <input className="input" type="email" value={agencyEmail} onChange={(e) => setAgencyEmail(e.target.value)} />
+            <input className="lv-input" type="email" value={agencyEmail} onChange={(e) => setAgencyEmail(e.target.value)} />
           </Field>
         </div>
         <Field label="Website">
-          <input className="input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
+          <input className="lv-input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
         </Field>
         <Field label="Account type">
-          <select className="input" value={accountType ?? ""} disabled={savingType} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
+          <select className="lv-select" aria-label="Account type" value={accountType ?? ""} disabled={savingType} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
             {accountType === null && <option value="">Not set — job setup asks for client details</option>}
             {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
           </select>
-          <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 5 }}>
+          <div style={{ fontSize: 11.5, color: "var(--lv-text-muted)", marginTop: 5 }}>
             Saves immediately. In-house accounts don&apos;t see the Clients tab or client fields; existing client records are kept and come back if you switch to agency.
           </div>
         </Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Sender Name (for emails)">
-            <input className="input" placeholder="e.g. Talent Team" value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+            <input className="lv-input" placeholder="e.g. Talent Team" value={senderName} onChange={(e) => setSenderName(e.target.value)} />
           </Field>
           <Field label="Sender Email (for emails)">
-            <input className="input" type="email" placeholder="e.g. talent@yourcompany.com" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
+            <input className="lv-input" type="email" placeholder="e.g. talent@yourcompany.com" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
           </Field>
         </div>
         <button
@@ -459,7 +432,7 @@ export default function SettingsPage() {
             setSavingProfile(false);
           }}
           disabled={savingProfile}
-          className="btn-navy"
+          className="lv-btn lv-btn--primary"
           style={{ alignSelf: "flex-start", fontSize: 13 }}
         >
           {savingProfile ? "Saving…" : "Save Profile"}
@@ -472,50 +445,50 @@ export default function SettingsPage() {
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
             padding: "4px 10px", borderRadius: 100,
-            background: domainVerified ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.12)",
-            color: domainVerified ? "#059669" : "#64748B",
+            background: domainVerified ? "color-mix(in srgb, var(--lv-success) 10%, transparent)" : "var(--lv-surface-muted)",
+            color: domainVerified ? "var(--lv-success)" : "var(--lv-text-muted)",
           }}>
             {domainVerified ? <CheckCircle2 size={13} /> : null}
             {domainVerified ? `Verified — sending from ${senderEmail}` : "Not verified"}
           </span>
         </div>
         {!domainVerified && (
-          <div style={{ fontSize: 12, color: "#94A3B8" }}>
+          <div style={{ fontSize: 12, color: "var(--lv-text-muted)" }}>
             Emails currently send from <strong>noreply@mail.levl1.io</strong>. Verify your domain to send from {senderEmail || "your address"}.
           </div>
         )}
 
         {!domainVerified && (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={verifyDomain} disabled={domainBusy === 'verify'} className="btn-navy" style={{ fontSize: 13 }}>
+            <button onClick={verifyDomain} disabled={domainBusy === 'verify'} className="lv-btn lv-btn--primary" style={{ fontSize: 13 }}>
               {domainBusy === 'verify' ? "Starting…" : "Verify My Domain →"}
             </button>
             {domainRecords.length > 0 && (
-              <button onClick={checkDomain} disabled={domainBusy === 'check'} className="btn-ghost" style={{ fontSize: 13 }}>
+              <button onClick={checkDomain} disabled={domainBusy === 'check'} className="lv-btn lv-btn--secondary" style={{ fontSize: 13 }}>
                 {domainBusy === 'check' ? "Checking…" : "I've added the records — Check Verification"}
               </button>
             )}
           </div>
         )}
 
-        {domainMsg && <div style={{ fontSize: 12, color: "#475569" }}>{domainMsg}</div>}
+        {domainMsg && <div style={{ fontSize: 12, color: "var(--lv-text-body)" }}>{domainMsg}</div>}
 
         {domainRecords.length > 0 && (
-          <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ border: "1px solid var(--lv-border)", borderRadius: 10, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
-                <tr style={{ background: "#F8FAFC" }}>
+                <tr style={{ background: "var(--lv-surface-sunken)" }}>
                   {["Type", "Hostname", "Value"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "#64748B", fontWeight: 700 }}>{h}</th>
+                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "var(--lv-text-muted)", fontWeight: 700 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {domainRecords.map((r, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid #F1F5F9" }}>
-                    <td style={{ padding: "8px 12px", color: "#334155", fontWeight: 600 }}>{r.type}</td>
-                    <td style={{ padding: "8px 12px", color: "#475569", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.name}</td>
-                    <td style={{ padding: "8px 12px", color: "#475569", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{r.value}</td>
+                  <tr key={i} style={{ borderTop: "1px solid var(--lv-surface-muted)" }}>
+                    <td style={{ padding: "8px 12px", color: "var(--lv-text-body)", fontWeight: 600 }}>{r.type}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--lv-text-body)", fontFamily: "var(--lv-font-mono)", wordBreak: "break-all" }}>{r.name}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--lv-text-body)", fontFamily: "var(--lv-font-mono)", wordBreak: "break-all" }}>{r.value}</td>
                   </tr>
                 ))}
               </tbody>
@@ -532,27 +505,27 @@ export default function SettingsPage() {
       {/* Branding (white-label reports & candidate portal) */}
       <Section icon={CheckCircle2} title="Branding" description="Your logo and colour appear on reports and the candidate portal">
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ width: 80, height: 80, borderRadius: 12, border: "1px solid #E2E8F0", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          <div style={{ width: 80, height: 80, borderRadius: 12, border: "1px solid var(--lv-border)", background: "var(--lv-surface-sunken)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             {logoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={logoUrl} alt="Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-              : <span style={{ fontSize: 11, color: "#94A3B8" }}>No logo</span>}
+              : <span style={{ fontSize: 11, color: "var(--lv-text-muted)" }}>No logo</span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <label className="btn-ghost" style={{ fontSize: 13, cursor: "pointer", display: "inline-block" }}>
+            <label className="lv-btn lv-btn--secondary" style={{ fontSize: 13, cursor: "pointer", display: "inline-block" }}>
               {uploadingLogo ? "Uploading…" : "Upload Logo"}
               <input
                 type="file" accept="image/*" hidden
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }}
               />
             </label>
-            <span style={{ fontSize: 11, color: "#94A3B8" }}>PNG/SVG, under 512KB. Shown on candidate reports.</span>
+            <span style={{ fontSize: 11, color: "var(--lv-text-muted)" }}>PNG/SVG, under 512KB. Shown on candidate reports.</span>
           </div>
         </div>
         <Field label="Brand Colour">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <input type="color" value={brandColor} onChange={(e) => saveBrandColor(e.target.value)} style={{ width: 44, height: 36, border: "1px solid #E2E8F0", borderRadius: 8, cursor: "pointer", background: "none" }} />
-            <span style={{ fontSize: 13, color: "#475569", fontFamily: "var(--font-mono)" }}>{brandColor}</span>
+            <input type="color" value={brandColor} onChange={(e) => saveBrandColor(e.target.value)} style={{ width: 44, height: 36, border: "1px solid var(--lv-border)", borderRadius: 8, cursor: "pointer", background: "none" }} />
+            <span style={{ fontSize: 13, color: "var(--lv-text-body)", fontFamily: "var(--lv-font-mono)" }}>{brandColor}</span>
           </div>
         </Field>
       </Section>
@@ -566,8 +539,8 @@ export default function SettingsPage() {
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 14px", borderRadius: 10,
-                border: `1.5px solid ${voiceAccent === v.key ? "rgba(124,58,237,0.35)" : "#E2E8F0"}`,
-                background: voiceAccent === v.key ? "rgba(124,58,237,0.05)" : "#F8FAFC",
+                border: `1.5px solid ${voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 35%, transparent)" : "var(--lv-border)"}`,
+                background: voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 5%, transparent)" : "var(--lv-surface-sunken)",
                 cursor: "pointer", transition: "all 0.15s",
               }}
               onClick={() => setVoiceAccent(v.key)}
@@ -575,22 +548,22 @@ export default function SettingsPage() {
               {/* Radio */}
               <div style={{
                 width: 18, height: 18, borderRadius: "50%",
-                border: `2px solid ${voiceAccent === v.key ? "#7C3AED" : "#CBD5E1"}`,
+                border: `2px solid ${voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-border-strong)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, transition: "border-color 0.15s",
               }}>
                 {voiceAccent === v.key && (
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#7C3AED" }} />
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--lv-accent)" }} />
                 )}
               </div>
 
               {/* Flag + name */}
               <span style={{ fontSize: 20, flexShrink: 0 }}>{v.flag}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "#6D28D9" : "#4F46E5" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-brand)" }}>
                   {v.accent}
                 </div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{v.description}</div>
+                <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{v.description}</div>
               </div>
 
               {/* Preview button */}
@@ -601,17 +574,17 @@ export default function SettingsPage() {
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "6px 12px", borderRadius: 7,
-                  border: "1px solid rgba(124,58,237,0.20)",
-                  background: "rgba(124,58,237,0.07)", color: "#7C3AED",
+                  border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)",
+                  background: "color-mix(in srgb, var(--lv-accent) 7%, transparent)", color: "var(--lv-accent)",
                   fontSize: 12, fontWeight: 600, cursor: previewLoading ? "wait" : "pointer",
-                  fontFamily: "var(--font-sans)", flexShrink: 0, transition: "all 0.15s",
+                  fontFamily: "var(--lv-font-sans)", flexShrink: 0, transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.07)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-accent) 14%, transparent)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-accent) 7%, transparent)"; }}
               >
                 {previewLoading === v.key
                   ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
-                  : <Play size={11} fill="#7C3AED" />
+                  : <Play size={11} fill="var(--lv-accent)" />
                 }
                 Preview
               </button>
@@ -622,18 +595,18 @@ export default function SettingsPage() {
         {/* Interviewer name display */}
         <div style={{
           marginTop: 4, padding: "12px 16px",
-          background: "rgba(124,58,237,0.05)",
-          border: "1px solid rgba(124,58,237,0.15)",
-          borderRadius: 8, fontSize: 13, color: "#475569",
+          background: "color-mix(in srgb, var(--lv-accent) 5%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--lv-accent) 15%, transparent)",
+          borderRadius: 8, fontSize: 13, color: "var(--lv-text-body)",
         }}>
           Your AI interviewer will introduce as:{" "}
-          <strong style={{ color: "#7C3AED" }}>{selectedOption.interviewerName}</strong>
+          <strong style={{ color: "var(--lv-accent)" }}>{selectedOption.interviewerName}</strong>
         </div>
 
         <button
           onClick={saveVoiceSettings}
           disabled={savingVoice}
-          className="btn-navy"
+          className="lv-btn lv-btn--primary"
           style={{ alignSelf: "flex-start", fontSize: 13 }}
         >
           {savingVoice ? "Saving…" : "Save Voice Settings"}
@@ -644,29 +617,29 @@ export default function SettingsPage() {
       <Section icon={Bell} title="Notifications" description="Choose when and how you get notified">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <ToggleRow label="Email notifications"  sub="Receive updates via email"                              checked={notifEmail}      onChange={setNotifEmail}      />
-          <div style={{ height: 1, background: "#F1F5F9" }} />
+          <div style={{ height: 1, background: "var(--lv-surface-muted)" }} />
           <ToggleRow label="Slack integration"    sub="Post alerts to a Slack channel"                        checked={notifSlack}      onChange={setNotifSlack}      />
-          <div style={{ height: 1, background: "#F1F5F9" }} />
+          <div style={{ height: 1, background: "var(--lv-surface-muted)" }} />
           <ToggleRow label="No-show alerts"       sub="Get notified when a candidate misses their slot"       checked={notifNoShow}     onChange={setNotifNoShow}     />
-          <div style={{ height: 1, background: "#F1F5F9" }} />
+          <div style={{ height: 1, background: "var(--lv-surface-muted)" }} />
           <ToggleRow label="Completion reports"   sub="Receive a summary after each interview completes"      checked={notifCompletion} onChange={setNotifCompletion} />
         </div>
       </Section>
 
       {/* Interview Defaults */}
       <Section icon={Mic} title="Interview Defaults" description="Default settings applied to new interview sessions">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Interview Duration">
             {/* Build 06: production interviews are fixed at 30 minutes — no
                 selectable options, to reduce config surface. */}
-            <div style={{ ...SELECT_STYLE, display: 'flex', alignItems: 'center', color: '#475569', background: '#F8FAFC', cursor: 'default' }}>
-              30 minutes <span style={{ marginLeft: 8, fontSize: 11, color: '#94A3B8' }}>· fixed</span>
+            <div className="lv-input" aria-readonly="true" style={{ display: 'flex', alignItems: 'center', color: 'var(--lv-text-body)', background: 'var(--lv-surface-sunken)', cursor: 'default' }}>
+              30 minutes <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)' }}>· fixed</span>
             </div>
           </Field>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <ToggleRow label="Auto-generate transcript"   sub="Save a full text transcript of each interview"             checked={recordTranscript} onChange={setRecordTranscript} />
-          <div style={{ height: 1, background: "#F1F5F9" }} />
+          <div style={{ height: 1, background: "var(--lv-surface-muted)" }} />
           <ToggleRow label="Auto-score on completion"   sub="AI evaluates and scores each candidate automatically"      checked={autoScore}        onChange={setAutoScore}        />
         </div>
       </Section>
@@ -675,43 +648,43 @@ export default function SettingsPage() {
       <Section icon={Users} title="Team Members" description="Manage who has access to this dashboard">
         {teamLoading ? (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <Loader2 size={20} color="#7C3AED" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+            <Loader2 size={20} color="var(--lv-accent)" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
           </div>
         ) : (
           <>
             {/* Active users */}
             {teamUsers.map((u) => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
+              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(56,189,248,0.08))", border: "1px solid rgba(124,58,237,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#6D28D9" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--lv-accent)" }}>
                     {u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{u.email}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--lv-brand)" }}>{u.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{u.email}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span className="badge badge-success" style={{ textTransform: "capitalize" }}>{u.role}</span>
-                  <span style={{ fontSize: 10, color: "#94A3B8" }}>Active</span>
+                  <span className="lv-badge lv-badge--success" style={{ textTransform: "capitalize" }}>{u.role}</span>
+                  <span style={{ fontSize: 10, color: "var(--lv-text-muted)" }}>Active</span>
                 </div>
               </div>
             ))}
 
             {/* Invited (pending) members */}
             {teamMembers.filter(m => m.status === 'invited').map((m) => (
-              <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
+              <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F1F5F9", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#94A3B8" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-surface-muted)", border: "1px solid var(--lv-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--lv-text-muted)" }}>
                     {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#64748B" }}>{m.name}</div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{m.email}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--lv-text-muted)" }}>{m.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{m.email}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="badge badge-warning">Invited</span>
+                  <span className="lv-badge lv-badge--warning">Invited</span>
                   <button
                     onClick={async () => {
                       try {
@@ -720,9 +693,9 @@ export default function SettingsPage() {
                         else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
                       } catch { toast.error('Failed to resend'); }
                     }}
-                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", cursor: "pointer", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-sans)" }}
+                    className="lv-btn lv-btn--secondary lv-btn--sm" aria-label={`Resend invite to ${m.email}`}
                   >
-                    <RefreshCw size={10} /> Resend
+                    <RefreshCw size={13} aria-hidden="true" /> Resend
                   </button>
                   <button
                     onClick={async () => {
@@ -732,9 +705,9 @@ export default function SettingsPage() {
                         else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
                       } catch { toast.error('Failed to remove'); }
                     }}
-                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)", color: "#EF4444", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-sans)" }}
+                    className="lv-btn lv-btn--ghost lv-btn--sm lv-btn--icon" aria-label={`Remove ${m.email}`} title="Remove" style={{ color: "var(--lv-danger)" }}
                   >
-                    <Trash2 size={10} />
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -742,14 +715,14 @@ export default function SettingsPage() {
 
             {/* Invite new row */}
             {showInviteRow && (
-              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 0" }}>
+              <div role="group" aria-label="Invite a team member" style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 0", flexWrap: "wrap" }}>
                 <input
-                  className="input" type="email" placeholder="colleague@company.com"
+                  className="lv-input" type="email" placeholder="colleague@company.com" aria-label="Colleague's email"
                   value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                  style={{ flex: 2 }}
+                  style={{ flex: "2 1 200px", minWidth: 0 }}
                 />
-                <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'recruiter' | 'admin' | 'viewer')}
-                  style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 13, fontFamily: "var(--font-sans)", background: "#F8FAFC", cursor: "pointer" }}>
+                <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'recruiter' | 'admin' | 'viewer')} className="lv-select" aria-label="Role"
+                  style={{ flex: "1 1 120px", minWidth: 0, width: "auto" }}>
                   <option value="recruiter">Recruiter</option>
                   <option value="admin">Admin</option>
                   <option value="viewer">Viewer</option>
@@ -769,17 +742,17 @@ export default function SettingsPage() {
                     } catch { toast.error('Failed to send invite'); }
                     finally { setInvitingNew(false); }
                   }}
-                  className="btn-primary"
+                  className="lv-btn lv-btn--primary"
                   style={{ fontSize: 13, whiteSpace: "nowrap" }}
                 >
                   {invitingNew ? "Sending…" : "Send Invite"}
                 </button>
-                <button onClick={() => setShowInviteRow(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}>✕</button>
+                <button type="button" onClick={() => setShowInviteRow(false)} className="lv-btn lv-btn--ghost lv-btn--icon" aria-label="Cancel invite">✕</button>
               </div>
             )}
 
-            <button className="btn-ghost" style={{ fontSize: 13, alignSelf: "flex-start" }} onClick={() => setShowInviteRow(true)}>
-              <Plus size={13} /> Invite Team Member
+            <button className="lv-btn lv-btn--secondary" style={{ alignSelf: "flex-start" }} onClick={() => setShowInviteRow(true)}>
+              <Plus size={14} aria-hidden="true" /> Invite Team Member
             </button>
           </>
         )}
@@ -789,8 +762,8 @@ export default function SettingsPage() {
       <Section icon={CreditCard} title="Billing & Plan" description="Manage your subscription and usage">
         {/* Current plan card */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(79,70,229,0.04) 0%, rgba(124,58,237,0.06) 100%)',
-          border: '1px solid rgba(79,70,229,0.15)',
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 6%, transparent) 100%)',
+          border: '1px solid color-mix(in srgb, var(--lv-brand) 15%, transparent)',
           borderRadius: 12,
           padding: '16px 20px',
           display: 'flex',
@@ -800,12 +773,12 @@ export default function SettingsPage() {
           flexWrap: 'wrap',
         }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 4 }}>Current Plan</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#4F46E5', fontFamily: 'var(--font-display)', textTransform: 'capitalize' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-muted)', marginBottom: 4 }}>Current Plan</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-display)', textTransform: 'capitalize' }}>
               {agencyPlan?.plan ?? 'Trial'}
             </div>
             {agencyPlan?.plan === 'trial' && (
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 4 }}>
                 {agencyPlan.interviewsUsed} / {agencyPlan.interviewsLimit} interviews used · {agencyPlan.trialDaysLeft} days remaining
               </div>
             )}
@@ -813,14 +786,14 @@ export default function SettingsPage() {
           {/* Usage bar */}
           {agencyPlan && (
             <div style={{ flex: 1, minWidth: 120, maxWidth: 200 }}>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 6, fontWeight: 500 }}>
+              <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 6, fontWeight: 500 }}>
                 Usage: {agencyPlan.interviewsUsed} / {agencyPlan.interviewsLimit}
               </div>
-              <div style={{ height: 6, borderRadius: 4, background: '#E2E8F0', overflow: 'hidden' }}>
+              <div style={{ height: 6, borderRadius: 4, background: 'var(--lv-border)', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
                   width: `${Math.min((agencyPlan.interviewsUsed / agencyPlan.interviewsLimit) * 100, 100)}%`,
-                  background: agencyPlan.interviewsUsed >= agencyPlan.interviewsLimit ? '#EF4444' : '#4F46E5',
+                  background: agencyPlan.interviewsUsed >= agencyPlan.interviewsLimit ? 'var(--lv-danger)' : 'var(--lv-brand)',
                   borderRadius: 4,
                   transition: 'width 0.4s ease',
                 }} />
@@ -830,15 +803,9 @@ export default function SettingsPage() {
           {agencyPlan?.plan === 'trial' && (
             <button
               onClick={() => setShowUpgradeWall(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: '#4F46E5', color: '#fff', border: 'none',
-                borderRadius: 9, padding: '10px 18px', fontSize: 13,
-                fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
-              }}
+              className="lv-btn lv-btn--primary"
             >
-              <TrendingUp size={14} />
+              <TrendingUp size={14} aria-hidden="true" />
               Upgrade Now
             </button>
           )}
@@ -851,33 +818,28 @@ export default function SettingsPage() {
               <div
                 key={plan.id}
                 style={{
-                  border: plan.popular ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+                  border: plan.popular ? '1.5px solid var(--lv-accent)' : '1px solid var(--lv-border)',
                   borderRadius: 12, padding: '18px 16px',
                   position: 'relative',
-                  background: plan.popular ? 'rgba(124,58,237,0.02)' : '#fff',
+                  background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : 'var(--lv-surface)',
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, fontFamily: 'var(--font-display)', marginBottom: 2 }}>{plan.name}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#1E293B', marginBottom: 10 }}>{plan.price}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, fontFamily: 'var(--lv-font-display)', marginBottom: 2 }}>{plan.name}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 10 }}>{plan.price}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                   {plan.features.map((f) => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                       <CheckCircle2 size={13} color={plan.color} style={{ marginTop: 1, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: '#475569', lineHeight: 1.5 }}>{f}</span>
+                      <span style={{ fontSize: 12, color: 'var(--lv-text-body)', lineHeight: 1.5 }}>{f}</span>
                     </div>
                   ))}
                 </div>
                 <button
                   onClick={() => handleUpgrade(plan.id)}
                   disabled={billingLoading === plan.id}
-                  style={{
-                    width: '100%',
-                    background: billingLoading === plan.id ? '#94A3B8' : plan.color,
-                    color: '#fff', border: 'none', borderRadius: 8,
-                    padding: '9px 14px', fontSize: 13, fontWeight: 700,
-                    cursor: billingLoading === plan.id ? 'not-allowed' : 'pointer',
-                    fontFamily: 'var(--font-sans)',
-                  }}
+                  className="lv-btn lv-btn--primary lv-btn--full"
+                  aria-busy={billingLoading === plan.id || undefined}
+                  style={{ background: plan.color }}
                 >
                   {billingLoading === plan.id ? 'Processing…' : `Upgrade to ${plan.name}`}
                 </button>
@@ -886,25 +848,23 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <p style={{ fontSize: 11, color: '#94A3B8' }}>
+        <p style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>
           Secure payments via Cashfree · GST applicable · Cancel anytime
         </p>
       </Section>
 
       {/* Save */}
-      <div style={{ display: "flex", gap: 12, paddingBottom: 40 }}>
-        <button className="btn-navy" onClick={handleSaveSettings}>
-          Save Changes
-        </button>
-        <button className="btn-ghost" onClick={() => toast("Changes discarded")}>
+      <div className="lv-actions" style={{ paddingBottom: 40 }}>
+        <div className="lv-actions__start">
+          <button type="button" className="lv-btn lv-btn--tertiary" onClick={restartTour}>
+            Restart product tour
+          </button>
+        </div>
+        <button type="button" className="lv-btn lv-btn--secondary" onClick={() => toast("Changes discarded")}>
           Discard
         </button>
-        <button
-          className="btn-ghost"
-          onClick={restartTour}
-          style={{ marginLeft: "auto", fontSize: 13, color: "#94A3B8" }}
-        >
-          Restart product tour
+        <button type="button" className="lv-btn lv-btn--primary" onClick={handleSaveSettings}>
+          Save Changes
         </button>
       </div>
     </div>
