@@ -50,7 +50,7 @@ export default function PlaybackPage() {
     fetch(`/api/control-room/${interviewId}/playback`, { cache: 'no-store' })
       .then(async (r) => {
         if (r.status === 401) throw new Error('Sign in to view this session.')
-        if (!r.ok) throw new Error('Session not found.')
+        if (!r.ok) throw new Error('Interview not found.')
         setData(await r.json())
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
@@ -134,8 +134,8 @@ export default function PlaybackPage() {
     if (target !== undefined) seek(Math.max(0, target - 2))
   }
 
-  if (error) return <Shell><Alert tone="danger" title="Couldn't open this session">{error}</Alert></Shell>
-  if (!data) return <Shell><div role="status" style={{ padding: 60, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', color: C.muted }}><span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading session…</div></Shell>
+  if (error) return <Shell><Alert tone="danger" title="Couldn't open this interview">{error}</Alert></Shell>
+  if (!data) return <Shell><div role="status" style={{ padding: 60, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', color: C.muted }}><span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading interview…</div></Shell>
 
   const flagged = data.integrity.reviewStatus === 'FLAGGED_FOR_REVIEW'
 
@@ -144,7 +144,7 @@ export default function PlaybackPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <div className="lv-eyebrow" style={{ color: C.brandText }}>Session playback</div>
+          <div className="lv-eyebrow" style={{ color: C.brandText }}>Interview playback</div>
           <h1 style={{ margin: '4px 0 2px', fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>{data.interview.candidate.name}</h1>
           <div style={{ fontSize: 13.5, color: C.body }}>
             {data.interview.position.title} · {data.interview.position.company}
@@ -170,7 +170,7 @@ export default function PlaybackPage() {
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: C.body, background: C.sunken, borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
-            <Headphones size={14} color={C.muted} aria-hidden="true" /> No recording was retained for this session — the transcript and flag timeline are still navigable.
+            <Headphones size={14} color={C.muted} aria-hidden="true" /> No recording was retained for this interview — the transcript and flag timeline are still navigable.
           </div>
         )}
 
@@ -215,7 +215,7 @@ export default function PlaybackPage() {
           <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
             <Checkbox checked={follow} onChange={setFollow}>Follow playback</Checkbox>
           </span>}>
-          {transcript.length === 0 ? <Empty>No transcript was captured for this session.</Empty> : (
+          {transcript.length === 0 ? <Empty>No transcript was captured for this interview.</Empty> : (
             <div style={{ maxHeight: '62vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 4 }}>
               {transcript.map((e, i) => {
                 const active = i === activeIdx

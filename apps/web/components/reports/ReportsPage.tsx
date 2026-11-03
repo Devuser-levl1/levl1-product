@@ -322,7 +322,7 @@ export default function ReportsPage() {
     <Page style={{ maxWidth: 1100 }}>
       <PageHeader
         title="Reports"
-        description="View candidate rankings, AI evaluation reports, and position-level insights."
+        description="View candidate rankings, reports, and position-level insights."
         actions={<ExportResults />}
       />
 
@@ -383,7 +383,7 @@ export default function ReportsPage() {
         {sectionHead("Recent Candidate Reports", `${Object.keys(reports).length} reports generated`, "rp-recent")}
 
         {recentReports.length === 0 ? (
-          <EmptyState icon={<FileText size={22} />} title="No evaluation reports yet"
+          <EmptyState icon={<FileText size={22} />} title="No reports yet"
             description="Reports are generated automatically after each interview completes." />
         ) : (
           <ul className="lv-card" style={{ padding: 0, overflow: "hidden", listStyle: "none", margin: 0 }}>

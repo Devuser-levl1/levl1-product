@@ -245,7 +245,7 @@ export default function DashboardPage() {
         <Card title="Positions Overview" actions={positions.length ? viewAll(() => setActiveSection("positions")) : undefined}>
           {positions.length === 0 ? (
             <EmptyState plain icon={<Briefcase size={20} />} title="No positions yet"
-              description="Create your first position to generate a tailored interview and start screening candidates."
+              description="Create your first position to generate a tailored interview and start interviewing candidates."
               action={<Button size="sm" leftIcon={<Plus size={14} />} onClick={openNewPosition}>Create position</Button>} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>

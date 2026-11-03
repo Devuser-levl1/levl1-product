@@ -766,7 +766,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {/* ── STEP 0: Basic Info ── */}
           {step === 0 && (
             <>
-              <StepHeading title="Basic Position Info" desc={<>Tell us about the role you&apos;re hiring for.</>} />
+              <StepHeading title="Basic Position Info" desc={<>Tell us about the position you&apos;re hiring for.</>} />
 
               <div style={twoCol}>
                 <FormField label="Position Title" required>

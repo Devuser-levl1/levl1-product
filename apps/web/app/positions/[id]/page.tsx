@@ -791,13 +791,13 @@ export default function PositionDetailPage() {
           <div style={stack(space[4])}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' }}>
               <p style={{ ...muted, fontSize: text.base }}>{candidates.length} candidates</p>
-              <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => setShowUpload(true)}>Upload Resumes</Button>
+              <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => setShowUpload(true)}>Upload Candidates</Button>
             </div>
 
             {candidates.length === 0 ? (
               <EmptyState icon={<Users size={22} />} title="No candidates yet"
                 description="Upload resumes to add candidates to this position."
-                action={<Button leftIcon={<Plus size={16} />} onClick={() => setShowUpload(true)}>Upload Resumes</Button>} />
+                action={<Button leftIcon={<Plus size={16} />} onClick={() => setShowUpload(true)}>Upload Candidates</Button>} />
             ) : (
               <Table<Candidate> caption="Candidates for this position" columns={candidateColumns} rows={candidates} rowKey={(c) => c.id} />
             )}

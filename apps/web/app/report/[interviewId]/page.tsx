@@ -159,7 +159,7 @@ export default function ReportPage() {
       <Centered>
         <ClipboardList size={48} color="var(--lv-border-strong)" />
         <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--lv-text)', margin: '8px 0' }}>No Report Found</h2>
-        <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 340, lineHeight: 1.6, textAlign: 'center' }}>No evaluation report exists for interview ID <strong>{interviewId}</strong>.{candidate ? ' Click below to generate one.' : ' The interview ID may be incorrect.'}</p>
+        <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 340, lineHeight: 1.6, textAlign: 'center' }}>No report exists for interview ID <strong>{interviewId}</strong>.{candidate ? ' Click below to generate one.' : ' The interview ID may be incorrect.'}</p>
         {candidate && <Button onClick={generateReport} loading={generating} leftIcon={<Zap size={16} />}>{generating ? 'Generating…' : 'Generate Report'}</Button>}
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Go back</Button>
       </Centered>
@@ -194,7 +194,7 @@ export default function ReportPage() {
           <span style={{ fontSize: 14, fontWeight: 700, color: INDIGO }}>Levl1</span>
         </div>
         <div style={{ flex: 1 }} />
-        <ButtonLink href={`/playback/${interviewId}`} variant="tertiary" size="sm" leftIcon={<PlayCircle size={14} />}>Replay session</ButtonLink>
+        <ButtonLink href={`/playback/${interviewId}`} variant="tertiary" size="sm" leftIcon={<PlayCircle size={14} />}>Replay interview</ButtonLink>
         <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => window.print()}>Export</Button>
       </header>
 

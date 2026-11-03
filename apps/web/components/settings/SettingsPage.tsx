@@ -379,7 +379,7 @@ export default function SettingsPage() {
   const BILLING_PLANS = [
     {
       id: 'starter', name: 'Starter', price: '₹15,000/mo', interviews: 50,
-      features: ['50 interviews/month', '5 active positions', 'AI question generation', 'Evaluation reports'],
+      features: ['50 interviews/month', '5 active positions', 'AI question generation', 'Candidate reports'],
       color: 'var(--lv-brand)',
     },
     {
@@ -410,7 +410,7 @@ export default function SettingsPage() {
         </Field>
         <Field label="Account type">
           <select className="lv-select" aria-label="Account type" value={accountType ?? ""} disabled={savingType} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
-            {accountType === null && <option value="">Not set — job setup asks for client details</option>}
+            {accountType === null && <option value="">Not set — position setup asks for client details</option>}
             {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
           </select>
           <div style={{ fontSize: 11.5, color: "var(--lv-text-muted)", marginTop: 5 }}>
@@ -627,7 +627,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Interview Defaults */}
-      <Section icon={Mic} title="Interview Defaults" description="Default settings applied to new interview sessions">
+      <Section icon={Mic} title="Interview Defaults" description="Default settings applied to new interviews">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Interview Duration">
             {/* Build 06: production interviews are fixed at 30 minutes — no

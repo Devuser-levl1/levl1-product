@@ -285,7 +285,7 @@ export default function CandidatesPage() {
 
       <Page style={{ maxWidth: 1600 }}>
         <PageHeader
-          title="Candidates Pipeline"
+          title="Candidates"
           description={`${filtered.length} candidate${filtered.length !== 1 ? "s" : ""} across all stages`}
           actions={<>
             <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
@@ -295,7 +295,7 @@ export default function CandidatesPage() {
                 {positions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </Select>
             </div>
-            <Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Resumes</Button>
+            <Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Candidates</Button>
           </>}
         />
 
@@ -313,7 +313,7 @@ export default function CandidatesPage() {
         {candidates.length === 0 ? (
           <EmptyState icon={<Upload size={22} />} title="No candidates yet"
             description="Upload resumes and Levl1 extracts each candidate's details, ready to invite to an interview."
-            action={<Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Resumes</Button>} />
+            action={<Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Candidates</Button>} />
         ) : (
         /* Kanban */
         <div className="candidates-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(232px, 1fr))`, gap: space[3], alignItems: "start", overflowX: "auto", paddingBottom: space[2] }}>

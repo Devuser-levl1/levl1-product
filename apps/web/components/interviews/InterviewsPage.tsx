@@ -188,7 +188,7 @@ export default function InterviewsPage() {
       )}
     <Page style={{ maxWidth: 1280 }}>
       <PageHeader
-        title="Interviews Monitor"
+        title="Interviews"
         description="Track live and upcoming AI voice interviews in real-time."
         actions={
           <div role="status" style={{
@@ -199,7 +199,7 @@ export default function InterviewsPage() {
             {liveInterviews.length > 0 ? (
               <span><strong style={{ color: lv.success }}>{liveInterviews.length}</strong> live now</span>
             ) : (
-              <span>No sessions live</span>
+              <span>No interviews live</span>
             )}
           </div>
         }

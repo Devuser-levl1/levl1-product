@@ -43,7 +43,7 @@ export function DemoGallery() {
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>✨ Live demo · no signup</div>
         <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Try a real AI interview in <span style={{ color: INDIGO }}>60 seconds</span></h2>
-        <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>Pick a technical role and start a live, voice-based screening instantly — no job description, no login. You&apos;ll get the full evidence report at the end.</p>
+        <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>Pick a technical role and start a live voice interview instantly — no job description, no login. You&apos;ll get the full evidence report at the end.</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 26 }}>

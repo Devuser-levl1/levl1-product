@@ -74,7 +74,7 @@ export function ControlRoomPage() {
   const load = useCallback(async () => {
     try {
       const r = await fetch(`/api/control-room${showDemo ? "?demo=1" : ""}`, { cache: "no-store" });
-      if (!r.ok) throw new Error(r.status === 401 ? "Your session expired — sign in again." : "Couldn't load live sessions.");
+      if (!r.ok) throw new Error(r.status === 401 ? "Your session expired — sign in again." : "Couldn't load live interviews.");
       const d = (await r.json()) as RoomData;
       setData(d);
       setError(null);
@@ -92,7 +92,7 @@ export function ControlRoomPage() {
       }
       firstLoadRef.current = false;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load live sessions.");
+      setError(e instanceof Error ? e.message : "Couldn't load live interviews.");
     }
   }, [showDemo]);
 
@@ -146,8 +146,8 @@ export function ControlRoomPage() {
           <ToggleBtn on={sound} onClick={() => setSound((s) => !s)} title={sound ? "Mute alert sound" : "Unmute alert sound"} label="Alert sound">
             {sound ? <Bell size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
           </ToggleBtn>
-          <ToggleBtn on={showDemo} onClick={() => setShowDemo((s) => !s)} title="Show demo-gallery sessions separately">
-            <span style={{ fontSize: 12, fontWeight: 600 }}>Demo sessions</span>
+          <ToggleBtn on={showDemo} onClick={() => setShowDemo((s) => !s)} title="Show demo-gallery interviews separately">
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Demo interviews</span>
           </ToggleBtn>
         </div>
       </div>
@@ -166,7 +166,7 @@ export function ControlRoomPage() {
 
       {!data && !error && (
         <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, color: C.muted, fontSize: 14, padding: 40, justifyContent: "center" }}>
-          <span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading live sessions…
+          <span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading live interviews…
         </div>
       )}
 
@@ -203,7 +203,7 @@ export function ControlRoomPage() {
 
       {/* ── Demo sessions — separated, never counted ── */}
       {showDemo && (data?.demoTiles.length ?? 0) > 0 && (
-        <Section title="Demo sessions (not counted)" count={data!.demoTiles.length} tone="muted">
+        <Section title="Demo interviews (not counted)" count={data!.demoTiles.length} tone="muted">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 8, opacity: 0.75 }}>
             {data!.demoTiles.map((t) => <MiniTile key={t.id} t={t} now={now} onOpen={setOpenId} />)}
           </div>
@@ -228,7 +228,7 @@ export function ControlRoomPage() {
                   {new Date(r.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: r.hasRecording ? C.brand : C.muted, minWidth: 96, textAlign: "right" }}>
-                  {r.hasRecording ? "Replay session" : "Transcript only"}
+                  {r.hasRecording ? "Replay interview" : "Transcript only"}
                 </span>
               </a>
             ))}
@@ -351,7 +351,7 @@ function SignalIcons({ h, flags }: { h: Health; flags: number }) {
           <I size={14} color={c} aria-hidden="true" />
         </span>
       ))}
-      <span title="High-confidence integrity flags this session" aria-label={`${flags} integrity flag${flags === 1 ? "" : "s"}`} style={{ height: 26, padding: "0 8px", borderRadius: 8, background: flags ? C.amberSoft : C.sunken, color: flags ? C.amber : C.muted, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600 }}>
+      <span title="High-confidence integrity flags this interview" aria-label={`${flags} integrity flag${flags === 1 ? "" : "s"}`} style={{ height: 26, padding: "0 8px", borderRadius: 8, background: flags ? C.amberSoft : C.sunken, color: flags ? C.amber : C.muted, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600 }}>
         <Flag size={12} aria-hidden="true" /> {flags}
       </span>
     </>
@@ -606,10 +606,10 @@ function EmptyState() {
       </div>
       <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>No interviews running right now</div>
       <div style={{ fontSize: 13, color: C.body, marginTop: 4 }}>
-        Live sessions appear here the moment a candidate starts. Problems surface at the top automatically.
+        Live interviews appear here the moment a candidate starts. Problems surface at the top automatically.
       </div>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: C.muted, marginTop: 12 }}>
-        Recently ended sessions can be replayed below <ChevronRight size={13} />
+        Recently ended interviews can be replayed below <ChevronRight size={13} />
       </div>
     </div>
   );

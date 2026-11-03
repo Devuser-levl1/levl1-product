@@ -318,7 +318,7 @@ export function IntegrityPanel({ integrity, terminationReason }: { integrity: In
       {/* ── R2: DETAIL (chronological, correlated) ── */}
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Evidence timeline</div>
       {integrity.events.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No integrity events were recorded for this session.</div>
+        <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No integrity events were recorded for this interview.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {clusters.map((cl, i) => {
@@ -344,7 +344,7 @@ export function IntegrityPanel({ integrity, terminationReason }: { integrity: In
 
       {terminationReason && terminationReason !== 'COMPLETED' && (
         <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 12, borderTop: '1px solid var(--lv-surface-muted)', paddingTop: 10 }}>
-          Session ended: <strong>{terminationReason.replace(/_/g, ' ').toLowerCase()}</strong>.
+          Interview ended: <strong>{terminationReason.replace(/_/g, ' ').toLowerCase()}</strong>.
         </div>
       )}
     </div>

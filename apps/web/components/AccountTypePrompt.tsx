@@ -27,7 +27,7 @@ export function AccountTypePrompt() {
     try {
       const r = await fetch("/api/agency/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountType: t }) });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Could not save");
-      toast.success(t === "company" ? "Got it — job setup will use your company and one hiring contact" : "Got it — job setup will ask for the client company and client contacts");
+      toast.success(t === "company" ? "Got it — position setup will use your company and one hiring contact" : "Got it — position setup will ask for the client company and client contacts");
       setAccount({ type: t, orgName });   // every agency/company conditional updates now
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
@@ -40,7 +40,7 @@ export function AccountTypePrompt() {
       style={{ margin: "16px 28px 0", background: "#fff", border: "1px solid var(--lv-brand-soft-border)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 4px 18px color-mix(in srgb, var(--lv-brand) 8%, transparent)", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
       <div style={{ flex: "1 1 260px" }}>
         <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--lv-text)" }}>Quick question — how do you hire?</div>
-        <div style={{ fontSize: 12.5, color: "var(--lv-text-muted)", marginTop: 2 }}>We&apos;ll tailor job setup: agencies get client company and client contacts; in-house teams skip them.</div>
+        <div style={{ fontSize: 12.5, color: "var(--lv-text-muted)", marginTop: 2 }}>We&apos;ll tailor position setup: agencies get client company and client contacts; in-house teams skip them.</div>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {ACCOUNT_TYPES.map((t) => {

@@ -69,14 +69,14 @@ export default function AnalyticsPage() {
   return (
     <Page style={{ maxWidth: 1180 }}>
       <PageHeader
-        title="Interview Analytics"
-        description="Real interviews only — demo sessions are excluded. Rates show their sample size (N)."
+        title="Analytics"
+        description="Real interviews only — demo interviews are excluded. Rates show their sample size (N)."
       />
 
       <div style={{ display: "flex", flexDirection: "column", gap: space[6] }}>
       {/* Filters */}
       <div role="group" aria-label="Analytics filters" style={{ display: "flex", flexWrap: "wrap", gap: space[3], alignItems: "flex-end" }}>
-        <FormField label="Position / role" style={{ minWidth: 200 }}>
+        <FormField label="Position" style={{ minWidth: 200 }}>
           <Select value={positionId} onChange={(e) => setPositionId(e.target.value)}>
             <option value="">All positions</option>
             {positions.map((p) => (
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Completion breakdown by termination reason */}
-          <Card title="How sessions ended" badge={`N = ${data.completion.n}`}>
+          <Card title="How interviews ended" badge={`N = ${data.completion.n}`}>
             <ReasonBars byReason={data.completion.byReason} total={data.completion.n} />
           </Card>
         </div>
