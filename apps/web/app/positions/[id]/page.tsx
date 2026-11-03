@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
-  BarChart3, Plus, Mail, Download, Loader2, AlertCircle,
+  BarChart3, Plus, Mail, Download, AlertCircle,
   Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -16,6 +16,11 @@ import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/Setu
 import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 import { useAccountType } from '@/hooks/useAccountType'
+import {
+  Button, ButtonLink, Card, Eyebrow, Badge, Alert, EmptyState, LoadingBlock, Modal, ActionBar,
+  Field, Select, Textarea, Radio, RadioGroup, Tabs, TabPanel, Table, type Tone, type Column,
+} from '@/components/screen/ui'
+import { lv, space, text, radius, z } from '@/lib/screen/ui/tokens'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -88,88 +93,77 @@ interface Position {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  active:           { label: 'Active',           color: '#059669', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)' },
-  pending_approval: { label: 'Pending Approval', color: '#D97706', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)' },
-  draft:            { label: 'Draft',            color: '#64748B', bg: '#F1F5F9',                border: '#E2E8F0'               },
-  paused:           { label: 'Paused',           color: '#64748B', bg: '#F1F5F9',                border: '#E2E8F0'               },
-  closed:           { label: 'Closed',           color: '#DC2626', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)'  },
+// Design-System Pass 3 (group 2a): tones + tokens instead of hex. Logic below
+// (state, fetches, handlers) is unchanged.
+const STATUS_CFG: Record<string, { label: string; tone: Tone }> = {
+  active:           { label: 'Active',           tone: 'success' },
+  pending_approval: { label: 'Pending Approval', tone: 'warning' },
+  draft:            { label: 'Draft',            tone: 'neutral' },
+  paused:           { label: 'Paused',           tone: 'neutral' },
+  closed:           { label: 'Closed',           tone: 'danger'  },
 }
 
-const REC_CFG: Record<string, { label: string; color: string }> = {
-  strong_yes: { label: 'Strong Yes', color: '#059669' },
-  yes:        { label: 'Yes',        color: '#4F46E5' },
-  maybe:      { label: 'Maybe',      color: '#D97706' },
-  no:         { label: 'No',         color: '#DC2626' },
+const REC_CFG: Record<string, { label: string; tone: Tone }> = {
+  strong_yes: { label: 'Strong Yes', tone: 'success' },
+  yes:        { label: 'Yes',        tone: 'brand'   },
+  maybe:      { label: 'Maybe',      tone: 'warning' },
+  no:         { label: 'No',         tone: 'danger'  },
 }
 
-const STATUS_PILL: Record<string, { label: string; color: string; bg: string }> = {
-  pending:      { label: 'Pending',      color: '#64748B', bg: '#F1F5F9' },
-  invited:      { label: 'Invited',      color: '#D97706', bg: 'rgba(245,158,11,0.10)' },
-  scheduled:    { label: 'Scheduled',   color: '#4F46E5', bg: 'rgba(79,70,229,0.10)' },
-  interviewing: { label: 'Interviewing', color: '#7C3AED', bg: 'rgba(124,58,237,0.10)' },
-  completed:    { label: 'Completed',    color: '#059669', bg: 'rgba(16,185,129,0.10)' },
-  no_show:      { label: 'No Show',      color: '#DC2626', bg: 'rgba(239,68,68,0.10)' },
-  cancelled:    { label: 'Cancelled',    color: '#DC2626', bg: 'rgba(239,68,68,0.10)' },
+const STATUS_PILL: Record<string, { label: string; tone: Tone }> = {
+  pending:      { label: 'Pending',      tone: 'neutral' },
+  invited:      { label: 'Invited',      tone: 'warning' },
+  scheduled:    { label: 'Scheduled',    tone: 'brand'   },
+  interviewing: { label: 'Interviewing', tone: 'info'    },
+  completed:    { label: 'Completed',    tone: 'success' },
+  no_show:      { label: 'No Show',      tone: 'danger'  },
+  cancelled:    { label: 'Cancelled',    tone: 'danger'  },
+}
+
+const chipBase: React.CSSProperties = {
+  fontSize: text.xs, fontFamily: lv.fontMono, padding: '2px 8px', borderRadius: radius.sm, whiteSpace: 'nowrap',
 }
 
 function Tag2({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{
-      fontSize: 11, fontFamily: 'var(--font-mono)',
-      padding: '3px 8px', borderRadius: 4,
-      background: 'rgba(79,70,229,0.08)', color: '#4F46E5',
-      border: '1px solid rgba(79,70,229,0.18)',
-      whiteSpace: 'nowrap',
-    }}>{children}</span>
-  )
+  return <span style={{ ...chipBase, background: lv.brandSoft, color: lv.brandText, border: `1px solid ${lv.brandSoftBorder}` }}>{children}</span>
 }
 
 function SoftTag({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{
-      fontSize: 11, fontFamily: 'var(--font-mono)',
-      padding: '3px 8px', borderRadius: 4,
-      background: '#F1F5F9', color: '#64748B',
-      border: '1px solid #E2E8F0',
-      whiteSpace: 'nowrap',
-    }}>{children}</span>
-  )
+  return <span style={{ ...chipBase, background: lv.surfaceMuted, color: lv.textBody, border: `1px solid ${lv.border}` }}>{children}</span>
 }
 
 function ApprovalBadge({ approved, label }: { approved: boolean; label: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      padding: '6px 12px', borderRadius: 8,
-      border: `1px solid ${approved ? 'rgba(16,185,129,0.25)' : '#E2E8F0'}`,
-      background: approved ? 'rgba(16,185,129,0.06)' : '#F8FAFC',
-    }}>
-      {approved
-        ? <CheckCircle2 size={13} color="#10B981" />
-        : <Clock size={13} color="#94A3B8" />}
-      <span style={{ fontSize: 12, fontWeight: 600, color: approved ? '#059669' : '#94A3B8' }}>
-        {label}: {approved ? 'Approved' : 'Pending'}
-      </span>
-    </div>
+    <Badge tone={approved ? 'success' : 'neutral'}>
+      {approved ? <CheckCircle2 size={12} aria-hidden="true" /> : <Clock size={12} aria-hidden="true" />}
+      {label}: {approved ? 'Approved' : 'Pending'}
+    </Badge>
   )
 }
 
+function scoreColor(score: number) {
+  return score >= 85 ? lv.success : score >= 70 ? lv.brand : score >= 55 ? lv.warning : lv.danger
+}
+
 function ScoreBar({ score, threshold }: { score: number; threshold?: number }) {
-  const color = score >= 85 ? '#10B981' : score >= 70 ? '#4F46E5' : score >= 55 ? '#F59E0B' : '#EF4444'
+  const color = scoreColor(score)
   const belowThreshold = threshold && score < threshold
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ flex: 1, height: 5, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: space[2] }}>
+      <div style={{ flex: 1, height: 6, borderRadius: 3, background: lv.surfaceMuted, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 3 }} />
       </div>
-      <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: 'var(--font-mono)', minWidth: 28 }}>{score}</span>
+      <span style={{ fontSize: text.sm, fontWeight: 700, color, fontFamily: lv.fontMono, minWidth: 28 }}>{score}</span>
       {belowThreshold && (
-        <span style={{ fontSize: 10, color: '#F59E0B', fontWeight: 600 }}>↓ L2</span>
+        <span style={{ fontSize: text.xs, color: lv.warning, fontWeight: 600 }}>↓ L2</span>
       )}
     </div>
   )
 }
+
+const muted: React.CSSProperties = { fontSize: text.sm, color: lv.textMuted, margin: 0 }
+const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: space[4] }
+const stack = (gap: number): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap })
 
 type TabKey = 'overview' | 'questions' | 'candidates' | 'reports'
 
@@ -301,25 +295,18 @@ export default function PositionDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#94A3B8', fontSize: 14 }}>Loading position…</p>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: lv.bg }}>
+        <LoadingBlock label="Loading position…" />
       </div>
     )
   }
 
   if (!position) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-        <div style={{ textAlign: 'center' }}>
-          <AlertCircle size={32} color="#EF4444" style={{ margin: '0 auto 12px' }} />
-          <p style={{ color: '#4F46E5', fontSize: 16, fontWeight: 700 }}>Position not found</p>
-          <button onClick={() => router.push('/dashboard')} style={{ marginTop: 16, padding: '8px 20px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#4F46E5', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
-            Back to Dashboard
-          </button>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: lv.bg, padding: space[4] }}>
+        <EmptyState icon={<AlertCircle size={22} />} title="Position not found"
+          description="It may have been deleted, or you may not have access to it."
+          action={<Button variant="secondary" onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>} />
       </div>
     )
   }
@@ -369,293 +356,262 @@ export default function PositionDetailPage() {
     } catch { toast.error('Failed to update position status') }
   }
 
+  const closeDelete = () => { setDeleteTarget(null); setDeleteReason('') }
+  const draftActions = (onCancel: () => void, onSave: () => void, saving: boolean) => (
+    <>
+      <Button variant="secondary" size="sm" onClick={onCancel} disabled={saving}>Cancel</Button>
+      <Button size="sm" onClick={onSave} loading={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+    </>
+  )
+  const gutter = 'clamp(16px, 4vw, 32px)'
+
+  const candidateColumns: Column<Candidate>[] = [
+    { key: 'candidate', header: 'Candidate', render: (c) => (
+      <div style={{ minWidth: 180 }}>
+        <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{c.name}</div>
+        <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{c.email}</div>
+        {c.currentTitle && <div style={{ fontSize: text.xs, color: lv.textBody, marginTop: 1 }}>{c.currentTitle}{c.currentCompany ? ` · ${c.currentCompany}` : ''}</div>}
+      </div>
+    ) },
+    { key: 'status', header: 'Status', render: (c) => {
+      const sp = STATUS_PILL[c.status] ?? STATUS_PILL.pending
+      return <Badge tone={sp.tone}>{sp.label}</Badge>
+    } },
+    { key: 'score', header: 'Score', render: (c) => c.score !== undefined ? (
+      <div style={{ minWidth: 120 }}>
+        <ScoreBar score={c.score} threshold={threshold} />
+        {c.score < threshold && (
+          <div style={{ fontSize: text.xs, color: lv.warning, marginTop: 3, fontWeight: 600 }}>Below L2 threshold</div>
+        )}
+      </div>
+    ) : <span style={{ color: lv.textMuted }}>—</span> },
+    { key: 'rec', header: 'Recommendation', render: (c) => {
+      const rc = c.recommendation ? REC_CFG[c.recommendation] : null
+      return rc ? <Badge tone={rc.tone}>{rc.label}</Badge> : <span style={{ color: lv.textMuted }}>—</span>
+    } },
+    { key: 'actions', header: 'Actions', render: (c) => (
+      <div style={{ display: 'flex', gap: space[2], alignItems: 'center' }}>
+        {c.status === 'pending' && (
+          <Button variant="secondary" size="sm" leftIcon={<Send size={13} />}
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/send-invite', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ candidateId: c.id, candidateEmail: c.email }),
+                })
+                const d = await res.json()
+                if (!res.ok) throw new Error(d.error)
+                toast.success(d.emailSent ? `Invite sent to ${c.name}` : 'Invite link created (no email API configured)')
+                setPosition(p => p ? { ...p, candidates: (p.candidates ?? []).map(ca => ca.id === c.id ? { ...ca, status: 'invited' } : ca) } : p)
+              } catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed') }
+            }}>
+            Invite
+          </Button>
+        )}
+        {c.status === 'completed' && (
+          <Button variant="secondary" size="sm" leftIcon={<FileText size={13} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
+        )}
+        <Button variant="ghost" size="sm" iconOnly aria-label={`Delete ${c.name}`} title="Delete candidate"
+          onClick={() => setDeleteTarget({ id: c.id, name: c.name })} style={{ color: lv.danger }}>
+          <Trash2 size={14} />
+        </Button>
+      </div>
+    ) },
+  ]
+
+  const statusActions = [
+    { label: 'Pause position', action: () => handleStatusChange('paused'),  color: lv.warning },
+    { label: 'Mark as Won',    action: () => { setStatusDropOpen(false); setStatusModal('won') },  color: lv.success, icon: <Trophy size={14} aria-hidden="true" /> },
+    { label: 'Mark as Lost',   action: () => { setStatusDropOpen(false); setStatusModal('lost') }, color: lv.danger,  icon: <X size={14} aria-hidden="true" /> },
+    { label: 'Close position', action: () => handleStatusChange('closed'),  color: lv.textBody },
+  ]
+
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'var(--font-sans)' }}>
+    <div style={{ minHeight: '100vh', background: lv.bg, fontFamily: lv.fontSans }}>
 
       {/* Fix 5: upload modal pre-set to this position */}
       {showUpload && <CandidateUploadFlow onClose={() => setShowUpload(false)} presetPositionId={id} />}
 
       {/* Fix 6: delete candidate confirmation */}
-      {deleteTarget && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#EF4444', margin: '0 0 8px' }}>Delete Candidate</h3>
-            <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 20 }}>
-              You are about to delete <strong>{deleteTarget.name}</strong>. This cannot be undone.
-            </p>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Reason for deletion (required)</label>
-            <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
-              placeholder="e.g. Candidate withdrew, duplicate entry…"
-              style={{ width: '100%', minHeight: 80, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setDeleteTarget(null); setDeleteReason('') }}
-                style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
-              <button onClick={handleDeleteCandidate} disabled={!deleteReason.trim() || deleting}
-                style={{ flex: 1, background: deleting || !deleteReason.trim() ? '#94A3B8' : '#EF4444', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: deleting || !deleteReason.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
-                {deleting ? 'Deleting…' : 'Delete Candidate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={!!deleteTarget} onClose={closeDelete} dismissible={!deleting} size="sm" title="Delete candidate"
+        description={deleteTarget && <>You are about to delete <strong>{deleteTarget.name}</strong>. This cannot be undone.</>}
+        footer={<ActionBar>
+          <Button variant="secondary" onClick={closeDelete} disabled={deleting}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDeleteCandidate} disabled={!deleteReason.trim()} loading={deleting}>
+            {deleting ? 'Deleting…' : 'Delete candidate'}
+          </Button>
+        </ActionBar>}>
+        <Field label="Reason for deletion" required>
+          <Textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)} rows={3}
+            placeholder="e.g. Candidate withdrew, duplicate entry…" />
+        </Field>
+      </Modal>
 
       {/* Fix 7: won modal */}
-      {statusModal === 'won' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <Trophy size={22} color="#F59E0B" />
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#1E293B', margin: 0 }}>Mark Position as Won</h3>
-            </div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Which candidate was selected?</label>
-            <select value={wonCandidate} onChange={e => setWonCandidate(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', marginBottom: 16, background: '#F8FAFC' }}>
+      <Modal open={statusModal === 'won'} onClose={() => setStatusModal(null)} size="sm"
+        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Trophy size={18} color={lv.warning} aria-hidden="true" />Mark position as won</span>}
+        footer={<ActionBar>
+          <Button variant="secondary" onClick={() => setStatusModal(null)}>Cancel</Button>
+          <Button onClick={() => handleStatusChange('won')}>Confirm</Button>
+        </ActionBar>}>
+        <div style={stack(space[4])}>
+          <Field label="Which candidate was selected?">
+            <Select value={wonCandidate} onChange={e => setWonCandidate(e.target.value)}>
               <option value="">— Select candidate —</option>
               {candidates.filter(c => c.status === 'completed').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Notes (optional)</label>
-            <textarea value={wonNotes} onChange={e => setWonNotes(e.target.value)} placeholder="e.g. Client selected after L2 interview"
-              style={{ width: '100%', minHeight: 72, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setStatusModal(null)} style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
-              <button onClick={() => handleStatusChange('won')} style={{ flex: 1, background: '#F59E0B', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Confirm</button>
-            </div>
-          </div>
+            </Select>
+          </Field>
+          <Field label="Notes (optional)">
+            <Textarea value={wonNotes} onChange={e => setWonNotes(e.target.value)} rows={3} placeholder="e.g. Client selected after L2 interview" />
+          </Field>
         </div>
-      )}
+      </Modal>
 
       {/* Fix 7: lost modal */}
-      {statusModal === 'lost' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '28px 32px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <X size={22} color="#EF4444" />
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#1E293B', margin: 0 }}>Mark Position as Lost</h3>
-            </div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 10 }}>Reason</label>
+      <Modal open={statusModal === 'lost'} onClose={() => setStatusModal(null)} size="sm"
+        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><X size={18} color={lv.danger} aria-hidden="true" />Mark position as lost</span>}
+        footer={<ActionBar>
+          <Button variant="secondary" onClick={() => setStatusModal(null)}>Cancel</Button>
+          <Button onClick={() => handleStatusChange('lost')} disabled={!lostReason}>Confirm</Button>
+        </ActionBar>}>
+        <div style={stack(space[4])}>
+          <RadioGroup label="Reason">
             {['Client cancelled the requirement', 'Candidate accepted another offer', 'Budget freeze', 'Position put on hold', 'Other'].map(r => (
-              <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer', fontSize: 14, color: '#475569' }}>
-                <input type="radio" name="lost-reason" value={r} checked={lostReason === r} onChange={e => setLostReason(e.target.value)} style={{ accentColor: '#4F46E5' }} /> {r}
-              </label>
+              <Radio key={r} name="lost-reason" value={r} checked={lostReason === r} onChange={() => setLostReason(r)}>{r}</Radio>
             ))}
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6, marginTop: 10 }}>Notes (optional)</label>
-            <textarea value={lostNotes} onChange={e => setLostNotes(e.target.value)} placeholder="Additional context…"
-              style={{ width: '100%', minHeight: 72, padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC', marginBottom: 20 }} />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setStatusModal(null)} style={{ flex: 1, padding: '11px 16px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
-              <button onClick={() => handleStatusChange('lost')} disabled={!lostReason} style={{ flex: 1, background: !lostReason ? '#94A3B8' : '#EF4444', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 16px', fontSize: 14, fontWeight: 700, cursor: !lostReason ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>Confirm</button>
+          </RadioGroup>
+          <Field label="Notes (optional)">
+            <Textarea value={lostNotes} onChange={e => setLostNotes(e.target.value)} rows={3} placeholder="Additional context…" />
+          </Field>
+        </div>
+      </Modal>
+
+      {/* ── Header bar + tabs ── */}
+      <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, position: 'sticky', top: 0, zIndex: z.sticky, boxShadow: lv.shadowSm }}>
+        <div style={{ padding: `${space[3]}px ${gutter}`, display: 'flex', alignItems: 'center', gap: space[4], flexWrap: 'wrap' }}>
+          <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Back</Button>
+
+          <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+              <h1 className="lv-page-title" style={{ fontSize: text.lg, lineHeight: 1.25 }}>{position.title}</h1>
+              <Badge tone={statusCfg.tone} dot>{statusCfg.label}</Badge>
             </div>
+            <p style={{ fontSize: text.xs, color: lv.textMuted, margin: '2px 0 0' }}>
+              {position.company}{position.department ? ` · ${position.department}` : ''} · {position.experienceLevel}
+            </p>
+          </div>
+
+          {/* Fix 7: status dropdown */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <Button variant="secondary" size="sm" leftIcon={<Edit3 size={14} />} rightIcon={<ChevronDown size={14} />}
+              aria-haspopup="menu" aria-expanded={statusDropOpen} onClick={() => setStatusDropOpen(v => !v)}>
+              Actions
+            </Button>
+            {statusDropOpen && (
+              <div role="menu" aria-label="Position actions"
+                style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: lv.surface, border: `1px solid ${lv.border}`, borderRadius: radius.md, boxShadow: lv.shadowLg, minWidth: 200, zIndex: z.sidebar, overflow: 'hidden', padding: space[1] }}
+                onMouseLeave={() => setStatusDropOpen(false)}>
+                {statusActions.map(item => (
+                  <button key={item.label} role="menuitem" type="button" onClick={item.action}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: space[2], textAlign: 'left', minHeight: 40, padding: `0 ${space[3]}px`, background: 'none', border: 'none', borderRadius: radius.sm, cursor: 'pointer', fontSize: text.sm, fontWeight: 600, color: item.color, fontFamily: lv.fontSans }}
+                    onMouseEnter={e => (e.currentTarget.style.background = lv.surfaceMuted)}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                    {item.icon}{item.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* ── Header bar ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 32px', height: 60, display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 40, boxShadow: '0 1px 3px rgba(79,70,229,0.04)' }}>
-        <button
-          onClick={() => router.back()}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 500, flexShrink: 0 }}
-        >
-          <ArrowLeft size={14} /> Back
-        </button>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, color: '#4F46E5', margin: 0, lineHeight: 1.2 }}>
-              {position.title}
-            </h1>
-            <span style={{
-              fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 100,
-              color: statusCfg.color, background: statusCfg.bg, border: `1px solid ${statusCfg.border}`,
-            }}>
-              {statusCfg.label}
-            </span>
-          </div>
-          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0, marginTop: 2 }}>
-            {position.company}{position.department ? ` · ${position.department}` : ''} · {position.experienceLevel}
-          </p>
-        </div>
-
-        {/* Fix 7: status dropdown */}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button onClick={() => setStatusDropOpen(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
-            <Edit3 size={13} /> Actions <ChevronDown size={12} />
-          </button>
-          {statusDropOpen && (
-            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', minWidth: 200, zIndex: 50, overflow: 'hidden' }}
-              onMouseLeave={() => setStatusDropOpen(false)}>
-              {[
-                { label: 'Pause position',  action: () => handleStatusChange('paused'),  color: '#D97706' },
-                { label: '✓ Mark as Won',   action: () => { setStatusDropOpen(false); setStatusModal('won'); }, color: '#059669' },
-                { label: '✗ Mark as Lost',  action: () => { setStatusDropOpen(false); setStatusModal('lost'); }, color: '#EF4444' },
-                { label: 'Close position',  action: () => handleStatusChange('closed'),  color: '#64748B' },
-              ].map(item => (
-                <button key={item.label} onClick={item.action}
-                  style={{ width: '100%', display: 'block', textAlign: 'left', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: item.color, fontFamily: 'var(--font-sans)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFC')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Tab bar ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 32px' }}>
-        <div style={{ display: 'flex', gap: 0 }}>
-          {([
-            { key: 'overview',   label: 'Overview',   icon: FileText },
-            { key: 'questions',  label: 'Questions',  icon: Tag, badge: allQuestions.length || undefined },
-            { key: 'candidates', label: 'Candidates', icon: Users, badge: candidates.length || undefined },
-            { key: 'reports',    label: 'Reports',    icon: BarChart3, badge: completedCount || undefined },
-          ] as Array<{ key: TabKey; label: string; icon: React.ElementType; badge?: number }>).map(({ key, label, icon: Icon, badge }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                padding: '14px 20px', fontSize: 13, fontWeight: tab === key ? 700 : 500,
-                color: tab === key ? '#4F46E5' : '#64748B',
-                border: 'none', borderBottom: tab === key ? '2px solid #4F46E5' : '2px solid transparent',
-                background: 'transparent', cursor: 'pointer', transition: 'all 0.12s',
-                fontFamily: 'var(--font-sans)',
-              }}
-            >
-              <Icon size={13} />
-              {label}
-              {badge !== undefined && (
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', background: tab === key ? 'rgba(79,70,229,0.10)' : '#F1F5F9', color: tab === key ? '#4F46E5' : '#94A3B8', padding: '1px 6px', borderRadius: 100, fontWeight: 700 }}>
-                  {badge}
-                </span>
-              )}
-            </button>
-          ))}
+        <div style={{ padding: `0 ${gutter}` }}>
+          <Tabs<TabKey> label="Position sections" idPrefix="pos-tab" value={tab} onChange={setTab} items={[
+            { key: 'overview',   label: 'Overview',   icon: <FileText size={14} aria-hidden="true" /> },
+            { key: 'questions',  label: 'Questions',  icon: <Tag size={14} aria-hidden="true" />,       count: allQuestions.length || undefined },
+            { key: 'candidates', label: 'Candidates', icon: <Users size={14} aria-hidden="true" />,     count: candidates.length || undefined },
+            { key: 'reports',    label: 'Reports',    icon: <BarChart3 size={14} aria-hidden="true" />, count: completedCount || undefined },
+          ]} />
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ maxWidth: 1024, margin: '0 auto', padding: '32px 32px' }}>
+      <div style={{ maxWidth: 1024, margin: '0 auto', padding: `${space[8]}px ${gutter} ${space[12]}px` }}>
+        <TabPanel tabKey={tab} idPrefix="pos-tab">
 
         {/* ─── OVERVIEW TAB ─── */}
         {tab === 'overview' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={stack(space[6])}>
 
             {/* Approvals */}
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: space[2], flexWrap: 'wrap' }}>
               <ApprovalBadge approved={position.techLeadApproved} label="Tech Lead" />
               <ApprovalBadge approved={position.hrApproved} label="HR" />
               {position.clientManagerEmail && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                  <Mail size={13} color="#94A3B8" />
-                  <span style={{ fontSize: 12, color: '#64748B' }}>{isCompany ? 'Hiring contact' : 'Client'}: {position.clientManagerEmail}</span>
-                </div>
+                <Badge tone="neutral"><Mail size={12} aria-hidden="true" />{isCompany ? 'Hiring contact' : 'Client'}: {position.clientManagerEmail}</Badge>
               )}
             </div>
 
             {/* JD */}
             {position.jdText && (
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Job Description</h3>
+              <Card title="Job description">
                 <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                  <pre style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: 'var(--font-sans)', margin: 0 }}>
+                  <pre style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: lv.fontSans, margin: 0 }}>
                     {position.jdText}
                   </pre>
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* Skills */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Required Tech Stack</h3>
+            <div style={twoCol}>
+              <Card title="Required tech stack">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {position.techStack.length > 0
                     ? position.techStack.map(t => <Tag2 key={t}>{t}</Tag2>)
-                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>None specified</span>}
+                    : <span style={muted}>None specified</span>}
                 </div>
-              </div>
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Good to Have</h3>
+              </Card>
+              <Card title="Good to have">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {position.goodToHave.length > 0
                     ? position.goodToHave.map(t => <SoftTag key={t}>{t}</SoftTag>)
-                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>None specified</span>}
+                    : <span style={muted}>None specified</span>}
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Must-have requirements (F3) */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Must-have Requirements</h3>
-                {mhDraft && (
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={() => setMhDraft(null)} disabled={mhSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
-                    <button className="btn-primary" onClick={saveMustHaves} disabled={mhSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>{mhSaving ? 'Saving…' : 'Save'}</button>
-                  </div>
-                )}
-              </div>
+            <Card title="Must-have requirements" actions={mhDraft && draftActions(() => setMhDraft(null), saveMustHaves, mhSaving)}>
               <MustHaveEditor value={mhDraft ?? position.mustHaves ?? []} onChange={setMhDraft} suggestions={position.techStack} />
               {mhDraft && allQuestions.length > 0 && (
-                <p style={{ fontSize: 12, color: '#B45309', margin: '10px 0 0' }}>
+                <Alert tone="warning" style={{ marginTop: space[3] }}>
                   This position&apos;s questions were generated before this change — regenerate questions so every new must-have gets a dedicated question. Reports still rate each must-have either way.
-                </p>
+                </Alert>
               )}
-            </div>
+            </Card>
 
             {/* Logistics filters — negotiated / recorded early in the interview */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Logistics Filters</h3>
-                  <p style={{ fontSize: 12.5, color: '#64748B', margin: '4px 0 0' }}>Resolved in a short segment right after the warm-up. Blank = just record the candidate&apos;s answer.</p>
-                </div>
-                {lgDraft && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={() => setLgDraft(null)} disabled={lgSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
-                    <button className="btn-primary" onClick={saveLogistics} disabled={lgSaving} style={{ fontSize: 12.5, padding: '5px 12px' }}>{lgSaving ? 'Saving…' : 'Save'}</button>
-                  </div>
-                )}
-              </div>
+            <Card title="Logistics filters"
+              subtitle={<>Resolved in a short segment right after the warm-up. Blank = just record the candidate&apos;s answer.</>}
+              actions={lgDraft && draftActions(() => setLgDraft(null), saveLogistics, lgSaving)}>
               <LogisticsEditor value={lgDraft ?? readLogisticsConfig(position.logistics)} onChange={setLgDraft} />
-            </div>
+            </Card>
 
             {/* Role concept rubric (#13) */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h3 style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Role Concept Rubric</h3>
-                {crDraft && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={() => setCrDraft(null)} disabled={cfgSaving === 'cr'} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
-                    <button className="btn-primary" onClick={() => savePositionField('cr')} disabled={cfgSaving === 'cr'} style={{ fontSize: 12.5, padding: '5px 12px' }}>{cfgSaving === 'cr' ? 'Saving…' : 'Save'}</button>
-                  </div>
-                )}
-              </div>
+            <Card title="Role concept rubric" actions={crDraft && draftActions(() => setCrDraft(null), () => savePositionField('cr'), cfgSaving === 'cr')}>
               <ConceptRubricEditor value={crDraft ?? sanitizeConceptRubric(position.conceptRubric)} onChange={setCrDraft}
                 onGenerate={regenerateRubric} generating={crGenerating} canGenerate={!!position.jdText || !!position.title} />
-              {crDraft && <p style={{ fontSize: 12, color: '#64748B', margin: '10px 0 0' }}>Reports generated from now on are scored against the saved rubric. Regenerate questions to steer them toward any new concepts.</p>}
-            </div>
+              {crDraft && <p style={{ ...muted, fontSize: text.xs, marginTop: space[3] }}>Reports generated from now on are scored against the saved rubric. Regenerate questions to steer them toward any new concepts.</p>}
+            </Card>
 
             {/* Knockout questions (#14) */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h3 style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Knockout Questions</h3>
-                {koDraft && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={() => setKoDraft(null)} disabled={cfgSaving === 'ko'} style={{ fontSize: 12.5, padding: '5px 12px' }}>Cancel</button>
-                    <button className="btn-primary" onClick={() => savePositionField('ko')} disabled={cfgSaving === 'ko'} style={{ fontSize: 12.5, padding: '5px 12px' }}>{cfgSaving === 'ko' ? 'Saving…' : 'Save'}</button>
-                  </div>
-                )}
-              </div>
+            <Card title="Knockout questions" actions={koDraft && draftActions(() => setKoDraft(null), () => savePositionField('ko'), cfgSaving === 'ko')}>
               <KnockoutEditor value={koDraft ?? sanitizeKnockouts(position.knockoutQuestions)} onChange={setKoDraft} />
-            </div>
+            </Card>
 
             {/* Interview settings */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>Interview Settings</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+            <Card title="Interview settings">
+              <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: space[4], margin: 0 }}>
                 {[
                   { label: 'Duration',      value: `${position.interviewDuration} min`,             icon: Clock },
                   { label: 'Dynamic Mode',  value: position.dynamicIntensity ?? 'standard',          icon: Zap },
@@ -664,109 +620,67 @@ export default function PositionDetailPage() {
                   { label: 'Domain',        value: position.primaryDomain ?? '—',                    icon: Target },
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                      <Icon size={11} color="#94A3B8" />
-                      <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>{value}</span>
+                    <dt style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                      <Icon size={12} color={lv.textMuted} aria-hidden="true" />
+                      <Eyebrow>{label}</Eyebrow>
+                    </dt>
+                    <dd style={{ margin: 0, fontSize: text.base, fontWeight: 600, color: lv.text }}>{value}</dd>
                   </div>
                 ))}
-              </div>
-            </div>
+              </dl>
+            </Card>
 
             {/* Candidate invite email (F2) — per-position override */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Mail size={14} color="#4F46E5" />
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Candidate Invite Email</h3>
-                  <p style={{ fontSize: 12.5, color: '#64748B', margin: '4px 0 0' }}>Uses your agency template unless you customise it for this position.</p>
-                </div>
-                <button className="btn-ghost" onClick={() => setShowInvite(v => !v)} style={{ fontSize: 12.5, padding: '5px 12px' }}>{showInvite ? 'Close' : 'Customise'}</button>
-              </div>
+            <Card title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Mail size={16} color={lv.brand} aria-hidden="true" />Candidate invite email</span>}
+              subtitle="Uses your agency template unless you customise it for this position."
+              actions={<Button variant="secondary" size="sm" aria-expanded={showInvite} onClick={() => setShowInvite(v => !v)}>{showInvite ? 'Close' : 'Customise'}</Button>}>
               {showInvite && (
-                <div style={{ marginTop: 16 }}>
-                  <InviteTemplateEditor endpoint={`/api/positions/${id}/invite-template`} scope="position"
-                    previewVars={{ position_title: position.title, company: position.company, duration_minutes: String(position.interviewDuration) }} />
-                </div>
+                <InviteTemplateEditor endpoint={`/api/positions/${id}/invite-template`} scope="position"
+                  previewVars={{ position_title: position.title, company: position.company, duration_minutes: String(position.interviewDuration) }} />
               )}
-            </div>
+            </Card>
 
             {/* L2 Threshold + Scoring Rubric */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>L2 Score Threshold</h3>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: '#4F46E5', fontFamily: 'var(--font-display)' }}>{threshold}</span>
-                  <span style={{ fontSize: 14, color: '#94A3B8' }}>/100</span>
+            <div style={twoCol}>
+              <Card title="L2 score threshold">
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: space[2], marginBottom: space[2] }}>
+                  <span style={{ fontSize: 32, fontWeight: 800, color: lv.brandText, fontFamily: lv.fontDisplay }}>{threshold}</span>
+                  <span style={{ fontSize: text.base, color: lv.textMuted }}>/100</span>
                 </div>
-                <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>
+                <p style={{ ...muted, fontSize: text.xs }}>
                   Candidates below this score are marked &ldquo;Below L2 threshold&rdquo; regardless of recommendation.
                 </p>
-              </div>
+              </Card>
 
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 20 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Scoring Rubric</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Card title="Scoring rubric">
+                <div style={stack(space[2])}>
                   {[
-                    { label: 'Technical Depth',    value: rubric.technical ?? 40,       color: '#4F46E5' },
-                    { label: 'Problem Solving',    value: rubric.problemSolving ?? 30,  color: '#7C3AED' },
-                    { label: 'Behavioral / EQ',  value: rubric.behavioral ?? 20,     color: '#10B981' },
-                    { label: 'EQ & Soft Skills',   value: rubric.eq ?? 10,             color: '#F59E0B' },
+                    { label: 'Technical Depth',    value: rubric.technical ?? 40,       color: lv.brand },
+                    { label: 'Problem Solving',    value: rubric.problemSolving ?? 30,  color: lv.accent },
+                    { label: 'Behavioral / EQ',    value: rubric.behavioral ?? 20,      color: lv.success },
+                    { label: 'EQ & Soft Skills',   value: rubric.eq ?? 10,              color: lv.warning },
                   ].map(({ label, value, color }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 11, color: '#64748B', minWidth: 130 }}>{label}</span>
-                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: space[3] }}>
+                      <span style={{ fontSize: text.xs, color: lv.textBody, minWidth: 120 }}>{label}</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: lv.surfaceMuted, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${value}%`, background: color, borderRadius: 3 }} />
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: 'var(--font-mono)', minWidth: 32 }}>{value}%</span>
+                      <span style={{ fontSize: text.xs, fontWeight: 700, color: lv.text, fontFamily: lv.fontMono, minWidth: 32, textAlign: 'right' }}>{value}%</span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
         )}
 
         {/* ─── QUESTIONS TAB ─── */}
         {tab === 'questions' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={stack(space[4])}>
             {/* Approval status banner */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 20px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Approval Status</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {position.techLeadEmail && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {position.techLeadApproved
-                      ? <CheckCircle2 size={14} color="#10B981" />
-                      : <Clock size={14} color="#F59E0B" />}
-                    <span style={{ fontSize: 13, color: '#475569' }}>
-                      Tech Lead ({position.techLeadEmail}):
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: position.techLeadApproved ? '#059669' : '#D97706' }}>
-                      {position.techLeadApproved ? 'Approved' : 'Pending'}
-                    </span>
-                  </div>
-                )}
-                {position.hrEmail && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {position.hrApproved
-                      ? <CheckCircle2 size={14} color="#10B981" />
-                      : <Clock size={14} color="#F59E0B" />}
-                    <span style={{ fontSize: 13, color: '#475569' }}>
-                      HR ({position.hrEmail}):
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: position.hrApproved ? '#059669' : '#D97706' }}>
-                      {position.hrApproved ? 'Approved' : 'Pending'}
-                    </span>
-                  </div>
-                )}
-                {!position.techLeadEmail && !position.hrEmail && (
-                  <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>No approvers configured — edit the position to add Tech Lead and HR emails.</p>
-                )}
-              </div>
-              {(position.techLeadEmail || position.hrEmail) && (
-                <button
+            <Card title="Approval status"
+              actions={(position.techLeadEmail || position.hrEmail) ? (
+                <Button variant="secondary" size="sm" leftIcon={<Mail size={14} />}
                   onClick={async () => {
                     try {
                       const res = await fetch(`/api/positions/${id}/send-approvals`, { method: 'POST' })
@@ -776,35 +690,46 @@ export default function PositionDetailPage() {
                     } catch (err: unknown) {
                       toast.error(err instanceof Error ? err.message : 'Failed to send approvals')
                     }
-                  }}
-                  style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(79,70,229,0.25)', background: 'rgba(79,70,229,0.04)', color: '#4F46E5', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-                >
-                  <Mail size={12} /> {(position.techLeadApproved && position.hrApproved) ? 'Resend Reminder' : 'Send for Approval'}
-                </button>
-              )}
-            </div>
+                  }}>
+                  {(position.techLeadApproved && position.hrApproved) ? 'Resend Reminder' : 'Send for Approval'}
+                </Button>
+              ) : undefined}>
+              <div style={stack(space[2])}>
+                {([
+                  position.techLeadEmail ? { who: 'Tech Lead', email: position.techLeadEmail, ok: position.techLeadApproved } : null,
+                  position.hrEmail ? { who: 'HR', email: position.hrEmail, ok: position.hrApproved } : null,
+                ].filter(Boolean) as { who: string; email: string; ok: boolean }[]).map(a => (
+                  <div key={a.who} style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: text.sm, color: lv.textBody }}>{a.who} ({a.email}):</span>
+                    <Badge tone={a.ok ? 'success' : 'warning'}>
+                      {a.ok ? <CheckCircle2 size={12} aria-hidden="true" /> : <Clock size={12} aria-hidden="true" />}
+                      {a.ok ? 'Approved' : 'Pending'}
+                    </Badge>
+                  </div>
+                ))}
+                {!position.techLeadEmail && !position.hrEmail && (
+                  <p style={muted}>No approvers configured — edit the position to add Tech Lead and HR emails.</p>
+                )}
+              </div>
+            </Card>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 14, color: '#64748B' }}>{allQuestions.length} questions in bank</p>
-            </div>
+            <p style={{ ...muted, fontSize: text.base }}>{allQuestions.length} questions in bank</p>
 
             {allQuestions.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#94A3B8' }}>
-                <FileText size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <p style={{ fontSize: 14 }}>No questions generated yet</p>
-              </div>
+              <EmptyState icon={<FileText size={22} />} title="No questions generated yet"
+                description="Questions are generated from the job description and tech stack when the position is set up." />
             ) : (
               (['Technical', 'Scenario', 'Behavioral', 'EQ', 'Whiteboard'] as const).map(type => {
                 const qs = allQuestions.filter((q) => (q as { _type: string })._type === type)
                 if (qs.length === 0) return null
                 const approvedCount = qs.filter(q => q.approvedByTech || q.approvedByHR).length
                 return (
-                  <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{type}</span>
-                      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94A3B8', background: '#F1F5F9', padding: '1px 6px', borderRadius: 100 }}>{qs.length}</span>
+                  <section key={type} aria-label={`${type} questions`} style={stack(space[2])}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: space[2] }}>
+                      <Eyebrow>{type}</Eyebrow>
+                      <span className="lv-tab__count">{qs.length}</span>
                       {approvedCount > 0 && (
-                        <span style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>{approvedCount} approved</span>
+                        <span style={{ fontSize: text.xs, color: lv.success, fontWeight: 600 }}>{approvedCount} approved</span>
                       )}
                     </div>
                     {qs.map((q) => {
@@ -813,19 +738,16 @@ export default function PositionDetailPage() {
                       return (
                         <div
                           key={q.id}
-                          style={{ background: '#fff', border: `1px solid ${isApproved ? 'rgba(16,185,129,0.25)' : '#E2E8F0'}`, borderLeft: `3px solid ${isApproved ? '#10B981' : '#CBD5E1'}`, borderRadius: 10, padding: '14px 16px' }}
+                          className="lv-card"
+                          style={{ borderLeft: `3px solid ${isApproved ? lv.success : lv.borderStrong}`, padding: `${space[3]}px ${space[4]}px` }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                            <p style={{ fontSize: 13, color: '#4F46E5', lineHeight: 1.55, margin: 0, flex: 1 }}>{q.question}</p>
-                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                              {q.difficulty && (
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>{q.difficulty}</span>
-                              )}
-                              {q.estimatedMinutes && (
-                                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94A3B8', background: '#F1F5F9', padding: '2px 7px', borderRadius: 100, border: '1px solid #E2E8F0' }}>{q.estimatedMinutes}m</span>
-                              )}
-                              {isApproved && <CheckCircle2 size={14} color="#10B981" />}
-                              <button
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' }}>
+                            <p style={{ fontSize: text.base, color: lv.text, lineHeight: 1.55, margin: 0, flex: '1 1 320px' }}>{q.question}</p>
+                            <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+                              {q.difficulty && <Badge tone="neutral">{q.difficulty}</Badge>}
+                              {q.estimatedMinutes && <Badge tone="neutral">{q.estimatedMinutes}m</Badge>}
+                              <Button variant={isApproved ? 'secondary' : 'tertiary'} size="sm" aria-pressed={!!isApproved}
+                                leftIcon={isApproved ? <CheckCircle2 size={13} color={lv.success} /> : <Edit3 size={13} />}
                                 onClick={async () => {
                                   try {
                                     await fetch(`/api/positions/${id}/questions/approve`, {
@@ -844,22 +766,20 @@ export default function PositionDetailPage() {
                                     } : p)
                                     toast.success(isApproved ? 'Approval removed' : 'Question approved')
                                   } catch { toast.error('Failed to update') }
-                                }}
-                                style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid ${isApproved ? 'rgba(16,185,129,0.3)' : '#E2E8F0'}`, background: isApproved ? 'rgba(16,185,129,0.06)' : '#F8FAFC', color: isApproved ? '#059669' : '#64748B', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-sans)' }}
-                              >
-                                <Edit3 size={10} /> {isApproved ? 'Approved' : 'Approve'}
-                              </button>
+                                }}>
+                                {isApproved ? 'Approved' : 'Approve'}
+                              </Button>
                             </div>
                           </div>
                           {q.techTag && (
-                            <span style={{ display: 'inline-block', marginTop: 8, fontSize: 10, fontFamily: 'var(--font-mono)', color: '#6D28D9', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)', padding: '2px 8px', borderRadius: 4 }}>
+                            <span style={{ ...chipBase, display: 'inline-block', marginTop: space[2], background: lv.accentSoft, color: lv.accent, border: `1px solid ${lv.border}` }}>
                               {q.techTag}
                             </span>
                           )}
                         </div>
                       )
                     })}
-                  </div>
+                  </section>
                 )
               })
             )}
@@ -868,178 +788,70 @@ export default function PositionDetailPage() {
 
         {/* ─── CANDIDATES TAB ─── */}
         {tab === 'candidates' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 14, color: '#64748B' }}>{candidates.length} candidates</p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setShowUpload(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-                >
-                  <Plus size={13} /> Upload Resumes
-                </button>
-              </div>
+          <div style={stack(space[4])}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' }}>
+              <p style={{ ...muted, fontSize: text.base }}>{candidates.length} candidates</p>
+              <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => setShowUpload(true)}>Upload Resumes</Button>
             </div>
 
             {candidates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#94A3B8' }}>
-                <Users size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <p style={{ fontSize: 14 }}>No candidates yet — upload resumes to get started</p>
-              </div>
+              <EmptyState icon={<Users size={22} />} title="No candidates yet"
+                description="Upload resumes to add candidates to this position."
+                action={<Button leftIcon={<Plus size={16} />} onClick={() => setShowUpload(true)}>Upload Resumes</Button>} />
             ) : (
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' }}>
-                {/* Header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 150px', padding: '10px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                  {['Candidate', 'Status', 'Score', 'Recommendation', 'Actions'].map(h => (
-                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
-                  ))}
-                </div>
-                {candidates.map((c, idx) => {
-                  const sp = STATUS_PILL[c.status] ?? STATUS_PILL.pending
-                  const rc = c.recommendation ? REC_CFG[c.recommendation] : null
-                  const belowThreshold = c.score !== undefined && c.score < threshold
-                  return (
-                    <div key={c.id} style={{
-                      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 150px',
-                      padding: '14px 20px', alignItems: 'center',
-                      borderBottom: idx < candidates.length - 1 ? '1px solid #F1F5F9' : 'none',
-                    }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>{c.name}</div>
-                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{c.email}</div>
-                        {c.currentTitle && <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{c.currentTitle}{c.currentCompany ? ` · ${c.currentCompany}` : ''}</div>}
-                      </div>
-                      <div>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100, color: sp.color, background: sp.bg }}>{sp.label}</span>
-                      </div>
-                      <div>
-                        {c.score !== undefined ? (
-                          <div>
-                            <ScoreBar score={c.score} threshold={threshold} />
-                            {belowThreshold && (
-                              <div style={{ fontSize: 10, color: '#F59E0B', marginTop: 3, fontWeight: 600 }}>Below L2 threshold</div>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 11, color: '#94A3B8' }}>—</span>
-                        )}
-                      </div>
-                      <div>
-                        {rc ? (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: rc.color }}>{rc.label}</span>
-                        ) : (
-                          <span style={{ fontSize: 11, color: '#94A3B8' }}>—</span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {c.status === 'pending' && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const res = await fetch('/api/send-invite', {
-                                  method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ candidateId: c.id, candidateEmail: c.email }),
-                                })
-                                const d = await res.json()
-                                if (!res.ok) throw new Error(d.error)
-                                toast.success(d.emailSent ? `Invite sent to ${c.name}` : 'Invite link created (no email API configured)')
-                                setPosition(p => p ? { ...p, candidates: (p.candidates ?? []).map(ca => ca.id === c.id ? { ...ca, status: 'invited' } : ca) } : p)
-                              } catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed') }
-                            }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(79,70,229,0.25)', background: 'rgba(79,70,229,0.05)', color: '#4F46E5', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-                          >
-                            <Send size={10} /> Invite
-                          </button>
-                        )}
-                        {c.status === 'completed' && (
-                          <button
-                            onClick={() => router.push(`/reports/${id}`)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-                          >
-                            <Download size={10} /> Report
-                          </button>
-                        )}
-                        {/* Fix 6: delete button */}
-                        <button
-                          onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
-                          title="Delete candidate"
-                          style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.04)', color: '#EF4444', cursor: 'pointer', fontSize: 11 }}
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              <Table<Candidate> caption="Candidates for this position" columns={candidateColumns} rows={candidates} rowKey={(c) => c.id} />
             )}
           </div>
         )}
 
         {/* ─── REPORTS TAB ─── */}
         {tab === 'reports' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 14, color: '#64748B' }}>{completedCount} completed interview{completedCount !== 1 ? 's' : ''}</p>
-              <a href={`/api/reports/export?positionId=${id}`} download
-                style={{ marginLeft: 'auto', marginRight: 8, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: '#4F46E5', fontSize: 12, fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-sans)' }}>
-                <Download size={13} /> Export CSV
-              </a>
-              <button
-                onClick={() => router.push(`/reports/${id}`)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)', color: '#7C3AED', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-              >
-                <BarChart3 size={13} /> Position Summary Report
-              </button>
+          <div style={stack(space[4])}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
+              <p style={{ ...muted, fontSize: text.base, marginRight: 'auto' }}>{completedCount} completed interview{completedCount !== 1 ? 's' : ''}</p>
+              <ButtonLink href={`/api/reports/export?positionId=${id}`} download variant="secondary" size="sm" leftIcon={<Download size={14} />}>
+                Export CSV
+              </ButtonLink>
+              <Button size="sm" leftIcon={<BarChart3 size={14} />} onClick={() => router.push(`/reports/${id}`)}>
+                Position Summary Report
+              </Button>
             </div>
 
             {reportsLoading ? (
-              <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                <Loader2 size={24} color="#7C3AED" style={{ animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-              </div>
+              <LoadingBlock label="Loading reports…" />
             ) : candidates.filter(c => c.status === 'completed').length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#94A3B8' }}>
-                <BarChart3 size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                <p style={{ fontSize: 14 }}>No completed interviews yet</p>
-              </div>
+              <EmptyState icon={<BarChart3 size={22} />} title="No completed interviews yet"
+                description="Reports appear here as soon as a candidate finishes their interview." />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={stack(space[2])}>
                 {candidates.filter(c => c.status === 'completed').map(c => {
                   const rc = c.recommendation ? REC_CFG[c.recommendation] : null
                   const belowThreshold = c.score !== undefined && c.score < threshold
                   return (
-                    <div
-                      key={c.id}
-                      onClick={() => router.push(`/reports/${id}`)}
-                      style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', transition: 'background 0.12s' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFF' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>{c.name}</div>
-                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{c.email}</div>
-                      </div>
-                      {c.score !== undefined && (
-                        <div style={{ minWidth: 140 }}>
-                          <ScoreBar score={c.score} threshold={threshold} />
-                          {belowThreshold && (
-                            <div style={{ fontSize: 10, color: '#F59E0B', marginTop: 3, fontWeight: 600 }}>Below L2 threshold ({threshold})</div>
-                          )}
-                          {!belowThreshold && rc?.label === 'Strong Yes' && (
-                            <div style={{ fontSize: 10, color: '#059669', marginTop: 3, fontWeight: 600 }}>Recommended for L2</div>
-                          )}
+                    <Card key={c.id} as="div" onClick={() => router.push(`/reports/${id}`)} style={{ padding: `${space[4]}px ${space[5]}px` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: space[4], flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+                          <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{c.name}</div>
+                          <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{c.email}</div>
                         </div>
-                      )}
-                      {rc && (
-                        <span style={{ fontSize: 12, fontWeight: 700, color: rc.color, minWidth: 80, textAlign: 'right' }}>{rc.label}</span>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); router.push(`/reports/${id}`) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#4F46E5', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', flexShrink: 0 }}
-                      >
-                        <Download size={10} /> View Report
-                      </button>
-                    </div>
+                        {c.score !== undefined && (
+                          <div style={{ minWidth: 140 }}>
+                            <ScoreBar score={c.score} threshold={threshold} />
+                            {belowThreshold && (
+                              <div style={{ fontSize: text.xs, color: lv.warning, marginTop: 3, fontWeight: 600 }}>Below L2 threshold ({threshold})</div>
+                            )}
+                            {!belowThreshold && rc?.label === 'Strong Yes' && (
+                              <div style={{ fontSize: text.xs, color: lv.success, marginTop: 3, fontWeight: 600 }}>Recommended for L2</div>
+                            )}
+                          </div>
+                        )}
+                        {rc && <Badge tone={rc.tone}>{rc.label}</Badge>}
+                        <Button variant="secondary" size="sm" leftIcon={<FileText size={13} />}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/reports/${id}`) }}>
+                          View Report
+                        </Button>
+                      </div>
+                    </Card>
                   )
                 })}
               </div>
@@ -1047,6 +859,7 @@ export default function PositionDetailPage() {
           </div>
         )}
 
+        </TabPanel>
       </div>
     </div>
   )
