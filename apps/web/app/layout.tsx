@@ -16,6 +16,7 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "./globals.css";
 import "./screen-tokens.css";  // Screen design tokens (--lv-*) — additive, namespaced
+import "./screen-ui.css";      // Screen canonical component styles (.lv-*) — namespaced
 import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegistrar } from "@/components/layout/ServiceWorkerRegistrar";
 
