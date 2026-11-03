@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -166,11 +167,11 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         }).catch(() => {})
 
         if (process.env.RESEND_API_KEY && position.agency.senderEmail) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+          const baseUrl = appUrl()
           await sendEmail({
             to:      position.agency.senderEmail,
             subject: `✅ ${position.title} is now live on Levl1`,
-            html:    `<p>All approvers have approved the interview questions for <strong>${position.title}</strong>. The position is now active.</p><a href="${appUrl}/positions/${position.id}">View Position →</a>`,
+            html:    `<p>All approvers have approved the interview questions for <strong>${position.title}</strong>. The position is now active.</p><a href="${baseUrl}/positions/${position.id}">View Position →</a>`,
           }).catch(() => {})
         }
       }

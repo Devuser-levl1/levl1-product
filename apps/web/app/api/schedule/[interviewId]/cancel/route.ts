@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { releaseBooking } from '@/lib/screen/scheduling/booking'
 import { sendBookingEmail } from '@/lib/screen/scheduling/emails'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,12 +19,12 @@ export async function POST(_req: NextRequest, { params }: { params: { interviewI
     await prisma.interview.update({ where: { id: interview.id }, data: { scheduledAt: null, status: 'cancelled' } })
     await prisma.candidate.update({ where: { id: interview.candidateId }, data: { scheduledAt: null, status: 'cancelled' } })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl = appUrl()
     await sendBookingEmail('cancel', {
       interviewId: interview.id, candidateName: interview.candidate.name, candidateEmail: interview.candidate.email,
       positionTitle: interview.position.title, company: interview.position.company,
       agencyName: interview.position.agency?.name ?? 'Your recruiter', agency: interview.position.agency,
-      start: prevStart, end: new Date(prevStart.getTime() + interview.duration * 60_000), joinUrl: `${appUrl}/interview/${interview.id}`,
+      start: prevStart, end: new Date(prevStart.getTime() + interview.duration * 60_000), joinUrl: `${baseUrl}/interview/${interview.id}`,
     }).catch((e) => console.error('[schedule/cancel] notify failed:', e))
 
     return NextResponse.json({ success: true })

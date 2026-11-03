@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sendEmail, confirmationEmailHtml } from '@/lib/emailService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,8 +70,11 @@ export async function POST(req: NextRequest) {
     }).catch(() => {}) // non-critical
 
     // Send confirmation email
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
-    const interviewUrl = `${baseUrl}/candidate/interview/${interview.id}`
+    const baseUrl = appUrl()
+    // The interview room is /interview/{id} (same link the self-booked
+    // confirmation sends). /candidate/interview/* expects a one-time TOKEN, so
+    // the interview id there was an "invalid link" for every candidate.
+    const interviewUrl = `${baseUrl}/interview/${interview.id}`
 
     await sendEmail({
       to: candidate.email,

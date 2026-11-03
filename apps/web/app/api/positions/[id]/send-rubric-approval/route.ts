@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail, agencyFromAddress } from '@/lib/emailService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const agency  = await prisma.agency.findUnique({ where: { id: session.agencyId } })
-    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl  = appUrl()
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     // Delete existing pending rubric token
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     <div style="background:#F0FDF4;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:14px;color:#065F46">
       <strong>L2 Submission Threshold:</strong> Candidates scoring ${position.l2ScoreThreshold ?? 75}+ will be recommended for L2 interviews.
     </div>
-    <a href="${appUrl}/approve/rubric/${rubricToken.token}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
+    <a href="${baseUrl}/approve/rubric/${rubricToken.token}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
       Review &amp; Approve Scoring &rarr;
     </a>
     <p style="font-size:12px;color:#94A3B8;margin-top:20px">This link expires in 7 days. No login required.</p>

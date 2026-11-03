@@ -6,6 +6,7 @@ import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { buildInviteEmail } from '@/lib/screen/recruiter/invite-email'
 import { sendWhatsAppInvite } from '@/lib/whatsappService'
 import { generateAvailableSlots, formatSlotLabel } from '@/lib/slots'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,10 +68,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Scheduling URL — candidate picks their slot here first
-    const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
-    const schedulingUrl = `${appUrl}/schedule/${interview.id}`
+    const baseUrl       = appUrl()
+    const schedulingUrl = `${baseUrl}/schedule/${interview.id}`
     // Direct join URL (used in confirmation email after scheduling)
-    const joinUrl       = `${appUrl}/interview/${interview.id}`
+    const joinUrl       = `${baseUrl}/interview/${interview.id}`
 
     console.log('[send-invite] schedulingUrl:', schedulingUrl)
     console.log('[send-invite] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)

@@ -37,6 +37,7 @@ export default function CandidateInterviewEntry() {
 
   const [pageState, setPageState]   = useState<PageState>('loading')
   const [meta, setMeta]             = useState<InterviewMeta | null>(null)
+  const [interviewId, setInterviewId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg]     = useState('')
   const [micStatus, setMicStatus]   = useState<'ok' | 'fail' | 'pending'>('pending')
   const [audioStatus, setAudioStatus] = useState<'ok' | 'fail' | 'pending'>('pending')
@@ -51,11 +52,18 @@ export default function CandidateInterviewEntry() {
         const data = await res.json()
         if (!res.ok) {
           if (res.status === 410) { setPageState('expired'); return }
+          // Rescue: confirmation emails used to put the INTERVIEW ID here instead
+          // of a token. If it resolves as an interview, send them to the room.
+          if (res.status === 404) {
+            const iv = await fetch(`/api/interviews/${encodeURIComponent(token)}`).catch(() => null)
+            if (iv?.ok) { router.replace(`/interview/${encodeURIComponent(token)}`); return }
+          }
           setErrorMsg(data.error ?? 'Invalid or unknown link')
           setPageState('error')
           return
         }
         if (data.alreadyUsed) { setPageState('already_used'); return }
+        setInterviewId(data.interviewId as string)
         setMeta(data.interview as InterviewMeta)
         setPageState('checking')
       })
@@ -63,7 +71,7 @@ export default function CandidateInterviewEntry() {
         setErrorMsg('Could not reach the server. Please check your connection.')
         setPageState('error')
       })
-  }, [token])
+  }, [token, router])
 
   /* Run pre-flight checks once we are in "checking" state */
   useEffect(() => {
@@ -91,7 +99,8 @@ export default function CandidateInterviewEntry() {
   }, [pageState])
 
   function handleStartInterview() {
-    router.push(`/interview/${token}`)
+    // The room is keyed by the interview id (not the token).
+    if (interviewId) router.push(`/interview/${interviewId}`)
   }
 
   /* ── Loading ── */

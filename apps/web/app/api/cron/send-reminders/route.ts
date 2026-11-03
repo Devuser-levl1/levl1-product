@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { sendWhatsAppReminder } from '@/lib/whatsappService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,7 @@ async function run(req: NextRequest) {
       orderBy: { scheduledAt: 'asc' },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl = appUrl()
     let sent = 0
     let failed = 0
 
@@ -51,7 +52,7 @@ async function run(req: NextRequest) {
           : null
 
         const joinUrl = meta.joinUrl
-          ?? (candidate?.interview ? `${appUrl}/interview/${candidate.interview.id}` : appUrl)
+          ?? (candidate?.interview ? `${baseUrl}/interview/${candidate.interview.id}` : baseUrl)
 
         // Email reminder
         if (email.to && process.env.RESEND_API_KEY) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail } from '@/lib/emailService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     console.log('[send-approvals] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
 
     const agency  = await prisma.agency.findUnique({ where: { id: session.agencyId } })
-    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl  = appUrl()
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     const sent:   string[] = []
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           await sendEmail({
             to:      position.techLeadEmail,
             subject: `Action Required: Review interview questions for ${position.title}`,
-            html:    approvalEmailHtml({ type: 'tech_lead', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${appUrl}/approve/${techToken.token}` }),
+            html:    approvalEmailHtml({ type: 'tech_lead', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${baseUrl}/approve/${techToken.token}` }),
           })
           console.log('[send-approvals] Tech lead email sent to:', position.techLeadEmail)
         }
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           await sendEmail({
             to:      position.hrEmail,
             subject: `Action Required: Review interview questions for ${position.title}`,
-            html:    approvalEmailHtml({ type: 'hr', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${appUrl}/approve/${hrToken.token}` }),
+            html:    approvalEmailHtml({ type: 'hr', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${baseUrl}/approve/${hrToken.token}` }),
           })
           console.log('[send-approvals] HR email sent to:', position.hrEmail)
         }

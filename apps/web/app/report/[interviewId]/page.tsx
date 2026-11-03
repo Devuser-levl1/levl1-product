@@ -79,7 +79,14 @@ export default function ReportPage() {
     const MAX_TRIES = isDemo ? 10 : 1
     const load = (attempt: number) => {
       fetch(`/api/reports/interview/${interviewId}`)
-        .then((res) => (res.ok ? res.json() : null))
+        .then((res) => {
+          // Signed out (e.g. clicked the report email) → log in, then come back here.
+          if (res.status === 401) {
+            window.location.replace(`/interviews/login?next=${encodeURIComponent(`/report/${interviewId}`)}`)
+            return null
+          }
+          return res.ok ? res.json() : null
+        })
         .then((data: (CandidateReport & { error?: string }) | null) => {
           if (!alive) return
           if (data && !data.error) {

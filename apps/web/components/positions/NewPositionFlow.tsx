@@ -516,7 +516,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
             l2ScoreThreshold, rubricApproved, scoringRubric, softSkillWeightage: weights,
           }),
         });
-        if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
+        if (posRes.status === 401) { window.location.assign("/interviews/login?expired=1"); throw new Error("Your session has expired — please sign in again."); } if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
         const pos = await posRes.json();
         posId = pos.id;
         setSavedPositionId(posId);
@@ -582,7 +582,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         setDupModal({ existingId: dup.existingId, message: dup.message });
         return;
       }
-      if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
+      if (posRes.status === 401) { window.location.assign("/interviews/login?expired=1"); throw new Error("Your session has expired — please sign in again."); } if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
       const position = await posRes.json();
       await fetch(`/api/positions/${position.id}/questions`, {
         method: "POST", headers: { "Content-Type": "application/json" },

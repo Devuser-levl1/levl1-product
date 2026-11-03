@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail } from '@/lib/emailService'
 import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 import crypto from 'crypto'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const agency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl = appUrl()
     const results = []
 
     for (const m of members) {
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 24px">
       <strong>${session.name}</strong> has invited you to join <strong>${agency.name}</strong> on Levl1 as a <strong>${m.role ?? 'Recruiter'}</strong>.
     </p>
-    <a href="${appUrl}/accept-invite/${inviteToken}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
+    <a href="${baseUrl}/accept-invite/${inviteToken}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
       Accept Invitation &rarr;
     </a>
     <p style="font-size:12px;color:#94A3B8;margin-top:20px">This link expires in 7 days. If you did not expect this email, you can safely ignore it.</p>

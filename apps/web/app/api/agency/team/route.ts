@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail } from '@/lib/emailService'
 import crypto from 'crypto'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,13 +76,13 @@ export async function PATCH(req: NextRequest) {
       data:  { inviteToken: newToken, status: 'invited' },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl = appUrl()
     if (process.env.RESEND_API_KEY) {
       await sendEmail({
         to:      member.email,
         subject: `Reminder: You've been invited to join ${member.agency.name} on Levl1`,
         html: `<p>${session.name} has resent your invitation to join <strong>${member.agency.name}</strong> on Levl1.</p>
-<a href="${appUrl}/accept-invite/${newToken}" style="display:inline-block;background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Accept Invitation →</a>
+<a href="${baseUrl}/accept-invite/${newToken}" style="display:inline-block;background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Accept Invitation →</a>
 <p style="color:#94A3B8;font-size:12px;margin-top:16px">This link expires in 7 days.</p>`,
       }).catch(console.error)
     }

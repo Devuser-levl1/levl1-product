@@ -31,9 +31,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body     = await req.json()
+    // Session required; the agency ALWAYS comes from the session. The old
+    // `?? body.agencyId` fallback created positions owned by no agency when the
+    // session was missing — invisible to every scoped read ("Position not found").
     const session  = getSessionFromRequest(req)
-    const agencyId = session?.agencyId ?? body.agencyId
+    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const body     = await req.json()
+    const agencyId = session.agencyId
 
     // Duplicate detection — same title + company for this agency, not closed/lost/won
     if (agencyId && body.title && body.company) {
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
       'softSkillWeightage', 'clientId', 'mustHaves', 'logistics',
     ])
-    const data: Record<string, unknown> = { agencyId: agencyId ?? body.agencyId }
+    const data: Record<string, unknown> = { agencyId }
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED.has(k)) data[k] = v
     }

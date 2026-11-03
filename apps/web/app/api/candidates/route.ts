@@ -77,7 +77,8 @@ export async function POST(req: Request) {
     if (rows.some((r) => !r.positionId)) {
       return NextResponse.json({ error: 'Each candidate needs a positionId. Resolve/create the position first.' }, { status: 400 })
     }
-    const found = await prisma.position.findMany({ where: { id: { in: wantedIds } }, select: { id: true } })
+    // Only positions owned by the caller's agency count as "found".
+    const found = await prisma.position.findMany({ where: { id: { in: wantedIds }, agencyId: session.agencyId }, select: { id: true } })
     const validIds = new Set(found.map((p) => p.id))
     const missing = wantedIds.filter((id) => !validIds.has(id))
     if (missing.length > 0) {

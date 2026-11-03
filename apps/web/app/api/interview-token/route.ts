@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
+import { appUrl } from '@/lib/screen/app-url'
 
 /* POST /api/interview-token
  * Body: { interviewId: string }
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       create: { interviewId, expiresAt },
     })
 
-    const origin = req.headers.get('origin') ?? 'https://levl1.app'
+    const origin = appUrl()
     const interviewUrl = `${origin}/candidate/interview/${tokenRecord.token}`
 
     return NextResponse.json({

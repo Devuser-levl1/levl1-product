@@ -3,6 +3,7 @@ import { Cashfree, CFEnvironment } from 'cashfree-pg'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { PLANS } from '@/lib/plans'
+import { appUrl } from '@/lib/screen/app-url'
 
 function getCashfree() {
   const env = process.env.CASHFREE_ENV === 'PROD'
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     const orderId       = `levl1_${agency.id}_${Date.now()}`
     const customerPhone = '9999999999' // Cashfree requires phone
-    const appUrl        = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl        = appUrl()
 
     const orderRequest = {
       order_amount:   plan.price / 100, // Cashfree uses rupees
@@ -51,8 +52,8 @@ export async function POST(req: NextRequest) {
         customer_phone: customerPhone,
       },
       order_meta: {
-        return_url:  `${appUrl}/settings?section=billing&order_id={order_id}&plan=${planId}`,
-        notify_url:  `${appUrl}/api/payments/webhook`,
+        return_url:  `${baseUrl}/settings?section=billing&order_id={order_id}&plan=${planId}`,
+        notify_url:  `${baseUrl}/api/payments/webhook`,
       },
       order_note: `Levl1 ${plan.name} Plan - ${agency.name}`,
     }

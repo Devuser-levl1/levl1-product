@@ -44,7 +44,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Verification failed.'); setLoading(false); return }
       toast.success('Welcome back!')
-      router.push('/dashboard')
+      router.push(safeNext() ?? '/dashboard')
     } catch { setError('Something went wrong. Please try again.'); setLoading(false) }
   }
 
@@ -95,6 +95,14 @@ export default function LoginPage() {
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   )
+}
+
+// Return to where the user was headed (e.g. a report link from an email).
+// Same-origin relative paths only — never an open redirect.
+function safeNext(): string | null {
+  if (typeof window === 'undefined') return null
+  const next = new URLSearchParams(window.location.search).get('next')
+  return next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : null
 }
 
 const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 6 }

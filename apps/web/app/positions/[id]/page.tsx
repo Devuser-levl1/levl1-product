@@ -235,7 +235,14 @@ export default function PositionDetailPage() {
     if (!id) return
     setLoading(true)
     fetch(`/api/positions/${id}`)
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        // Signed out ≠ not found: log in, then come straight back to this position.
+        if (r.status === 401) {
+          window.location.replace(`/interviews/login?expired=1&next=${encodeURIComponent(`/positions/${id}`)}`)
+          return null
+        }
+        return r.ok ? r.json() : null
+      })
       .then(data => {
         if (data) setPosition(data)
         else toast.error('Position not found')

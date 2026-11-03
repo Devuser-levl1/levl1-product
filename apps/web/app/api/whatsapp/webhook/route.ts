@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendWhatsAppConfirmation } from '@/lib/whatsappService'
 import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 import { formatSlotLabel } from '@/lib/slots'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,10 +67,10 @@ export async function POST(req: NextRequest) {
     // Consent gate — a slot cannot be booked until the candidate has consented
     // to the AI interview on the scheduling page.
     if (!candidate.interview.consentGiven) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+      const baseUrl = appUrl()
       console.log('[whatsapp/webhook] Consent not given — blocking booking for', candidate.id)
       return twimlMessage(
-        `Before we can confirm a time, please open your scheduling link and tap “I understand and consent”: ${appUrl}/schedule/${candidate.interview.id}`,
+        `Before we can confirm a time, please open your scheduling link and tap “I understand and consent”: ${baseUrl}/schedule/${candidate.interview.id}`,
       )
     }
 
@@ -86,8 +87,8 @@ export async function POST(req: NextRequest) {
     }
 
     const scheduledAt = selected.startTime
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
-    const interviewUrl = `${appUrl}/interview/${candidate.interview.id}`
+    const baseUrl = appUrl()
+    const interviewUrl = `${baseUrl}/interview/${candidate.interview.id}`
     const dateStr = formatSlotLabel(scheduledAt)
 
     // Book everything atomically

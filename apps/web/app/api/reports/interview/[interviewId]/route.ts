@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { interviewId: string } },
 ) {
   try {
@@ -30,6 +31,16 @@ export async function GET(
 
     if (!interview) {
       return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
+    }
+
+    // Recruiter-only, agency-scoped. Demo-gallery runs stay public — the
+    // anonymous prospect who just took the demo views their own report.
+    if (!interview.isDemo) {
+      const session = getSessionFromRequest(req)
+      if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+      if (interview.candidate?.position?.agencyId !== session.agencyId) {
+        return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
+      }
     }
 
     const { candidate } = interview

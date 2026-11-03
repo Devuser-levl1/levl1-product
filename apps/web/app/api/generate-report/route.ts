@@ -7,6 +7,7 @@ import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE 
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
+import { appUrl } from '@/lib/screen/app-url'
 
 export async function POST(req: NextRequest) {
   try {
@@ -363,7 +364,7 @@ export async function POST(req: NextRequest) {
             : null
 
           if (recruiter && process.env.RESEND_API_KEY) {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+            const baseUrl = appUrl()
             await sendEmail({
               to: recruiter.email,
               subject: `Report Ready — ${candidateName} for ${cand?.position?.title ?? positionTitle}`,
@@ -373,7 +374,7 @@ export async function POST(req: NextRequest) {
                 <p><strong>Position:</strong> ${cand?.position?.title ?? positionTitle} at ${cand?.position?.company ?? company}<br/>
                 <strong>Score:</strong> ${weightedScore}/100<br/>
                 <strong>Recommendation:</strong> ${report.recommendation ?? 'maybe'}</p>
-                <a href="${appUrl}/report/${interviewId}"
+                <a href="${baseUrl}/report/${interviewId}"
                    style="background:#4F46E5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px;">
                   View Full Report →
                 </a>
@@ -393,7 +394,7 @@ export async function POST(req: NextRequest) {
         // Position. (Hire no longer runs in-built interviews; the Hire-side sync
         // and webhook coupling were removed in Phase 2.)
         try {
-          const reportAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.io'
+          const reportAppUrl = appUrl()
           const base = {
             interviewId,
             candidateId: resolvedCandidateId,

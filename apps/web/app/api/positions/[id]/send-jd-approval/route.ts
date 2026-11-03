@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail, agencyFromAddress } from '@/lib/emailService'
+import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const agency  = await prisma.agency.findUnique({ where: { id: session.agencyId } })
-    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://levl1.app'
+    const baseUrl  = appUrl()
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     // Delete existing pending JD token for this position
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       Before we begin scheduling AI-powered interviews for <strong>${position.title}</strong>,
       we need your sign-off on the job description.
     </p>
-    <a href="${appUrl}/approve/jd/${jdToken.token}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
+    <a href="${baseUrl}/approve/jd/${jdToken.token}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">
       Review &amp; Approve JD &rarr;
     </a>
     <p style="font-size:12px;color:#94A3B8;margin-top:20px">This link expires in 7 days. No login required.</p>
