@@ -1,0 +1,191 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Levl1 Screen — design tokens (Design-System Reconciliation, Pass 1)
+   ──────────────────────────────────────────────────────────────────────────
+   ONE token set for the Screen app. Namespaced `--lv-*` so it is purely
+   ADDITIVE: nothing existing reads these yet, and the legacy globals
+   (--brand, --accent, .btn-*, .input, .card — some used by Hire) are untouched.
+
+   Decisions
+   • Primary = indigo (#4F46E5). Violet is an ACCENT only (gradients, highlights),
+     never a primary action colour.
+   • Text uses an INK scale (not brand blue). --lv-text-subtle (#94A3B8) fails
+     AA for body text — placeholders / decorative only; use --lv-text-muted
+     for secondary text.
+   • Dark values are defined now but INERT: they apply only under
+     [data-lv-theme="dark"], which nothing sets. They get switched on (via
+     prefers-color-scheme) once every Screen screen reads tokens (end of Pass 3),
+     so no screen is ever half light / half dark.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand ─────────────────────────────────────────────────────────── */
+  --lv-brand:              #4F46E5;
+  --lv-brand-hover:        #4338CA;
+  --lv-brand-active:       #3730A3;
+  --lv-brand-soft:         #EEF2FF;   /* tinted backgrounds, selected rows */
+  --lv-brand-soft-border:  #C7D2FE;
+  --lv-brand-text:         #4338CA;   /* brand-coloured text/links on light surfaces (AA) */
+  --lv-on-brand:           #FFFFFF;
+  --lv-accent:             #7C3AED;   /* accent only — never a primary button */
+  --lv-accent-soft:        #F5F3FF;
+  --lv-gradient-brand:     linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+
+  /* ── Text (ink scale) ──────────────────────────────────────────────── */
+  --lv-text:               #0F172A;   /* headings, primary text      16.8:1 */
+  --lv-text-body:          #334155;   /* body copy                   10.3:1 */
+  --lv-text-muted:         #64748B;   /* secondary text, hints        4.8:1 */
+  --lv-text-subtle:        #94A3B8;   /* placeholders / decorative ONLY      */
+  --lv-text-inverse:       #FFFFFF;
+
+  /* ── Surfaces ──────────────────────────────────────────────────────── */
+  --lv-bg:                 #F8FAFC;   /* app page background */
+  --lv-surface:            #FFFFFF;   /* cards, modals, inputs */
+  --lv-surface-sunken:     #F8FAFC;   /* insets, table headers, read-only fields */
+  --lv-surface-muted:      #F1F5F9;   /* hover rows, chips */
+  --lv-overlay:            rgba(15, 23, 42, 0.45);   /* modal / drawer backdrop */
+
+  /* ── Borders ───────────────────────────────────────────────────────── */
+  --lv-border:             #E2E8F0;
+  --lv-border-strong:      #CBD5E1;   /* decorative: card hover, dividers (NOT a control boundary) */
+  --lv-border-control:     #8792A2;   /* input / checkbox / radio boundary — ≥3:1 (WCAG 1.4.11) */
+  --lv-border-focus:       #4F46E5;
+
+  /* ── Semantic (text / soft bg / border) ────────────────────────────── */
+  --lv-success:            #047857;
+  --lv-success-soft:       #ECFDF5;
+  --lv-success-border:     #A7F3D0;
+  --lv-warning:            #B45309;
+  --lv-warning-soft:       #FFFBEB;
+  --lv-warning-border:     #FDE68A;
+  --lv-danger:             #B91C1C;   /* AA on white AND on danger-soft; white text on it 6.5:1 */
+  --lv-danger-hover:       #991B1B;
+  --lv-danger-soft:        #FEF2F2;
+  --lv-danger-border:      #FECACA;
+  --lv-info:               #4338CA;
+  --lv-info-soft:          #EEF2FF;
+  --lv-info-border:        #C7D2FE;
+
+  /* ── Focus ─────────────────────────────────────────────────────────── */
+  --lv-focus-ring:         0 0 0 3px rgba(79, 70, 229, 0.35);
+  --lv-focus-outline:      3px solid #A5B4FC;
+
+  /* ── Spacing (4px base) ────────────────────────────────────────────── */
+  --lv-space-1:  4px;
+  --lv-space-2:  8px;
+  --lv-space-3:  12px;
+  --lv-space-4:  16px;
+  --lv-space-5:  20px;
+  --lv-space-6:  24px;
+  --lv-space-8:  32px;
+  --lv-space-10: 40px;
+  --lv-space-12: 48px;
+  --lv-space-16: 64px;
+
+  /* ── Typography (7-step scale; families reuse the existing fonts) ──── */
+  --lv-font-sans:    var(--font-sans, 'Inter', system-ui, sans-serif);
+  --lv-font-display: var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif);
+  --lv-font-mono:    var(--font-mono, ui-monospace, monospace);
+  --lv-text-xs:   12px;   /* captions, badges, table meta */
+  --lv-text-sm:   13px;   /* secondary UI text, labels */
+  --lv-text-base: 14px;   /* body, inputs, buttons */
+  --lv-text-md:   16px;   /* emphasized body, card titles */
+  --lv-text-lg:   18px;   /* section titles */
+  --lv-text-xl:   22px;   /* page titles */
+  --lv-text-2xl:  28px;   /* hero numbers / big page titles */
+  --lv-leading-tight:  1.25;
+  --lv-leading-normal: 1.5;
+  --lv-weight-regular:  400;
+  --lv-weight-medium:   500;
+  --lv-weight-semibold: 600;
+  --lv-weight-bold:     700;
+  --lv-tracking-tight: -0.02em;
+
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --lv-radius-sm:   6px;    /* badges, small chips, checkboxes */
+  --lv-radius-md:   10px;   /* buttons, inputs */
+  --lv-radius-lg:   14px;   /* cards, modals */
+  --lv-radius-pill: 999px;
+
+  /* ── Elevation ─────────────────────────────────────────────────────── */
+  --lv-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(79, 70, 229, 0.05);
+  --lv-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(79, 70, 229, 0.04);
+  --lv-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.14), 0 4px 12px rgba(79, 70, 229, 0.08);
+
+  /* ── Controls / layout ─────────────────────────────────────────────── */
+  --lv-control-h:    40px;   /* buttons, inputs, selects */
+  --lv-control-h-sm: 32px;   /* compact (tables, toolbars) — pair with a 44px hit area */
+  --lv-touch:        44px;   /* minimum touch target */
+  --lv-content-max:  1200px;
+  --lv-gutter:       32px;   /* page side padding (16px on mobile) */
+
+  /* ── Motion ────────────────────────────────────────────────────────── */
+  --lv-ease:     cubic-bezier(0.2, 0.8, 0.2, 1);
+  --lv-dur-fast: 120ms;
+  --lv-dur:      180ms;
+
+  /* ── Layering ──────────────────────────────────────────────────────── */
+  --lv-z-sticky:  40;
+  --lv-z-sidebar: 50;
+  --lv-z-overlay: 80;
+  --lv-z-modal:   90;
+  --lv-z-toast:   100;
+}
+
+/* ── Dark values — INERT until Pass 3 completes (nothing sets this attr) ── */
+[data-lv-theme="dark"] {
+  --lv-brand:              #818CF8;
+  --lv-brand-hover:        #A5B4FC;
+  --lv-brand-active:       #6366F1;
+  --lv-brand-soft:         #1E1B4B;
+  --lv-brand-soft-border:  #3730A3;
+  --lv-brand-text:         #A5B4FC;
+  --lv-on-brand:           #0B1020;
+  --lv-accent:             #A78BFA;
+  --lv-accent-soft:        #2E1065;
+  --lv-gradient-brand:     linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+
+  --lv-text:               #F1F5F9;
+  --lv-text-body:          #CBD5E1;
+  --lv-text-muted:         #94A3B8;
+  --lv-text-subtle:        #64748B;
+  --lv-text-inverse:       #0F172A;
+
+  --lv-bg:                 #0B1020;
+  --lv-surface:            #111827;
+  --lv-surface-sunken:     #0F172A;
+  --lv-surface-muted:      #1F2937;
+  --lv-overlay:            rgba(2, 6, 23, 0.65);
+
+  --lv-border:             #1F2937;
+  --lv-border-strong:      #334155;
+  --lv-border-control:     #64748B;
+  --lv-border-focus:       #818CF8;
+
+  --lv-success:            #34D399;
+  --lv-success-soft:       #052E2B;
+  --lv-success-border:     #065F46;
+  --lv-warning:            #FBBF24;
+  --lv-warning-soft:       #2A1F05;
+  --lv-warning-border:     #78350F;
+  --lv-danger:             #F87171;
+  --lv-danger-hover:       #FCA5A5;
+  --lv-danger-soft:        #2A0A0A;
+  --lv-danger-border:      #7F1D1D;
+  --lv-info:               #A5B4FC;
+  --lv-info-soft:          #1E1B4B;
+  --lv-info-border:        #3730A3;
+
+  --lv-focus-ring:         0 0 0 3px rgba(129, 140, 248, 0.45);
+  --lv-focus-outline:      3px solid #818CF8;
+
+  --lv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --lv-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --lv-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* One shared spinner keyframe for the Screen design system (replaces the six
+   local copies as screens migrate). */
+@keyframes lv-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  :root { --lv-dur-fast: 0ms; --lv-dur: 0ms; }
+}
