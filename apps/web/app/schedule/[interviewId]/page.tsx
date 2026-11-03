@@ -116,18 +116,18 @@ export default function SchedulePage() {
 
   // ── Loading ──
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-      <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
+      <Loader2 size={32} color="var(--lv-accent)" style={{ animation: 'spin 1s linear infinite' }} />
     </div>
   )
 
   // ── Error ──
   if (error) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: 24 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
-        <AlertCircle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>Invalid scheduling link</h2>
-        <p style={{ color: '#94A3B8', fontSize: 14 }}>Please contact your recruiter for a new link.</p>
+        <AlertCircle size={48} color="var(--lv-danger)" style={{ margin: '0 auto 16px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--lv-text)', marginBottom: 8 }}>Invalid scheduling link</h2>
+        <p style={{ color: 'var(--lv-text-muted)', fontSize: 14 }}>Please contact your recruiter for a new link.</p>
       </div>
     </div>
   )
@@ -138,24 +138,24 @@ export default function SchedulePage() {
       (meta?.scheduledAt ? new Date(meta.scheduledAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }) + ' IST' : 'your chosen time')
     const joinUrl = confirmedMeta?.joinUrl ?? `/interview/${interviewId}`
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: 24 }}>
-        <div style={{ textAlign: 'center', maxWidth: 440, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '40px', boxShadow: '0 4px 20px rgba(16,185,129,0.08)' }}>
-          <CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>Interview Confirmed!</h2>
-          <p style={{ color: '#64748B', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)', padding: 24 }}>
+        <div style={{ textAlign: 'center', maxWidth: 440, background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16, padding: '40px', boxShadow: '0 4px 20px color-mix(in srgb, var(--lv-success) 8%, transparent)' }}>
+          <CheckCircle2 size={48} color="var(--lv-success)" style={{ margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>Interview Confirmed!</h2>
+          <p style={{ color: 'var(--lv-text-muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
             Your slot is booked for <strong>{dateDisplay}</strong>.<br />
             A confirmation email with your join link has been sent.
           </p>
-          <div style={{ background: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', marginBottom: 4 }}>
+          <div style={{ background: 'var(--lv-success-soft)', border: '1px solid var(--lv-success-border)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-success)', marginBottom: 4 }}>
               {meta?.position.title} at {meta?.position.company}
             </div>
-            <div style={{ fontSize: 13, color: '#047857' }}>{dateDisplay}</div>
+            <div style={{ fontSize: 13, color: 'var(--lv-success)' }}>{dateDisplay}</div>
           </div>
-          <a href={joinUrl} style={{ display: 'block', background: 'linear-gradient(135deg,#4F46E5,#7C3AED)', color: '#fff', padding: '14px 20px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>
+          <a href={joinUrl} className="lv-btn lv-btn--primary lv-btn--full" style={{ height: 48, fontSize: 15 }}>
             Join Interview When Ready →
           </a>
-          <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 14 }}>You will also receive a reminder email 24 hours before your interview.</p>
+          <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 14 }}>You will also receive a reminder email 24 hours before your interview.</p>
         </div>
       </div>
     )
@@ -166,13 +166,13 @@ export default function SchedulePage() {
   const selectedDayData = selectedDate !== null ? allDays[selectedDate] : null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'var(--font-sans)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', fontFamily: 'var(--lv-font-sans)' }}>
       {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', height: 60, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 12 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <header style={{ background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', height: 60, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 12 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 15, fontWeight: 700, color: 'var(--lv-brand)' }}>
           {meta.position.agency?.name ?? 'Levl1'}
         </span>
       </header>
@@ -180,31 +180,31 @@ export default function SchedulePage() {
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 24px 80px' }}>
         {/* Position info */}
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, color: '#4F46E5', margin: '0 0 6px' }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 24, fontWeight: 800, color: 'var(--lv-brand)', margin: '0 0 6px' }}>
             Schedule Your Interview
           </h1>
-          <p style={{ fontSize: 15, color: '#475569', fontWeight: 600, margin: '0 0 4px' }}>
+          <p style={{ fontSize: 15, color: 'var(--lv-text-body)', fontWeight: 600, margin: '0 0 4px' }}>
             {meta.position.title} at {meta.position.company}
           </p>
-          <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>
+          <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>
             Hi {meta.candidate.name} · Duration: {meta.position.interviewDuration ?? 30} minutes · AI voice interview
           </p>
         </div>
 
         {/* Date picker */}
-        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '24px', marginBottom: 20 }}>
+        <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: '24px', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Calendar size={16} color="#4F46E5" />
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>Select a date</span>
+            <Calendar size={16} color="var(--lv-brand)" />
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--lv-brand)' }}>Select a date</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
             {allDays.slice(0, 10).map((day, i) => (
-              <button key={i} type="button" onClick={() => { setSelectedDate(i); setSelectedSlot(null) }}
+              <button key={i} type="button" aria-pressed={selectedDate === i} className="lv-slot" onClick={() => { setSelectedDate(i); setSelectedSlot(null) }}
                 style={{
-                  padding: '10px 12px', borderRadius: 9, border: `2px solid ${selectedDate === i ? '#4F46E5' : '#E2E8F0'}`,
-                  background: selectedDate === i ? 'rgba(79,70,229,0.06)' : '#F8FAFC',
-                  color: selectedDate === i ? '#4F46E5' : '#475569', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-sans)', lineHeight: 1.4,
+                  padding: '10px 12px', borderRadius: 9, border: `2px solid ${selectedDate === i ? 'var(--lv-brand)' : 'var(--lv-border)'}`,
+                  background: selectedDate === i ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface-sunken)',
+                  color: selectedDate === i ? 'var(--lv-brand)' : 'var(--lv-text-body)', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--lv-font-sans)', lineHeight: 1.4,
                 }}>
                 <div style={{ fontWeight: 700 }}>{day.date.toLocaleDateString('en-IN', { weekday: 'short' })}</div>
                 <div style={{ opacity: 0.8 }}>{day.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
@@ -215,25 +215,25 @@ export default function SchedulePage() {
 
         {/* Time slots */}
         {selectedDayData && (
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '24px', marginBottom: 24 }}>
+          <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: '24px', marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <Clock size={16} color="#4F46E5" />
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>
+              <Clock size={16} color="var(--lv-brand)" />
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--lv-brand)' }}>
                 Available times for {selectedDayData.label}
               </span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {selectedDayData.slots.map(slot => (
-                <label key={slot.iso} style={{
+                <label key={slot.iso} className="lv-option" data-checked={selectedSlot === slot.iso} style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                  borderRadius: 9, border: `2px solid ${selectedSlot === slot.iso ? '#4F46E5' : '#E2E8F0'}`,
-                  background: selectedSlot === slot.iso ? 'rgba(79,70,229,0.06)' : '#F8FAFC',
+                  borderRadius: 9, border: `2px solid ${selectedSlot === slot.iso ? 'var(--lv-brand)' : 'var(--lv-border)'}`,
+                  background: selectedSlot === slot.iso ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface-sunken)',
                   cursor: 'pointer', transition: 'all 0.12s',
                 }}>
                   <input type="radio" name="slot" value={slot.iso} checked={selectedSlot === slot.iso}
                     onChange={() => setSelectedSlot(slot.iso)}
-                    style={{ accentColor: '#4F46E5', width: 16, height: 16 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: selectedSlot === slot.iso ? '#4F46E5' : '#475569' }}>
+                    style={{ accentColor: 'var(--lv-brand)', width: 16, height: 16 }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: selectedSlot === slot.iso ? 'var(--lv-brand)' : 'var(--lv-text-body)' }}>
                     {slot.label}
                   </span>
                 </label>
@@ -243,19 +243,12 @@ export default function SchedulePage() {
         )}
 
         {/* Confirm button */}
-        <button onClick={handleConfirm} disabled={!selectedSlot || submitting}
-          style={{
-            width: '100%', background: !selectedSlot || submitting ? '#94A3B8' : 'linear-gradient(135deg,#4F46E5,#7C3AED)',
-            color: '#fff', border: 'none', borderRadius: 12, padding: '16px 20px',
-            fontSize: 16, fontWeight: 700, cursor: !selectedSlot || submitting ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            boxShadow: !selectedSlot ? 'none' : '0 4px 14px rgba(79,70,229,0.28)',
-            fontFamily: 'var(--font-sans)',
-          }}>
-          {submitting ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Confirming…</> : 'Confirm My Interview Slot →'}
+        <button type="button" onClick={handleConfirm} disabled={!selectedSlot || submitting} aria-busy={submitting || undefined}
+          className="lv-btn lv-btn--primary lv-btn--full" style={{ height: 52, fontSize: 16 }}>
+          {submitting ? <><span className="lv-spinner" aria-hidden="true" /> Confirming…</> : 'Confirm My Interview Slot →'}
         </button>
 
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8', marginTop: 16 }}>
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 16 }}>
           A confirmation email will be sent to {meta.candidate.email} with your interview join link.
         </p>
       </div>

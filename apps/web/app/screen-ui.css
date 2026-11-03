@@ -248,3 +248,11 @@
 
 /* ── Report visuals (Pass 3 · group 5) ────────────────────────────────────── */
 .lv-skill__toggle:focus-visible { outline: none; box-shadow: inset var(--lv-focus-ring); }
+
+/* ── Candidate pages (Pass 3 · group 7) ───────────────────────────────────── */
+/* Agency-coloured buttons: colour is inline (white-label), so hover/disabled
+   are expressed without overriding it. */
+.lv-btn--brand:not(:disabled):hover { filter: brightness(0.93); }
+.lv-btn--brand:disabled { opacity: 0.5; filter: grayscale(0.4); }
+.lv-slot { min-height: var(--lv-touch); padding: 0 var(--lv-space-4); border-radius: var(--lv-radius-md); font: var(--lv-weight-bold) var(--lv-text-sm) var(--lv-font-sans); cursor: pointer; transition: background var(--lv-dur) var(--lv-ease), border-color var(--lv-dur) var(--lv-ease); }
+.lv-slot:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }

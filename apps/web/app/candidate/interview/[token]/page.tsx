@@ -18,13 +18,13 @@ type PageState = 'loading' | 'error' | 'already_used' | 'expired' | 'ready' | 'c
 /* ─── Pre-flight check row ─────────────────────────────────────── */
 function CheckRow({ label, status }: { label: string; status: 'ok' | 'fail' | 'pending' }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #F1F5F9' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--lv-surface-muted)' }}>
       <div style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {status === 'pending' && <Loader2 size={16} color="#94A3B8" style={{ animation: 'spin 1s linear infinite' }} />}
-        {status === 'ok'      && <CheckCircle2 size={16} color="#10B981" />}
-        {status === 'fail'    && <AlertTriangle size={16} color="#F59E0B" />}
+        {status === 'pending' && <Loader2 size={16} color="var(--lv-text-muted)" style={{ animation: 'spin 1s linear infinite' }} />}
+        {status === 'ok'      && <CheckCircle2 size={16} color="var(--lv-success)" />}
+        {status === 'fail'    && <AlertTriangle size={16} color="var(--lv-warning)" />}
       </div>
-      <span style={{ fontSize: 14, color: status === 'fail' ? '#D97706' : '#334155', fontWeight: status === 'ok' ? 500 : 400 }}>
+      <span style={{ fontSize: 14, color: status === 'fail' ? 'var(--lv-warning)' : 'var(--lv-text-body)', fontWeight: status === 'ok' ? 500 : 400 }}>
         {label}
       </span>
     </div>
@@ -108,8 +108,8 @@ export default function CandidateInterviewEntry() {
   if (pageState === 'loading') {
     return (
       <Shell>
-        <Loader2 size={36} color="#7C3AED" style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
-        <p style={{ fontSize: 15, color: '#94A3B8' }}>Verifying your interview link…</p>
+        <Loader2 size={36} color="var(--lv-accent)" style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
+        <p style={{ fontSize: 15, color: 'var(--lv-text-muted)' }}>Verifying your interview link…</p>
       </Shell>
     )
   }
@@ -118,11 +118,11 @@ export default function CandidateInterviewEntry() {
   if (pageState === 'expired') {
     return (
       <Shell>
-        <AlertTriangle size={40} color="#F59E0B" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>
+        <AlertTriangle size={40} color="var(--lv-warning)" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
           Link Expired
         </h2>
-        <p style={{ fontSize: 14, color: '#64748B', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
           This interview link has expired. Please contact the recruiting team for a new link.
         </p>
       </Shell>
@@ -133,11 +133,11 @@ export default function CandidateInterviewEntry() {
   if (pageState === 'already_used') {
     return (
       <Shell>
-        <CheckCircle2 size={40} color="#10B981" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>
+        <CheckCircle2 size={40} color="var(--lv-success)" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
           Interview Already Completed
         </h2>
-        <p style={{ fontSize: 14, color: '#64748B', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
           This interview has already been completed. If you believe this is an error, please contact the recruiting team.
         </p>
       </Shell>
@@ -148,11 +148,11 @@ export default function CandidateInterviewEntry() {
   if (pageState === 'error') {
     return (
       <Shell>
-        <AlertTriangle size={40} color="#EF4444" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>
+        <AlertTriangle size={40} color="var(--lv-danger)" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
           Invalid Link
         </h2>
-        <p style={{ fontSize: 14, color: '#64748B', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
           {errorMsg || 'This interview link is not valid. Please check the link in your invite email.'}
         </p>
       </Shell>
@@ -169,27 +169,27 @@ export default function CandidateInterviewEntry() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={16} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#4F46E5' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 800, color: 'var(--lv-brand)' }}>Levl1</span>
       </div>
 
       {/* Card */}
       <div style={{
-        background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16,
+        background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
         padding: '32px 36px', width: '100%', maxWidth: 480,
-        boxShadow: '0 4px 24px rgba(79,70,229,0.08)',
+        boxShadow: '0 4px 24px color-mix(in srgb, var(--lv-brand) 8%, transparent)',
       }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 6 }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 6 }}>
             Welcome, {meta?.candidateName?.split(' ')[0]}
           </h1>
-          <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
             You are about to start your AI interview for <strong>{meta?.positionTitle}</strong> at <strong>{meta?.company}</strong>.
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 13, color: '#7C3AED', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 13, color: 'var(--lv-accent)', fontWeight: 600 }}>
             <Clock size={13} />
             <span>{meta?.duration ?? 30} minutes</span>
           </div>
@@ -197,7 +197,7 @@ export default function CandidateInterviewEntry() {
 
         {/* Pre-flight checks */}
         <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
             Pre-flight check
           </p>
           <CheckRow label="Microphone access" status={micStatus} />
@@ -208,8 +208,8 @@ export default function CandidateInterviewEntry() {
         {/* Warnings */}
         {pageState === 'ready' && !allOk && (
           <div style={{
-            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#92400E',
+            background: 'color-mix(in srgb, var(--lv-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)',
+            borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: 'var(--lv-warning)',
           }}>
             {micStatus === 'fail' && (
               <p style={{ margin: '0 0 4px' }}>⚠ Microphone blocked — please allow microphone access in your browser settings and reload.</p>
@@ -229,25 +229,20 @@ export default function CandidateInterviewEntry() {
 
         {/* CTA */}
         <button
+          type="button"
           onClick={handleStartInterview}
           disabled={!canStart}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: canStart ? 'linear-gradient(135deg, #4F46E5, #7C3AED)' : '#E2E8F0',
-            border: 'none', borderRadius: 10, color: canStart ? '#fff' : '#94A3B8',
-            fontSize: 15, fontWeight: 700, padding: '14px 20px',
-            cursor: canStart ? 'pointer' : 'not-allowed',
-            boxShadow: canStart ? '0 4px 14px rgba(124,58,237,0.30)' : 'none',
-            transition: 'all 0.2s',
-          }}
+          aria-busy={pageState === 'checking' || undefined}
+          className="lv-btn lv-btn--primary lv-btn--full"
+          style={{ height: 48, fontSize: 15 }}
         >
           {pageState === 'checking'
-            ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Checking system…</>
-            : <><Mic size={16} /> Start Interview</>
+            ? <><span className="lv-spinner" aria-hidden="true" /> Checking system…</>
+            : <><Mic size={16} aria-hidden="true" /> Start Interview</>
           }
         </button>
 
-        <p style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
           Find a quiet place with a stable internet connection. Speak clearly — the AI will guide you through each question.
         </p>
       </div>
@@ -259,8 +254,8 @@ export default function CandidateInterviewEntry() {
           { icon: <Video size={14} />, text: 'Camera not required' },
           { icon: <Volume2 size={14} />, text: 'Use headphones if possible' },
         ].map((tip, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94A3B8' }}>
-            <span style={{ color: '#CBD5E1' }}>{tip.icon}</span>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--lv-text-muted)' }}>
+            <span style={{ color: 'var(--lv-border-strong)' }}>{tip.icon}</span>
             {tip.text}
           </div>
         ))}
@@ -274,10 +269,10 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #F8F9FF 0%, #F0EBFF 100%)',
+      background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '32px 16px',
-      fontFamily: 'var(--font-sans)',
+      fontFamily: 'var(--lv-font-sans)',
     }}>
       {children}
     </div>

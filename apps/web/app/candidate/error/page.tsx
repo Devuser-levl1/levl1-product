@@ -1,7 +1,8 @@
-import Link from 'next/link'
+import { PoweredBy } from '@/components/screen/candidate/CandidateShell'
 
 export const dynamic = 'force-dynamic'
 
+// Design-System Pass 3 (group 7): candidate error state on Screen tokens.
 export default function CandidateErrorPage({
   searchParams,
 }: {
@@ -15,39 +16,36 @@ export default function CandidateErrorPage({
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #F8FAFC 0%, #F0EBFF 100%)',
+        background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '32px 16px',
-        fontFamily: 'var(--font-sans)',
+        fontFamily: 'var(--lv-font-sans)',
       }}
     >
-      <div
+      <main
+        className="lv-card"
+        role="alert"
         style={{
           maxWidth: 440,
           width: '100%',
-          background: '#fff',
-          border: '1px solid #E2E8F0',
-          borderRadius: 18,
-          padding: '40px 32px',
+          padding: 'clamp(28px, 6vw, 40px) clamp(20px, 5vw, 32px)',
           textAlign: 'center',
-          boxShadow: '0 8px 30px rgba(15,23,42,0.06)',
+          boxShadow: 'var(--lv-shadow-md)',
         }}
       >
-        <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: '0 0 10px' }}>
+        <div aria-hidden="true" style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 10px' }}>
           We hit a snag
         </h1>
-        <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.6, margin: 0 }}>{message}</p>
-        <div style={{ marginTop: 28, fontSize: 12, color: '#94A3B8' }}>
+        <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.6, margin: 0 }}>{message}</p>
+        <div style={{ marginTop: 28, fontSize: 13, color: 'var(--lv-text-muted)' }}>
           Need help? Reply to your invitation email or contact your recruiter.
         </div>
-      </div>
-      <div style={{ marginTop: 24, fontSize: 12, color: '#CBD5E1' }}>
-        Powered by <Link href="https://levl1.io" style={{ color: '#94A3B8', fontWeight: 700, textDecoration: 'none' }}>Levl1</Link>
-      </div>
+      </main>
+      <PoweredBy link />
     </div>
   )
 }
