@@ -3,6 +3,8 @@
 import { useState, KeyboardEvent } from "react";
 import { ShieldCheck, Plus, X } from "lucide-react";
 import { MUST_HAVE_LEN, MUST_HAVE_MAX } from "@/lib/screen/recruiter/must-haves";
+import { Button, Input } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
 
 // ── Must-have requirements editor (Screen F3) ──────────────────────────────
 // Mark skills as non-negotiable with one click, or add a free-form requirement
@@ -27,41 +29,43 @@ export function MustHaveEditor({ value, onChange, suggestions = [], disabled }: 
   const open = suggestions.filter((s) => !has(s));
 
   return (
-    <div style={{ border: "1px solid #E0E7FF", background: "#FAFBFF", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 28, alignItems: "center" }}>
-        {value.length === 0 && <span style={{ fontSize: 12.5, color: "#94A3B8" }}>No must-haves yet — the interview treats every skill equally.</span>}
+    <div style={{ border: `1px solid ${lv.brandSoftBorder}`, background: lv.surfaceSunken, borderRadius: radius.md, padding: space[3], display: "flex", flexDirection: "column", gap: space[3] }}>
+      <ul aria-label="Must-have requirements" style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 28, alignItems: "center", listStyle: "none", margin: 0, padding: 0 }}>
+        {value.length === 0 && <li style={{ fontSize: text.sm, color: lv.textMuted }}>No must-haves yet — the interview treats every skill equally.</li>}
         {value.map((m) => (
-          <span key={m} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#4F46E5", color: "#fff", borderRadius: 100, padding: "5px 6px 5px 10px", fontSize: 12.5, fontWeight: 600 }}>
-            <ShieldCheck size={13} /> {m}
+          <li key={m} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: lv.brand, color: lv.onBrand, borderRadius: radius.pill, padding: "4px 4px 4px 10px", fontSize: text.sm, fontWeight: 600 }}>
+            <ShieldCheck size={13} aria-hidden="true" /> {m}
             {!disabled && (
-              <button type="button" onClick={() => remove(m)} aria-label={`Remove ${m}`} style={{ border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", width: 18, height: 18, borderRadius: 9, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
-                <X size={11} />
+              <button type="button" onClick={() => remove(m)} aria-label={`Remove ${m}`} className="lv-chip-remove"
+                style={{ border: "none", background: "rgba(255,255,255,0.22)", color: lv.onBrand, width: 22, height: 22, borderRadius: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                <X size={12} aria-hidden="true" />
               </button>
             )}
-          </span>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {!disabled && open.length > 0 && !full && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 11.5, color: "#64748B", fontWeight: 600, marginRight: 2 }}>Mark a skill:</span>
+          <span style={{ fontSize: text.xs, color: lv.textMuted, fontWeight: 600, marginRight: 2 }}>Mark a skill:</span>
           {open.map((s) => (
-            <button key={s} type="button" onClick={() => add(s)}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "1px dashed #A5B4FC", background: "#fff", color: "#4F46E5", borderRadius: 100, padding: "3px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <Plus size={11} /> {s}
+            <button key={s} type="button" onClick={() => add(s)} className="lv-chip-add"
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 28, border: `1px dashed ${lv.brandSoftBorder}`, background: lv.surface, color: lv.brandText, borderRadius: radius.pill, padding: "0 10px", fontSize: text.xs, fontWeight: 600, cursor: "pointer" }}>
+              <Plus size={12} aria-hidden="true" /> {s}
             </button>
           ))}
         </div>
       )}
 
       {!disabled && (
-        <div style={{ display: "flex", gap: 8 }}>
-          <input className="input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} disabled={full}
-            maxLength={MUST_HAVE_LEN} placeholder={full ? `Maximum of ${MUST_HAVE_MAX} must-haves` : 'Add a requirement, e.g. "Led a team of 5+" — press Enter'} style={{ flex: 1 }} />
-          <button type="button" className="btn-ghost" onClick={() => { add(input); setInput(""); }} disabled={!input.trim() || full}>Add</button>
+        <div style={{ display: "flex", gap: space[2] }}>
+          <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} disabled={full}
+            aria-label="Add a must-have requirement"
+            maxLength={MUST_HAVE_LEN} placeholder={full ? `Maximum of ${MUST_HAVE_MAX} must-haves` : 'Add a requirement, e.g. "Led a team of 5+" — press Enter'} style={{ flex: 1, minWidth: 0 }} />
+          <Button variant="secondary" onClick={() => { add(input); setInput(""); }} disabled={!input.trim() || full}>Add</Button>
         </div>
       )}
-      <div style={{ fontSize: 11.5, color: "#94A3B8" }}>
+      <div style={{ fontSize: text.xs, color: lv.textMuted }}>
         {value.length}/{MUST_HAVE_MAX} · Each must-have gets a dedicated question, and the report marks it met, not met, or insufficient evidence.
       </div>
     </div>

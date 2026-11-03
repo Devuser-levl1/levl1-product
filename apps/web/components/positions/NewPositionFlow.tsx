@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, KeyboardEvent } from "react";
+import { useEffect, useId, useState, KeyboardEvent } from "react";
 import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
@@ -9,13 +9,18 @@ import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixE
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
-  RefreshCw, Loader2, FileText, Upload, Clipboard,
+  RefreshCw, FileText, Upload, Clipboard,
   Mail, AlertCircle, CheckCircle2, Sparkles,
-  ChevronDown, ChevronUp, Edit3, Play, Search,
+  ChevronDown, ChevronUp, Edit3, Play, Search, ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { VOICE_OPTIONS } from "@/lib/voiceOptions";
 import { useAccountType } from "@/hooks/useAccountType";
+import {
+  Button, Card, Eyebrow, Badge, Alert, EmptyState, Modal, ActionBar, Checkbox,
+  Field as FormField, Input, Select, Textarea, type Tone,
+} from "@/components/screen/ui";
+import { lv, space, text, radius, size } from "@/lib/screen/ui/tokens";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface QuestionItem {
@@ -74,11 +79,13 @@ function isManagerRole(rt: string) { return MANAGER_TYPES.includes(rt); }
 function isSeniorRole(rt: string)  { return SENIOR_TYPES.includes(rt); }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
-function RadioGroup({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+// Design-System Pass 3 (group 2b): these render with the Screen tokens and
+// canonical components. Props and behaviour are unchanged.
+function RadioGroup({ options, value, onChange, label }: { options: string[]; value: string; onChange: (v: string) => void; label?: string }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div className="lv-seg" role="radiogroup" aria-label={label}>
       {options.map((opt) => (
-        <button key={opt} type="button" onClick={() => onChange(opt)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: `1px solid ${value === opt ? "#7C3AED" : "#E2E8F0"}`, background: value === opt ? "rgba(124,58,237,0.08)" : "#F8FAFC", color: value === opt ? "#6D28D9" : "#475569", transition: "all 0.15s", fontFamily: "var(--font-sans)" }}>
+        <button key={opt} type="button" role="radio" aria-checked={value === opt} className="lv-seg__opt" onClick={() => onChange(opt)}>
           {opt}
         </button>
       ))}
@@ -86,15 +93,11 @@ function RadioGroup({ options, value, onChange }: { options: string[]; value: st
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" onClick={() => onChange(!checked)} style={{ width: 44, height: 24, borderRadius: 100, background: checked ? "#7C3AED" : "#E2E8F0", border: "none", cursor: "pointer", transition: "all 0.2s", position: "relative", flexShrink: 0, boxShadow: checked ? "0 2px 8px rgba(124,58,237,0.30)" : "none" }}>
-      <div style={{ position: "absolute", top: 3, left: checked ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }} />
-    </button>
-  );
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className="lv-switch" onClick={() => onChange(!checked)} />;
 }
 
-function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (t: string[]) => void; placeholder?: string }) {
+function TagInput({ tags, onChange, placeholder, label }: { tags: string[]; onChange: (t: string[]) => void; placeholder?: string; label?: string }) {
   const [input, setInput] = useState("");
   const add = () => { const v = input.trim(); if (v && !tags.includes(v)) onChange([...tags, v]); setInput(""); };
   const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -102,64 +105,60 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (
     if (e.key === "Backspace" && !input && tags.length) onChange(tags.slice(0, -1));
   };
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, minHeight: 44, alignItems: "center" }}>
+    <div className="lv-taginput" style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: `6px ${space[3]}px`, background: lv.surface, border: `1px solid ${lv.borderControl}`, borderRadius: radius.md, minHeight: size.touch, alignItems: "center" }}>
       {tags.map((t) => (
-        <span key={t} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(124,58,237,0.10)", border: "1px solid rgba(124,58,237,0.22)", color: "#6D28D9", fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 100, fontFamily: "var(--font-mono)" }}>
+        <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`, color: lv.brandText, fontSize: text.xs, fontWeight: 600, padding: "2px 4px 2px 8px", borderRadius: radius.pill, fontFamily: lv.fontMono }}>
           {t}
-          <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} style={{ background: "none", border: "none", cursor: "pointer", color: "#6D28D9", padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+          <button type="button" aria-label={`Remove ${t}`} className="lv-chip-add" onClick={() => onChange(tags.filter((x) => x !== t))}
+            style={{ background: "none", border: "none", cursor: "pointer", color: lv.brandText, padding: 0, width: 18, height: 18, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={12} aria-hidden="true" />
+          </button>
         </span>
       ))}
-      <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} onBlur={add} placeholder={tags.length === 0 ? placeholder : ""} style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, color: "#4F46E5", flex: 1, minWidth: 120, fontFamily: "var(--font-sans)" }} />
+      <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} onBlur={add} aria-label={label} placeholder={tags.length === 0 ? placeholder : ""}
+        style={{ border: "none", outline: "none", background: "transparent", fontSize: text.base, color: lv.text, flex: 1, minWidth: 120, minHeight: 28, fontFamily: lv.fontSans }} />
     </div>
   );
 }
 
-function FieldLabel({ label, hint }: { label: string; hint?: string }) {
+/** Label + hint for a composite control (not a single input — use FormField for those). */
+function FieldLabel({ label, hint, id, required }: { label: string; hint?: string; id?: string; required?: boolean }) {
   return (
-    <div style={{ marginBottom: 6 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
-      {hint && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{hint}</div>}
+    <div style={{ marginBottom: space[2] }}>
+      <div id={id} className="lv-label">{label}{required && <span className="lv-req" aria-hidden="true">*</span>}</div>
+      {hint && <div className="lv-hint" style={{ marginTop: 2 }}>{hint}</div>}
     </div>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+  const id = useId();
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <FieldLabel label={label} hint={hint} />
+    <div role="group" aria-labelledby={id} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <FieldLabel id={id} label={label} hint={hint} required={required} />
       {children}
     </div>
   );
 }
 
-const SELECT_STYLE: React.CSSProperties = {
-  background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8,
-  padding: "10px 14px", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
-  cursor: "pointer", outline: "none", width: "100%", fontWeight: 500,
-};
-
 function SliderField({ label, hint, value, onChange, color }: { label: string; hint: string; value: number; onChange: (v: number) => void; color?: string }) {
-  const c = color ?? (value >= 70 ? "#10B981" : value >= 40 ? "#7C3AED" : "#94A3B8");
+  const id = useId();
+  const c = color ?? lv.brand;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 800, color: "#4F46E5" }}>{value}%</span>
+        <label htmlFor={id} className="lv-label">{label}</label>
+        <span style={{ fontFamily: lv.fontMono, fontSize: text.base, fontWeight: 700, color: lv.text }}>{value}%</span>
       </div>
-      <input type="range" min={0} max={100} value={value} onChange={(e) => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: c, cursor: "pointer" }} />
-      {hint && <p style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.5, margin: 0 }}>{hint}</p>}
+      <input id={id} type="range" min={0} max={100} value={value} onChange={(e) => onChange(Number(e.target.value))} className="lv-range" style={{ accentColor: c }} />
+      {hint && <p className="lv-hint" style={{ margin: 0 }}>{hint}</p>}
     </div>
   );
 }
 
 function DiffBadge({ diff }: { diff: string }) {
-  const cfg: Record<string, { color: string; bg: string }> = {
-    basic:        { color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-    intermediate: { color: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
-    advanced:     { color: "#8B5CF6", bg: "rgba(139,92,246,0.08)" },
-  };
-  const c = cfg[diff] ?? cfg.intermediate;
-  return <span style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, padding: "2px 8px", borderRadius: 100, whiteSpace: "nowrap" }}>{diff.charAt(0).toUpperCase() + diff.slice(1)}</span>;
+  const tone: Record<string, Tone> = { basic: "success", intermediate: "brand", advanced: "info" };
+  return <Badge tone={tone[diff] ?? "brand"}>{diff.charAt(0).toUpperCase() + diff.slice(1)}</Badge>;
 }
 
 function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel, approved, isReplacing }: {
@@ -170,67 +169,87 @@ function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel,
   const [editing, setEditing]   = useState(false);
   const [editText, setEditText] = useState(q.question);
   const saveEdit = () => { onEdit({ ...q, question: editText }); setEditing(false); };
+  const flag = (bg: string, fg: string): React.CSSProperties => ({ fontSize: 10, fontWeight: 800, color: fg, background: bg, padding: "2px 7px", borderRadius: radius.pill, letterSpacing: "0.04em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 3 });
   return (
-    <div style={{ background: approved ? "rgba(16,185,129,0.03)" : "#fff", border: `1px solid ${approved ? "rgba(16,185,129,0.22)" : "#E2E8F0"}`, borderLeft: `3px solid ${approved ? "#10B981" : "#CBD5E1"}`, borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10, transition: "all 0.15s" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-        {q.isNew && <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#7C3AED", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>New</span>}
-        {q.isReplacement && !q.isNew && <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#8B5CF6", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase" }}>Replaced</span>}
-        {approved && <span style={{ fontSize: 9, fontWeight: 800, color: "#059669", background: "rgba(16,185,129,0.10)", padding: "2px 7px", borderRadius: 100, letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 3 }}><Check size={8} /> Approved</span>}
-      </div>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <div style={{ flex: 1 }}>
+    <div className="lv-card" style={{ background: approved ? lv.successSoft : lv.surface, borderColor: approved ? lv.successBorder : lv.border, borderLeft: `3px solid ${approved ? lv.success : lv.borderStrong}`, padding: `${space[3]}px ${space[4]}px`, display: "flex", flexDirection: "column", gap: space[3] }}>
+      {(q.isNew || q.isReplacement || approved) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {q.isNew && <span style={flag(lv.brand, lv.onBrand)}>New</span>}
+          {q.isReplacement && !q.isNew && <span style={flag(lv.accent, lv.onBrand)}>Replaced</span>}
+          {approved && <span style={flag(lv.surface, lv.success)}><Check size={9} aria-hidden="true" /> Approved</span>}
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: space[3], flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
           {editing ? (
-            <textarea value={editText} onChange={(e) => setEditText(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #7C3AED", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical", outline: "none", minHeight: 80 }} autoFocus />
+            <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} aria-label="Edit question" style={{ minHeight: 80, resize: "vertical" }} autoFocus />
           ) : (
-            <p style={{ fontSize: 13, color: "#4F46E5", lineHeight: 1.55, fontWeight: 500, margin: 0 }}>{q.question}</p>
+            <p style={{ fontSize: text.base, color: lv.text, lineHeight: 1.55, fontWeight: 500, margin: 0 }}>{q.question}</p>
           )}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <DiffBadge diff={q.difficulty} />
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#94A3B8", background: "#F1F5F9", padding: "2px 7px", borderRadius: 100, border: "1px solid #E2E8F0" }}>{q.estimatedMinutes}m</span>
+          <Badge tone="neutral">{q.estimatedMinutes}m</Badge>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#6D28D9", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.18)", padding: "2px 8px", borderRadius: 4 }}>{q.techTag}</span>
-          <button type="button" onClick={() => setExpanded(!expanded)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 11, display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans)" }}>
-            Key points {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[2], flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: space[2], alignItems: "center" }}>
+          <span style={{ fontSize: text.xs, fontFamily: lv.fontMono, color: lv.accent, background: lv.accentSoft, border: `1px solid ${lv.border}`, padding: "2px 8px", borderRadius: radius.sm }}>{q.techTag}</span>
+          <Button variant="tertiary" size="sm" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} rightIcon={expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}>
+            Key points
+          </Button>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {editing ? (
             <>
-              <button type="button" onClick={saveEdit} className="btn-primary" style={{ fontSize: 11, padding: "5px 10px" }}>Save</button>
-              <button type="button" onClick={() => { setEditing(false); setEditText(q.question); }} className="btn-ghost" style={{ fontSize: 11, padding: "5px 10px" }}>Cancel</button>
+              <Button variant="secondary" size="sm" onClick={() => { setEditing(false); setEditText(q.question); }}>Cancel</Button>
+              <Button size="sm" onClick={saveEdit}>Save</Button>
             </>
           ) : (
             <>
-              <button type="button" onClick={onApprove} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 700, borderRadius: 7, cursor: "pointer", border: "none", background: approved ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.08)", color: approved ? "#059669" : "#10B981", display: "flex", alignItems: "center", gap: 4, fontFamily: "var(--font-sans)" }}>
-                <Check size={11} /> {approved ? "Approved" : approveLabel}
-              </button>
-              <button type="button" onClick={() => setEditing(true)} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4 }}><Edit3 size={11} /></button>
+              <Button variant="secondary" size="sm" aria-pressed={approved} onClick={onApprove} leftIcon={<Check size={13} color={lv.success} />}>
+                {approved ? "Approved" : approveLabel}
+              </Button>
+              <Button variant="ghost" size="sm" iconOnly aria-label="Edit question" title="Edit" onClick={() => setEditing(true)}><Edit3 size={14} /></Button>
               {onReplace && (
-                <button type="button" onClick={onReplace} disabled={isReplacing} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: isReplacing ? "not-allowed" : "pointer", border: "1px solid rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.06)", color: "#7C3AED", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4, opacity: isReplacing ? 0.6 : 1 }}>
-                  {isReplacing ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw size={11} />}
-                </button>
+                <Button variant="ghost" size="sm" iconOnly aria-label="Replace question" title="Replace" onClick={onReplace} loading={isReplacing}>
+                  {!isReplacing && <RefreshCw size={14} />}
+                </Button>
               )}
-              <button type="button" onClick={onRemove} style={{ padding: "5px 8px", fontSize: 11, borderRadius: 7, cursor: "pointer", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)", color: "#EF4444", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 4 }}><Trash2 size={11} /></button>
+              <Button variant="ghost" size="sm" iconOnly aria-label="Remove question" title="Remove" onClick={onRemove} style={{ color: lv.danger }}><Trash2 size={14} /></Button>
             </>
           )}
         </div>
       </div>
       {expanded && (
-        <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ background: lv.surfaceSunken, border: `1px solid ${lv.border}`, borderRadius: radius.md, padding: `${space[3]}px ${space[4]}px`, display: "flex", flexDirection: "column", gap: space[3] }}>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Expected Key Points</p>
-            <ul style={{ margin: 0, paddingLeft: 16 }}>{q.expectedKeyPoints.map((pt, i) => <li key={i} style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>{pt}</li>)}</ul>
+            <Eyebrow style={{ marginBottom: 6 }}>Expected Key Points</Eyebrow>
+            <ul style={{ margin: 0, paddingLeft: 16 }}>{q.expectedKeyPoints.map((pt, i) => <li key={i} style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.6 }}>{pt}</li>)}</ul>
           </div>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Follow-up</p>
-            <p style={{ fontSize: 12, color: "#475569", fontStyle: "italic", lineHeight: 1.5 }}>&ldquo;{q.followUp}&rdquo;</p>
+            <Eyebrow style={{ marginBottom: 4 }}>Follow-up</Eyebrow>
+            <p style={{ fontSize: text.sm, color: lv.textBody, fontStyle: "italic", lineHeight: 1.5, margin: 0 }}>&ldquo;{q.followUp}&rdquo;</p>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Shared bits for the step bodies below.
+const stepTitle: React.CSSProperties = { fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, letterSpacing: "-0.02em", color: lv.text, margin: 0 };
+const stepDesc: React.CSSProperties = { fontSize: text.base, color: lv.textMuted, margin: `${space[1]}px 0 0` };
+const twoCol: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: space[4] };
+const panel: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], padding: `${space[3]}px ${space[4]}px`, background: lv.surface, border: `1px solid ${lv.border}`, borderRadius: radius.md };
+const ROLE_TYPES = ["Individual Contributor","Team Lead","People Manager","Architect","Director","VP","Product Manager","Engineering Manager"];
+const nowHHMM = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+function StepHeading({ title, desc }: { title: string; desc: React.ReactNode }) {
+  return (
+    <div>
+      <h2 id="npf-step-title" style={stepTitle} tabIndex={-1}>{title}</h2>
+      <p style={stepDesc}>{desc}</p>
     </div>
   );
 }
@@ -657,181 +676,205 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
+  const gutter = "clamp(16px, 4vw, 32px)";
+  const totalQuestions = questions ? (questions.technicalQuestions?.length ?? 0) + (questions.scenarioQuestions?.length ?? 0) + (questions.behavioralQuestions?.length ?? 0) + (questions.eqQuestions?.length ?? 0) + (questions.whiteboardAssessment?.length ?? 0) : 0;
+  const extractFile = async (file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    try {
+      const res = await fetch("/api/parse-resume", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.text) { setPastedJD(data.text); setJdTab("paste"); toast.success("File extracted — review and parse below"); }
+    } catch { toast.error("File extraction failed"); }
+  };
+  const reviewSection = (
+    sections: readonly ("technicalQuestions" | "scenarioQuestions" | "whiteboardAssessment" | "behavioralQuestions" | "eqQuestions")[],
+    meta: Record<string, { label: string; type: string }>,
+    approvedKey: "approvedByTech" | "approvedByHR",
+  ) => sections.map((section) => {
+    const { label, type } = meta[section];
+    const sTotal = questions![section].length, sApproved = questions![section].filter((q) => q[approvedKey]).length;
+    return (
+      <section key={section} aria-label={`${label} questions`} style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
+        <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
+          <Eyebrow>{label}</Eyebrow>
+          <span style={{ fontSize: text.xs, color: sApproved === sTotal && sTotal > 0 ? lv.success : lv.textMuted, fontFamily: lv.fontMono, fontWeight: 700 }}>{sApproved}/{sTotal} approved</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
+          {questions![section].map((q) => (
+            <QuestionCard key={q.id} q={q} approveLabel="Approve" approved={!!q[approvedKey]} isReplacing={!!replacingIds[q.id]}
+              onApprove={() => updateQuestion(section, q.id, { [approvedKey]: !q[approvedKey] })}
+              onRemove={() => removeQuestion(section, q.id)}
+              onEdit={(updated) => updateQuestion(section, q.id, updated)}
+              onReplace={() => replaceQuestion(section, q, type)} />
+          ))}
+        </div>
+        <Button variant="secondary" size="sm" style={{ alignSelf: "flex-start", borderStyle: "dashed" }} loading={!!generatingMore[section]} leftIcon={<Plus size={14} />}
+          onClick={() => generateMoreForSection(section, type)}>
+          {generatingMore[section] ? "Generating…" : `Generate 5 More ${label} Questions`}
+        </Button>
+      </section>
+    );
+  });
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#FAFAFA", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="npf-title" style={{ position: "fixed", inset: 0, zIndex: 200, background: lv.bg, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: lv.fontSans }}>
 
       {/* Duplicate position modal */}
-      {dupModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(15,23,42,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 440, padding: "28px 32px", boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "#4F46E5", margin: "0 0 10px" }}>Position Already Exists</h3>
-            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.6, marginBottom: 24 }}>{dupModal.message}<br />Do you want to open the existing position or create a new one?</p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" onClick={() => setDupModal(null)} style={{ flex: 1, padding: "11px 16px", borderRadius: 9, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
-                Create New Anyway
-              </button>
-              <button type="button" onClick={() => { window.open(`/positions/${dupModal.existingId}`, "_blank"); setDupModal(null); onClose(); }}
-                style={{ flex: 1, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", border: "none", borderRadius: 9, padding: "11px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
-                Open Existing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal open={!!dupModal} onClose={() => setDupModal(null)} size="sm" title="Position already exists"
+        description={dupModal && <>{dupModal.message}<br />Do you want to open the existing position or create a new one?</>}
+        footer={<ActionBar>
+          <Button variant="secondary" onClick={() => setDupModal(null)}>Create New Anyway</Button>
+          <Button rightIcon={<ExternalLink size={14} />} onClick={() => { if (!dupModal) return; window.open(`/positions/${dupModal.existingId}`, "_blank"); setDupModal(null); onClose(); }}>Open Existing</Button>
+        </ActionBar>} />
 
       {/* ── Top bar ── */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #4F46E5, #7C3AED)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: `0 ${gutter}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
+          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: radius.md, background: lv.gradientBrand, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sparkles size={14} color="#fff" />
           </div>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#4F46E5" }}>New Position Setup</span>
+          <span id="npf-title" style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>New Position Setup</span>
         </div>
-        <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 8, display: "flex", alignItems: "center" }}><X size={20} /></button>
+        <Button variant="ghost" iconOnly aria-label="Close new position setup" onClick={onClose}><X size={20} /></Button>
       </div>
 
       {/* ── Stepper ── */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", padding: "16px 32px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 0, maxWidth: 960, margin: "0 auto" }}>
+      <nav aria-label="Setup progress" style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: `${space[4]}px ${gutter}`, flexShrink: 0 }}>
+        <ol style={{ display: "flex", alignItems: "center", gap: 0, maxWidth: 960, margin: "0 auto", padding: 0, listStyle: "none" }}>
           {STEPS.map((s, i) => {
             const done = i < step, current = i === step;
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: done ? "#10B981" : current ? "#7C3AED" : "#F1F5F9", color: done || current ? "#fff" : "#94A3B8", border: current ? "2px solid rgba(124,58,237,0.3)" : "none", boxShadow: current ? "0 0 0 3px rgba(124,58,237,0.12)" : "none", transition: "all 0.2s" }}>
+              <li key={i} aria-current={current ? "step" : undefined} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
+                  <div aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 700, flexShrink: 0, background: done ? lv.success : current ? lv.brand : lv.surfaceMuted, color: done || current ? "#fff" : lv.textMuted, boxShadow: current ? lv.focusRing : "none", transition: `all ${lv.dur}` }}>
                     {done ? <Check size={12} /> : i + 1}
                   </div>
-                  <span className="step-label" style={{ fontSize: 11, fontWeight: current ? 700 : 500, color: current ? "#4F46E5" : done ? "#10B981" : "#94A3B8", whiteSpace: "nowrap" }}>{s.short}</span>
+                  <span className="step-label" style={{ fontSize: text.xs, fontWeight: current ? 700 : 500, color: current ? lv.brandText : done ? lv.success : lv.textMuted, whiteSpace: "nowrap" }}>{s.short}</span>
+                  <span className="lv-sr-only">{s.label}{done ? " (done)" : current ? " (current)" : ""}</span>
                 </div>
-                {i < STEPS.length - 1 && <div style={{ flex: 1, height: 2, margin: "0 8px", background: done ? "#10B981" : "#E2E8F0", transition: "background 0.3s" }} />}
-              </div>
+                {i < STEPS.length - 1 && <div aria-hidden="true" style={{ flex: 1, height: 2, margin: "0 8px", background: done ? lv.success : lv.border, transition: `background ${lv.dur}` }} />}
+              </li>
             );
           })}
-        </div>
-      </div>
+        </ol>
+      </nav>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: `${space[8]}px ${gutter}` }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: space[6] }}>
 
           {/* ── STEP 0: Basic Info ── */}
           {step === 0 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Basic Position Info</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Tell us about the role you&apos;re hiring for.</p>
-              </div>
+              <StepHeading title="Basic Position Info" desc={<>Tell us about the role you&apos;re hiring for.</>} />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Field label="Position Title *">
-                  <input className="input" placeholder="e.g. Senior Java Engineer" value={positionTitle} onChange={(e) => setPositionTitle(e.target.value)} />
-                </Field>
+              <div style={twoCol}>
+                <FormField label="Position Title" required>
+                  <Input placeholder="e.g. Senior Java Engineer" value={positionTitle} onChange={(e) => setPositionTitle(e.target.value)} />
+                </FormField>
                 {!isCompany && (
-                  <Field label="Client Company *" hint="The company you're hiring for">
-                    <input className="input" placeholder="e.g. FinEdge Technologies" value={company} onChange={(e) => setCompany(e.target.value)} />
-                  </Field>
+                  <FormField label="Client Company" required hint="The company you're hiring for">
+                    <Input placeholder="e.g. FinEdge Technologies" value={company} onChange={(e) => setCompany(e.target.value)} />
+                  </FormField>
                 )}
-                <Field label="Department">
-                  <input className="input" placeholder="e.g. Engineering, Product" value={department} onChange={(e) => setDepartment(e.target.value)} />
-                </Field>
-                <Field label="Role Type">
-                  <select style={SELECT_STYLE} value={roleType} onChange={(e) => setRoleType(e.target.value)}>
-                    {["Individual Contributor","Team Lead","People Manager","Architect","Director","VP","Product Manager","Engineering Manager"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </Field>
-                <Field label="Experience (years) *">
+                <FormField label="Department">
+                  <Input placeholder="e.g. Engineering, Product" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                </FormField>
+                <FormField label="Role Type">
+                  <Select value={roleType} onChange={(e) => setRoleType(e.target.value)}>
+                    {ROLE_TYPES.map((r) => <option key={r}>{r}</option>)}
+                  </Select>
+                </FormField>
+                <Field label="Experience (years)" required>
                   <ExperienceRangeInput min={expMin} max={expMax} onChange={(a, b) => { setExpMin(a); setExpMax(b); }} />
                 </Field>
                 {isManagerRole(roleType) && (
-                  <Field label="Team Size to Manage">
-                    <select style={SELECT_STYLE} value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
+                  <FormField label="Team Size to Manage">
+                    <Select value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
                       {["No direct reports","2–5","6–15","15+"].map((r) => <option key={r}>{r}</option>)}
-                    </select>
-                  </Field>
+                    </Select>
+                  </FormField>
                 )}
               </div>
 
               {isSeniorRole(roleType) && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
-                  <div><div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>Budget Ownership</div><div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>This role manages a budget</div></div>
-                  <Toggle checked={hasBudgetOwnership} onChange={setHasBudgetOwnership} />
+                <div style={panel}>
+                  <div><div style={{ fontSize: text.sm, fontWeight: 600, color: lv.text }}>Budget Ownership</div><div className="lv-hint" style={{ marginTop: 2 }}>This role manages a budget</div></div>
+                  <Toggle label="Budget ownership" checked={hasBudgetOwnership} onChange={setHasBudgetOwnership} />
                 </div>
               )}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
-                <div><div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5" }}>Hiring Responsibility</div><div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>This role participates in hiring decisions</div></div>
-                <Toggle checked={hasHiringResponsibility} onChange={setHasHiringResponsibility} />
+              <div style={panel}>
+                <div><div style={{ fontSize: text.sm, fontWeight: 600, color: lv.text }}>Hiring Responsibility</div><div className="lv-hint" style={{ marginTop: 2 }}>This role participates in hiring decisions</div></div>
+                <Toggle label="Hiring responsibility" checked={hasHiringResponsibility} onChange={setHasHiringResponsibility} />
               </div>
 
               {/* Contact emails — differ by account type */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{isCompany ? "Hiring Contact" : "Client Contacts"}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: space[3], paddingTop: space[2] }}>
+                <Eyebrow>{isCompany ? "Hiring Contact" : "Client Contacts"}</Eyebrow>
                 {isCompany ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    <Field label="Hiring contact email" hint="Approves the JD, rubric and interview questions">
-                      <input className="input" type="email" placeholder="hiring.manager@yourcompany.com" value={clientManagerEmail} onChange={(e) => setHiringContact(e.target.value)} />
-                    </Field>
+                  <div style={twoCol}>
+                    <FormField label="Hiring contact email" hint="Approves the JD, rubric and interview questions">
+                      <Input type="email" placeholder="hiring.manager@yourcompany.com" value={clientManagerEmail} onChange={(e) => setHiringContact(e.target.value)} />
+                    </FormField>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    <Field label="Client hiring manager email" hint="Approves the JD and rubric">
-                      <input className="input" type="email" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
-                    </Field>
-                    <Field label="Client tech lead email" hint="Approves technical questions">
-                      <input className="input" type="email" placeholder="techlead@client.com" value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
-                    </Field>
-                    <Field label="Client HR email" hint="Approves behavioral questions">
-                      <input className="input" type="email" placeholder="hr@client.com" value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
-                    </Field>
+                  <div style={twoCol}>
+                    <FormField label="Client hiring manager email" hint="Approves the JD and rubric">
+                      <Input type="email" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
+                    </FormField>
+                    <FormField label="Client tech lead email" hint="Approves technical questions">
+                      <Input type="email" placeholder="techlead@client.com" value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
+                    </FormField>
+                    <FormField label="Client HR email" hint="Approves behavioral questions">
+                      <Input type="email" placeholder="hr@client.com" value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
+                    </FormField>
                   </div>
                 )}
               </div>
 
               {/* Voice accent */}
-              <div>
-                <FieldLabel label="Interviewer Voice" hint="Optional — overrides your account default for this position only" />
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "9px 12px", borderRadius: 8, border: `1px solid ${voiceAccent === null ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`, background: voiceAccent === null ? "rgba(124,58,237,0.06)" : "#F8FAFC", transition: "all 0.12s" }}>
-                    <input type="radio" name="posVoice" checked={voiceAccent === null} onChange={() => setVoiceAccent(null)} style={{ accentColor: "#7C3AED", flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: voiceAccent === null ? "#6D28D9" : "#475569", fontWeight: voiceAccent === null ? 600 : 400 }}>Use account default</span>
+              <Field label="Interviewer Voice" hint="Optional — overrides your account default for this position only">
+                <div role="radiogroup" aria-label="Interviewer voice" style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
+                  <label className="lv-option" data-checked={voiceAccent === null}>
+                    <input type="radio" name="posVoice" checked={voiceAccent === null} onChange={() => setVoiceAccent(null)} />
+                    <span style={{ fontSize: text.sm, color: voiceAccent === null ? lv.brandText : lv.textBody, fontWeight: voiceAccent === null ? 600 : 400 }}>Use account default</span>
                   </label>
                   {VOICE_OPTIONS.map((v) => (
-                    <label key={v.key} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "9px 12px", borderRadius: 8, border: `1px solid ${voiceAccent === v.key ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`, background: voiceAccent === v.key ? "rgba(124,58,237,0.06)" : "#F8FAFC", transition: "all 0.12s" }}>
-                      <input type="radio" name="posVoice" value={v.key} checked={voiceAccent === v.key} onChange={() => setVoiceAccent(v.key)} style={{ accentColor: "#7C3AED", flexShrink: 0 }} />
-                      <span style={{ fontSize: 16 }}>{v.flag}</span>
-                      <span style={{ fontSize: 13, color: voiceAccent === v.key ? "#6D28D9" : "#475569", fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>{v.accent}</span>
-                      <span style={{ fontSize: 11, color: "#94A3B8" }}>Interviewer: <strong style={{ color: "#7C3AED" }}>{v.interviewerName}</strong></span>
-                      <button type="button" onClick={async (e) => {
-                        e.preventDefault(); if (previewingVoice) return; setPreviewingVoice(true);
-                        try {
-                          const res = await fetch("/api/interview/generate-speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `Hi, I am ${v.interviewerName}, your AI interviewer for today.`, voiceAccent: v.key }) });
-                          if (res.ok) { const buf = await res.arrayBuffer(); new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }))).play(); }
-                        } catch {}
-                        setPreviewingVoice(false);
-                      }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(124,58,237,0.20)", background: "rgba(124,58,237,0.07)", color: "#7C3AED", fontSize: 11, fontWeight: 600, cursor: previewingVoice ? "wait" : "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
-                        <Play size={10} fill="#7C3AED" /> Preview
-                      </button>
+                    <label key={v.key} className="lv-option" data-checked={voiceAccent === v.key} style={{ flexWrap: "wrap" }}>
+                      <input type="radio" name="posVoice" value={v.key} checked={voiceAccent === v.key} onChange={() => setVoiceAccent(v.key)} />
+                      <span aria-hidden="true" style={{ fontSize: text.md }}>{v.flag}</span>
+                      <span style={{ fontSize: text.sm, color: voiceAccent === v.key ? lv.brandText : lv.textBody, fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>{v.accent}</span>
+                      <span style={{ fontSize: text.xs, color: lv.textMuted }}>Interviewer: <strong style={{ color: lv.textBody }}>{v.interviewerName}</strong></span>
+                      <Button variant="secondary" size="sm" aria-label={`Preview ${v.interviewerName}'s voice`} leftIcon={<Play size={12} fill="currentColor" />} style={{ cursor: previewingVoice ? "wait" : undefined }}
+                        onClick={async (e) => {
+                          e.preventDefault(); if (previewingVoice) return; setPreviewingVoice(true);
+                          try {
+                            const res = await fetch("/api/interview/generate-speech", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `Hi, I am ${v.interviewerName}, your AI interviewer for today.`, voiceAccent: v.key }) });
+                            if (res.ok) { const buf = await res.arrayBuffer(); new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }))).play(); }
+                          } catch {}
+                          setPreviewingVoice(false);
+                        }}>
+                        Preview
+                      </Button>
                     </label>
                   ))}
                 </div>
-              </div>
+              </Field>
             </>
           )}
 
           {/* ── STEP 1: JD Input ── */}
           {step === 1 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Job Description</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Paste, generate, or upload the JD — we&apos;ll extract skills automatically.</p>
-              </div>
+              <StepHeading title="Job Description" desc={<>Paste, generate, or upload the JD — we&apos;ll extract skills automatically.</>} />
 
               {/* Tabs */}
-              <div style={{ display: "flex", gap: 0, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 4 }}>
+              <div className="lv-seg lv-seg--track" role="tablist" aria-label="How to add the job description">
                 {(["paste","generate","upload"] as const).map((t) => (
-                  <button key={t} type="button" onClick={() => setJdTab(t)} style={{ flex: 1, padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", fontFamily: "var(--font-sans)", background: jdTab === t ? "#fff" : "transparent", color: jdTab === t ? "#4F46E5" : "#94A3B8", boxShadow: jdTab === t ? "0 1px 3px rgba(79,70,229,0.08)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.15s" }}>
-                    {t === "paste" && <Clipboard size={13} />}
-                    {t === "generate" && <Sparkles size={13} />}
-                    {t === "upload" && <Upload size={13} />}
+                  <button key={t} type="button" role="tab" aria-selected={jdTab === t} className="lv-seg__opt" onClick={() => setJdTab(t)}>
+                    {t === "paste" && <Clipboard size={14} aria-hidden="true" />}
+                    {t === "generate" && <Sparkles size={14} aria-hidden="true" />}
+                    {t === "upload" && <Upload size={14} aria-hidden="true" />}
                     {t === "paste" ? "Paste JD" : t === "generate" ? "Generate JD" : "Upload JD"}
                   </button>
                 ))}
@@ -839,118 +882,94 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
               {/* TAB A — Paste JD */}
               {jdTab === "paste" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <textarea
+                <div style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
+                  <Textarea
+                    aria-label="Job description"
                     value={pastedJD}
                     onChange={(e) => { setPastedJD(e.target.value); setJdParsed(false); }}
                     placeholder="Paste your client's job description here…"
-                    style={{ width: "100%", padding: "16px", borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical", outline: "none", lineHeight: 1.65, minHeight: 360, background: "#fff" }}
+                    style={{ resize: "vertical", lineHeight: 1.65, minHeight: 360 }}
                   />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3] }}>
                     {pastedJD.trim().length > 50 ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748B" }}>
-                        <FileText size={13} color="#94A3B8" /> {pastedJD.trim().split(/\s+/).length} words
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: text.xs, color: lv.textMuted }}>
+                        <FileText size={13} aria-hidden="true" /> {pastedJD.trim().split(/\s+/).length} words
                       </div>
                     ) : <div />}
-                    <button
-                      type="button"
-                      onClick={parseJD}
-                      disabled={jdParsing || pastedJD.trim().length < 50}
-                      style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 20px", borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: pastedJD.trim().length < 50 ? "not-allowed" : "pointer", border: "none", background: pastedJD.trim().length < 50 ? "#F1F5F9" : "linear-gradient(135deg, #4F46E5, #7C3AED)", color: pastedJD.trim().length < 50 ? "#94A3B8" : "#fff", fontFamily: "var(--font-sans)", transition: "opacity 0.15s", opacity: jdParsing ? 0.7 : 1 }}
-                    >
-                      {jdParsing ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Parsing JD…</> : <><Search size={13} /> Parse JD</>}
-                    </button>
+                    <Button onClick={parseJD} disabled={pastedJD.trim().length < 50} loading={jdParsing} leftIcon={<Search size={14} />}>
+                      {jdParsing ? "Parsing JD…" : "Parse JD"}
+                    </Button>
                   </div>
                   {jdParsed && parsedData && (
-                    <div style={{ padding: "14px 16px", background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.20)", borderRadius: 10, display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <CheckCircle2 size={16} color="#10B981" style={{ flexShrink: 0, marginTop: 2 }} />
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>JD parsed successfully — review extracted details in Step 3</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {parsedData.extractedTechStack?.slice(0, 6).map(t => (
-                            <span key={t} style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "2px 8px", borderRadius: 4, background: "rgba(16,185,129,0.10)", color: "#059669", border: "1px solid rgba(16,185,129,0.20)" }}>{t}</span>
-                          ))}
-                          {(parsedData.extractedTechStack?.length ?? 0) > 6 && <span style={{ fontSize: 10, color: "#64748B" }}>+{parsedData.extractedTechStack.length - 6} more</span>}
-                        </div>
+                    <Alert tone="success" title="JD parsed successfully — review extracted details in Step 3">
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: space[1] }}>
+                        {parsedData.extractedTechStack?.slice(0, 6).map(t => <Badge key={t} tone="success">{t}</Badge>)}
+                        {(parsedData.extractedTechStack?.length ?? 0) > 6 && <span style={{ fontSize: text.xs, color: lv.textMuted }}>+{parsedData.extractedTechStack.length - 6} more</span>}
                       </div>
-                    </div>
+                    </Alert>
                   )}
                 </div>
               )}
 
               {/* TAB B — Generate JD */}
               {jdTab === "generate" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div className="card" style={{ background: "#F8FAFF", border: "1px solid rgba(124,58,237,0.15)" }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Position Context</p>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <div style={{ fontSize: 12, color: "#475569" }}><span style={{ color: "#94A3B8" }}>Role:</span> <strong style={{ color: "#4F46E5" }}>{positionTitle || "—"}</strong></div>
-                      <div style={{ fontSize: 12, color: "#475569" }}><span style={{ color: "#94A3B8" }}>Company:</span> <strong style={{ color: "#4F46E5" }}>{company || "—"}</strong></div>
-                      <div style={{ fontSize: 12, color: "#475569" }}><span style={{ color: "#94A3B8" }}>Experience:</span> <strong style={{ color: "#4F46E5" }}>{experienceLevel}</strong></div>
-                      <div style={{ fontSize: 12, color: "#475569" }}><span style={{ color: "#94A3B8" }}>Type:</span> <strong style={{ color: "#4F46E5" }}>{roleType}</strong></div>
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    <Field label="Primary Domain">
-                      <select style={SELECT_STYLE} value={genDomain} onChange={(e) => setGenDomain(e.target.value)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+                  <Card style={{ background: lv.surfaceSunken }}>
+                    <Eyebrow style={{ marginBottom: space[3] }}>Position Context</Eyebrow>
+                    <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: space[3], margin: 0 }}>
+                      {[["Role", positionTitle || "—"], ["Company", company || "—"], ["Experience", experienceLevel], ["Type", roleType]].map(([k, v]) => (
+                        <div key={k} style={{ fontSize: text.sm, display: "flex", gap: 6 }}><dt style={{ color: lv.textMuted }}>{k}:</dt> <dd style={{ margin: 0, fontWeight: 600, color: lv.text }}>{v}</dd></div>
+                      ))}
+                    </dl>
+                  </Card>
+                  <div style={twoCol}>
+                    <FormField label="Primary Domain">
+                      <Select value={genDomain} onChange={(e) => setGenDomain(e.target.value)}>
                         {["Backend Engineering","Frontend Engineering","Fullstack","Data Engineering","Data Science","ML/AI","Infrastructure/DevOps","Security","Mobile","Product Management","Engineering Management","Business Intelligence","Other"].map((r) => <option key={r}>{r}</option>)}
-                      </select>
-                    </Field>
+                      </Select>
+                    </FormField>
                   </div>
                   <Field label="Key Skills" hint="Type and press Enter">
-                    <TagInput tags={genKeys} onChange={setGenKeys} placeholder="e.g. Java, Spring Boot, Kafka…" />
+                    <TagInput label="Add a key skill" tags={genKeys} onChange={setGenKeys} placeholder="e.g. Java, Spring Boot, Kafka…" />
                   </Field>
                   {generatedJD ? (
                     <>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 12, color: "#94A3B8" }}>{jdWordCount} words</span>
-                        <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={generateJD}><RefreshCw size={13} /> Regenerate</button>
+                        <span style={{ fontSize: text.xs, color: lv.textMuted }}>{jdWordCount} words</span>
+                        <Button variant="secondary" size="sm" leftIcon={<RefreshCw size={14} />} onClick={generateJD}>Regenerate</Button>
                       </div>
-                      <textarea value={generatedJD} onChange={(e) => setGeneratedJD(e.target.value)} style={{ width: "100%", padding: "16px", borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical", outline: "none", lineHeight: 1.65, minHeight: 400, background: "#fff" }} />
-                      <div style={{ fontSize: 12, color: "#94A3B8", display: "flex", alignItems: "center", gap: 6 }}>
-                        <AlertCircle size={12} /> This JD needs client approval before interviews begin
+                      <Textarea aria-label="Generated job description" value={generatedJD} onChange={(e) => setGeneratedJD(e.target.value)} style={{ resize: "vertical", lineHeight: 1.65, minHeight: 400 }} />
+                      <div style={{ fontSize: text.xs, color: lv.textMuted, display: "flex", alignItems: "center", gap: 6 }}>
+                        <AlertCircle size={13} aria-hidden="true" /> This JD needs client approval before interviews begin
                       </div>
                     </>
                   ) : (
-                    <button type="button" className="btn-primary" style={{ alignSelf: "flex-start", gap: 8 }} onClick={generateJD} disabled={jdLoading}>
-                      {jdLoading ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Claude is drafting your JD…</> : <><Sparkles size={14} /> Generate JD</>}
-                    </button>
+                    <Button style={{ alignSelf: "flex-start" }} onClick={generateJD} loading={jdLoading} leftIcon={<Sparkles size={14} />}>
+                      {jdLoading ? "Claude is drafting your JD…" : "Generate JD"}
+                    </Button>
                   )}
                 </div>
               )}
 
               {/* TAB C — Upload JD */}
               {jdTab === "upload" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div
-                    style={{ border: "2px dashed #CBD5E1", borderRadius: 12, padding: "48px 24px", textAlign: "center", background: "#F8FAFC", cursor: "pointer" }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={async (e) => {
-                      e.preventDefault();
-                      const file = e.dataTransfer.files[0];
-                      if (!file) return;
-                      const fd = new FormData(); fd.append("file", file);
-                      try {
-                        const res = await fetch("/api/parse-resume", { method: "POST", body: fd });
-                        const data = await res.json();
-                        if (data.text) { setPastedJD(data.text); setJdTab("paste"); toast.success("File extracted — review and parse below"); }
-                      } catch { toast.error("File extraction failed"); }
-                    }}
-                  >
-                    <Upload size={28} color="#94A3B8" style={{ margin: "0 auto 12px" }} />
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#475569", marginBottom: 4 }}>Drop PDF or DOCX here</p>
-                    <p style={{ fontSize: 12, color: "#94A3B8" }}>or click to browse</p>
-                    <input type="file" accept=".pdf,.docx" style={{ display: "none" }} onChange={async (e) => {
-                      const file = e.target.files?.[0]; if (!file) return;
-                      const fd = new FormData(); fd.append("file", file);
-                      try {
-                        const res = await fetch("/api/parse-resume", { method: "POST", body: fd });
-                        const data = await res.json();
-                        if (data.text) { setPastedJD(data.text); setJdTab("paste"); toast.success("File extracted — review and parse below"); }
-                      } catch { toast.error("File extraction failed"); }
-                    }} id="jd-upload" />
-                    <label htmlFor="jd-upload" style={{ display: "inline-block", marginTop: 12, padding: "7px 18px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", color: "#475569", cursor: "pointer", fontSize: 13, fontFamily: "var(--font-sans)", fontWeight: 500 }}>Browse files</label>
-                  </div>
+                <div className="lv-dropzone"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (!file) return;
+                    await extractFile(file);
+                  }}
+                >
+                  <Upload size={28} color={lv.textMuted} aria-hidden="true" style={{ margin: "0 auto 12px" }} />
+                  <p style={{ fontSize: text.base, fontWeight: 600, color: lv.text, margin: "0 0 4px" }}>Drop PDF or DOCX here</p>
+                  <p style={{ fontSize: text.xs, color: lv.textMuted, margin: 0 }}>or click to browse</p>
+                  <input type="file" accept=".pdf,.docx" className="lv-sr-only" onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    await extractFile(file);
+                  }} id="jd-upload" />
+                  <label htmlFor="jd-upload" className="lv-btn lv-btn--secondary lv-btn--sm" style={{ marginTop: space[3] }}>Browse files</label>
                 </div>
               )}
             </>
@@ -959,224 +978,179 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {/* ── STEP 2: Skills Review ── */}
           {step === 2 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Skills Review</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>
-                  {jdParsed ? "Auto-populated from your JD — edit as needed." : "Enter the skills manually."}
-                </p>
-              </div>
+              <StepHeading title="Skills Review" desc={jdParsed ? "Auto-populated from your JD — edit as needed." : "Enter the skills manually."} />
 
               {jdParsed && (
-                <div style={{ padding: "10px 14px", background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 9, fontSize: 12, color: "#059669", display: "flex", gap: 8, alignItems: "center" }}>
-                  <CheckCircle2 size={13} /> Skills auto-populated from JD parse — review and adjust below
-                </div>
+                <Alert tone="success">Skills auto-populated from JD parse — review and adjust below</Alert>
               )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <FieldLabel label="Required Skills / Tech Stack" hint="Must have — questions asked on all of these" />
-                  <TagInput tags={mustHaveTech} onChange={setMustHaveTech} placeholder="e.g. Java, Spring Boot, Kafka…" />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <FieldLabel label="Good to Have" hint="Preferred — AI will include if time permits" />
-                  <TagInput tags={niceToHaveTech} onChange={setNiceToHaveTech} placeholder="e.g. Kubernetes, Terraform…" />
-                </div>
+              <div style={twoCol}>
+                <Field label="Required Skills / Tech Stack" hint="Must have — questions asked on all of these">
+                  <TagInput label="Add a required skill" tags={mustHaveTech} onChange={setMustHaveTech} placeholder="e.g. Java, Spring Boot, Kafka…" />
+                </Field>
+                <Field label="Good to Have" hint="Preferred — AI will include if time permits">
+                  <TagInput label="Add a good-to-have skill" tags={niceToHaveTech} onChange={setNiceToHaveTech} placeholder="e.g. Kubernetes, Terraform…" />
+                </Field>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <FieldLabel label="Must-have requirements" hint="Non-negotiables — each is assessed directly and shown as met / not met in the report" />
+              <Field label="Must-have requirements" hint="Non-negotiables — each is assessed directly and shown as met / not met in the report">
                 <MustHaveEditor value={mustHaves} onChange={setMustHaves} suggestions={mustHaveTech} />
-              </div>
+              </Field>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <FieldLabel label="Logistics filters (optional)" hint="The interviewer resolves these early — leave blank and it just records the candidate's answer" />
+              <Field label="Logistics filters (optional)" hint="The interviewer resolves these early — leave blank and it just records the candidate's answer">
                 <LogisticsEditor value={logistics} onChange={setLogistics} />
-              </div>
+              </Field>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <FieldLabel label="Knockout questions (optional)" hint="Asked word-for-word; a failing answer is flagged for you — never an auto-reject" />
+              <Field label="Knockout questions (optional)" hint="Asked word-for-word; a failing answer is flagged for you — never an auto-reject">
                 <KnockoutEditor value={knockouts} onChange={setKnockouts} />
-              </div>
+              </Field>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                <Field label="Experience (years) *">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: space[4] }}>
+                <Field label="Experience (years)" required>
                   <ExperienceRangeInput min={expMin} max={expMax} onChange={(a, b) => { setExpMin(a); setExpMax(b); }} />
                 </Field>
-                <Field label="Role Type">
-                  <select style={SELECT_STYLE} value={roleType} onChange={(e) => setRoleType(e.target.value)}>
-                    {["Individual Contributor","Team Lead","People Manager","Architect","Director","VP","Product Manager","Engineering Manager"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </Field>
-                <Field label="Primary Domain">
-                  <select style={SELECT_STYLE} value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}>
+                <FormField label="Role Type">
+                  <Select value={roleType} onChange={(e) => setRoleType(e.target.value)}>
+                    {ROLE_TYPES.map((r) => <option key={r}>{r}</option>)}
+                  </Select>
+                </FormField>
+                <FormField label="Primary Domain">
+                  <Select value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}>
                     {["Backend Engineering","Frontend Engineering","Fullstack","Data Engineering","Data Science","ML/AI","Infrastructure/DevOps","Security","Mobile","Product Management","Engineering Management","IT Risk & Compliance","Business Intelligence","Other"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </Field>
+                  </Select>
+                </FormField>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Field label="Industry / Domain Context">
-                  <select style={SELECT_STYLE} value={domainContext} onChange={(e) => setDomainContext(e.target.value)}>
+              <div style={twoCol}>
+                <FormField label="Industry / Domain Context">
+                  <Select value={domainContext} onChange={(e) => setDomainContext(e.target.value)}>
                     {["Fintech","Healthtech","Ecommerce","SaaS","Enterprise IT","Edtech","Logistics","Gaming","Other"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </Field>
-                <Field label="Company Stage">
-                  <select style={SELECT_STYLE} value={companyStage} onChange={(e) => setCompanyStage(e.target.value)}>
+                  </Select>
+                </FormField>
+                <FormField label="Company Stage">
+                  <Select value={companyStage} onChange={(e) => setCompanyStage(e.target.value)}>
                     {["Early Startup","Growth Stage","Scale-up","Large Enterprise","Public Company"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </Field>
+                  </Select>
+                </FormField>
               </div>
 
               <Field label="Hands-on involvement">
-                <RadioGroup options={["Hands-on (writes code/does the work)","Hybrid (leads + contributes)","Oversight (leads, does not execute)"]} value={workMode} onChange={setWorkMode} />
+                <RadioGroup label="Hands-on involvement" options={["Hands-on (writes code/does the work)","Hybrid (leads + contributes)","Oversight (leads, does not execute)"]} value={workMode} onChange={setWorkMode} />
               </Field>
 
               <Field label="Role Type">
-                <RadioGroup options={["New Role","Backfill"]} value={isNewRole} onChange={setIsNewRole} />
+                <RadioGroup label="New role or backfill" options={["New Role","Backfill"]} value={isNewRole} onChange={setIsNewRole} />
               </Field>
 
-              <Field label="Specific gaps or red flags to probe (optional)" hint="e.g. Last 3 people struggled with cross-functional communication">
-                <textarea className="input" placeholder="Leave blank if none" value={redFlags} onChange={(e) => setRedFlags(e.target.value)} style={{ resize: "vertical", minHeight: 80 }} />
-              </Field>
+              <FormField label="Specific gaps or red flags to probe (optional)" hint="e.g. Last 3 people struggled with cross-functional communication">
+                <Textarea placeholder="Leave blank if none" value={redFlags} onChange={(e) => setRedFlags(e.target.value)} style={{ resize: "vertical", minHeight: 80 }} />
+              </FormField>
             </>
           )}
 
           {/* ── STEP 3: Settings ── */}
           {step === 3 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Interview Settings</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Configure scoring weights, L2 threshold, and interview style.</p>
-              </div>
+              <StepHeading title="Interview Settings" desc="Configure scoring weights, L2 threshold, and interview style." />
 
               {/* Soft skill sliders */}
-              <div className="card" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>Soft Skill Weightage</p>
-                <SliderField label="Technical Depth" hint="Influences the number of technical deep-dive questions." value={weights.technical} onChange={(v) => setWeights({ ...weights, technical: v })} />
-                <div style={{ height: 1, background: "#F1F5F9" }} />
-                <SliderField label="Leadership & People Skills" hint="Shapes team-building and org design questions." value={weights.leadership} onChange={(v) => setWeights({ ...weights, leadership: v })} />
-                <div style={{ height: 1, background: "#F1F5F9" }} />
-                <SliderField label="Communication & Stakeholder Management" hint="Drives questions on cross-functional alignment." value={weights.communication} onChange={(v) => setWeights({ ...weights, communication: v })} />
-                <div style={{ height: 1, background: "#F1F5F9" }} />
-                <SliderField label="Problem Solving & Judgment" hint="Influences ambiguity handling and trade-off reasoning." value={weights.problemSolving} onChange={(v) => setWeights({ ...weights, problemSolving: v })} />
-                <div style={{ height: 1, background: "#F1F5F9" }} />
-                <SliderField label="Culture Fit & Adaptability" hint="Shapes values alignment and growth mindset questions." value={weights.cultureFit} onChange={(v) => setWeights({ ...weights, cultureFit: v })} />
-              </div>
+              <Card title="Soft skill weightage">
+                <div style={{ display: "flex", flexDirection: "column", gap: space[5] }}>
+                  <SliderField label="Technical Depth" hint="Influences the number of technical deep-dive questions." value={weights.technical} onChange={(v) => setWeights({ ...weights, technical: v })} />
+                  <SliderField label="Leadership & People Skills" hint="Shapes team-building and org design questions." value={weights.leadership} onChange={(v) => setWeights({ ...weights, leadership: v })} />
+                  <SliderField label="Communication & Stakeholder Management" hint="Drives questions on cross-functional alignment." value={weights.communication} onChange={(v) => setWeights({ ...weights, communication: v })} />
+                  <SliderField label="Problem Solving & Judgment" hint="Influences ambiguity handling and trade-off reasoning." value={weights.problemSolving} onChange={(v) => setWeights({ ...weights, problemSolving: v })} />
+                  <SliderField label="Culture Fit & Adaptability" hint="Shapes values alignment and growth mindset questions." value={weights.cultureFit} onChange={(v) => setWeights({ ...weights, cultureFit: v })} />
+                </div>
+              </Card>
 
               <Field label="Interview Style">
-                <RadioGroup options={["Conversational","Structured","Pressure test"]} value={interviewStyle} onChange={setInterviewStyle} />
+                <RadioGroup label="Interview style" options={["Conversational","Structured","Pressure test"]} value={interviewStyle} onChange={setInterviewStyle} />
               </Field>
 
               {/* #15 — question mix */}
-              <div>
-                <FieldLabel label="Question mix" hint="Basic-concept checks test fundamentals; applied & scenario questions test reasoning" />
+              <Field label="Question mix" hint="Basic-concept checks test fundamentals; applied & scenario questions test reasoning">
                 <QuestionMixEditor value={questionMix} onChange={setQuestionMix} />
-              </div>
+              </Field>
 
               {/* #13 — JD-based concept rubric */}
-              <div>
-                <FieldLabel label="Role concept rubric" hint="Generated from your JD — edit freely" />
+              <Field label="Role concept rubric" hint="Generated from your JD — edit freely">
                 <ConceptRubricEditor value={conceptRubric} onChange={setConceptRubric} onGenerate={generateConceptRubric} generating={rubricGenerating} canGenerate={finalJD.trim().length > 50 || positionTitle.trim() !== ""} />
-              </div>
+              </Field>
 
               {/* Dynamic intensity */}
-              <div>
-                <FieldLabel label="Live Dynamic Question Intensity" hint="AI generates these in real time based on candidate responses" />
-                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <Field label="Live Dynamic Question Intensity" hint="AI generates these in real time based on candidate responses">
+                <div className="lv-seg lv-seg--fill" role="radiogroup" aria-label="Live dynamic question intensity">
                   {(["light","standard","deep"] as const).map((level) => {
                     const cfg = { light: { label: "Light", sub: "1–2 questions" }, standard: { label: "Standard", sub: "3–4 questions" }, deep: { label: "Deep", sub: "5–6 questions" } };
-                    const active = dynamicIntensity === level;
                     return (
-                      <button key={level} type="button" onClick={() => setDynamicIntensity(level)} style={{ flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: `1px solid ${active ? "#7C3AED" : "#E2E8F0"}`, background: active ? "rgba(124,58,237,0.06)" : "#fff", textAlign: "left", fontFamily: "var(--font-sans)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: active ? "#6D28D9" : "#4F46E5" }}>{cfg[level].label}</div>
-                        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{cfg[level].sub}</div>
+                      <button key={level} type="button" role="radio" aria-checked={dynamicIntensity === level} className="lv-seg__opt" onClick={() => setDynamicIntensity(level)}
+                        style={{ textAlign: "left", padding: `${space[2]}px ${space[3]}px`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" }}>
+                        <span style={{ fontSize: text.sm, fontWeight: 700 }}>{cfg[level].label}</span>
+                        <span style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2, fontWeight: 400 }}>{cfg[level].sub}</span>
                       </button>
                     );
                   })}
                 </div>
-              </div>
+              </Field>
 
               {/* L2 Threshold */}
-              <div className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>L2 Submission Threshold</div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Minimum score for L2 recommendation</div>
-                  </div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>{l2ScoreThreshold}<span style={{ fontSize: 14, fontWeight: 400, color: "#94A3B8" }}>/100</span></span>
-                </div>
-                <input type="range" min={50} max={95} step={5} value={l2ScoreThreshold} onChange={(e) => setL2ScoreThreshold(Number(e.target.value))} style={{ width: "100%", accentColor: "#7C3AED", cursor: "pointer", marginBottom: 10 }} />
-                <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>
+              <Card title="L2 submission threshold" subtitle="Minimum score for L2 recommendation"
+                actions={<span style={{ fontFamily: lv.fontMono, fontSize: text.xl, fontWeight: 800, color: lv.text }}>{l2ScoreThreshold}<span style={{ fontSize: text.base, fontWeight: 400, color: lv.textMuted }}>/100</span></span>}>
+                <input type="range" min={50} max={95} step={5} value={l2ScoreThreshold} aria-label="L2 submission threshold" onChange={(e) => setL2ScoreThreshold(Number(e.target.value))} className="lv-range" style={{ marginBottom: space[3] }} />
+                <p className="lv-hint" style={{ margin: 0 }}>
                   Candidates scoring below <strong>{l2ScoreThreshold}</strong> will be marked &ldquo;Not recommended for L2&rdquo; even if the AI recommends Yes.
                 </p>
-              </div>
+              </Card>
 
               {/* Scoring Rubric */}
-              <div className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>Scoring Rubric</div>
-                    <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>Must total 100%</div>
-                  </div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 800, color: rubricTotal === 100 ? "#10B981" : "#EF4444" }}>
-                    {rubricTotal}% {rubricTotal === 100 ? "✓" : "≠ 100"}
-                  </span>
+              <Card title="Scoring rubric" subtitle="Must total 100%"
+                actions={<Badge tone={rubricTotal === 100 ? "success" : "danger"}>{rubricTotal}% {rubricTotal === 100 ? "✓" : "≠ 100"}</Badge>}>
+                <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+                  <SliderField label="Technical Depth" hint="" value={scoringRubric.technical} onChange={(v) => setScoringRubric(r => ({ ...r, technical: v }))} color={lv.brand} />
+                  <SliderField label="Problem Solving" hint="" value={scoringRubric.problemSolving} onChange={(v) => setScoringRubric(r => ({ ...r, problemSolving: v }))} color={lv.accent} />
+                  <SliderField label="Behavioral / EQ" hint="" value={scoringRubric.behavioral} onChange={(v) => setScoringRubric(r => ({ ...r, behavioral: v }))} color={lv.success} />
+                  <SliderField label="EQ & Soft Skills" hint="" value={scoringRubric.eq} onChange={(v) => setScoringRubric(r => ({ ...r, eq: v }))} color={lv.warning} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <SliderField label="Technical Depth" hint="" value={scoringRubric.technical} onChange={(v) => setScoringRubric(r => ({ ...r, technical: v }))} color="#4F46E5" />
-                  <SliderField label="Problem Solving" hint="" value={scoringRubric.problemSolving} onChange={(v) => setScoringRubric(r => ({ ...r, problemSolving: v }))} color="#7C3AED" />
-                  <SliderField label="Behavioral / EQ" hint="" value={scoringRubric.behavioral} onChange={(v) => setScoringRubric(r => ({ ...r, behavioral: v }))} color="#10B981" />
-                  <SliderField label="EQ & Soft Skills" hint="" value={scoringRubric.eq} onChange={(v) => setScoringRubric(r => ({ ...r, eq: v }))} color="#F59E0B" />
-                </div>
-                <div style={{ marginTop: 16, padding: "12px", background: "#F8FAFC", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
-                  <input type="checkbox" id="send-rubric" checked={sendRubricToClient} onChange={(e) => { setSendRubricToClient(e.target.checked); setRubricApproved(e.target.checked); }} style={{ accentColor: "#7C3AED" }} />
-                  <label htmlFor="send-rubric" style={{ fontSize: 12, color: "#475569", cursor: "pointer" }}>
+                <div style={{ marginTop: space[4], padding: space[3], background: lv.surfaceSunken, border: `1px solid ${lv.border}`, borderRadius: radius.md }}>
+                  <Checkbox checked={sendRubricToClient} onChange={(c) => { setSendRubricToClient(c); setRubricApproved(c); }}>
                     Send rubric to {isCompany ? "your hiring contact" : "the client"} for approval before interviews begin
-                    {clientManagerEmail && <span style={{ color: "#94A3B8" }}> ({clientManagerEmail})</span>}
-                  </label>
+                    {clientManagerEmail && <span style={{ color: lv.textMuted }}> ({clientManagerEmail})</span>}
+                  </Checkbox>
                 </div>
-              </div>
+              </Card>
             </>
           )}
 
           {/* ── STEP 4: JD Approval ── */}
           {step === 4 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>JD Approval</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Send the job description to your {isCompany ? "hiring contact" : "client hiring manager"} for review.</p>
-              </div>
-              <div className="card" style={{ maxHeight: 300, overflowY: "auto" }}>
-                <pre style={{ fontSize: 12, color: "#475569", lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "var(--font-sans)", margin: 0 }}>{finalJD}</pre>
-              </div>
+              <StepHeading title="JD Approval" desc={`Send the job description to your ${isCompany ? "hiring contact" : "client hiring manager"} for review.`} />
+              <Card style={{ maxHeight: 300, overflowY: "auto" }}>
+                <pre style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: lv.fontSans, margin: 0 }}>{finalJD}</pre>
+              </Card>
               {!jdApproved ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
                   <Field label={isCompany ? "Hiring contact email" : "Client hiring manager email"}>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <input className="input" type="email" value={clientManagerEmail} onChange={(e) => (isCompany ? setHiringContact(e.target.value) : setClientManagerEmail(e.target.value))} style={{ flex: 1 }} placeholder={isCompany ? "hiring.manager@yourcompany.com" : "manager@client.com"} />
-                      <button type="button" className="btn-primary" onClick={() => { setJdSent(true); toast.success(isCompany ? "JD sent to your hiring contact" : "JD sent to client hiring manager"); }} disabled={jdSent || !clientManagerEmail} style={{ flexShrink: 0 }}>
-                        <Mail size={14} /> {jdSent ? "Sent" : "Send for Approval"}
-                      </button>
+                    <div style={{ display: "flex", gap: space[2], flexWrap: "wrap" }}>
+                      <Input type="email" aria-label={isCompany ? "Hiring contact email" : "Client hiring manager email"} value={clientManagerEmail} onChange={(e) => (isCompany ? setHiringContact(e.target.value) : setClientManagerEmail(e.target.value))} style={{ flex: "1 1 240px", minWidth: 0 }} placeholder={isCompany ? "hiring.manager@yourcompany.com" : "manager@client.com"} />
+                      <Button leftIcon={<Mail size={14} />} onClick={() => { setJdSent(true); toast.success(isCompany ? "JD sent to your hiring contact" : "JD sent to client hiring manager"); }} disabled={jdSent || !clientManagerEmail}>
+                        {jdSent ? "Sent" : "Send for Approval"}
+                      </Button>
                     </div>
                   </Field>
                   {jdSent && (
-                    <div style={{ padding: "16px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#D97706", fontSize: 13, fontWeight: 600 }}><AlertCircle size={15} /> Waiting for {isCompany ? "hiring contact" : "client"} approval…</div>
-                      <button type="button" style={{ alignSelf: "flex-start", padding: "7px 16px", fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: "pointer", border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.08)", color: "#059669", fontFamily: "var(--font-sans)" }} onClick={() => { setJdApproved(true); setApprovedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); toast.success("JD approved!"); }}>
-                        <Check size={12} style={{ display: "inline", marginRight: 4 }} /> Simulate Approval (Demo)
-                      </button>
-                    </div>
+                    <Alert tone="warning" title={`Waiting for ${isCompany ? "hiring contact" : "client"} approval…`}
+                      action={<Button variant="secondary" size="sm" leftIcon={<Check size={14} />} onClick={() => { setJdApproved(true); setApprovedAt(nowHHMM()); toast.success("JD approved!"); }}>Simulate Approval (Demo)</Button>} />
                   )}
-                  <button type="button" style={{ alignSelf: "flex-start", padding: "7px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, cursor: "pointer", border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontFamily: "var(--font-sans)" }} onClick={() => { setJdApproved(true); setApprovedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); }}>
+                  <Button variant="tertiary" size="sm" style={{ alignSelf: "flex-start" }} onClick={() => { setJdApproved(true); setApprovedAt(nowHHMM()); }}>
                     Skip approval (continue anyway)
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <div style={{ padding: "20px", background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}><CheckCircle2 size={20} color="#10B981" /><span style={{ fontSize: 15, fontWeight: 700, color: "#059669" }}>JD Approved</span></div>
-                  <p style={{ fontSize: 12, color: "#64748B" }}>Approved · {approvedAt}</p>
-                  <p style={{ fontSize: 12, color: "#94A3B8" }}>You can now proceed to generate interview questions.</p>
-                </div>
+                <Alert tone="success" title="JD Approved">
+                  Approved · {approvedAt}. You can now proceed to generate interview questions.
+                </Alert>
               )}
             </>
           )}
@@ -1184,31 +1158,22 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {/* ── STEP 5: Question Generation ── */}
           {step === 5 && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Question Generation</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Claude will generate a tailored question bank for this position.</p>
-              </div>
+              <StepHeading title="Question Generation" desc="Claude will generate a tailored question bank for this position." />
               {questionsLoading ? (
-                <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-                  <Loader2 size={32} color="#7C3AED" style={{ animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5" }}>Generating interview questions…</p>
-                  <p style={{ fontSize: 13, color: "#94A3B8", marginTop: 6 }}>Claude is tailoring questions to the approved JD and role context.</p>
-                </div>
+                <Card style={{ textAlign: "center", padding: `${space[12]}px ${space[5]}px` }}>
+                  <div role="status" aria-live="polite">
+                    <span className="lv-spinner lv-spinner--lg" aria-hidden="true" style={{ margin: `0 auto ${space[4]}px`, display: "block", color: lv.brand }} />
+                    <p style={{ fontSize: text.md, fontWeight: 700, color: lv.text, margin: 0 }}>Generating interview questions…</p>
+                    <p style={{ fontSize: text.sm, color: lv.textMuted, marginTop: 6 }}>Claude is tailoring questions to the approved JD and role context.</p>
+                  </div>
+                </Card>
               ) : questions ? (
-                <div className="card" style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.2)", textAlign: "center", padding: "40px 20px" }}>
-                  <CheckCircle2 size={36} color="#10B981" style={{ margin: "0 auto 12px" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#059669" }}>
-                    {(questions.technicalQuestions?.length ?? 0) + (questions.scenarioQuestions?.length ?? 0) + (questions.behavioralQuestions?.length ?? 0) + (questions.eqQuestions?.length ?? 0) + (questions.whiteboardAssessment?.length ?? 0)} questions generated
-                  </p>
-                  <p style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Click Continue to review and approve questions.</p>
-                </div>
+                <EmptyState icon={<CheckCircle2 size={22} color={lv.success} />} title={`${totalQuestions} questions generated`}
+                  description="Click Continue to review and approve questions." />
               ) : (
-                <div className="card" style={{ textAlign: "center", padding: "48px 20px" }}>
-                  <FileText size={32} color="#CBD5E1" style={{ margin: "0 auto 16px" }} />
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#4F46E5", marginBottom: 6 }}>Ready to generate</p>
-                  <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 20 }}>Claude will create technical, behavioral, scenario, EQ, and whiteboard questions based on the JD.</p>
-                  <button type="button" className="btn-primary" onClick={generateQuestions} disabled={questionsLoading}><Sparkles size={14} /> Generate Questions</button>
-                </div>
+                <EmptyState icon={<FileText size={22} />} title="Ready to generate"
+                  description="Claude will create technical, behavioral, scenario, EQ, and whiteboard questions based on the JD."
+                  action={<Button leftIcon={<Sparkles size={14} />} onClick={generateQuestions} disabled={questionsLoading}>Generate Questions</Button>} />
               )}
             </>
           )}
@@ -1216,151 +1181,100 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           {/* ── STEP 6: Dual Approval ── */}
           {step === 6 && questions && (
             <>
-              <div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "#4F46E5" }}>Dual Review & Approval</h2>
-                <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 4 }}>Tech Lead reviews technical questions · HR reviews behavioral questions.</p>
-              </div>
-              <div style={{ display: "flex", gap: 12 }}>
-                {[{ label: "Tech Lead Review", approved: techApproved, total: techTotal, color: "#7C3AED" }, { label: "HR Review", approved: hrApproved, total: hrTotal, color: "#10B981" }].map((b) => (
-                  <div key={b.label} style={{ flex: 1, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "12px 16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 12 }}>
-                      <span style={{ fontWeight: 600, color: "#475569" }}>{b.label}</span>
-                      <span style={{ fontFamily: "var(--font-mono)", color: b.approved === b.total && b.total > 0 ? b.color : "#94A3B8", fontWeight: 700 }}>{b.approved}/{b.total}</span>
+              <StepHeading title="Dual Review & Approval" desc="Tech Lead reviews technical questions · HR reviews behavioral questions." />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: space[3] }}>
+                {[{ label: "Tech Lead Review", approved: techApproved, total: techTotal, color: lv.brand }, { label: "HR Review", approved: hrApproved, total: hrTotal, color: lv.success }].map((b) => (
+                  <Card key={b.label} style={{ padding: `${space[3]}px ${space[4]}px` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: space[2], fontSize: text.sm }}>
+                      <span style={{ fontWeight: 600, color: lv.textBody }}>{b.label}</span>
+                      <span style={{ fontFamily: lv.fontMono, color: b.approved === b.total && b.total > 0 ? lv.success : lv.textMuted, fontWeight: 700 }}>{b.approved}/{b.total}</span>
                     </div>
-                    <div style={{ height: 4, background: "#F1F5F9", borderRadius: 2, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${b.total > 0 ? (b.approved / b.total) * 100 : 0}%`, background: b.color, borderRadius: 2, transition: "width 0.3s" }} />
+                    <div role="progressbar" aria-label={b.label} aria-valuemin={0} aria-valuemax={b.total} aria-valuenow={b.approved} style={{ height: 6, background: lv.surfaceMuted, borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${b.total > 0 ? (b.approved / b.total) * 100 : 0}%`, background: b.color, borderRadius: 3, transition: `width ${lv.dur}` }} />
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 0, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 4 }}>
+              <div className="lv-seg lv-seg--track" role="tablist" aria-label="Review">
                 {([["tech","Tech Lead Review"],["hr","HR Review"]] as const).map(([k,l]) => (
-                  <button key={k} type="button" onClick={() => setReviewTab(k)} style={{ flex: 1, padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", fontFamily: "var(--font-sans)", background: reviewTab === k ? "#fff" : "transparent", color: reviewTab === k ? "#4F46E5" : "#94A3B8", boxShadow: reviewTab === k ? "0 1px 3px rgba(79,70,229,0.08)" : "none", transition: "all 0.15s" }}>{l}</button>
+                  <button key={k} type="button" role="tab" aria-selected={reviewTab === k} className="lv-seg__opt" onClick={() => setReviewTab(k)}>{l}</button>
                 ))}
               </div>
 
               {/* Tech Lead tab */}
               {reviewTab === "tech" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}><button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={approveAllTech}><Check size={12} /> Approve All</button></div>
-                  {(["technicalQuestions","scenarioQuestions","whiteboardAssessment"] as const).map((section) => {
-                    const meta: Record<string, { label: string; type: string }> = { technicalQuestions: { label: "Technical", type: "technical" }, scenarioQuestions: { label: "Scenario", type: "scenario" }, whiteboardAssessment: { label: "Whiteboard", type: "whiteboard" } };
-                    const { label, type } = meta[section];
-                    const sTotal = questions[section].length, sApproved = questions[section].filter((q) => q.approvedByTech).length;
-                    return (
-                      <div key={section} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>{label}</p>
-                          <span style={{ fontSize: 11, color: sApproved === sTotal && sTotal > 0 ? "#10B981" : "#94A3B8", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{sApproved}/{sTotal} approved</span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {questions[section].map((q) => (
-                            <QuestionCard key={q.id} q={q} approveLabel="Approve" approved={!!q.approvedByTech} isReplacing={!!replacingIds[q.id]}
-                              onApprove={() => updateQuestion(section, q.id, { approvedByTech: !q.approvedByTech })}
-                              onRemove={() => removeQuestion(section, q.id)}
-                              onEdit={(updated) => updateQuestion(section, q.id, updated)}
-                              onReplace={() => replaceQuestion(section, q, type)} />
-                          ))}
-                        </div>
-                        <button type="button" disabled={!!generatingMore[section]} onClick={() => generateMoreForSection(section, type)} style={{ alignSelf: "flex-start", padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, cursor: generatingMore[section] ? "not-allowed" : "pointer", border: "1px dashed #CBD5E1", background: "#F8FAFC", color: "#475569", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 6, opacity: generatingMore[section] ? 0.7 : 1 }}>
-                          {generatingMore[section] ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><Plus size={12} /> Generate 5 More {label} Questions</>}
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div style={{ display: "flex", flexDirection: "column", gap: space[5] }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}><Button variant="secondary" size="sm" leftIcon={<Check size={14} />} onClick={approveAllTech}>Approve All</Button></div>
+                  {reviewSection(["technicalQuestions","scenarioQuestions","whiteboardAssessment"] as const,
+                    { technicalQuestions: { label: "Technical", type: "technical" }, scenarioQuestions: { label: "Scenario", type: "scenario" }, whiteboardAssessment: { label: "Whiteboard", type: "whiteboard" } },
+                    "approvedByTech")}
                   {/* Dynamic Questions panel */}
-                  <div style={{ background: "rgba(79,70,229,0.03)", border: "1px solid rgba(79,70,229,0.10)", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 14 }}>🔴</span><span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>Live Dynamic Questions</span></div>
-                    <p style={{ fontSize: 12, color: "#64748B", lineHeight: 1.6, margin: 0 }}>Generated in real time during the interview based on each candidate&apos;s responses. Cannot be pre-reviewed.</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#475569" }}><Check size={11} color="#10B981" /> Resume project deep dives · Follow-up probes · Coding challenges (if hands-on)</div>
-                  </div>
+                  <Card style={{ background: lv.brandSoft, borderColor: lv.brandSoftBorder }}
+                    title={<span style={{ display: "inline-flex", alignItems: "center", gap: space[2] }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: lv.danger }} />Live Dynamic Questions</span>}>
+                    <p style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.6, margin: `0 0 ${space[2]}px` }}>Generated in real time during the interview based on each candidate&apos;s responses. Cannot be pre-reviewed.</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: space[2], fontSize: text.sm, color: lv.textBody }}><Check size={13} color={lv.success} aria-hidden="true" /> Resume project deep dives · Follow-up probes · Coding challenges (if hands-on)</div>
+                  </Card>
                 </div>
               )}
 
               {/* HR tab */}
               {reviewTab === "hr" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}><button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={approveAllHR}><Check size={12} /> Approve All</button></div>
-                  {(["behavioralQuestions","eqQuestions"] as const).map((section) => {
-                    const meta: Record<string, { label: string; type: string }> = { behavioralQuestions: { label: "Behavioral", type: "behavioral" }, eqQuestions: { label: "EQ / Values", type: "eq" } };
-                    const { label, type } = meta[section];
-                    const sTotal = questions[section].length, sApproved = questions[section].filter((q) => q.approvedByHR).length;
-                    return (
-                      <div key={section} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>{label}</p>
-                          <span style={{ fontSize: 11, color: sApproved === sTotal && sTotal > 0 ? "#10B981" : "#94A3B8", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{sApproved}/{sTotal} approved</span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {questions[section].map((q) => (
-                            <QuestionCard key={q.id} q={q} approveLabel="Approve" approved={!!q.approvedByHR} isReplacing={!!replacingIds[q.id]}
-                              onApprove={() => updateQuestion(section, q.id, { approvedByHR: !q.approvedByHR })}
-                              onRemove={() => removeQuestion(section, q.id)}
-                              onEdit={(updated) => updateQuestion(section, q.id, updated)}
-                              onReplace={() => replaceQuestion(section, q, type)} />
-                          ))}
-                        </div>
-                        <button type="button" disabled={!!generatingMore[section]} onClick={() => generateMoreForSection(section, type)} style={{ alignSelf: "flex-start", padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, cursor: generatingMore[section] ? "not-allowed" : "pointer", border: "1px dashed #CBD5E1", background: "#F8FAFC", color: "#475569", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 6, opacity: generatingMore[section] ? 0.7 : 1 }}>
-                          {generatingMore[section] ? <><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating…</> : <><Plus size={12} /> Generate 5 More {label} Questions</>}
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div style={{ display: "flex", flexDirection: "column", gap: space[5] }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}><Button variant="secondary" size="sm" leftIcon={<Check size={14} />} onClick={approveAllHR}>Approve All</Button></div>
+                  {reviewSection(["behavioralQuestions","eqQuestions"] as const,
+                    { behavioralQuestions: { label: "Behavioral", type: "behavioral" }, eqQuestions: { label: "EQ / Values", type: "eq" } },
+                    "approvedByHR")}
                 </div>
               )}
 
               {!allApproved && (
-                <div style={{ padding: "12px 16px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.22)", borderRadius: 10, fontSize: 12, color: "#D97706", display: "flex", gap: 8, alignItems: "center" }}>
-                  <AlertCircle size={14} />
+                <Alert tone="warning">
                   {techApproved < techTotal ? `Tech Lead: ${techTotal - techApproved} question${techTotal - techApproved !== 1 ? "s" : ""} pending` : `HR: ${hrTotal - hrApproved} question${hrTotal - hrApproved !== 1 ? "s" : ""} pending`}
-                </div>
+                </Alert>
               )}
 
               {/* Send for external approval via email */}
               {(techLeadEmail || hrEmail) && !emailApprovalSent && (
-                <button type="button" className="btn-ghost" style={{ width: "100%", justifyContent: "center", fontSize: 13, gap: 8 }} onClick={sendForApprovalViaEmail} disabled={sendingApproval}>
-                  {sendingApproval ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Sending…</> : <><Mail size={13} /> Send for Approval via Email</>}
-                </button>
+                <Button variant="secondary" fullWidth leftIcon={<Mail size={14} />} onClick={sendForApprovalViaEmail} loading={sendingApproval}>
+                  {sendingApproval ? "Sending…" : "Send for Approval via Email"}
+                </Button>
               )}
               {emailApprovalSent && (
-                <div style={{ padding: "12px 16px", background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 10, fontSize: 13, color: "#059669", display: "flex", gap: 8, alignItems: "center" }}>
-                  <Check size={14} /> Approval emails sent — position saved as Pending Approval
-                </div>
+                <Alert tone="success">Approval emails sent — position saved as Pending Approval</Alert>
               )}
 
               {allApproved && (
-                <button type="button" className="btn-navy" style={{ width: "100%", justifyContent: "center", fontSize: 14, opacity: activating ? 0.7 : 1 }} onClick={activatePosition} disabled={activating}>
-                  {activating ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={15} />}
+                <Button fullWidth onClick={activatePosition} loading={activating} leftIcon={<Sparkles size={15} />}>
                   {activating ? "Saving…" : "Activate Position"}
-                </button>
+                </Button>
               )}
             </>
           )}
 
           {/* ── STEP 7: Activated ── */}
           {step === 7 && (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.06))", border: "2px solid rgba(16,185,129,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", boxShadow: "0 0 0 8px rgba(16,185,129,0.06)" }}>
-                <CheckCircle2 size={36} color="#10B981" />
+            <div style={{ textAlign: "center", padding: `${space[10]}px 0` }}>
+              <div aria-hidden="true" style={{ width: 80, height: 80, borderRadius: "50%", background: lv.successSoft, border: `2px solid ${lv.successBorder}`, display: "flex", alignItems: "center", justifyContent: "center", margin: `0 auto ${space[6]}px` }}>
+                <CheckCircle2 size={36} color={lv.success} />
               </div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, color: "#4F46E5", marginBottom: 8 }}>Position is now ACTIVE</h2>
-              <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 28 }}>Your position has been created and is ready for candidates.</p>
-              <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+              <h2 style={{ ...stepTitle, fontSize: text["2xl"], marginBottom: space[2] }}>Position is now ACTIVE</h2>
+              <p style={{ ...stepDesc, marginBottom: space[8] }}>Your position has been created and is ready for candidates.</p>
+              <dl style={{ display: "flex", justifyContent: "center", gap: space[4], marginBottom: space[8], flexWrap: "wrap" }}>
                 {[
                   { label: "Position", value: positionTitle },
-                  { label: "Questions", value: questions ? String((questions.technicalQuestions?.length ?? 0) + (questions.scenarioQuestions?.length ?? 0) + (questions.behavioralQuestions?.length ?? 0) + (questions.eqQuestions?.length ?? 0) + (questions.whiteboardAssessment?.length ?? 0)) : "—" },
+                  { label: "Questions", value: questions ? String(totalQuestions) : "—" },
                   { label: "Tech Stack", value: mustHaveTech.slice(0, 2).join(", ") || "—" },
                   { label: "L2 Threshold", value: `${l2ScoreThreshold}/100` },
                 ].map((s) => (
-                  <div key={s.label} style={{ padding: "14px 20px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, minWidth: 120 }}>
-                    <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#4F46E5" }}>{s.value}</div>
+                  <div key={s.label} className="lv-card" style={{ padding: `${space[3]}px ${space[5]}px`, minWidth: 120, textAlign: "left" }}>
+                    <dt><Eyebrow style={{ marginBottom: 4 }}>{s.label}</Eyebrow></dt>
+                    <dd style={{ margin: 0, fontSize: text.base, fontWeight: 700, color: lv.text }}>{s.value}</dd>
                   </div>
                 ))}
-              </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-                <button type="button" className="btn-primary" onClick={() => { toast.success("Candidate upload coming soon"); onClose(); }}><Plus size={15} /> Upload Candidates</button>
-                <button type="button" className="btn-ghost" onClick={onClose}>Back to Positions</button>
+              </dl>
+              <div style={{ display: "flex", gap: space[3], justifyContent: "center", flexWrap: "wrap" }}>
+                <Button variant="secondary" onClick={onClose}>Back to Positions</Button>
+                <Button leftIcon={<Plus size={16} />} onClick={() => { toast.success("Candidate upload coming soon"); onClose(); }}>Upload Candidates</Button>
               </div>
             </div>
           )}
@@ -1369,26 +1283,28 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
       {/* ── Bottom nav ── */}
       {step < 7 && (
-        <div style={{ background: "#fff", borderTop: "1px solid #E2E8F0", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <button type="button" className="btn-ghost" onClick={back} disabled={step === 0} style={{ opacity: step === 0 ? 0.4 : 1 }}><ChevronLeft size={15} /> Back</button>
-          <span style={{ fontSize: 12, color: "#94A3B8", fontFamily: "var(--font-mono)" }}>Step {step + 1} of {STEPS.length}</span>
+        <div style={{ background: lv.surface, borderTop: `1px solid ${lv.border}`, padding: `${space[3]}px ${gutter}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], flexWrap: "wrap", flexShrink: 0 }}>
+          <Button variant="secondary" leftIcon={<ChevronLeft size={16} />} onClick={back} disabled={step === 0}>Back</Button>
+          <span aria-live="polite" style={{ fontSize: text.xs, color: lv.textMuted, fontFamily: lv.fontMono }}>Step {step + 1} of {STEPS.length}</span>
           {step === 1 && !jdParsed && finalJD.trim().length > 50 ? (
             // #6 — two clear paths: auto-fill the next page from the JD, or do it by hand.
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" className="btn-ghost" onClick={next} disabled={jdParsing}>Continue without parsing</button>
-              <button type="button" className="btn-primary" onClick={parseJD} disabled={jdParsing}>
-                {jdParsing ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Parsing JD…</> : <><Search size={14} /> Parse JD &amp; auto-fill</>}
-              </button>
+            <div style={{ display: "flex", gap: space[2], flexWrap: "wrap" }}>
+              <Button variant="secondary" onClick={next} disabled={jdParsing}>Continue without parsing</Button>
+              <Button onClick={parseJD} loading={jdParsing} leftIcon={<Search size={14} />}>
+                {jdParsing ? "Parsing JD…" : <>Parse JD &amp; auto-fill</>}
+              </Button>
             </div>
           ) : step === 6 ? null : (
-            <button type="button" className="btn-primary" onClick={next} disabled={(step === 5 && questionsLoading) || (step === 3 && rubricTotal !== 100)}>
-              {step === 5 && questionsLoading ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating…</>
-                : step === 5 && !questions ? <><Sparkles size={14} /> Generate Questions</>
+            <Button onClick={next} disabled={(step === 3 && rubricTotal !== 100)} loading={step === 5 && questionsLoading}
+              leftIcon={step === 5 && !questions && !questionsLoading ? <Sparkles size={14} /> : undefined}
+              rightIcon={!(step === 5 && (questionsLoading || !questions)) && !(step === 4 && !jdApproved) && !(step === 3 && rubricTotal !== 100) && !(step === 1 && finalJD.trim().length < 50) ? <ChevronRight size={16} /> : undefined}>
+              {step === 5 && questionsLoading ? "Generating…"
+                : step === 5 && !questions ? "Generate Questions"
                 : step === 4 && !jdApproved ? "Awaiting Approval…"
                 : step === 3 && rubricTotal !== 100 ? `Rubric must total 100% (${rubricTotal}%)`
                 : step === 1 && finalJD.trim().length < 50 ? "Add JD to continue"
-                : <>{step === 1 && !jdParsed && finalJD.length > 50 ? "Continue without parsing" : "Continue"} <ChevronRight size={15} /></>}
-            </button>
+                : step === 1 && !jdParsed && finalJD.length > 50 ? "Continue without parsing" : "Continue"}
+            </Button>
           )}
         </div>
       )}
