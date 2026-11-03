@@ -28,6 +28,10 @@ export interface ScribeSttOptions {
   languageCode?: string        // e.g. 'en' | 'en-IN' (ISO 639); configurable per interview
   keyterms?: string[]          // model biasing for control + technical words
   vadSilenceSecs?: number      // turn-end silence; higher = won't cut off mid-sentence
+  // Barge-in (Fixpack 4): audio (16 kHz mono) captured while the interviewer was
+  // still speaking. Sent first, the moment the socket opens, so the candidate's
+  // opening words survive the STT connect time. Called once.
+  preroll?: () => Float32Array | null
 }
 
 const WS_BASE = process.env.NEXT_PUBLIC_SCRIBE_WS_URL ?? 'wss://api.elevenlabs.io/v1/speech-to-text/realtime'
@@ -82,7 +86,11 @@ export class ScribeStt {
       for (const k of (this.opts.keyterms ?? DEFAULT_KEYTERMS)) params.append('keyterms', k)
 
       this.ws = new WebSocket(`${WS_BASE}?${params.toString()}`)
-      this.ws.onopen = () => { if (!this.stopped) this.beginCapture() }
+      this.ws.onopen = () => {
+        if (this.stopped) return
+        this.sendPreroll()
+        this.beginCapture()
+      }
       this.ws.onmessage = (evt) => this.onMessage(evt)
       this.ws.onerror = () => this.handlers.onError?.('socket_error')
       this.ws.onclose = () => this.handlers.onClose?.()
@@ -91,6 +99,15 @@ export class ScribeStt {
       this.handlers.onError?.(err instanceof Error ? err.message : 'start_failed')
       this.cleanup()
       return false
+    }
+  }
+
+  private sendPreroll() {
+    const pre = this.opts.preroll?.()
+    if (!pre?.length || this.ws?.readyState !== WebSocket.OPEN) return
+    for (let i = 0; i < pre.length; i += 4096) {
+      const pcm = floatTo16BitPCM(pre.subarray(i, i + 4096))
+      this.ws.send(JSON.stringify({ message_type: 'input_audio_chunk', audio_base_64: base64FromBuffer(pcm), sample_rate: TARGET_RATE }))
     }
   }
 

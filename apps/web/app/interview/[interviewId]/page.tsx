@@ -14,6 +14,7 @@ import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
 import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
+import { BargeInDetector, BARGE_IN_CONFIG } from '@/lib/screen/interview/barge-in'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
@@ -323,6 +324,7 @@ export default function InterviewPage() {
           isDemo:        !!data.isDemo,
         }
         isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
+        if (data.interviewer?.name) setInterviewer({ name: data.interviewer.name, voiceKey: data.interviewer.voiceKey ?? null })
         setConsentOk(!!data.consentGiven || !!data.isDemo)  // I-P0-1 soft consent gate
         const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
         if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
@@ -472,6 +474,15 @@ export default function InterviewPage() {
   const codeDebounceRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
   /* Audio abort mechanism */
   const audioRef          = useRef<HTMLAudioElement | null>(null)
+  // ── Barge-in (Fixpack 4): candidate speaking over the interviewer stops TTS
+  // and switches to listening; buffered audio is handed to the next STT session.
+  const bargeInRef        = useRef<BargeInDetector | null>(null)
+  const bargeInPendingRef = useRef(false)   // a barge-in happened; next startListening takes its audio
+  const playbackStopRef   = useRef<(() => void) | null>(null)  // resolves the in-flight speakText
+  // Interviewer voice + matching name for THIS interview (position → account → env default).
+  const [interviewer, setInterviewer] = useState<{ name: string; voiceKey: string | null }>({ name: INTERVIEWER_NAME, voiceKey: null })
+  const interviewerRef    = useRef(interviewer)
+  interviewerRef.current  = interviewer
   const isMountedRef      = useRef(true)
 
   /* ── Sync setters ─────────────────────────────────────────── */
@@ -516,6 +527,7 @@ export default function InterviewPage() {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
+      bargeInRef.current?.dispose(); bargeInRef.current = null
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.src = ''
@@ -653,6 +665,8 @@ export default function InterviewPage() {
 
   /* ── Stop all audio immediately ──────────────────────────── */
   const stopAllAudio = useCallback(() => {
+    if (!bargeInPendingRef.current) bargeInRef.current?.disarm()
+    playbackStopRef.current = null
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.src = ''
@@ -662,7 +676,9 @@ export default function InterviewPage() {
   }, [])
 
   /* ── TTS ──────────────────────────────────────────────────── */
-  const speakText = useCallback(async (text: string): Promise<void> => {
+  // opts.bargeIn: the candidate may interrupt this line (only lines that are
+  // followed by listening opt in). Resolves 'interrupted' if they did.
+  const speakText = useCallback(async (text: string, opts: { bargeIn?: boolean } = {}): Promise<'done' | 'interrupted'> => {
     // Always cancel previous audio before starting new (Fix 4)
     stopAllAudio()
 
@@ -674,12 +690,32 @@ export default function InterviewPage() {
 
     if (!cleanText || cleanText.length < 2) {
       console.warn('[speakText] Empty or invalid text, skipping')
-      return
+      return 'done'
     }
     console.log('[speakText] Speaking:', cleanText.slice(0, 80))
 
-    if (!isMountedRef.current) return
+    if (!isMountedRef.current) return 'done'
     setPhase('speaking')
+
+    // Barge-in arming: only for opted-in lines, never once the session is
+    // wrapping up, and not when the candidate is typing (no mic) — sig is the
+    // heartbeat's live view of mic/text mode.
+    const sig = liveSignalsRef.current
+    const canBargeIn = !!opts.bargeIn && BARGE_IN_CONFIG.enabled && !wrapUpFiredRef.current && !sig.micFailed && !sig.textInputMode && !!bargeInRef.current
+    let interrupted = false
+    let armedOnce = false   // 'playing' can re-fire after a stall — calibrate once per line
+    const armBargeIn = (stop: () => void) => {
+      if (!canBargeIn || armedOnce) return
+      armedOnce = true
+      bargeInPendingRef.current = false
+      bargeInRef.current!.arm(() => {
+        if (wrapUpFiredRef.current || !isMountedRef.current) return
+        interrupted = true
+        bargeInPendingRef.current = true
+        aiSpeakingRef.current = false   // what follows is the candidate, not echo
+        stop()
+      })
+    }
     // Echo guard: while Alex speaks, the mic may transcribe his own TTS. Mark it
     // so the recognizer drops those captures (prevents the false-termination loop
     // where "…end the interview…" gets re-heard and treated as candidate intent).
@@ -699,25 +735,32 @@ export default function InterviewPage() {
           signal:  controller.signal,
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
+          body: JSON.stringify({ text: cleanText, voiceAccent: interviewerRef.current.voiceKey ?? undefined, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
         })
         clearTimeout(timeout)
-        if (!isMountedRef.current) return
+        if (!isMountedRef.current) return 'done'
         const ct = res.headers.get('Content-Type') || ''
         if (ct.includes('audio/mpeg')) {
           const blob = await res.blob()
-          if (!isMountedRef.current) return
+          if (!isMountedRef.current) return 'done'
           const url = URL.createObjectURL(blob)
           await new Promise<void>((resolve) => {
             const audio = new Audio(url)
             audioRef.current = audio
-            audio.onended = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve() }
-            audio.onerror = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve() }
-            audio.play().catch(() => { audioRef.current = null; resolve() })
+            let settled = false
+            const finish = () => { if (settled) return; settled = true; URL.revokeObjectURL(url); if (audioRef.current === audio) audioRef.current = null; playbackStopRef.current = null; resolve() }
+            playbackStopRef.current = finish
+            audio.onended = finish
+            audio.onerror = finish
+            // Arm once sound is actually playing so calibration hears the echo level.
+            audio.onplaying = () => armBargeIn(() => { audio.pause(); finish() })
+            audio.play().catch(finish)
           })
+          if (interrupted) return 'interrupted'
+          bargeInRef.current?.disarm()
           // Brief grace so the tail/echo of the last words isn't captured as speech.
           setTimeout(() => { aiSpeakingRef.current = false }, 500)
-          return
+          return 'done'
         }
         const bodyText = await res.text().catch(() => '(unreadable)')
         console.warn('[speakText] Non-audio response:', bodyText)
@@ -730,7 +773,7 @@ export default function InterviewPage() {
       }
     }
 
-    if (!isMountedRef.current) return
+    if (!isMountedRef.current) return 'done'
 
     // Browser TTS fallback — prefer Google US voice (Chrome) for best quality
     await new Promise<void>((resolve) => {
@@ -752,6 +795,7 @@ export default function InterviewPage() {
         utt.volume = 1.0
         utt.onend  = () => resolve()
         utt.onerror = () => resolve()
+        utt.onstart = () => armBargeIn(() => { window.speechSynthesis.cancel(); resolve() })
         window.speechSynthesis.speak(utt)
       }
 
@@ -763,7 +807,10 @@ export default function InterviewPage() {
         window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true })
       }
     })
+    if (interrupted) return 'interrupted'
+    bargeInRef.current?.disarm()
     setTimeout(() => { aiSpeakingRef.current = false }, 500)  // clear echo guard (TTS fallback path)
+    return 'done'
   }, [setPhase, stopAllAudio])
 
   /* ── STT ──────────────────────────────────────────────────── */
@@ -776,8 +823,12 @@ export default function InterviewPage() {
   const startListening = useCallback(() => {
     // Never re-open the mic once the interview has wrapped up (time-up / termination
     // / closing) — stops an in-flight question flow from reviving after Fix 3.
-    if (wrapUpFiredRef.current || phaseRef.current === 'closing' || phaseRef.current === 'completed') return
-    if (micFailed) { setTextInputMode(true); return }
+    // A barge-in's buffered audio is only for THIS listen; take it now.
+    const bargedIn = bargeInPendingRef.current
+    bargeInPendingRef.current = false
+    const takeBargeInAudio = bargedIn ? () => bargeInRef.current?.takePreroll() ?? null : undefined
+    if (wrapUpFiredRef.current || phaseRef.current === 'closing' || phaseRef.current === 'completed') { bargeInRef.current?.disarm(); return }
+    if (micFailed) { bargeInRef.current?.disarm(); setTextInputMode(true); return }
 
     // Reset per-listen state (shared by Deepgram + Web Speech fallback)
     clearSilenceTimers()
@@ -785,7 +836,7 @@ export default function InterviewPage() {
     hasSpokenRef.current = false
     capturedRef.current  = false
     setListeningHint('')
-    playChime()  // soft chime → signals mic is live
+    if (!bargedIn) playChime()  // soft chime → mic is live (skipped when they're already talking)
 
     // Shared end-of-turn capture. During the warm-up arc, route to its handler.
     const captureNow = (text: string) => {
@@ -836,6 +887,8 @@ export default function InterviewPage() {
     if (sttPreferWebSpeechRef.current) {
       // Scribe already failed this session (token/mic). Don't re-hit the token
       // route every turn; use Web Speech directly for the rest of the interview.
+      // (Web Speech can't take buffered audio — a barge-in's first words are lost.)
+      bargeInRef.current?.disarm()
       runWebSpeech()
     } else {
       // ── ElevenLabs Scribe v2 Realtime (primary) ──
@@ -854,6 +907,7 @@ export default function InterviewPage() {
         languageCode: process.env.NEXT_PUBLIC_SCRIBE_LANGUAGE ?? 'en',
         keyterms,
         vadSilenceSecs: Number(process.env.NEXT_PUBLIC_SCRIBE_VAD_SILENCE_SECS) || 2.0,
+        preroll: takeBargeInAudio,
       })
       dgSttRef.current = dg
       dg.start().then((ok) => {
@@ -886,11 +940,11 @@ export default function InterviewPage() {
 
       const nudge = "Take your time — I'm here whenever you're ready."
       addTranscript({ speaker: 'ai', text: nudge, type: 'transition' })
-      await speakText(nudge)
+      const nudgeRes = await speakText(nudge, { bargeIn: true })
 
       const phaseAfter12 = phaseRef.current as string
       if (phaseAfter12 !== 'completed' && phaseAfter12 !== 'closing') {
-        await delay(1500)
+        if (nudgeRes !== 'interrupted') await delay(1500)
         startListening()
       }
     }, SILENCE_THRESHOLDS.GENTLE_PROMPT * 1000)
@@ -906,12 +960,12 @@ export default function InterviewPage() {
 
       const prompt = "Would you like a moment more, or shall we move on to the next question?"
       addTranscript({ speaker: 'ai', text: prompt, type: 'transition' })
-      await speakText(prompt)
+      const choiceRes = await speakText(prompt, { bargeIn: true })
       awaitingMoveOnChoiceRef.current = true  // next captureResponse handles the choice
 
       const phaseAfter20 = phaseRef.current as string
       if (phaseAfter20 !== 'completed' && phaseAfter20 !== 'closing') {
-        await delay(1500)
+        if (choiceRes !== 'interrupted') await delay(1500)
         startListening()
       }
     }, SILENCE_THRESHOLDS.OFFER_CHOICE * 1000)
@@ -1060,8 +1114,7 @@ export default function InterviewPage() {
       if (wantsMore) {
         const ack = 'Of course, take your time.'
         addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
-        await speakText(ack)
-        await delay(600)
+        if ((await speakText(ack, { bargeIn: true })) !== 'interrupted') await delay(600)
         startListening()
         return
       }
@@ -1075,8 +1128,7 @@ export default function InterviewPage() {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
       const resp = "That's not something I can comment on during the interview — the team will be in touch after. Let's stay with the question."
       addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
-      await speakText(resp)
-      await delay(800)
+      if ((await speakText(resp, { bargeIn: true })) !== 'interrupted') await delay(800)
       startListening()  // re-listen on the SAME question — no advance
       return
     }
@@ -1086,8 +1138,7 @@ export default function InterviewPage() {
       addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
       const resp = "I don't have that detail handy — the hiring team will cover that with you. Shall we continue?"
       addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
-      await speakText(resp)
-      await delay(800)
+      if ((await speakText(resp, { bargeIn: true })) !== 'interrupted') await delay(800)
       startListening()
       return
     }
@@ -1097,16 +1148,14 @@ export default function InterviewPage() {
       if (rephraseCountRef.current >= 1) {
         const defer = 'Let me know when you are ready and we will continue.'
         addTranscript({ speaker: 'ai', text: defer, type: 'transition' })
-        await speakText(defer)
-        await delay(1500)
+        if ((await speakText(defer, { bargeIn: true })) !== 'interrupted') await delay(1500)
         startListening()
         return
       }
       rephraseCountRef.current++
       // Repeat verbatim — no paraphrase
       addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
-      await speakText(q.question)
-      await delay(1500)
+      if ((await speakText(q.question, { bargeIn: true })) !== 'interrupted') await delay(1500)
       startListening()
       return
     }
@@ -1156,8 +1205,7 @@ export default function InterviewPage() {
       const hint = q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the basics'
       if (!diluted) diluted = `No problem — let's make it simpler. To start, just tell me whatever you do know about ${hint}.`
       addTranscript({ speaker: 'ai', text: diluted, questionId: q.id, type: 'preset' })
-      await speakText(diluted)
-      await delay(1200)
+      if ((await speakText(diluted, { bargeIn: true })) !== 'interrupted') await delay(1200)
       startListening()
       return
     }
@@ -1245,8 +1293,7 @@ export default function InterviewPage() {
           ? `Thank you — I want to make sure we cover everything in our time together. Let me bring it back to ${q.techTag || SECTION_LABEL[q.section] || 'the topic'}.`
           : `I may not have been clear — I was asking specifically about ${q.expectedKeyPoints?.[0] ?? q.techTag ?? 'the question'}. Take your time.`
         addTranscript({ speaker: 'ai', text: redirect, type: 'transition' })
-        await speakText(redirect)
-        await delay(1500)
+        if ((await speakText(redirect, { bargeIn: true })) !== 'interrupted') await delay(1500)
         startListening()
         return
       }
@@ -1294,8 +1341,7 @@ export default function InterviewPage() {
     if (ev.shouldAskFollowUp && ev.followUpQuestion && withinBudget) {
       followUpCountRef.current += 1
       addTranscript({ speaker: 'ai', text: ev.followUpQuestion, questionId: q.id, type: 'followup' })
-      await speakText(ev.followUpQuestion)
-      await delay(1500)
+      if ((await speakText(ev.followUpQuestion, { bargeIn: true })) !== 'interrupted') await delay(1500)
       startListening()
     } else {
       // Speak quality-based transition — section changes get their own preamble in moveToQuestion
@@ -1366,7 +1412,11 @@ export default function InterviewPage() {
 
     // Speak the question itself
     addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
-    await speakText(q.question)
+    // Barge-in allowed except on whiteboard questions (they need the board first).
+    if ((await speakText(q.question, { bargeIn: q.section !== 'whiteboard' })) === 'interrupted') {
+      startListening()
+      return
+    }
 
     // Fix 2: Whiteboard section — pause until candidate clicks Done
     if (q.section === 'whiteboard' && prevQ?.section !== 'whiteboard') {
@@ -1640,8 +1690,7 @@ export default function InterviewPage() {
     setWaitingWhiteboard(false)
     const transition = 'Thank you. I can see your diagram. Walk me through your thinking.'
     addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
-    await speakText(transition)
-    await delay(800)
+    if ((await speakText(transition, { bargeIn: true })) !== 'interrupted') await delay(800)
     startListening()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTranscript, speakText, startListening])
@@ -1686,10 +1735,10 @@ export default function InterviewPage() {
         body: JSON.stringify({ interviewId, action: 'finalize', turns, completed }),
       }).catch(() => {})
     }
-    const say = async (text: string) => {
+    const say = async (text: string, bargeIn = true) => {
       turns.push({ speaker: 'ai', text })
       addTranscript({ speaker: 'ai', text, type: 'transition', segment: 'logistics' })
-      await speakText(text)
+      await speakText(text, { bargeIn })
     }
 
     await say(logisticsIntro())
@@ -1718,7 +1767,7 @@ export default function InterviewPage() {
       if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, 5 * 60_000)
       if (wrapUpFiredRef.current) break
       if (!next.say) break
-      await say(next.say)
+      await say(next.say, !(next.done || wrapNow))   // the closing line isn't interruptible
       if (next.done || wrapNow) break
     }
     finalize(!wrapUpFiredRef.current)
@@ -1742,13 +1791,13 @@ export default function InterviewPage() {
     try {
       const r = await fetch('/api/interview/warmup', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ beat: 'opener', firstName, role: position.title, dayContext: ctx }),
+        body: JSON.stringify({ beat: 'opener', firstName, role: position.title, dayContext: ctx, interviewerName: interviewerRef.current.name }),
       })
       if (r.ok) opener = (await r.json()).line
     } catch { /* fall back below */ }
-    if (!opener) opener = buildOpener({ firstName, ctx, role: position.title, orgName: position.company })
+    if (!opener) opener = buildOpener({ firstName, ctx, role: position.title, orgName: position.company, name: interviewerRef.current.name })
     addTranscript({ speaker: 'ai', text: opener, type: 'intro' })
-    await speakText(opener)
+    await speakText(opener, { bargeIn: true })
     const reply1 = await awaitWarmupReply(15000)
 
     // Preserve Build-01: honor explicit termination even during warm-up.
@@ -1760,13 +1809,13 @@ export default function InterviewPage() {
     try {
       const r = await fetch('/api/interview/warmup', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateReply: reply1, firstName, role: position.title, dayContext: ctx }),
+        body: JSON.stringify({ candidateReply: reply1, firstName, role: position.title, dayContext: ctx, interviewerName: interviewerRef.current.name }),
       })
       if (r.ok) followup = (await r.json()).line
     } catch { /* fall back below */ }
     if (!followup) followup = reply1 ? 'Thanks for sharing that — glad you could make it.' : 'No worries — glad you could join.'
     addTranscript({ speaker: 'ai', text: followup, type: 'transition' })
-    await speakText(followup)
+    await speakText(followup, { bargeIn: true })
     const reply2 = await awaitWarmupReply(12000)
     const term2 = detectTerminationIntent(reply2)
     if (term2) { warmupActiveRef.current = false; warmupCaptureRef.current = null; await endByTermination(term2.reason); return }
@@ -1780,7 +1829,7 @@ export default function InterviewPage() {
     // Beat 3 — signposted, firm transition into the evaluation.
     const transition = buildTransition()
     addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
-    await speakText(transition)
+    await speakText(transition, { bargeIn: true })
     await awaitWarmupReply(7000)  // brief "ready?" — don't require, time-box firmly
 
     warmupActiveRef.current = false
@@ -1845,7 +1894,7 @@ export default function InterviewPage() {
   const runTour = useCallback(async () => {
     const steps: { area: string; line: string }[] = [
       { area: 'question',   line: "Before we begin, a quick tour. Across the top you'll always see your current question." },
-      { area: 'ai',         line: `On the left is me, ${INTERVIEWER_NAME} — this panel lights up when I'm speaking or listening.` },
+      { area: 'ai',         line: `On the left is me, ${interviewerRef.current.name} — this panel lights up when I'm speaking or listening.` },
       { area: 'video',      line: "Just below me is your camera, with a live-monitoring indicator. Keep your face comfortably in view." },
       { area: 'editor',     line: "On the right is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
       { area: 'transcript', line: "And below the editor is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
@@ -1873,6 +1922,10 @@ export default function InterviewPage() {
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
     startFraudRecording()  // begin the interview-long recording for fraud diarization
+    if (BARGE_IN_CONFIG.enabled && !bargeInRef.current) {
+      bargeInRef.current = new BargeInDetector()
+      void bargeInRef.current.ensureStarted()   // pre-open so the first arm has no latency
+    }
 
     // Fix 6: load questions from DB questionSet first; fall back to buildQuestions()
     let qs: LocalQuestion[] = []
@@ -1988,9 +2041,9 @@ export default function InterviewPage() {
     terminationAskedRef.current = false
     const continuePhrase = 'Great, let us continue.'
     addTranscript({ speaker: 'ai', text: continuePhrase, type: 'transition' })
-    await speakText(continuePhrase)
+    const contRes = await speakText(continuePhrase, { bargeIn: true })
     if (isMountedRef.current && phaseRef.current !== 'completed' && phaseRef.current !== 'closing') {
-      await delay(500)
+      if (contRes !== 'interrupted') await delay(500)
       startListening()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2180,7 +2233,7 @@ export default function InterviewPage() {
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {INTERVIEWER_NAME}</div>
+          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {interviewer.name}</div>
           <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
@@ -2473,7 +2526,7 @@ export default function InterviewPage() {
           <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {transcript.map(entry => (
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? INTERVIEWER_NAME.toUpperCase() : 'YOU'}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
                 <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}

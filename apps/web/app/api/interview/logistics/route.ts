@@ -8,6 +8,7 @@ import {
   SegmentTurn, extractionSystem, logisticsBudget, logisticsTurnSystem, logisticsTurnUser, scriptedTurn,
 } from '@/lib/screen/logistics/prompts'
 import { sanitizeKnockouts } from '@/lib/screen/position-config'
+import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
 import { computeVerdicts, sanitizeExtraction } from '@/lib/screen/logistics/result'
 
 export const dynamic = 'force-dynamic'
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { status: true, isDemo: true, completedAt: true, position: { select: { logistics: true, knockoutQuestions: true } } },
+      select: { status: true, isDemo: true, completedAt: true, position: { select: { logistics: true, knockoutQuestions: true, voiceAccent: true, agency: { select: { voiceAccent: true } } } } },
     })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
     const live = interview.status === 'in_progress'
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
     try {
       const r = await client.messages.create({
         model: LIVE_INTERVIEW_MODEL, max_tokens: 220, temperature: 0.6,
-        system: logisticsTurnSystem(cfg, knockouts),
+        system: logisticsTurnSystem(cfg, knockouts, resolveInterviewerVoice(interview.position.voiceAccent, interview.position.agency?.voiceAccent).name),
         messages: [{ role: 'user', content: logisticsTurnUser(turns, wrapNow) }],
       })
       const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')

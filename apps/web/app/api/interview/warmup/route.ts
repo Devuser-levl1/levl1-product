@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { LIVE_INTERVIEW_MODEL } from '@/lib/screen/interview/model'
-import { WARMUP_FOLLOWUP_SYSTEM, WARMUP_OPENER_SYSTEM } from '@/lib/screen/session/persona'
+import { warmupFollowupSystem, warmupOpenerSystem } from '@/lib/screen/session/persona'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 export const dynamic = 'force-dynamic'
@@ -21,9 +21,11 @@ export async function POST(req: NextRequest) {
   const day = body.dayContext?.dayOfWeek ?? ''
   const part = body.dayContext?.partOfDay ?? ''
   const isOpener = body.beat === 'opener'
+  // Name that matches the account's interviewer voice (resolved by the room).
+  const name = typeof body.interviewerName === 'string' && /^[A-Za-z][A-Za-z .'-]{0,30}$/.test(body.interviewerName.trim()) ? body.interviewerName.trim() : INTERVIEWER_NAME
 
   const fallback = isOpener
-    ? `Hi ${firstName}, thanks for making time this ${part || 'today'}. I'm ${INTERVIEWER_NAME}, your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`
+    ? `Hi ${firstName}, thanks for making time this ${part || 'today'}. I'm ${name}, your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`
     : (reply ? `Thanks for sharing that. Glad you're here.` : `No worries at all — glad you could make it.`)
 
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ line: fallback })
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
       model: LIVE_INTERVIEW_MODEL,
       max_tokens: isOpener ? 160 : 120,
       temperature: isOpener ? 0.9 : 0.7,  // opener hotter → genuinely varied each run
-      system: isOpener ? WARMUP_OPENER_SYSTEM : WARMUP_FOLLOWUP_SYSTEM,
+      system: isOpener ? warmupOpenerSystem(name) : warmupFollowupSystem(name),
       messages: [{
         role: 'user',
         content: isOpener

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getVoiceId } from '@/lib/voiceOptions'
 import { DEFAULT_INTERVIEWER_VOICE_ID } from '@/lib/screen/interviewer'
+import { isVoiceKey } from '@/lib/screen/interviewer-voice'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +16,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Priority: explicit voiceId in request → voiceAccent key → env var → Ananya (female) default
+    // Priority: account/position voice key (resolved by the caller from the
+    // interview) → explicit voiceId → env ELEVENLABS_VOICE_ID (the fallback
+    // default) → baked Ananya voice. Unknown keys are ignored, not guessed.
     const vid =
-      voiceId ||
-      (voiceAccent ? getVoiceId(voiceAccent) : null) ||
+      (isVoiceKey(voiceAccent) ? getVoiceId(voiceAccent) : null) ||
+      (typeof voiceId === 'string' && /^[A-Za-z0-9]{10,40}$/.test(voiceId) ? voiceId : null) ||
       process.env.ELEVENLABS_VOICE_ID ||
-      DEFAULT_INTERVIEWER_VOICE_ID // Ananya — female, env ELEVENLABS_VOICE_ID overrides
+      DEFAULT_INTERVIEWER_VOICE_ID
 
     console.log('[generate-speech] text length:', text?.length ?? 0, 'voice:', vid)
 

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { getSessionFromRequest } from '@/lib/auth'
 import { TERMINATION_REASONS } from '@/lib/screen/session/lifecycle'
+import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +25,8 @@ const PUBLIC_SELECT = {
     select: {
       id: true, title: true, company: true, department: true, experienceLevel: true, techStack: true,
       status: true, createdAt: true, techLeadApproved: true, hrApproved: true, interviewDuration: true,
-      agency: { select: { id: true, name: true, logoUrl: true } },
+      voiceAccent: true,
+      agency: { select: { id: true, name: true, logoUrl: true, voiceAccent: true } },
     },
   },
 } satisfies Prisma.InterviewSelect
@@ -42,7 +44,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
           position: {
             include: {
               questionSet: true,
-              agency: { select: { id: true, name: true, logoUrl: true } },
+              agency: { select: { id: true, name: true, logoUrl: true, voiceAccent: true } },
             },
           },
         },
@@ -62,9 +64,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 // The interview room's timer + start screen read these — serve the length the
 // session will actually run (production envelope; demos keep their own).
-function withEffectiveDuration<T extends { isDemo: boolean; duration: number; position: { interviewDuration: number } }>(iv: T): T {
+function withEffectiveDuration<T extends { isDemo: boolean; duration: number; position: { interviewDuration: number; voiceAccent: string | null; agency: { voiceAccent: string } | null } }>(iv: T): T & { interviewer: { name: string; voiceKey: string | null } } {
   const minutes = effectiveInterviewMinutes({ isDemo: iv.isDemo, interviewDuration: iv.position.interviewDuration })
-  return { ...iv, duration: minutes, position: { ...iv.position, interviewDuration: minutes } }
+  // Voice + matching name the room should use (position override → account → env default).
+  const v = resolveInterviewerVoice(iv.position.voiceAccent, iv.position.agency?.voiceAccent)
+  return { ...iv, duration: minutes, position: { ...iv.position, interviewDuration: minutes }, interviewer: { name: v.name, voiceKey: v.key } }
 }
 
 const TERMINATIONS = new Set<string>(Object.values(TERMINATION_REASONS))

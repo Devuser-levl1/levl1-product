@@ -557,7 +557,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
             title: positionTitle, company, department, experienceLevel, roleType,
             primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
             domainContext, workMode, interviewDuration: 30,
-            dynamicIntensity, voiceAccent: voiceAccent ?? "american",
+            dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
             status: "pending_approval",
             l2ScoreThreshold, rubricApproved, scoringRubric, softSkillWeightage: weights,
@@ -614,7 +614,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           title: positionTitle, company, department, experienceLevel, roleType,
           primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
           domainContext, workMode, interviewDuration: 30,
-          dynamicIntensity, voiceAccent: voiceAccent ?? "american",
+          dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
           jdText: finalJD,
           techLeadEmail, hrEmail, clientManagerEmail,
           techLeadApproved: techApproved === techTotal && techTotal > 0,

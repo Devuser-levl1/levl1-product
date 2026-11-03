@@ -35,8 +35,8 @@ export function scriptedTurn(cfg: LogisticsConfig, candidateTurns: number, wrapN
   return { say: `Thanks — I've noted all of that for the team.`, done: true }
 }
 
-export function logisticsTurnSystem(cfg: LogisticsConfig, knockouts: KnockoutQuestion[] = []): string {
-  return `You are ${INTERVIEWER_NAME}, a warm, efficient, enterprise-professional recruiter running the short LOGISTICS part of a screening interview (voice). ` +
+export function logisticsTurnSystem(cfg: LogisticsConfig, knockouts: KnockoutQuestion[] = [], name: string = INTERVIEWER_NAME): string {
+  return `You are ${name}, a warm, efficient, enterprise-professional recruiter running the short LOGISTICS part of a screening interview (voice). ` +
 `Your job: resolve four practical filters conversationally, like a good human recruiter, in about two minutes.
 
 ROLE CONSTRAINTS (the only facts you know about the role's logistics):

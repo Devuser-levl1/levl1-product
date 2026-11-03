@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase } from 'lucide-react'
 import { ACCOUNT_TYPES, type AccountType } from '@/lib/screen/account-type'
+import { VOICE_OPTIONS, DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
+import { Play, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const INPUT: React.CSSProperties = {
@@ -49,6 +51,23 @@ export default function OnboardingPage() {
   const [foundedYear,   setFoundedYear]   = useState('')
   const [teamSize,      setTeamSize]      = useState('')
   const [accountType,   setAccountType]   = useState<AccountType | null>(null)
+  // Default interviewer voice for the account (changeable later in Settings).
+  const [voiceKey,      setVoiceKey]      = useState<string>(DEFAULT_VOICE_KEY)
+  const [previewing,    setPreviewing]    = useState<string | null>(null)
+  async function previewVoice(key: string) {
+    const v = VOICE_OPTIONS.find(o => o.key === key)
+    if (!v || previewing) return
+    setPreviewing(key)
+    try {
+      const res = await fetch('/api/interview/generate-speech', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voiceAccent: key, text: `Hi, I'm ${v.interviewerName}, your AI interviewer. Let's get started whenever you're ready.` }) })
+      if (!res.ok || !(res.headers.get('Content-Type') || '').includes('audio')) throw new Error()
+      const url = URL.createObjectURL(await res.blob())
+      const audio = new Audio(url)
+      audio.onended = () => { URL.revokeObjectURL(url); setPreviewing(null) }
+      audio.onerror = () => { URL.revokeObjectURL(url); setPreviewing(null) }
+      await audio.play()
+    } catch { toast.error('Preview unavailable right now'); setPreviewing(null) }
+  }
   const [hqCity,        setHqCity]        = useState('')
 
   // Step 2 — GST & Business
@@ -87,7 +106,7 @@ export default function OnboardingPage() {
       await fetch('/api/agency/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: 1, agencyName, website, foundedYear: foundedYear ? parseInt(foundedYear) : undefined, teamSize, accountType, city: hqCity }),
+        body: JSON.stringify({ step: 1, agencyName, website, foundedYear: foundedYear ? parseInt(foundedYear) : undefined, teamSize, accountType, voiceAccent: voiceKey, city: hqCity }),
       })
       setStep(2)
     } catch { toast.error('Failed to save — please retry') }
@@ -237,6 +256,33 @@ export default function OnboardingPage() {
                         {ts}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Default interviewer voice — candidates hear this voice (and name) */}
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Interviewer voice</label>
+                  <p style={{ fontSize: 12, color: '#94A3B8', margin: '0 0 8px' }}>The voice your candidates hear. You can change it any time in Settings.</p>
+                  <div role="radiogroup" aria-label="Interviewer voice" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {VOICE_OPTIONS.map(v => {
+                      const on = voiceKey === v.key
+                      return (
+                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? '#4F46E5' : '#E2E8F0'}`, background: on ? 'rgba(79,70,229,0.05)' : '#fff' }}>
+                          <button type="button" role="radio" aria-checked={on} onClick={() => setVoiceKey(v.key)}
+                            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font-sans)' }}>
+                            <span style={{ fontSize: 18 }}>{v.flag}</span>
+                            <span>
+                              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: on ? '#4F46E5' : '#1E293B' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
+                              <span style={{ display: 'block', fontSize: 12, color: '#64748B' }}>{v.description}</span>
+                            </span>
+                          </button>
+                          <button type="button" onClick={() => previewVoice(v.key)} aria-label={`Preview ${v.interviewerName}`} disabled={!!previewing}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#4F46E5', cursor: previewing ? 'default' : 'pointer' }}>
+                            {previewing === v.key ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={12} />} Preview
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
