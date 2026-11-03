@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Mic, Video, Volume2, CheckCircle2, AlertTriangle, Loader2, Zap, Clock } from 'lucide-react'
+import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 
 interface InterviewMeta {
   candidateName: string
@@ -220,17 +221,11 @@ export default function CandidateInterviewEntry() {
         )}
 
         {/* Consent checkbox */}
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 24 }}>
-          <input
-            type="checkbox"
-            checked={consented}
-            onChange={e => setConsented(e.target.checked)}
-            style={{ marginTop: 2, accentColor: '#7C3AED', width: 15, height: 15, cursor: 'pointer' }}
-          />
-          <span style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
-            I understand this interview will be recorded and evaluated by an AI system. The results will be shared with the hiring team.
-          </span>
-        </label>
+        <div style={{ marginBottom: 24 }}>
+          <ConsentCheckbox checked={consented} onChange={setConsented}>
+            I understand this interview will be <strong>recorded and evaluated by an AI system</strong>. The results will be shared with the hiring team.
+          </ConsentCheckbox>
+        </div>
 
         {/* CTA */}
         <button

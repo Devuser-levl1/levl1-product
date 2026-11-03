@@ -20,6 +20,7 @@ import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fi
 import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { logisticsIntro, LOGISTICS_MAX_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
+import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -456,6 +457,11 @@ export default function InterviewPage() {
   const warmupCaptureRef = useRef<((text: string) => void) | null>(null)
   const isDemoRef = useRef(false)  // demo-gallery run (Build 05) — never bills usage
   const [consentOk, setConsentOk] = useState(false)  // soft consent gate before start (I-P0-1)
+  // Checkbox state for the gate: never pre-checked; only counts once the server
+  // has recorded it (a failed save unticks the box and shows an error).
+  const [consentChecked, setConsentChecked] = useState(false)
+  const [consentSaving, setConsentSaving] = useState(false)
+  const [consentError, setConsentError] = useState<string | null>(null)
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -2240,15 +2246,28 @@ export default function InterviewPage() {
           {/* Soft consent gate (I-P0-1): the interview cannot START until the
               candidate explicitly acknowledges the recording/data-processing
               notice. Acknowledgement is logged with a timestamp server-side. */}
-          {!consentOk && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, textAlign: 'left', fontSize: 12.5, color: '#475569', lineHeight: 1.6, marginBottom: 14, cursor: 'pointer', padding: '12px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10 }}>
-              <input type="checkbox" onChange={async (e) => {
-                if (!e.target.checked) return
-                try { await fetch(`/api/schedule/${interviewId}/consent`, { method: 'POST' }) } catch {}
-                setConsentOk(true)
-              }} style={{ marginTop: 2 }} />
-              <span>I consent to this interview being <strong>recorded and monitored</strong> and to my responses being processed and evaluated by Levl1&apos;s AI for this hiring assessment. I understand I can withdraw consent at any time to stop the interview.</span>
-            </label>
+          {(!consentOk || consentChecked) && (
+            <div style={{ marginBottom: 14 }}>
+              <ConsentCheckbox
+                checked={consentChecked}
+                disabled={consentSaving || consentOk}
+                note={consentSaving ? 'Recording your consent…' : consentOk ? 'Consent recorded' : undefined}
+                onChange={async (checked) => {
+                  if (!checked || consentOk) return
+                  setConsentChecked(true); setConsentSaving(true); setConsentError(null)
+                  try {
+                    const r = await fetch(`/api/schedule/${interviewId}/consent`, { method: 'POST' })
+                    if (!r.ok) throw new Error()
+                    setConsentOk(true)
+                  } catch {
+                    setConsentChecked(false)
+                    setConsentError('We couldn’t record your consent — please check your connection and tick the box again.')
+                  } finally { setConsentSaving(false) }
+                }}>
+                I consent to this interview being <strong>recorded and monitored</strong> and to my responses being processed and evaluated by Levl1&apos;s AI for this hiring assessment. I understand I can withdraw consent at any time to stop the interview.
+              </ConsentCheckbox>
+              {consentError && <div role="alert" style={{ marginTop: 8, fontSize: 13, color: '#B91C1C', fontWeight: 600, textAlign: 'left' }}>{consentError}</div>}
+            </div>
           )}
           <button
             onClick={startInterview}

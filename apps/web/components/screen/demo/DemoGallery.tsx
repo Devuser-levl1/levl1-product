@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DEMO_PERSONAS, DEMO_CATEGORIES, DemoCategory } from '@/lib/screen/demo/personas'
+import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 
 const INDIGO = '#4F46E5'
 const VIOLET = '#7C3AED'
@@ -94,10 +95,11 @@ export function DemoGallery() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') start() }} placeholder="you@company.com" style={inp} />
             <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
 
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 14, fontSize: 12.5, color: '#475569', lineHeight: 1.55, cursor: 'pointer' }}>
-              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>I agree that Levl1 may contact me about my demo results and its products. (Optional — you can still try the demo without this.)</span>
-            </label>
+            <div style={{ marginTop: 14 }}>
+              <ConsentCheckbox checked={consent} onChange={setConsent}>
+                I agree that Levl1 may contact me about my demo results and its products. <span style={{ color: '#64748B' }}>(Optional — you can still try the demo without this.)</span>
+              </ConsentCheckbox>
+            </div>
 
             {err && <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginTop: 10 }}>{err}</div>}
 
