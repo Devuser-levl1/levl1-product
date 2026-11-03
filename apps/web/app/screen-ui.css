@@ -238,3 +238,10 @@
 
 .lv-dropzone { border: 2px dashed var(--lv-border-control); border-radius: var(--lv-radius-lg); padding: var(--lv-space-12) var(--lv-space-6); text-align: center; background: var(--lv-surface-sunken); }
 .lv-dropzone:focus-within { box-shadow: var(--lv-focus-ring); }
+
+/* ── Candidates pipeline (Pass 3 · group 3) ───────────────────────────────── */
+.lv-card--hover { transition: border-color var(--lv-dur) var(--lv-ease), box-shadow var(--lv-dur) var(--lv-ease); }
+.lv-card--hover:hover { border-color: var(--lv-brand-soft-border); box-shadow: var(--lv-shadow-md); }
+.lv-dropzone--interactive:hover { border-color: var(--lv-brand); }
+.lv-dropzone--interactive:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }
+.lv-stat-tab:focus-visible { outline: none; box-shadow: inset var(--lv-focus-ring); position: relative; z-index: 1; }

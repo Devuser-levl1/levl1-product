@@ -6,10 +6,15 @@ import {
 import { useAppStore, Candidate } from "@/store/appStore";
 import {
   X, Upload, Clipboard, UserPlus, CheckCircle2,
-  AlertCircle, Loader2, Trash2, ChevronRight, ChevronDown, ChevronUp,
+  AlertCircle, Trash2, ChevronRight, ChevronDown, ChevronUp,
   AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Button, Badge, Alert, Field, Input, Select, Textarea, type Tone } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+
+// Design-System Pass 3 (group 3): presentation on the Screen design system.
+// Extraction, duplicate checks and the save payload are unchanged.
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type UploadTab = "upload" | "paste" | "manual";
@@ -55,26 +60,17 @@ function fmtSize(bytes: number): string {
 }
 
 function ConfidenceBadge({ level }: { level: "high" | "medium" | "low" }) {
-  const cfg = {
-    high:   { color: "#059669", bg: "rgba(16,185,129,0.10)", label: "High"   },
-    medium: { color: "#D97706", bg: "rgba(245,158,11,0.10)", label: "Medium" },
-    low:    { color: "#DC2626", bg: "rgba(239,68,68,0.10)",  label: "Low"    },
+  const cfg: Record<"high" | "medium" | "low", { tone: Tone; label: string }> = {
+    high:   { tone: "success", label: "High"   },
+    medium: { tone: "warning", label: "Medium" },
+    low:    { tone: "danger",  label: "Low"    },
   };
   const c = cfg[level];
-  return (
-    <span style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, padding: "2px 8px", borderRadius: 100, whiteSpace: "nowrap" }}>
-      {c.label}
-    </span>
-  );
+  return <Badge tone={c.tone} title={`${c.label} extraction confidence`}>{c.label}</Badge>;
 }
 
-const INPUT_STYLE: React.CSSProperties = {
-  background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6,
-  padding: "5px 8px", fontSize: 12, color: "#4F46E5", fontFamily: "var(--font-sans)",
-  outline: "none", width: "100%",
-};
-
-const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: "pointer" };
+// Compact in-table controls: canonical input styling at table density.
+const CELL: React.CSSProperties = { height: 32, fontSize: text.xs, padding: "0 8px" };
 
 // Grid template shared between header + rows
 const COLS = "32px 1.8fr 1.3fr 0.75fr 0.9fr 1.1fr 68px 1.4fr 60px";
@@ -368,121 +364,116 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
   const hasResults    = extracted.length > 0;
 
   // ──────────────────────────────────────────────────────────────────────────
+  const queuedCount = files.filter((f) => f.status === "queued").length;
+  const dupCount    = extracted.filter((e) => e.isDuplicate).length;
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(79,70,229,0.45)", display: "flex", justifyContent: "flex-end",
+      background: lv.overlay, display: "flex", justifyContent: "flex-end",
     }}>
       {/* Slide-over panel */}
-      <div style={{
-        width: "min(92vw, 1060px)", height: "100vh",
-        background: "#FAFAFA", display: "flex", flexDirection: "column",
-        boxShadow: "-8px 0 32px rgba(79,70,229,0.18)",
+      <div role="dialog" aria-modal="true" aria-labelledby="cuf-title" style={{
+        width: "min(100vw, 1060px)", height: "100vh",
+        background: lv.bg, display: "flex", flexDirection: "column",
+        boxShadow: lv.shadowLg,
         animation: "slideInRight 0.22s ease",
       }}>
         {/* Header */}
-        <div style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", padding: "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Upload size={18} color="#7C3AED" />
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "#4F46E5" }}>Upload Candidates</span>
+        <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: "0 clamp(16px, 3vw, 28px)", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
+            <Upload size={18} color={lv.brand} aria-hidden="true" />
+            <h2 id="cuf-title" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>Upload Candidates</h2>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 8, display: "flex" }}>
-            <X size={20} />
-          </button>
+          <Button variant="ghost" iconOnly aria-label="Close upload" onClick={onClose}><X size={20} /></Button>
         </div>
 
         {/* Body — scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: `${space[6]}px clamp(16px, 3vw, 28px)`, display: "flex", flexDirection: "column", gap: space[6] }}>
 
           {/* Tab switcher */}
-          <div style={{ display: "flex", gap: 0, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 4, flexShrink: 0 }}>
+          <div className="lv-seg lv-seg--track" role="tablist" aria-label="How to add candidates" style={{ flexShrink: 0 }}>
             {([
               { key: "upload", icon: Upload,    label: "Upload PDF / Doc" },
               { key: "paste",  icon: Clipboard, label: "Paste Resume"     },
               { key: "manual", icon: UserPlus,  label: "Manual Entry"     },
             ] as const).map(({ key, icon: Icon, label }) => (
-              <button key={key} onClick={() => setTab(key)}
-                style={{
-                  flex: 1, padding: "8px 12px", borderRadius: 7, fontSize: 13, fontWeight: 500,
-                  cursor: "pointer", border: "none", fontFamily: "var(--font-sans)",
-                  background: tab === key ? "#fff" : "transparent",
-                  color: tab === key ? "#4F46E5" : "#94A3B8",
-                  boxShadow: tab === key ? "0 1px 3px rgba(79,70,229,0.08)" : "none",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.15s",
-                }}>
-                <Icon size={13} /> {label}
+              <button key={key} type="button" role="tab" aria-selected={tab === key} className="lv-seg__opt" onClick={() => setTab(key)}>
+                <Icon size={14} aria-hidden="true" /> {label}
               </button>
             ))}
           </div>
 
           {/* ── TAB: Upload ── */}
           {tab === "upload" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
               {/* Drop zone */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload resumes: drag and drop, or press Enter to browse"
+                className="lv-dropzone lv-dropzone--interactive"
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}
                 style={{
-                  border: `2px dashed ${isDragOver ? "#7C3AED" : "#CBD5E1"}`,
-                  borderRadius: 14, padding: "48px 24px", textAlign: "center",
-                  cursor: "pointer", transition: "all 0.2s",
-                  background: isDragOver ? "rgba(124,58,237,0.04)" : "#fff",
+                  cursor: "pointer", transition: `all ${lv.dur}`,
+                  borderColor: isDragOver ? lv.brand : undefined,
+                  background: isDragOver ? lv.brandSoft : lv.surface,
                 }}
               >
                 <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx" onChange={onFileInput} style={{ display: "none" }} />
-                <Upload size={28} color={isDragOver ? "#7C3AED" : "#CBD5E1"} style={{ margin: "0 auto 12px" }} />
-                <p style={{ fontSize: 15, fontWeight: 600, color: isDragOver ? "#7C3AED" : "#475569" }}>
+                <Upload size={28} color={isDragOver ? lv.brand : lv.textMuted} aria-hidden="true" style={{ margin: "0 auto 12px" }} />
+                <p style={{ fontSize: text.md, fontWeight: 600, color: isDragOver ? lv.brandText : lv.text, margin: 0 }}>
                   {isDragOver ? "Drop files here" : "Drag & drop resumes, or click to browse"}
                 </p>
-                <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>PDF, Word (.doc, .docx) · Up to 20 files · 10 MB each</p>
+                <p style={{ fontSize: text.xs, color: lv.textMuted, margin: `${space[2]}px 0 0` }}>PDF, Word (.doc, .docx) · Up to 20 files · 10 MB each</p>
               </div>
 
               {/* File list */}
               {files.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {files.map((f) => {
-                    const isPdf    = f.name.toLowerCase().endsWith(".pdf");
-                    const isDoc    = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
-                    const fileIcon = isPdf ? "📄" : isDoc ? "📝" : "📎";
-                    return (
-                      <div key={f.id} style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
-                      }}>
-                        <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: "#4F46E5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
-                          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{f.size}</div>
-                          {f.status === "processing" && (
-                            <div style={{ height: 3, background: "#E2E8F0", borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
-                              <div style={{ height: "100%", width: `${f.progress}%`, background: "#7C3AED", borderRadius: 2, transition: "width 0.4s ease" }} />
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                          {f.status === "queued"     && <span style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", padding: "2px 8px", borderRadius: 100 }}>Queued</span>}
-                          {f.status === "processing" && <Loader2 size={14} color="#7C3AED" style={{ animation: "spin 1s linear infinite" }} />}
-                          {f.status === "extracted"  && <CheckCircle2 size={14} color="#10B981" />}
-                          {f.status === "error"      && <span title={f.error}><AlertCircle size={14} color="#EF4444" /></span>}
-                          <button onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 2, display: "flex" }}>
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
+                  <ul aria-label="Files to process" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: space[2] }}>
+                    {files.map((f) => {
+                      const isPdf    = f.name.toLowerCase().endsWith(".pdf");
+                      const isDoc    = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
+                      const fileIcon = isPdf ? "📄" : isDoc ? "📝" : "📎";
+                      return (
+                        <li key={f.id} className="lv-card" style={{ display: "flex", alignItems: "center", gap: space[3], padding: `${space[2]}px ${space[3]}px` }}>
+                          <span aria-hidden="true" style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: text.sm, fontWeight: 500, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
+                            <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{f.size}</div>
+                            {f.status === "processing" && (
+                              <div role="progressbar" aria-label={`Processing ${f.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={f.progress} style={{ height: 4, background: lv.surfaceMuted, borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
+                                <div style={{ height: "100%", width: `${f.progress}%`, background: lv.brand, borderRadius: 2, transition: "width 0.4s ease" }} />
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: space[2], flexShrink: 0 }}>
+                            {f.status === "queued"     && <Badge tone="neutral">Queued</Badge>}
+                            {f.status === "processing" && <span className="lv-spinner" role="status" aria-label="Processing" style={{ color: lv.brand }} />}
+                            {f.status === "extracted"  && <Badge tone="success"><CheckCircle2 size={12} aria-hidden="true" /> Extracted</Badge>}
+                            {f.status === "error"      && <Badge tone="danger" title={f.error}><AlertCircle size={12} aria-hidden="true" /> Failed</Badge>}
+                            <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${f.name}`} onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))}>
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
 
-                  <button
-                    className="btn-primary"
-                    style={{ alignSelf: "flex-start", marginTop: 4 }}
+                  <Button
+                    style={{ alignSelf: "flex-start", marginTop: space[1] }}
                     onClick={uploadAll}
                     disabled={files.every((f) => f.status !== "queued")}
+                    leftIcon={<Upload size={14} />}
                   >
-                    <Upload size={14} />
-                    Process {files.filter((f) => f.status === "queued").length} File{files.filter((f) => f.status === "queued").length !== 1 ? "s" : ""}
-                  </button>
+                    Process {queuedCount} File{queuedCount !== 1 ? "s" : ""}
+                  </Button>
                 </div>
               )}
             </div>
@@ -490,84 +481,79 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
 
           {/* ── TAB: Paste ── */}
           {tab === "paste" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Candidate Name (optional)</label>
-                <input className="input" placeholder="AI will try to extract from resume text" value={pasteName} onChange={(e) => setPasteName(e.target.value)} style={{ maxWidth: 340 }} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Resume Text *</label>
-                <textarea
+            <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+              <Field label="Candidate Name (optional)" style={{ maxWidth: 340 }}>
+                <Input placeholder="AI will try to extract from resume text" value={pasteName} onChange={(e) => setPasteName(e.target.value)} />
+              </Field>
+              <Field label="Resume Text" required>
+                <Textarea
                   value={pasteText}
                   onChange={(e) => setPasteText(e.target.value)}
                   placeholder="Paste the full resume content here…"
-                  style={{
-                    width: "100%", padding: "14px 16px", borderRadius: 10, border: "1px solid #E2E8F0",
-                    fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)", resize: "vertical",
-                    outline: "none", lineHeight: 1.65, minHeight: 300, background: "#fff",
-                  }}
+                  style={{ resize: "vertical", lineHeight: 1.65, minHeight: 300 }}
                 />
-              </div>
-              <button className="btn-primary" style={{ alignSelf: "flex-start" }} onClick={extractPaste} disabled={pasteText.trim().length < 20}>
-                <Clipboard size={14} /> Extract Details
-              </button>
+              </Field>
+              <Button style={{ alignSelf: "flex-start" }} onClick={extractPaste} disabled={pasteText.trim().length < 20} leftIcon={<Clipboard size={14} />}>
+                Extract Details
+              </Button>
             </div>
           )}
 
           {/* ── TAB: Manual ── */}
           {tab === "manual" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: space[4] }}>
                 {[
-                  { label: "Full Name *",         val: manualName,     set: setManualName,     type: "text",   ph: "e.g. Rahul Sharma"        },
-                  { label: "Email Address *",      val: manualEmail,    set: setManualEmail,    type: "email",  ph: "e.g. rahul@email.com"     },
-                  { label: "Phone",                val: manualPhone,    set: setManualPhone,    type: "text",   ph: "+91 98765 43210"           },
-                  { label: "LinkedIn URL",         val: manualLinkedIn, set: setManualLinkedIn, type: "url",    ph: "https://linkedin.com/in/…" },
-                  { label: "Years of Experience",  val: manualYoe,      set: setManualYoe,      type: "number", ph: "e.g. 7"                   },
-                ].map(({ label, val, set, type, ph }) => (
-                  <div key={label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>{label}</label>
-                    <input className="input" type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={ph} />
-                  </div>
+                  { label: "Full Name",            req: true,  val: manualName,     set: setManualName,     type: "text",   ph: "e.g. Rahul Sharma"        },
+                  { label: "Email Address",        req: true,  val: manualEmail,    set: setManualEmail,    type: "email",  ph: "e.g. rahul@email.com"     },
+                  { label: "Phone",                req: false, val: manualPhone,    set: setManualPhone,    type: "text",   ph: "+91 98765 43210"           },
+                  { label: "LinkedIn URL",         req: false, val: manualLinkedIn, set: setManualLinkedIn, type: "url",    ph: "https://linkedin.com/in/…" },
+                  { label: "Years of Experience",  req: false, val: manualYoe,      set: setManualYoe,      type: "number", ph: "e.g. 7"                   },
+                ].map(({ label, req, val, set, type, ph }) => (
+                  <Field key={label} label={label} required={req}>
+                    <Input type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={ph} />
+                  </Field>
                 ))}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Assign to Position</label>
-                  <select className="input" value={manualPos} onChange={(e) => setManualPos(e.target.value)} style={{ cursor: "pointer" }}>
+                <Field label="Assign to Position">
+                  <Select value={manualPos} onChange={(e) => setManualPos(e.target.value)}>
                     {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
                     {activePositions.length === 0 && <option value="">No active positions</option>}
-                  </select>
-                </div>
+                  </Select>
+                </Field>
               </div>
-              <button className="btn-primary" style={{ alignSelf: "flex-start" }} onClick={addManual}>
-                <UserPlus size={14} /> Add Candidate
-              </button>
+              <Button style={{ alignSelf: "flex-start" }} onClick={addManual} leftIcon={<UserPlus size={14} />}>
+                Add Candidate
+              </Button>
             </div>
           )}
 
           {/* ── Extracted results table ── */}
           {hasResults && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "#4F46E5" }}>
+            <section aria-labelledby="cuf-results" style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], flexWrap: "wrap" }}>
+                <h3 id="cuf-results" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>
                   Extraction Results — {extracted.length} candidate{extracted.length !== 1 ? "s" : ""}
                 </h3>
                 {!presetPositionId && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <select value={bulkPos} onChange={(e) => setBulkPos(e.target.value)} style={{ ...SELECT_STYLE, width: "auto", fontSize: 12, padding: "5px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
+                    <Select aria-label="Position for selected candidates" value={bulkPos} onChange={(e) => setBulkPos(e.target.value)} style={{ width: "auto", height: 32, fontSize: text.sm }}>
                       {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                    </select>
-                    <button className="btn-ghost" style={{ fontSize: 12 }} onClick={applyBulkPos}>
+                    </Select>
+                    <Button variant="secondary" size="sm" onClick={applyBulkPos}>
                       Assign Selected
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
 
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
+              <div className="lv-card" style={{ padding: 0, overflowX: "auto" }}>
+                <div role="table" aria-labelledby="cuf-results" style={{ minWidth: 960 }}>
                 {/* Table header */}
-                <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "10px 16px", background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                  {["", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Conf.", "Position", ""].map((h, i) => (
-                    <div key={i} style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
+                <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, padding: `${space[2]}px ${space[4]}px`, background: lv.surfaceSunken, borderBottom: `1px solid ${lv.border}` }}>
+                  {["Select", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Conf.", "Position", "Actions"].map((h, i) => (
+                    <div key={i} role="columnheader" className="lv-eyebrow" style={{ fontSize: 11 }}>
+                      {i === 0 || i === 8 ? <span className="lv-sr-only">{h}</span> : h}
+                    </div>
                   ))}
                 </div>
 
@@ -576,62 +562,69 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
                   const pos         = positions.find((p) => p.id === e.assignedPositionId);
                   const needsVerify = e.extractionConfidence !== "high" || e.missingFields.length > 0;
                   const isLast      = idx === extracted.length - 1;
+                  const who         = e.name || e.fileName;
 
                   return (
-                    <div key={e.tempId} style={{ borderBottom: !isLast ? "1px solid #F1F5F9" : "none" }}>
+                    <div key={e.tempId} style={{ borderBottom: !isLast ? `1px solid ${lv.border}` : "none" }}>
                       {/* ── Data row ── */}
-                      <div style={{
+                      <div role="row" style={{
                         display: "grid", gridTemplateColumns: COLS,
-                        alignItems: "start", padding: "12px 16px",
-                        background: e.isDuplicate ? "rgba(239,68,68,0.03)" : needsVerify ? "rgba(245,158,11,0.03)" : "transparent",
+                        alignItems: "start", padding: `${space[3]}px ${space[4]}px`,
+                        background: e.isDuplicate ? lv.dangerSoft : needsVerify ? lv.warningSoft : "transparent",
                       }}>
 
                         {/* Checkbox */}
-                        <div style={{ paddingTop: 7 }}>
+                        <div role="cell" style={{ paddingTop: 8 }}>
                           <input
                             type="checkbox" checked={e.selected && !e.isDuplicate}
                             disabled={e.isDuplicate}
+                            aria-label={`Include ${who}`}
                             onChange={() => updateField(e.tempId, "selected", !e.selected)}
-                            style={{ cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: "#7C3AED" }}
+                            style={{ width: 16, height: 16, cursor: e.isDuplicate ? "not-allowed" : "pointer", accentColor: lv.brand }}
                           />
                         </div>
 
                         {/* Name / email — always editable */}
-                        <div style={{ paddingRight: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                          <input
-                            style={INPUT_STYLE}
+                        <div role="cell" style={{ paddingRight: space[2], display: "flex", flexDirection: "column", gap: 4 }}>
+                          <Input
+                            style={CELL}
+                            aria-label="Full name"
                             value={e.name ?? ""}
                             onChange={(ev) => updateField(e.tempId, "name", ev.target.value)}
                             placeholder="Full name"
                           />
-                          <input
-                            style={{ ...INPUT_STYLE, borderColor: !e.email ? "#FCA5A5" : "#E2E8F0" }}
+                          <Input
+                            style={CELL}
+                            aria-label="Email"
+                            aria-invalid={!e.email || undefined}
                             value={e.email ?? ""}
                             onChange={(ev) => updateField(e.tempId, "email", ev.target.value)}
                             placeholder="Email *"
                           />
                           {!e.email && (
-                            <div style={{ fontSize: 10, color: "#EF4444", display: "flex", alignItems: "center", gap: 3 }}>
-                              <AlertTriangle size={9} /> Required
+                            <div style={{ fontSize: text.xs, fontWeight: 600, color: lv.danger, display: "flex", alignItems: "center", gap: 3 }}>
+                              <AlertTriangle size={11} aria-hidden="true" /> Required
                             </div>
                           )}
                           {e.isDuplicate && (
-                            <div style={{ fontSize: 10, color: "#DC2626", display: "flex", alignItems: "center", gap: 3 }}>
-                              <AlertCircle size={9} /> {e.duplicateInfo}
+                            <div style={{ fontSize: text.xs, color: lv.danger, display: "flex", alignItems: "center", gap: 3 }}>
+                              <AlertCircle size={11} aria-hidden="true" /> {e.duplicateInfo}
                             </div>
                           )}
                         </div>
 
                         {/* Current role — always editable */}
-                        <div style={{ paddingRight: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                          <input
-                            style={INPUT_STYLE}
+                        <div role="cell" style={{ paddingRight: space[2], display: "flex", flexDirection: "column", gap: 4 }}>
+                          <Input
+                            style={CELL}
+                            aria-label="Job title"
                             value={e.currentTitle ?? ""}
                             onChange={(ev) => updateField(e.tempId, "currentTitle", ev.target.value)}
                             placeholder="Job title"
                           />
-                          <input
-                            style={INPUT_STYLE}
+                          <Input
+                            style={CELL}
+                            aria-label="Company"
                             value={e.currentCompany ?? ""}
                             onChange={(ev) => updateField(e.tempId, "currentCompany", ev.target.value)}
                             placeholder="Company"
@@ -639,9 +632,10 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
                         </div>
 
                         {/* Years exp — always editable */}
-                        <div>
-                          <input
-                            style={INPUT_STYLE}
+                        <div role="cell" style={{ paddingRight: space[2] }}>
+                          <Input
+                            style={CELL}
+                            aria-label="Years of experience"
                             type="number"
                             value={e.totalYearsExperience ?? ""}
                             onChange={(ev) => updateField(e.tempId, "totalYearsExperience", ev.target.value ? Number(ev.target.value) : null)}
@@ -650,9 +644,10 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
                         </div>
 
                         {/* Phone — always editable */}
-                        <div>
-                          <input
-                            style={INPUT_STYLE}
+                        <div role="cell" style={{ paddingRight: space[2] }}>
+                          <Input
+                            style={CELL}
+                            aria-label="Phone"
                             value={e.phone ?? ""}
                             onChange={(ev) => updateField(e.tempId, "phone", ev.target.value || null)}
                             placeholder="Phone"
@@ -660,68 +655,67 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
                         </div>
 
                         {/* Skills (display only — limited space) */}
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, alignContent: "flex-start", paddingTop: 4 }}>
+                        <div role="cell" style={{ display: "flex", flexWrap: "wrap", gap: 3, alignContent: "flex-start", paddingTop: 6 }}>
                           {e.topSkills.slice(0, 3).map((s) => (
-                            <span key={s} style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: 4, background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" }}>{s}</span>
+                            <span key={s} style={{ fontSize: 11, fontFamily: lv.fontMono, padding: "1px 6px", borderRadius: radius.sm, background: lv.surfaceMuted, color: lv.textBody, border: `1px solid ${lv.border}` }}>{s}</span>
                           ))}
-                          {e.topSkills.length > 3 && <span style={{ fontSize: 10, color: "#94A3B8" }}>+{e.topSkills.length - 3}</span>}
+                          {e.topSkills.length > 3 && <span style={{ fontSize: 11, color: lv.textMuted }}>+{e.topSkills.length - 3}</span>}
                         </div>
 
                         {/* Confidence */}
-                        <div style={{ paddingTop: 4 }}><ConfidenceBadge level={e.extractionConfidence} /></div>
+                        <div role="cell" style={{ paddingTop: 5 }}><ConfidenceBadge level={e.extractionConfidence} /></div>
 
                         {/* Position — hidden when pre-set from position detail */}
-                        <div>
+                        <div role="cell">
                           {presetPositionId ? (
-                            <span style={{ fontSize: 12, color: "#4F46E5", fontWeight: 600 }}>{pos?.title ?? "—"}</span>
+                            <span style={{ fontSize: text.xs, color: lv.text, fontWeight: 600 }}>{pos?.title ?? "—"}</span>
                           ) : (
                             <>
-                              <select
+                              <Select
+                                aria-label={`Position for ${who}`}
                                 value={e.assignedPositionId}
                                 onChange={(ev) => updateField(e.tempId, "assignedPositionId", ev.target.value)}
-                                style={SELECT_STYLE}
+                                style={{ ...CELL, paddingRight: 28 }}
                               >
                                 {activePositions.map((p) => <option key={p.id} value={p.id}>{p.title.length > 22 ? p.title.slice(0, 22) + "…" : p.title}</option>)}
                                 {activePositions.length === 0 && <option value="">No active positions</option>}
-                              </select>
+                              </Select>
                               {pos?.status !== "active" && pos && (
-                                <div style={{ fontSize: 10, color: "#EF4444", marginTop: 3 }}>Position not active</div>
+                                <div style={{ fontSize: text.xs, color: lv.danger, marginTop: 3 }}>Position not active</div>
                               )}
                             </>
                           )}
                         </div>
 
                         {/* Actions */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div role="cell" style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                           {/* Toggle raw text */}
-                          <button
-                            onClick={() => updateField(e.tempId, "rawTextOpen", !e.rawTextOpen)}
+                          <Button variant="secondary" size="sm" iconOnly
+                            aria-expanded={!!e.rawTextOpen}
+                            aria-label={e.rawTextOpen ? `Hide extracted text for ${who}` : `View extracted text for ${who}`}
                             title={e.rawTextOpen ? "Hide extracted text" : "View extracted text"}
-                            style={{ background: e.rawTextOpen ? "rgba(124,58,237,0.10)" : "#F8FAFC", border: `1px solid ${e.rawTextOpen ? "rgba(124,58,237,0.30)" : "#E2E8F0"}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: e.rawTextOpen ? "#7C3AED" : "#64748B", display: "flex", alignItems: "center", justifyContent: "center" }}
-                          >
-                            {e.rawTextOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
+                            onClick={() => updateField(e.tempId, "rawTextOpen", !e.rawTextOpen)}>
+                            {e.rawTextOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </Button>
                           {/* Delete */}
-                          <button
-                            onClick={() => setExtracted((prev) => prev.filter((x) => x.tempId !== e.tempId))}
-                            style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                          <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${who}`} style={{ color: lv.danger }}
+                            onClick={() => setExtracted((prev) => prev.filter((x) => x.tempId !== e.tempId))}>
+                            <Trash2 size={14} />
+                          </Button>
                         </div>
                       </div>
 
                       {/* ── Collapsible raw text ── */}
                       {e.rawTextOpen && (
-                        <div style={{ padding: "0 16px 14px", borderTop: "1px solid #F1F5F9", background: "#FAFCFF" }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 6, marginTop: 10, textTransform: "uppercase", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ padding: `0 ${space[4]}px ${space[3]}px`, borderTop: `1px solid ${lv.border}`, background: lv.surfaceSunken }}>
+                          <div className="lv-eyebrow" style={{ marginBottom: 6, marginTop: space[3], display: "flex", alignItems: "center", gap: 6 }}>
                             Extracted text sent to Claude
                             <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({(e.rawText ?? "").length} chars · {e.fileName})</span>
                           </div>
                           <pre style={{
-                            fontSize: 11, color: "#475569", background: "#F8FAFC", border: "1px solid #E2E8F0",
-                            borderRadius: 8, padding: "10px 12px", whiteSpace: "pre-wrap", wordBreak: "break-word",
-                            maxHeight: 200, overflowY: "auto", fontFamily: "var(--font-mono)", lineHeight: 1.6, margin: 0,
+                            fontSize: text.xs, color: lv.textBody, background: lv.surface, border: `1px solid ${lv.border}`,
+                            borderRadius: radius.md, padding: `${space[2]}px ${space[3]}px`, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                            maxHeight: 200, overflowY: "auto", fontFamily: lv.fontMono, lineHeight: 1.6, margin: 0,
                           }}>
                             {e.rawText?.trim() || "No raw text captured for this entry"}
                           </pre>
@@ -730,38 +724,37 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
                     </div>
                   );
                 })}
+                </div>
               </div>
 
               {/* Warnings */}
-              {extracted.some((e) => e.isDuplicate) && (
-                <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, fontSize: 12, color: "#DC2626", display: "flex", gap: 8, alignItems: "center" }}>
-                  <AlertCircle size={14} />
-                  {extracted.filter((e) => e.isDuplicate).length} duplicate email{extracted.filter((e) => e.isDuplicate).length !== 1 ? "s" : ""} detected and excluded
-                </div>
+              {dupCount > 0 && (
+                <Alert tone="danger">
+                  {dupCount} duplicate email{dupCount !== 1 ? "s" : ""} detected and excluded
+                </Alert>
               )}
               {extracted.some((e) => e.extractionConfidence === "low" && !e.isDuplicate) && (
-                <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 12, color: "#D97706", display: "flex", gap: 8, alignItems: "center" }}>
-                  <AlertTriangle size={14} />
+                <Alert tone="warning">
                   Some candidates have low confidence — verify fields above before adding
-                </div>
+                </Alert>
               )}
-            </div>
+            </section>
           )}
         </div>
 
         {/* Footer */}
-        <div style={{ background: "#fff", borderTop: "1px solid #E2E8F0", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+        <div style={{ background: lv.surface, borderTop: `1px solid ${lv.border}`, padding: `${space[4]}px clamp(16px, 3vw, 28px)`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], flexWrap: "wrap", flexShrink: 0 }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
           {hasResults && (
-            <button className="btn-primary" onClick={confirmAdd} disabled={selectedCount === 0 || saving}>
-              {saving ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <ChevronRight size={15} />}
+            <Button onClick={confirmAdd} disabled={selectedCount === 0} loading={saving} rightIcon={<ChevronRight size={16} />}>
               {saving ? "Saving…" : `Add ${selectedCount} Candidate${selectedCount !== 1 ? "s" : ""} to Pipeline`}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <style>{`@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+      <style>{`@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { [aria-labelledby="cuf-title"] { animation: none !important; } }`}</style>
     </div>
   );
 }

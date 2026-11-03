@@ -3,11 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { Filter, Calendar, Mail, Star, Upload, Send, Play, Monitor, FileText, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import CandidateUploadFlow from "./CandidateUploadFlow";
 import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
+import { Page, PageHeader, Button, Badge, Alert, Select, EmptyState, type Tone } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+
+// Design-System Pass 3 (group 3): presentation on the Screen design system.
+// Pipeline grouping, report generation and monitor/interview actions unchanged.
 
 type PipelineColumn = {
   key: string;
@@ -17,20 +22,20 @@ type PipelineColumn = {
 };
 
 const COLUMNS: PipelineColumn[] = [
-  { key: "pending",           label: "Pending",             statuses: ["pending"],             dotColor: "#94A3B8" },
-  { key: "invited",           label: "Invited",             statuses: ["invited"],             dotColor: "#F59E0B" },
-  { key: "scheduled",         label: "Scheduled",           statuses: ["scheduled"],           dotColor: "#7C3AED" },
-  { key: "interviewing",      label: "Interviewing",        statuses: ["interviewing"],        dotColor: "#8B5CF6" },
-  { key: "completed",         label: "Completed",           statuses: ["completed"],           dotColor: "#10B981" },
-  { key: "no_show_cancelled", label: "No Show / Cancelled", statuses: ["no_show","cancelled"], dotColor: "#EF4444" },
+  { key: "pending",           label: "Pending",             statuses: ["pending"],             dotColor: lv.textSubtle },
+  { key: "invited",           label: "Invited",             statuses: ["invited"],             dotColor: lv.warning    },
+  { key: "scheduled",         label: "Scheduled",           statuses: ["scheduled"],           dotColor: lv.brand      },
+  { key: "interviewing",      label: "Interviewing",        statuses: ["interviewing"],        dotColor: lv.accent     },
+  { key: "completed",         label: "Completed",           statuses: ["completed"],           dotColor: lv.success    },
+  { key: "no_show_cancelled", label: "No Show / Cancelled", statuses: ["no_show","cancelled"], dotColor: lv.danger     },
 ];
 
-const REC_CFG = {
-  strong_yes: { label: "Strong Yes", color: "#059669", bg: "rgba(16,185,129,0.10)" },
-  yes:         { label: "Yes",        color: "#10B981", bg: "rgba(16,185,129,0.07)" },
-  maybe:       { label: "Maybe",      color: "#D97706", bg: "rgba(245,158,11,0.10)" },
-  no:          { label: "No",         color: "#DC2626", bg: "rgba(239,68,68,0.10)"  },
-} as const;
+const REC_CFG: Record<string, { label: string; tone: Tone }> = {
+  strong_yes: { label: "Strong Yes", tone: "success" },
+  yes:        { label: "Yes",        tone: "success" },
+  maybe:      { label: "Maybe",      tone: "warning" },
+  no:         { label: "No",         tone: "danger"  },
+};
 
 /* ─── CandidateCard ─────────────────────────────────────────────── */
 function CandidateCard({
@@ -45,7 +50,7 @@ function CandidateCard({
   const position = positions.find((p) => p.id === candidate.positionId);
   const [generatingReport, setGeneratingReport] = useState(false);
   const initials = candidate.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-  const rec = candidate.recommendation ? REC_CFG[candidate.recommendation as keyof typeof REC_CFG] : null;
+  const rec = candidate.recommendation ? REC_CFG[candidate.recommendation] : null;
 
   const isScheduled    = candidate.status === "scheduled";
   const isInterviewing = candidate.status === "interviewing";
@@ -126,202 +131,117 @@ function CandidateCard({
     }
   }
 
+  const divider: React.CSSProperties = { borderTop: `1px solid ${lv.border}`, paddingTop: space[2] };
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #E2E8F0",
-        borderRadius: 10,
-        padding: "12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        transition: "all 0.15s",
-        boxShadow: "0 1px 3px rgba(79,70,229,0.04)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#7C3AED";
-        e.currentTarget.style.boxShadow   = "0 4px 12px rgba(124,58,237,0.10)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#E2E8F0";
-        e.currentTarget.style.boxShadow   = "0 1px 3px rgba(79,70,229,0.04)";
-      }}
-    >
+    <article className="lv-card lv-card--hover" aria-label={candidate.name}
+      style={{ padding: space[3], display: "flex", flexDirection: "column", gap: space[2] }}>
       {/* Top row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <div style={{
+      <div style={{ display: "flex", alignItems: "flex-start", gap: space[2] }}>
+        <div aria-hidden="true" style={{
           width: 34, height: 34, borderRadius: "50%",
-          background: isScheduled
-            ? "linear-gradient(135deg, #EDE9FE, #F1F5F9)"
-            : "linear-gradient(135deg, #EEF2FF, #F1F5F9)",
-          border: `1px solid ${isScheduled ? "rgba(124,58,237,0.25)" : "#E2E8F0"}`,
+          background: isScheduled ? lv.accentSoft : lv.brandSoft,
+          border: `1px solid ${isScheduled ? lv.brandSoftBorder : lv.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 700,
-          color: isScheduled ? "#7C3AED" : "#6D28D9",
+          fontSize: text.xs, fontWeight: 700,
+          color: lv.brandText,
           flexShrink: 0,
         }}>
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <h3 style={{ margin: 0, fontSize: text.sm, fontWeight: 600, color: lv.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {candidate.name}
-          </div>
-          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          </h3>
+          <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {candidate.positionTitle}
           </div>
         </div>
         {candidate.score !== undefined && (
-          <div className="font-mono" style={{ fontSize: 16, fontWeight: 800, color: "#4F46E5", flexShrink: 0 }}>
+          <div className="font-mono" aria-label={`Score ${candidate.score}`} style={{ fontSize: text.md, fontWeight: 800, color: lv.text, flexShrink: 0 }}>
             {candidate.score}
           </div>
         )}
       </div>
 
       {/* Email */}
-      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#94A3B8" }}>
-        <Mail size={10} />
+      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: text.xs, color: lv.textMuted }}>
+        <Mail size={12} aria-hidden="true" style={{ flexShrink: 0 }} />
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{candidate.email}</span>
       </div>
 
       {/* No-phone warning — WhatsApp invites/reminders require a phone number */}
       {!candidate.phone && (
-        <div
-          title="Add a phone number to enable WhatsApp invites and reminders. Email invites still send."
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 4, alignSelf: "flex-start",
-            fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 100,
-            background: "rgba(245,158,11,0.10)", color: "#B45309",
-            border: "1px solid rgba(245,158,11,0.30)",
-          }}
-        >
-          <AlertTriangle size={9} /> No phone — WhatsApp unavailable
-        </div>
+        <span title="Add a phone number to enable WhatsApp invites and reminders. Email invites still send."
+          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "flex-start", gap: 4, fontSize: 11, fontWeight: 600, lineHeight: 1.35,
+            padding: "2px 8px", borderRadius: radius.pill, background: lv.warningSoft, color: lv.warning, border: `1px solid ${lv.warningBorder}` }}>
+          <AlertTriangle size={11} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /> No phone — WhatsApp unavailable
+        </span>
       )}
 
       {/* Skills */}
       {candidate.topSkills && candidate.topSkills.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {candidate.topSkills.slice(0, 3).map((s) => (
-            <span key={s} style={{ fontSize: 9, fontFamily: "var(--font-mono)", padding: "1px 6px", borderRadius: 3, background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" }}>
+            <span key={s} style={{ fontSize: 11, fontFamily: lv.fontMono, padding: "1px 6px", borderRadius: radius.sm, background: lv.surfaceMuted, color: lv.textBody, border: `1px solid ${lv.border}` }}>
               {s}
             </span>
           ))}
-          {candidate.topSkills.length > 3 && <span style={{ fontSize: 10, color: "#94A3B8" }}>+{candidate.topSkills.length - 3}</span>}
+          {candidate.topSkills.length > 3 && <span style={{ fontSize: 11, color: lv.textMuted }}>+{candidate.topSkills.length - 3}</span>}
         </div>
       )}
 
       {/* Scheduled time + recommendation */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
         {candidate.scheduledAt ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748B" }}>
-            <Calendar size={10} />
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: text.xs, color: lv.textBody }}>
+            <Calendar size={12} aria-hidden="true" />
             <span className="font-mono">
               {new Date(candidate.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{" "}
               {new Date(candidate.scheduledAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
           </div>
         ) : (
-          <div style={{ fontSize: 11, color: "#94A3B8" }}>
+          <div style={{ fontSize: text.xs, color: lv.textMuted }}>
             {candidate.currentTitle
               ? `${candidate.currentTitle}${candidate.totalYearsExperience ? ` · ${candidate.totalYearsExperience}y` : ""}`
               : ""}
           </div>
         )}
         {rec && (
-          <div style={{ fontSize: 9, fontWeight: 700, color: rec.color, background: rec.bg, padding: "2px 6px", borderRadius: 100, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>
-            <Star size={8} /> {rec.label}
-          </div>
+          <Badge tone={rec.tone}><Star size={10} aria-hidden="true" /> {rec.label}</Badge>
         )}
       </div>
 
       {/* Scheduling badge */}
-      <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
+      <div style={divider}>
         <SchedulingBadge candidate={candidate} position={position} />
       </div>
 
       {/* ── Start Interview / Monitor actions ── */}
       {showActions && (
-        <div style={{ display: "flex", gap: 6, borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}
-            style={{
-              flex: 1,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-              border: "none", borderRadius: 8, color: "#fff",
-              fontSize: 12, fontWeight: 700, padding: "8px 10px",
-              cursor: "pointer", letterSpacing: "-0.01em",
-              boxShadow: "0 3px 10px rgba(124,58,237,0.30)",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 5px 14px rgba(124,58,237,0.45)"; e.currentTarget.style.transform = "translateY(-1px)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 3px 10px rgba(124,58,237,0.30)"; e.currentTarget.style.transform = "none" }}
-          >
-            <Play size={11} fill="white" strokeWidth={0} />
+        <div style={{ ...divider, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Button size="sm" style={{ flex: "1 1 auto" }} leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
+            onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}>
             Start Interview
-          </button>
-
-          <button
-            onClick={handleMonitor}
-            title="Open recruiter monitor in new tab"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-              background: "rgba(124,58,237,0.08)",
-              border: "1px solid rgba(124,58,237,0.22)",
-              borderRadius: 8, color: "#7C3AED",
-              fontSize: 12, fontWeight: 700, padding: "8px 10px",
-              cursor: "pointer", whiteSpace: "nowrap",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.14)" }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.08)" }}
-          >
-            <Monitor size={11} />
+          </Button>
+          <Button variant="secondary" size="sm" leftIcon={<Monitor size={13} />} onClick={handleMonitor}
+            title="Open recruiter monitor in new tab" aria-label={`Monitor ${candidate.name}'s interview (opens in new tab)`}>
             Monitor
-          </button>
+          </Button>
         </div>
       )}
 
       {/* ── View / Generate Report (completed candidates) ── */}
       {isCompleted && candidate.interviewId && (
-        <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 8 }}>
-          <button
-            onClick={handleGenerateReport}
-            disabled={generatingReport}
-            style={{
-              width: "100%",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              background: candidate.reportGenerated
-                ? "rgba(16,185,129,0.08)"
-                : "rgba(79,70,229,0.07)",
-              border: `1px solid ${candidate.reportGenerated
-                ? "rgba(16,185,129,0.25)"
-                : "rgba(79,70,229,0.20)"}`,
-              borderRadius: 8,
-              color: candidate.reportGenerated ? "#059669" : "#4F46E5",
-              fontSize: 12, fontWeight: 700, padding: "8px 10px",
-              cursor: generatingReport ? "wait" : "pointer", whiteSpace: "nowrap",
-              transition: "all 0.15s",
-              opacity: generatingReport ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!generatingReport) e.currentTarget.style.background = candidate.reportGenerated
-                ? "rgba(16,185,129,0.15)"
-                : "rgba(79,70,229,0.12)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = candidate.reportGenerated
-                ? "rgba(16,185,129,0.08)"
-                : "rgba(79,70,229,0.07)";
-            }}
-          >
-            {generatingReport ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : <FileText size={11} />}
+        <div style={divider}>
+          <Button variant="secondary" size="sm" fullWidth onClick={handleGenerateReport} loading={generatingReport}
+            leftIcon={<FileText size={13} />}
+            style={candidate.reportGenerated ? { color: lv.success } : undefined}>
             {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : "Generate Report"}
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
@@ -363,84 +283,62 @@ export default function CandidatesPage() {
         />
       )}
 
-      <div style={{ padding: "36px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1600 }}>
-
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, color: "#4F46E5", letterSpacing: "-0.025em" }}>
-              Candidates Pipeline
-            </h1>
-            <p style={{ fontSize: 14, color: "#94A3B8", marginTop: 6, fontWeight: 500 }}>
-              {filtered.length} candidate{filtered.length !== 1 ? "s" : ""} across all stages
-            </p>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Filter size={14} color="#94A3B8" />
-              <select
-                value={selectedPosition}
-                onChange={(e) => setSelectedPosition(e.target.value)}
-                style={{
-                  background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8,
-                  padding: "8px 14px", fontSize: 13, color: "#4F46E5", fontFamily: "var(--font-sans)",
-                  cursor: "pointer", outline: "none", minWidth: 180, boxShadow: "0 1px 3px rgba(79,70,229,0.05)",
-                }}
-              >
+      <Page style={{ maxWidth: 1600 }}>
+        <PageHeader
+          title="Candidates Pipeline"
+          description={`${filtered.length} candidate${filtered.length !== 1 ? "s" : ""} across all stages`}
+          actions={<>
+            <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
+              <Filter size={14} color={lv.textMuted} aria-hidden="true" />
+              <Select aria-label="Filter by position" value={selectedPosition} onChange={(e) => setSelectedPosition(e.target.value)} style={{ minWidth: 180, width: "auto" }}>
                 <option value="all">All Positions</option>
                 {positions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
+              </Select>
             </div>
+            <Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Resumes</Button>
+          </>}
+        />
 
-            <button className="btn-primary" onClick={() => setShowUploadFlow(true)}>
-              <Upload size={15} /> Upload Resumes
-            </button>
-          </div>
-        </div>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: space[6] }}>
         {/* Pending invites banner */}
         {pendingAll.length > 0 && (
-          <div style={{
-            padding: "12px 18px", background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)",
-            borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6D28D9" }}>
-              <Send size={14} />
-              <span>
-                <strong>{pendingAll.length}</strong> candidate{pendingAll.length !== 1 ? "s" : ""} awaiting interview invite
-              </span>
-            </div>
-            <BulkInviteBar candidateIds={pendingAll.map((c) => c.id)} />
-          </div>
+          <Alert tone="info" action={<BulkInviteBar candidateIds={pendingAll.map((c) => c.id)} />}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: space[2] }}>
+              <Send size={14} aria-hidden="true" />
+              <span><strong>{pendingAll.length}</strong> candidate{pendingAll.length !== 1 ? "s" : ""} awaiting interview invite</span>
+            </span>
+          </Alert>
         )}
 
-        {/* Kanban */}
-        <div className="candidates-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`, gap: 12, alignItems: "start" }}>
+        {candidates.length === 0 ? (
+          <EmptyState icon={<Upload size={22} />} title="No candidates yet"
+            description="Upload resumes and Levl1 extracts each candidate's details, ready to invite to an interview."
+            action={<Button leftIcon={<Upload size={16} />} onClick={() => setShowUploadFlow(true)}>Upload Resumes</Button>} />
+        ) : (
+        /* Kanban */
+        <div className="candidates-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(232px, 1fr))`, gap: space[3], alignItems: "start", overflowX: "auto", paddingBottom: space[2] }}>
           {COLUMNS.map((col) => {
             const cards = byColumn[col.key] ?? [];
             return (
-              <div key={col.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <section key={col.key} aria-labelledby={`col-${col.key}`} style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
                 {/* Column header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.dotColor }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", letterSpacing: "0.02em" }}>
+                    <div aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: col.dotColor }} />
+                    <h2 id={`col-${col.key}`} style={{ margin: 0, fontSize: text.xs, fontWeight: 700, color: lv.textBody, letterSpacing: "0.02em" }}>
                       {col.label}
-                    </span>
+                    </h2>
                   </div>
-                  <span className="font-mono" style={{ fontSize: 11, color: "#94A3B8", background: "#F1F5F9", border: "1px solid #E2E8F0", padding: "1px 7px", borderRadius: 100, fontWeight: 700 }}>
-                    {cards.length}
-                  </span>
+                  <span className="lv-tab__count" aria-label={`${cards.length} candidates`}>{cards.length}</span>
                 </div>
 
                 {/* Cards */}
                 <div style={{
-                  minHeight: 80, background: "#F8FAFC", border: "1px dashed #CBD5E1",
-                  borderRadius: 12, padding: "8px", display: "flex", flexDirection: "column", gap: 8,
+                  minHeight: 80, background: lv.surfaceSunken, border: `1px dashed ${lv.borderStrong}`,
+                  borderRadius: radius.lg, padding: space[2], display: "flex", flexDirection: "column", gap: space[2],
                 }}>
                   {cards.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "24px 0", color: "#CBD5E1", fontSize: 12, fontWeight: 500 }}>
+                    <div style={{ textAlign: "center", padding: `${space[6]}px 0`, color: lv.textMuted, fontSize: text.xs, fontWeight: 500 }}>
                       No candidates
                     </div>
                   ) : (
@@ -453,11 +351,13 @@ export default function CandidatesPage() {
                     ))
                   )}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
-      </div>
+        )}
+        </div>
+      </Page>
     <style>{`
       @media (max-width: 768px) {
         /* Kanban board: horizontal scroll instead of fixed columns */

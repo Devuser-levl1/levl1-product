@@ -7,6 +7,11 @@ import {
   RefreshCw, X, Send, ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Button, Modal, ActionBar, Alert, Field, Textarea, Input } from "@/components/screen/ui";
+import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+
+// Design-System Pass 3 (group 3): presentation on the Screen design system.
+// Fetches, store updates and toasts are unchanged.
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface InviteModalProps {
@@ -91,78 +96,53 @@ export function InviteModal({ candidate, position, onClose }: InviteModalProps) 
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(79,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 560px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(79,70,229,0.25)" }}>
-        {/* Header */}
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#4F46E5" }}>Send Interview Invite</h3>
-            <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 3 }}>This will mark the candidate as &ldquo;Invited&rdquo;</p>
-          </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}><X size={18} /></button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: "20px 24px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Summary cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[
-              { label: "Candidate",  value: candidate.name     },
-              { label: "Email",      value: candidate.email    },
-              { label: "Position",   value: position.title     },
-              { label: "Duration",   value: `${duration} min`  },
-              { label: "Interviewer",value: "AI Interview Agent"},
-              { label: "Format",     value: "Voice Interview"  },
-            ].map((s) => (
-              <div key={s.label} style={{ padding: "10px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#4F46E5", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Position guard */}
-          {position.status !== "active" && (
-            <div style={{ padding: "12px 14px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, fontSize: 12, color: "#DC2626", display: "flex", gap: 8, alignItems: "center" }}>
-              <AlertCircle size={13} />
-              Position is not yet approved — complete approval before scheduling interviews
+    <Modal open onClose={onClose} dismissible={!sending} title="Send interview invite"
+      description={<>This will mark the candidate as &ldquo;Invited&rdquo;</>}
+      footer={<ActionBar>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button onClick={confirm} disabled={position.status !== "active"} loading={sending} leftIcon={<Send size={14} />}>
+          {sending ? "Sending…" : "Confirm & Send"}
+        </Button>
+      </ActionBar>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+        {/* Summary cards */}
+        <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: space[2], margin: 0 }}>
+          {[
+            { label: "Candidate",  value: candidate.name     },
+            { label: "Email",      value: candidate.email    },
+            { label: "Position",   value: position.title     },
+            { label: "Duration",   value: `${duration} min`  },
+            { label: "Interviewer",value: "AI Interview Agent"},
+            { label: "Format",     value: "Voice Interview"  },
+          ].map((s) => (
+            <div key={s.label} style={{ padding: `${space[2]}px ${space[3]}px`, background: lv.surfaceSunken, border: `1px solid ${lv.border}`, borderRadius: radius.md, minWidth: 0 }}>
+              <dt className="lv-eyebrow">{s.label}</dt>
+              <dd style={{ margin: "3px 0 0", fontSize: text.sm, fontWeight: 600, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.value}</dd>
             </div>
-          )}
+          ))}
+        </dl>
 
-          {/* Email preview */}
-          {emailPreview ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Email Preview (editable)</label>
-              <textarea
-                value={editableEmail ?? ""}
-                onChange={(e) => setEditableEmail(e.target.value)}
-                style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid #E2E8F0",
-                  fontSize: 12, color: "#475569", fontFamily: "var(--font-mono)", resize: "vertical",
-                  outline: "none", lineHeight: 1.7, minHeight: 220, background: "#F8FAFC",
-                }}
-              />
-            </div>
-          ) : (
-            <button className="btn-ghost" style={{ alignSelf: "flex-start", fontSize: 13 }} onClick={preview} disabled={sending}>
-              {sending ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</span> Loading…</> : <><Mail size={13} /> Preview Email</>}
-            </button>
-          )}
-        </div>
+        {/* Position guard */}
+        {position.status !== "active" && (
+          <Alert tone="danger">Position is not yet approved — complete approval before scheduling interviews</Alert>
+        )}
 
-        {/* Footer */}
-        <div style={{ padding: "16px 24px", borderTop: "1px solid #E2E8F0", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button
-            className="btn-primary"
-            onClick={confirm}
-            disabled={sending || position.status !== "active"}
-          >
-            {sending ? "Sending…" : <><Send size={13} /> Confirm & Send</>}
-          </button>
-        </div>
+        {/* Email preview */}
+        {emailPreview ? (
+          <Field label="Email Preview (editable)">
+            <Textarea
+              value={editableEmail ?? ""}
+              onChange={(e) => setEditableEmail(e.target.value)}
+              style={{ fontFamily: lv.fontMono, fontSize: text.xs, resize: "vertical", lineHeight: 1.7, minHeight: 220 }}
+            />
+          </Field>
+        ) : (
+          <Button variant="secondary" style={{ alignSelf: "flex-start" }} onClick={preview} loading={sending} leftIcon={<Mail size={14} />}>
+            {sending ? "Loading…" : "Preview Email"}
+          </Button>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -205,38 +185,28 @@ export function ScheduleModal({ candidate, position, onClose }: ScheduleModalPro
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(79,70,229,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 440px)", boxShadow: "0 24px 64px rgba(79,70,229,0.25)" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, color: "#4F46E5" }}>Schedule Interview</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}><X size={18} /></button>
+    <Modal open onClose={onClose} dismissible={!saving} size="sm" title="Schedule interview"
+      footer={<ActionBar>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button onClick={confirm} disabled={!scheduledAt} loading={saving} leftIcon={<Calendar size={14} />}>
+          {saving ? "Saving…" : "Confirm Schedule"}
+        </Button>
+      </ActionBar>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[4] }}>
+        <div style={{ fontSize: text.sm, color: lv.textBody }}>
+          Scheduling interview for <strong style={{ color: lv.text }}>{candidate.name}</strong> — {position.title}
         </div>
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 13, color: "#475569" }}>
-            Scheduling interview for <strong style={{ color: "#4F46E5" }}>{candidate.name}</strong> — {position.title}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Interview Date & Time</label>
-            <input
-              type="datetime-local"
-              className="input"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-            />
-          </div>
-          <div style={{ padding: "10px 12px", background: "#F8FAFF", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 8, fontSize: 12, color: "#6D28D9" }}>
-            Duration: {position.interviewDuration ?? 30} minutes · AI Voice Interview
-          </div>
-        </div>
-        <div style={{ padding: "16px 24px", borderTop: "1px solid #E2E8F0", display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={confirm} disabled={saving || !scheduledAt}>
-            {saving ? "Saving…" : <><Calendar size={13} /> Confirm Schedule</>}
-          </button>
-        </div>
+        <Field label="Interview Date & Time">
+          <Input
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+            min={new Date().toISOString().slice(0, 16)}
+          />
+        </Field>
+        <Alert tone="info">Duration: {position.interviewDuration ?? 30} minutes · AI Voice Interview</Alert>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -257,13 +227,9 @@ export function SchedulingBadge({
   if (candidate.status === "pending") {
     return (
       <>
-        <button
-          className="btn-primary"
-          style={{ fontSize: 11, padding: "5px 12px" }}
-          onClick={() => setShowInvite(true)}
-        >
-          <Send size={11} /> Send Invite
-        </button>
+        <Button size="sm" leftIcon={<Send size={13} />} onClick={() => setShowInvite(true)}>
+          Send Invite
+        </Button>
         {showInvite && <InviteModal candidate={candidate} position={position} onClose={() => setShowInvite(false)} />}
       </>
     );
@@ -278,37 +244,31 @@ export function SchedulingBadge({
     return (
       <>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ fontSize: 11, color: "#64748B" }}>
+          <div style={{ fontSize: text.xs, color: lv.textMuted }}>
             Invite sent {candidate.invitedAt ? new Date(candidate.invitedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}
           </div>
           {overdue && (
-            <div style={{ fontSize: 10, color: "#DC2626", display: "flex", alignItems: "center", gap: 4 }}>
-              <AlertCircle size={10} /> Follow up needed ({days}d)
+            <div style={{ fontSize: text.xs, fontWeight: 600, color: lv.danger, display: "flex", alignItems: "center", gap: 4 }}>
+              <AlertCircle size={12} aria-hidden="true" /> Follow up needed ({days}d)
             </div>
           )}
           {warn && (
-            <div style={{ fontSize: 10, color: "#D97706", display: "flex", alignItems: "center", gap: 4 }}>
-              <AlertTriangle size={10} /> No response in {days}d
+            <div style={{ fontSize: text.xs, fontWeight: 600, color: lv.warning, display: "flex", alignItems: "center", gap: 4 }}>
+              <AlertTriangle size={12} aria-hidden="true" /> No response in {days}d
             </div>
           )}
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: space[1], flexWrap: "wrap", marginLeft: -6 }}>
             {candidate.schedulingLink && (
-              <a href={candidate.schedulingLink} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#6D28D9", display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}>
-                <ExternalLink size={9} /> Scheduling link
+              <a href={candidate.schedulingLink} target="_blank" rel="noreferrer" className="lv-btn lv-btn--tertiary lv-btn--sm" style={{ padding: "0 6px", fontSize: text.xs }}>
+                <ExternalLink size={12} aria-hidden="true" /> Scheduling link
               </a>
             )}
-            <button
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
-              onClick={() => setShowSchedule(true)}
-            >
-              <Calendar size={9} /> Book slot
-            </button>
-            <button
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#94A3B8", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
-              onClick={() => setShowInvite(true)}
-            >
-              <RefreshCw size={9} /> Resend
-            </button>
+            <Button variant="tertiary" size="sm" style={{ padding: "0 6px", fontSize: text.xs }} leftIcon={<Calendar size={12} />} onClick={() => setShowSchedule(true)}>
+              Book slot
+            </Button>
+            <Button variant="tertiary" size="sm" style={{ padding: "0 6px", fontSize: text.xs }} leftIcon={<RefreshCw size={12} />} onClick={() => setShowInvite(true)}>
+              Resend
+            </Button>
           </div>
         </div>
         {showInvite    && <InviteModal    candidate={candidate} position={position} onClose={() => setShowInvite(false)}    />}
@@ -328,26 +288,21 @@ export function SchedulingBadge({
     return (
       <>
         {imminent && (
-          <div style={{ padding: "6px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, fontSize: 11, color: "#DC2626", display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
-            <AlertCircle size={11} /> Starting soon — candidate not joined
-            <button
-              style={{ marginLeft: "auto", background: "#EF4444", border: "none", borderRadius: 4, color: "#fff", fontSize: 10, padding: "2px 8px", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 600 }}
-              onClick={() => toast("Escalation sent")}
-            >
+          <div role="alert" style={{ padding: `6px ${space[2]}px`, background: lv.dangerSoft, border: `1px solid ${lv.dangerBorder}`, borderRadius: radius.md, fontSize: text.xs, fontWeight: 600, color: lv.danger, display: "flex", gap: 6, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+            <AlertCircle size={12} aria-hidden="true" /> Starting soon — candidate not joined
+            <Button variant="destructive" size="sm" style={{ marginLeft: "auto", height: 26, fontSize: text.xs }} onClick={() => toast("Escalation sent")}>
               Escalate
-            </button>
+            </Button>
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#4F46E5", fontFamily: "var(--font-mono)" }}>{dateStr} · {timeStr}</div>
-          <div style={{ display: "flex", gap: 8, fontSize: 10 }}>
-            <span style={{ color: "#10B981", display: "flex", alignItems: "center", gap: 3 }}><CheckCircle2 size={9} /> Scheduled</span>
-            <button
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", padding: 0 }}
-              onClick={() => { updateCandidate(candidate.id, { remindersSent: (candidate.remindersSent ?? 0) + 1 }); toast.success("Reminder sent"); }}
-            >
-              <Mail size={9} /> Send Reminder {candidate.remindersSent ? `(${candidate.remindersSent})` : ""}
-            </button>
+          <div style={{ fontSize: text.xs, fontWeight: 600, color: lv.text, fontFamily: lv.fontMono }}>{dateStr} · {timeStr}</div>
+          <div style={{ display: "flex", gap: space[2], alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: text.xs, fontWeight: 600, color: lv.success, display: "flex", alignItems: "center", gap: 3 }}><CheckCircle2 size={12} aria-hidden="true" /> Scheduled</span>
+            <Button variant="tertiary" size="sm" style={{ padding: "0 6px", fontSize: text.xs }} leftIcon={<Mail size={12} />}
+              onClick={() => { updateCandidate(candidate.id, { remindersSent: (candidate.remindersSent ?? 0) + 1 }); toast.success("Reminder sent"); }}>
+              Send Reminder {candidate.remindersSent ? `(${candidate.remindersSent})` : ""}
+            </Button>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <ReadinessIndicator label="AI Agent"  on={true}  />
@@ -361,9 +316,9 @@ export function SchedulingBadge({
   // ── State: COMPLETED ──
   if (candidate.status === "completed") {
     return (
-      <button className="btn-ghost" style={{ fontSize: 11, padding: "5px 10px" }} onClick={() => toast(`Report for ${candidate.name}`)}>
+      <Button variant="secondary" size="sm" onClick={() => toast(`Report for ${candidate.name}`)}>
         View Report
-      </button>
+      </Button>
     );
   }
 
@@ -371,9 +326,9 @@ export function SchedulingBadge({
   if (candidate.status === "no_show") {
     return (
       <div style={{ display: "flex", gap: 6 }}>
-        <button className="btn-ghost" style={{ fontSize: 11, padding: "5px 8px" }} onClick={() => setShowSchedule(true)}>
-          <Calendar size={11} /> Reschedule
-        </button>
+        <Button variant="secondary" size="sm" leftIcon={<Calendar size={13} />} onClick={() => setShowSchedule(true)}>
+          Reschedule
+        </Button>
         {showSchedule && <ScheduleModal candidate={candidate} position={position} onClose={() => setShowSchedule(false)} />}
       </div>
     );
@@ -384,8 +339,8 @@ export function SchedulingBadge({
 
 function ReadinessIndicator({ label, on }: { label: string; on: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: on ? "#10B981" : "#94A3B8" }}>
-      <div style={{ width: 6, height: 6, borderRadius: "50%", background: on ? "#10B981" : "#CBD5E1", boxShadow: on ? "0 0 4px #10B981" : "none" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: text.xs, color: on ? lv.success : lv.textMuted }}>
+      <div aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: on ? lv.success : lv.borderStrong }} />
       {label}: {on ? "Online" : "Offline"}
     </div>
   );
@@ -423,9 +378,9 @@ export function BulkInviteBar({ candidateIds }: { candidateIds: string[] }) {
   };
 
   return (
-    <button className="btn-primary" style={{ fontSize: 12 }} onClick={sendAll} disabled={loading}>
-      {loading ? "Sending…" : <><Send size={12} /> Send {targets.length} Invite{targets.length !== 1 ? "s" : ""}</>}
-    </button>
+    <Button size="sm" onClick={sendAll} loading={loading} leftIcon={<Send size={13} />}>
+      {loading ? "Sending…" : <>Send {targets.length} Invite{targets.length !== 1 ? "s" : ""}</>}
+    </Button>
   );
 }
 
@@ -435,11 +390,11 @@ export function SchedulingOverview() {
   const [filter, setFilter] = useState<string | null>(null);
 
   const buckets = [
-    { key: "pending",   label: "Pending Invite", color: "#94A3B8" },
-    { key: "invited",   label: "Invited",         color: "#F59E0B" },
-    { key: "scheduled", label: "Scheduled",        color: "#7C3AED" },
-    { key: "completed", label: "Completed",        color: "#10B981" },
-    { key: "no_show",   label: "No Show",          color: "#EF4444" },
+    { key: "pending",   label: "Pending Invite", color: lv.textMuted },
+    { key: "invited",   label: "Invited",        color: lv.warning   },
+    { key: "scheduled", label: "Scheduled",      color: lv.brand     },
+    { key: "completed", label: "Completed",      color: lv.success   },
+    { key: "no_show",   label: "No Show",        color: lv.danger    },
   ];
 
   const counts = buckets.reduce((acc, b) => {
@@ -449,32 +404,33 @@ export function SchedulingOverview() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-        Scheduling Overview
-      </h2>
-      <div style={{ display: "flex", gap: 1, background: "#E2E8F0", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+      <h2 className="lv-eyebrow">Scheduling Overview</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 1, background: lv.border, borderRadius: radius.lg, overflow: "hidden", border: `1px solid ${lv.border}` }}>
         {buckets.map((b) => (
           <button
             key={b.key}
+            type="button"
+            aria-pressed={filter === b.key}
+            className="lv-stat-tab"
             onClick={() => setFilter(filter === b.key ? null : b.key)}
             style={{
-              flex: 1, padding: "14px 8px", background: filter === b.key ? "#fff" : "#F8FAFC",
-              border: "none", cursor: "pointer", textAlign: "center", transition: "background 0.15s",
-              fontFamily: "var(--font-sans)",
+              padding: `${space[3]}px ${space[2]}px`, background: filter === b.key ? lv.surface : lv.surfaceSunken,
+              border: "none", cursor: "pointer", textAlign: "center", transition: `background ${lv.dur}`,
+              fontFamily: lv.fontSans,
             }}
           >
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: filter === b.key ? b.color : "#4F46E5", letterSpacing: "-0.02em" }}>
+            <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, color: filter === b.key ? b.color : lv.text, letterSpacing: "-0.02em" }}>
               {counts[b.key]}
             </div>
-            <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3, fontWeight: 500 }}>{b.label}</div>
+            <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, fontWeight: 500 }}>{b.label}</div>
             <div style={{ height: 3, background: filter === b.key ? b.color : "transparent", marginTop: 8, borderRadius: 2, transition: "background 0.2s" }} />
           </button>
         ))}
       </div>
       {filter && (
-        <div style={{ fontSize: 12, color: "#94A3B8", display: "flex", alignItems: "center", gap: 6 }}>
-          Filtering by: <strong style={{ color: "#4F46E5" }}>{buckets.find((b) => b.key === filter)?.label}</strong>
-          <button onClick={() => setFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 0 }}><X size={12} /></button>
+        <div style={{ fontSize: text.xs, color: lv.textMuted, display: "flex", alignItems: "center", gap: 6 }}>
+          Filtering by: <strong style={{ color: lv.text }}>{buckets.find((b) => b.key === filter)?.label}</strong>
+          <Button variant="ghost" size="sm" iconOnly aria-label="Clear filter" onClick={() => setFilter(null)}><X size={14} /></Button>
         </div>
       )}
     </div>
@@ -491,22 +447,22 @@ export function TodayInterviews() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", display: "flex", alignItems: "center", gap: 6 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B981" }} />
+      <h2 className="lv-eyebrow" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: lv.success }} />
         Today ({todayInterviews.length})
       </h2>
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: space[3], flexWrap: "wrap" }}>
         {todayInterviews.map((i) => {
           const dt      = new Date(i.scheduledAt);
           const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
           return (
-            <div key={i.id} style={{ padding: "12px 16px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, minWidth: 200 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5" }}>{i.candidateName}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{i.positionTitle}</div>
-              <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#7C3AED", marginTop: 6 }}>{timeStr} · {i.duration}m</div>
-              <button className="btn-primary" style={{ fontSize: 11, padding: "5px 10px", marginTop: 8 }} onClick={() => toast(`Monitoring ${i.candidateName}`)}>
+            <div key={i.id} className="lv-card" style={{ padding: `${space[3]}px ${space[4]}px`, minWidth: 200 }}>
+              <div style={{ fontSize: text.sm, fontWeight: 700, color: lv.text }}>{i.candidateName}</div>
+              <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{i.positionTitle}</div>
+              <div style={{ fontSize: text.xs, fontFamily: lv.fontMono, color: lv.brandText, marginTop: 6 }}>{timeStr} · {i.duration}m</div>
+              <Button size="sm" style={{ marginTop: space[2] }} onClick={() => toast(`Monitoring ${i.candidateName}`)}>
                 Monitor
-              </button>
+              </Button>
             </div>
           );
         })}
