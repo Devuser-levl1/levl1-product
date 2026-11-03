@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
-import { Field as FormField, PageHeader } from "@/components/screen/ui";
+import { Field as FormField, PageHeader, Alert } from "@/components/screen/ui";
 
 // Design-System Pass 3 (group 6): local helpers render the canonical Screen
 // components; settings state, saves and team/billing calls are unchanged.
@@ -112,13 +112,16 @@ export default function SettingsPage() {
   const [previewLoading, setPreviewLoading] = useState<string | null>(null);
   const [savingVoice,    setSavingVoice]    = useState(false);
   const [accountType,    setAccountType]    = useState<AccountType | null>(null);
+  // Pass 5: surface a failed profile load — otherwise the form shows defaults
+  // and "Save Profile" would overwrite the real values with them.
+  const [settingsLoadFailed, setSettingsLoadFailed] = useState(false);
 
   // Load agency settings on mount
   useEffect(() => {
     fetch("/api/agency/settings")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (!data) return
+        if (!data) { setSettingsLoadFailed(true); return }
         if (data.name)        setAgencyName(data.name)
         if (data.website)     setAgencyWebsite(data.website)
         if (data.senderName)  setSenderName(data.senderName)
@@ -128,7 +131,7 @@ export default function SettingsPage() {
         if (data.brandColor) setBrandColor(data.brandColor)
         if (isAccountType(data.accountType)) setAccountType(data.accountType)
       })
-      .catch(() => {});
+      .catch(() => setSettingsLoadFailed(true));
   }, []);
 
   // Load current agency voice on mount
@@ -394,6 +397,12 @@ export default function SettingsPage() {
 
       {/* Header */}
       <PageHeader title="Settings" description="Configure your agency profile, notifications, and interview defaults." />
+      {settingsLoadFailed && (
+        <Alert tone="warning" title="Couldn't load your saved settings"
+          action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => window.location.reload()}>Reload</button>}>
+          The fields below may show defaults. Reload before saving so you don&apos;t overwrite your profile.
+        </Alert>
+      )}
 
       {/* Agency Profile */}
       <Section icon={Settings} title="Agency Profile" description="Your agency's public identity on the platform">

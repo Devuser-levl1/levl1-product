@@ -10,3 +10,4 @@ export { Badge, Alert, EmptyState, Spinner, Skeleton, LoadingBlock, type Tone } 
 export { Modal, Drawer } from './Overlay'
 export { Tabs, TabPanel, type TabItem } from './Tabs'
 export { Table, type Column } from './Table'
+export { useConfirm, type ConfirmOptions } from './Confirm'

@@ -33,7 +33,7 @@ export function BottomNav() {
               background:     'none',
               cursor:         'pointer',
               padding:        '8px 4px',
-              color:          active ? '#4F46E5' : '#94A3B8',
+              color:          active ? 'var(--lv-brand)' : 'var(--lv-text-muted)',
               transition:     'color 0.15s',
               fontFamily:     'var(--font-sans)',
               WebkitTapHighlightColor: 'transparent',
@@ -55,7 +55,7 @@ export function BottomNav() {
                 top:          0,
                 width:        '100%',
                 height:       2,
-                background:   '#4F46E5',
+                background:   'var(--lv-brand)',
                 borderRadius: '0 0 2px 2px',
               }} />
             )}

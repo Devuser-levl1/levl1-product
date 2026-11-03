@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useConfirm, Alert } from '@/components/screen/ui'
 
 // Interviews app — "Integrations". Connect an external ATS (or HirePilot),
 // fetch jobs + candidates into Interviews, run a sync, see last-synced status.
@@ -21,9 +22,11 @@ export default function IntegrationsPage() {
   const [busy, setBusy] = useState('')
   const [err, setErr] = useState('')
   const [summary, setSummary] = useState<Record<string, SyncSummary>>({})
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading')
+  const [confirm, confirmDialog] = useConfirm()
 
   const load = useCallback(() => {
-    fetch('/api/interviews/integrations').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.providers) setProviders(d.providers) }).catch(() => {})
+    fetch('/api/interviews/integrations').then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then((d) => { if (d?.providers) setProviders(d.providers); setLoadState('ok') }).catch(() => setLoadState('error'))
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -37,7 +40,7 @@ export default function IntegrationsPage() {
     } finally { setBusy('') }
   }
   async function disconnect(id: string) {
-    if (!confirm('Disconnect this integration? Imported jobs/candidates stay.')) return
+    if (!(await confirm({ title: 'Disconnect this integration?', description: 'Imported jobs and candidates stay in Levl1. You can reconnect any time.', confirmLabel: 'Disconnect', destructive: true }))) return
     await fetch(`/api/interviews/integrations/${id}`, { method: 'DELETE' }); load()
   }
   async function sync(p: Provider) {
@@ -55,8 +58,11 @@ export default function IntegrationsPage() {
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>Integrations</h1>
       <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: '0 0 24px' }}>Connect your ATS (or HirePilot) to pull jobs and candidates into Interviews, then generate questions and run screening interviews.</p>
-      {err && <div style={{ ...card, borderColor: 'var(--lv-danger-border)', color: 'var(--lv-danger)', fontSize: 13 }}>{err}</div>}
+      {err && <Alert tone="danger" style={{ marginBottom: 14 }}>{err}</Alert>}
 
+      {confirmDialog}
+      {loadState === 'loading' && <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}><span className="lv-spinner" aria-hidden="true" style={{ color: 'var(--lv-brand)' }} /> Loading…</div>}
+      {loadState === 'error' && <Alert tone="danger" title="Couldn't load integrations" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => { setLoadState('loading'); load() }}>Retry</button>}>Check your connection and try again.</Alert>}
       {providers.map((p) => (
         <div key={p.provider} style={card}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

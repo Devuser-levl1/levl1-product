@@ -81,10 +81,10 @@ export function FeedbackWidget() {
       {open && (
         <div
           style={{
-            background:   '#fff',
-            border:       '1px solid #E2E8F0',
+            background:   'var(--lv-surface)',
+            border:       '1px solid var(--lv-border)',
             borderRadius: 14,
-            boxShadow:    '0 8px 40px rgba(79,70,229,0.14), 0 2px 8px rgba(0,0,0,0.08)',
+            boxShadow:    '0 8px 40px color-mix(in srgb, var(--lv-brand) 14%, transparent), 0 2px 8px rgba(0,0,0,0.08)',
             width:        296,
             overflow:     'hidden',
             animation:    'feedback-pop 0.18s cubic-bezier(0.34,1.36,0.64,1)',
@@ -97,21 +97,21 @@ export function FeedbackWidget() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding:    '14px 16px 12px',
-              borderBottom: '1px solid #F1F5F9',
+              borderBottom: '1px solid var(--lv-surface-muted)',
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', fontFamily: 'var(--font-display)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-brand)', fontFamily: 'var(--font-display)' }}>
               Share your feedback
             </span>
             <button
               onClick={() => setOpen(false)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#94A3B8', display: 'flex', padding: 2, borderRadius: 4,
+                color: 'var(--lv-text-muted)', display: 'flex', padding: 2, borderRadius: 4,
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#475569' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#94A3B8' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--lv-text-body)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--lv-text-muted)' }}
             >
               <X size={15} />
             </button>
@@ -129,14 +129,14 @@ export function FeedbackWidget() {
               }}
             >
               <div style={{ fontSize: 28 }}>🙏</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>Thank you for your feedback!</div>
-              <div style={{ fontSize: 12, color: '#94A3B8' }}>It helps us improve Levl1 for you.</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--lv-brand)' }}>Thank you for your feedback!</div>
+              <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>It helps us improve Levl1 for you.</div>
             </div>
           ) : (
             <div style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Star rating */}
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', marginBottom: 8 }}>
                   How is your experience?
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -148,14 +148,14 @@ export function FeedbackWidget() {
                       onMouseLeave={() => setHovered(0)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-                        color: n <= stars ? '#F59E0B' : '#E2E8F0',
+                        color: n <= stars ? 'var(--lv-warning)' : 'var(--lv-border)',
                         transition: 'color 0.12s, transform 0.12s',
                         transform: n <= stars ? 'scale(1.18)' : 'scale(1)',
                       }}
                     >
                       <Star
                         size={26}
-                        fill={n <= stars ? '#F59E0B' : 'none'}
+                        fill={n <= stars ? 'var(--lv-warning)' : 'none'}
                         strokeWidth={n <= stars ? 0 : 1.5}
                       />
                     </button>
@@ -165,8 +165,8 @@ export function FeedbackWidget() {
 
               {/* Comment */}
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
-                  Tell us more <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional)</span>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', marginBottom: 6 }}>
+                  Tell us more <span style={{ color: 'var(--lv-text-muted)', fontWeight: 400 }}>(optional)</span>
                 </div>
                 <textarea
                   value={comment}
@@ -175,14 +175,14 @@ export function FeedbackWidget() {
                   rows={3}
                   style={{
                     width: '100%', padding: '8px 10px',
-                    border: '1px solid #E2E8F0', borderRadius: 8,
-                    fontSize: 13, color: '#4F46E5', fontFamily: 'var(--font-sans)',
-                    resize: 'none', outline: 'none', background: '#F8FAFC',
+                    border: '1px solid var(--lv-border)', borderRadius: 8,
+                    fontSize: 13, color: 'var(--lv-brand)', fontFamily: 'var(--font-sans)',
+                    resize: 'none', outline: 'none', background: 'var(--lv-surface-sunken)',
                     boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#7C3AED' }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
                 />
               </div>
 
@@ -192,17 +192,17 @@ export function FeedbackWidget() {
                 style={{
                   width: '100%', padding: '10px 0',
                   background: rating
-                    ? 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)'
-                    : '#E2E8F0',
+                    ? 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)'
+                    : 'var(--lv-border)',
                   border:       'none',
                   borderRadius: 8,
-                  color:        rating ? '#fff' : '#94A3B8',
+                  color:        rating ? '#fff' : 'var(--lv-text-muted)',
                   fontSize:     13,
                   fontWeight:   600,
                   cursor:       rating ? 'pointer' : 'not-allowed',
                   fontFamily:   'var(--font-sans)',
                   transition:   'all 0.15s',
-                  boxShadow:    rating ? '0 2px 8px rgba(124,58,237,0.22)' : 'none',
+                  boxShadow:    rating ? '0 2px 8px color-mix(in srgb, var(--lv-accent) 22%, transparent)' : 'none',
                 }}
               >
                 {sending ? 'Sending…' : 'Submit Feedback'}
@@ -220,7 +220,7 @@ export function FeedbackWidget() {
           alignItems:   'center',
           gap:          8,
           padding:      '10px 16px',
-          background:   'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+          background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
           border:       'none',
           borderRadius: 100,
           color:        '#fff',
@@ -228,15 +228,15 @@ export function FeedbackWidget() {
           fontWeight:   600,
           cursor:       'pointer',
           fontFamily:   'var(--font-sans)',
-          boxShadow:    '0 4px 18px rgba(124,58,237,0.35)',
+          boxShadow:    '0 4px 18px color-mix(in srgb, var(--lv-accent) 35%, transparent)',
           transition:   'box-shadow 0.18s, transform 0.18s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 6px 24px rgba(124,58,237,0.50)'
+          e.currentTarget.style.boxShadow = '0 6px 24px color-mix(in srgb, var(--lv-accent) 50%, transparent)'
           e.currentTarget.style.transform = 'translateY(-1px)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 4px 18px rgba(124,58,237,0.35)'
+          e.currentTarget.style.boxShadow = '0 4px 18px color-mix(in srgb, var(--lv-accent) 35%, transparent)'
           e.currentTarget.style.transform = 'translateY(0)'
         }}
       >

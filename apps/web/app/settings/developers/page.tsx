@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useConfirm, Alert } from '@/components/screen/ui'
 
 // Interviews-side developer settings — API keys + webhooks for external ATS
 // integrations, operating on the Interviews-owned models (Phase 1).
@@ -25,13 +26,16 @@ function Keys() {
   const [keys, setKeys] = useState<Key[]>([])
   const [name, setName] = useState('')
   const [raw, setRaw] = useState<string | null>(null)
-  const load = useCallback(() => { fetch('/api/interviews/api-keys').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setKeys(d)).catch(() => {}) }, [])
+  // Pass 5: distinguish loading / failed-to-load from "no keys".
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading')
+  const [confirm, confirmDialog] = useConfirm()
+  const load = useCallback(() => { fetch('/api/interviews/api-keys').then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then((d) => { if (Array.isArray(d)) setKeys(d); setLoadState('ok') }).catch(() => setLoadState('error')) }, [])
   useEffect(() => { load() }, [load])
   async function create() {
     const res = await fetch('/api/interviews/api-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
     const d = await res.json(); if (res.ok) { setRaw(d.key); setName(''); load() }
   }
-  async function revoke(id: string) { if (!confirm('Revoke this key?')) return; await fetch(`/api/interviews/api-keys/${id}`, { method: 'DELETE' }); load() }
+  async function revoke(id: string) { if (!(await confirm({ title: 'Revoke this key?', description: 'Integrations using it stop working immediately. This cannot be undone.', confirmLabel: 'Revoke key', destructive: true }))) return; await fetch(`/api/interviews/api-keys/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 12 }}>API keys</div>
@@ -49,7 +53,8 @@ function Keys() {
         <input className="lv-input" style={{ flex: 1 }} aria-label="API key label" placeholder="Key label (e.g. Bullhorn prod)" value={name} onChange={(e) => setName(e.target.value)} />
         <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={create}>+ Generate API key</button>
       </div>
-      {keys.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>No API keys yet.</div> : keys.map((k) => (
+      {confirmDialog}
+      {loadState === 'loading' ? <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}><span className="lv-spinner" aria-hidden="true" style={{ color: 'var(--lv-brand)' }} /> Loading…</div> : loadState === 'error' ? <Alert tone="danger" title="Couldn't load API keys" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => { setLoadState('loading'); load() }}>Retry</button>}>Check your connection and try again.</Alert> : keys.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No API keys yet — generate one above to authenticate the public API.</div> : keys.map((k) => (
         <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8, opacity: k.revokedAt ? 0.55 : 1 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)' }}>{k.name} <code style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{k.prefix}…</code></div>
@@ -67,14 +72,16 @@ function Webhooks() {
   const [url, setUrl] = useState('')
   const [events, setEvents] = useState<string[]>([...EVENTS])
   const [err, setErr] = useState('')
-  const load = useCallback(() => { fetch('/api/interviews/webhooks').then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setEps(d)).catch(() => {}) }, [])
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading')
+  const [confirm, confirmDialog] = useConfirm()
+  const load = useCallback(() => { fetch('/api/interviews/webhooks').then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then((d) => { if (Array.isArray(d)) setEps(d); setLoadState('ok') }).catch(() => setLoadState('error')) }, [])
   useEffect(() => { load() }, [load])
   async function add() {
     setErr(''); const res = await fetch('/api/interviews/webhooks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, events }) })
     const d = await res.json(); if (res.ok) { setUrl(''); load() } else setErr(d.error ?? 'Failed')
   }
   async function toggle(ep: Endpoint) { await fetch(`/api/interviews/webhooks/${ep.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !ep.active }) }); load() }
-  async function remove(id: string) { if (!confirm('Delete endpoint?')) return; await fetch(`/api/interviews/webhooks/${id}`, { method: 'DELETE' }); load() }
+  async function remove(id: string) { if (!(await confirm({ title: 'Delete this endpoint?', description: 'Levl1 stops sending events to it. This cannot be undone.', confirmLabel: 'Delete endpoint', destructive: true }))) return; await fetch(`/api/interviews/webhooks/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 4 }}>Webhook endpoints</div>
@@ -87,7 +94,8 @@ function Webhooks() {
         {err && <div style={{ color: 'var(--lv-danger)', fontSize: 13, marginBottom: 8 }}>{err}</div>}
         <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={add} disabled={!url}>+ Add endpoint</button>
       </div>
-      {eps.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>No endpoints yet.</div> : eps.map((ep) => (
+      {confirmDialog}
+      {loadState === 'loading' ? <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}><span className="lv-spinner" aria-hidden="true" style={{ color: 'var(--lv-brand)' }} /> Loading…</div> : loadState === 'error' ? <Alert tone="danger" title="Couldn't load webhook endpoints" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => { setLoadState('loading'); load() }}>Retry</button>}>Check your connection and try again.</Alert> : eps.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No endpoints yet — add one above to receive interview results.</div> : eps.map((ep) => (
         <div key={ep.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>

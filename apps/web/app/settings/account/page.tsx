@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { Alert, LoadingBlock } from '@/components/screen/ui'
 
 // Levl1 account — one login, both products. Shows entitlements and offers the
 // one-time "connect your other Levl1 product" link (verified by email match).
@@ -18,9 +19,12 @@ export default function AccountPage() {
   const [me, setMe] = useState<Me | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [msgTone, setMsgTone] = useState<'success' | 'danger'>('success')
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const load = useCallback(() => {
-    fetch('/api/levl/me').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.email) setMe(d) }).catch(() => {})
+    setLoadFailed(false)
+    fetch('/api/levl/me').then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.email) setMe(d); else setLoadFailed(true) }).catch(() => setLoadFailed(true))
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -29,13 +33,19 @@ export default function AccountPage() {
     try {
       const res = await fetch('/api/levl/link', { method: 'POST' })
       const d = await res.json()
-      if (!res.ok) { setMsg(d.error ?? 'Could not link'); return }
-      setMsg('Connected. Both products are now available with this login.')
+      if (!res.ok) { setMsgTone('danger'); setMsg(d.error ?? 'Could not link'); return }
+      setMsgTone('success'); setMsg('Connected. Both products are now available with this login.')
       load()
     } finally { setBusy(false) }
   }
 
-  if (!me) return <div style={{ maxWidth: 640, margin: '0 auto', padding: 40, color: 'var(--lv-text-body)' }}>Loading…</div>
+  if (!me) return (
+    <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 24px' }}>
+      {loadFailed
+        ? <Alert tone="danger" title="Couldn't load your account" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={load}>Retry</button>}>Check your connection and try again.</Alert>
+        : <LoadingBlock label="Loading your account…" />}
+    </div>
+  )
 
   // The "other" product is linkable when an identity exists for this email but
   // isn't yet entitled here.
@@ -68,7 +78,7 @@ export default function AccountPage() {
         </div>
       )}
 
-      {msg && <div style={{ ...card, borderColor: 'var(--lv-success-border)', background: 'var(--lv-success-soft)', color: 'var(--lv-success)', fontSize: 13 }}>{msg}</div>}
+      {msg && <Alert tone={msgTone}>{msg}</Alert>}
     </div>
   )
 }
