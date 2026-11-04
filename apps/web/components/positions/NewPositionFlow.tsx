@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
@@ -256,6 +257,7 @@ function StepHeading({ title, desc }: { title: string; desc: React.ReactNode }) 
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   const { addPosition } = useAppStore();
   const [step, setStep] = useState(0);
 
@@ -645,6 +647,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       }
       if (posRes.status === 401) { window.location.assign("/interviews/login?expired=1"); throw new Error("Your session has expired — please sign in again."); } if (!posRes.ok) { const err = await posRes.json(); throw new Error(err.error ?? "Failed to create position"); }
       const position = await posRes.json();
+      setSavedPositionId(position.id);
       await fetch(`/api/positions/${position.id}/questions`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1274,7 +1277,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               </dl>
               <div style={{ display: "flex", gap: space[3], justifyContent: "center", flexWrap: "wrap" }}>
                 <Button variant="secondary" onClick={onClose}>Back to Positions</Button>
-                <Button leftIcon={<Plus size={16} />} onClick={() => { toast.success("Candidate upload coming soon"); onClose(); }}>Upload Candidates</Button>
+                <Button leftIcon={<Plus size={16} />} disabled={!savedPositionId}
+                  onClick={() => { if (!savedPositionId) return; onClose(); router.push(`/positions/${savedPositionId}?upload=1`); }}>Upload Candidates</Button>
               </div>
             </div>
           )}

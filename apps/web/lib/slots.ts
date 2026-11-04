@@ -1,41 +1,18 @@
 /**
- * Interview slot generation — next weekdays at fixed IST hours.
+ * Interview slot helpers (legacy entry points). Generation is config-driven —
+ * see lib/screen/scheduling/config.ts (SCREEN_SLOT_* / SCREEN_SLOT_LEAD_MIN).
  *
  * Slots are absolute instants (Date). Labels are rendered in Asia/Kolkata so
  * the candidate always sees IST regardless of server timezone (Render = UTC).
  */
 
-const IST_HOURS = [10, 11, 14, 15, 16] // 10am, 11am, 2pm, 3pm, 4pm IST
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+import { generateSlots } from '@/lib/screen/scheduling/slots'
 
+// Delegates to the config-driven generator (lib/screen/scheduling) so every
+// surface offers the same slots: today onward, past/lead-time excluded. The old
+// fixed-hour version started TOMORROW, which pushed the first slot ~2 days out.
 export function generateAvailableSlots(count = 5): Date[] {
-  const slots: Date[] = []
-  const now = new Date()
-
-  for (let day = 1; day <= 21 && slots.length < count; day++) {
-    const base = new Date(now.getTime())
-    base.setUTCDate(now.getUTCDate() + day)
-
-    // Compute the calendar date *in IST* for this day
-    const ist = new Date(base.getTime() + IST_OFFSET_MS)
-    const weekday = ist.getUTCDay()
-    if (weekday === 0 || weekday === 6) continue // skip Sat/Sun (IST)
-
-    const y = ist.getUTCFullYear()
-    const m = ist.getUTCMonth()
-    const d = ist.getUTCDate()
-
-    for (const hour of IST_HOURS) {
-      if (slots.length >= count) break
-      // IST hour → UTC instant
-      const utcMs = Date.UTC(y, m, d, hour, 0, 0) - IST_OFFSET_MS
-      const slot = new Date(utcMs)
-      if (slot.getTime() <= now.getTime()) continue
-      slots.push(slot)
-    }
-  }
-
-  return slots
+  return generateSlots().slice(0, count)
 }
 
 export function formatSlotLabel(date: Date): string {

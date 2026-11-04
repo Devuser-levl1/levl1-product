@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
@@ -285,6 +285,25 @@ export default function PositionDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
+  // Silent re-read (no full-page spinner) — after candidates are added, the list
+  // must reflect the write immediately (it renders position.candidates).
+  const refreshPosition = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/positions/${id}`, { cache: 'no-store' })
+      if (r.ok) setPosition(await r.json())
+    } catch { /* keep current view */ }
+  }, [id])
+
+  // Deep links: ?tab=questions|candidates|reports|overview and ?upload=1 (open the
+  // upload panel for THIS position — used right after creating a position).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const t = q.get('tab')
+    if (t === 'overview' || t === 'questions' || t === 'candidates' || t === 'reports') setTab(t)
+    if (q.get('upload') === '1') { setTab('candidates'); setShowUpload(true) }
+    if (t || q.get('upload')) window.history.replaceState(null, '', window.location.pathname)
+  }, [])
+
   // Fetch reports when tab opened
   useEffect(() => {
     if (tab !== 'reports' || !id) return
@@ -432,7 +451,7 @@ export default function PositionDetailPage() {
     <div style={{ minHeight: '100vh', background: lv.bg, fontFamily: lv.fontSans }}>
 
       {/* Fix 5: upload modal pre-set to this position */}
-      {showUpload && <CandidateUploadFlow onClose={() => setShowUpload(false)} presetPositionId={id} />}
+      {showUpload && <CandidateUploadFlow onClose={() => setShowUpload(false)} presetPositionId={id} onAdded={() => { setTab('candidates'); void refreshPosition() }} />}
 
       {/* Fix 6: delete candidate confirmation */}
       <Modal open={!!deleteTarget} onClose={closeDelete} dismissible={!deleting} size="sm" title="Delete candidate"

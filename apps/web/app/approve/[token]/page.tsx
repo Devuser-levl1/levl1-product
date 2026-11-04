@@ -363,7 +363,7 @@ export default function ApprovalPage() {
             {data.positionTitle} · {data.company}
           </p>
           <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 16px', lineHeight: 1.6 }}>
-            You have been asked to review and {isTech ? 'approve the <strong>technical, scenario, and whiteboard</strong> questions' : 'approve the <strong>behavioral and EQ</strong> questions'} for this position.
+            You have been asked to review and approve the {isTech ? <strong>technical, scenario, and whiteboard</strong> : <strong>behavioral and EQ</strong>} questions for this position.
             You can approve, edit, or remove individual questions before submitting your review.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

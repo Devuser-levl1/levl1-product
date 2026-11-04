@@ -76,7 +76,12 @@ const CELL: React.CSSProperties = { height: 32, fontSize: text.xs, padding: "0 8
 const COLS = "32px 1.8fr 1.3fr 0.75fr 0.9fr 1.1fr 68px 1.4fr 60px";
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-export default function CandidateUploadFlow({ onClose, presetPositionId }: { onClose: () => void; presetPositionId?: string }) {
+export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded }: {
+  onClose: () => void
+  presetPositionId?: string
+  /** Called after candidates are saved, so a parent that renders its own list (e.g. the position page) can re-read it. */
+  onAdded?: (added: Candidate[]) => void
+}) {
   const { positions, candidates, addCandidates } = useAppStore();
   const activePositions = positions.filter((p) => p.status === "active");
   const defaultPositionId = presetPositionId ?? activePositions[0]?.id ?? "";
@@ -351,6 +356,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId }: { onC
       });
 
       addCandidates(newCandidates);
+      onAdded?.(newCandidates);
       toast.success(`${newCandidates.length} candidate${newCandidates.length !== 1 ? "s" : ""} saved`);
       onClose();
     } catch (err: unknown) {

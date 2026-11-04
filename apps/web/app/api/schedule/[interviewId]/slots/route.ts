@@ -13,5 +13,5 @@ export async function GET(_req: NextRequest, { params }: { params: { interviewId
   if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
   const booked = await bookedStartIso(interview.positionId)
   const slots = availableSlots(booked).slice(0, 40).map((s) => s.toISOString())
-  return NextResponse.json({ slots, timezone: SLOT_CONFIG.timezone, consentGiven: interview.consentGiven })
+  return NextResponse.json({ slots, timezone: SLOT_CONFIG.timezone, consentGiven: interview.consentGiven, instantStart: SLOT_CONFIG.instantStart, leadMinutes: SLOT_CONFIG.leadMinutes })
 }

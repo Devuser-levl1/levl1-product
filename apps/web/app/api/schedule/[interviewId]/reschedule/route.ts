@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { earliestSlotStart } from '@/lib/screen/scheduling/config'
 import { prisma } from '@/lib/prisma'
 import { bookSlot } from '@/lib/screen/scheduling/booking'
 import { sendBookingEmail } from '@/lib/screen/scheduling/emails'
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
     if (interview.status === 'completed') return NextResponse.json({ error: 'This interview is already completed' }, { status: 409 })
     if (!interview.consentGiven) return NextResponse.json({ error: 'Please acknowledge the consent notice first.', needsConsent: true }, { status: 403 })
 
+    // Lead-time floor (config, default 0 = today's remaining slots are bookable).
+    if (scheduledAt.getTime() < earliestSlotStart().getTime() - 120_000) {
+      return NextResponse.json({ error: 'That time has already passed — please pick a later slot.', reason: 'too_soon' }, { status: 400 })
+    }
     const booked = await bookSlot(interview.id, interview.positionId, interview.candidateId, scheduledAt, interview.duration)
     if (!booked.ok) return NextResponse.json({ error: booked.reason === 'taken' ? 'That slot was just taken — please pick another.' : 'Could not reschedule.', reason: booked.reason }, { status: booked.reason === 'taken' ? 409 : 500 })
 

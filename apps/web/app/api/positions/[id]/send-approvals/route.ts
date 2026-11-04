@@ -6,6 +6,28 @@ import { appUrl } from '@/lib/screen/app-url'
 
 export const dynamic = 'force-dynamic'
 
+type ApproverType = 'tech_lead' | 'hr'
+
+// Re-sending must NOT invalidate links already in someone's inbox (it used to
+// deleteMany pending tokens and mint new ones, so every earlier "Review
+// questions" email opened "Invalid approval link"). Reuse a live token for the
+// same recipient (extending its expiry); skip approvers who already approved;
+// only retire tokens whose recipient changed or that expired.
+async function issueToken(positionId: string, type: ApproverType, email: string, expires: Date):
+  Promise<{ token: string; status: 'reused' | 'new' } | { status: 'already_approved' }> {
+  const latest = await prisma.approvalToken.findFirst({ where: { positionId, type }, orderBy: { createdAt: 'desc' } })
+  const sameRecipient = !!latest && latest.email.trim().toLowerCase() === email.trim().toLowerCase()
+  if (latest && sameRecipient && latest.status === 'approved') return { status: 'already_approved' }
+  if (latest && sameRecipient && latest.status === 'pending' && latest.expiresAt.getTime() > Date.now()) {
+    await prisma.approvalToken.update({ where: { id: latest.id }, data: { expiresAt: expires } })
+    return { token: latest.token, status: 'reused' }
+  }
+  // Recipient changed, link expired, or changes were requested → retire stale pending links, issue a fresh one.
+  await prisma.approvalToken.deleteMany({ where: { positionId, type, status: 'pending' } })
+  const created = await prisma.approvalToken.create({ data: { positionId, type, email, expiresAt: expires } })
+  return { token: created.token, status: 'new' }
+}
+
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = getSessionFromRequest(req)
@@ -31,17 +53,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const sent:   string[] = []
     const failed: string[] = []
+    const alreadyApproved: string[] = []
 
     // ── Tech lead — independent try/catch ────────────────────────────
     try {
       if (position.techLeadEmail) {
-        await prisma.approvalToken.deleteMany({
-          where: { positionId: position.id, type: 'tech_lead', status: 'pending' },
-        })
-        const techToken = await prisma.approvalToken.create({
-          data: { positionId: position.id, type: 'tech_lead', email: position.techLeadEmail, expiresAt: expires },
-        })
-        if (process.env.RESEND_API_KEY) {
+        const techToken = await issueToken(position.id, 'tech_lead', position.techLeadEmail, expires)
+        if (techToken.status === 'already_approved') { alreadyApproved.push('tech_lead') }
+        else if (process.env.RESEND_API_KEY) {
           await sendEmail({
             to:      position.techLeadEmail,
             subject: `Action Required: Review interview questions for ${position.title}`,
@@ -49,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           })
           console.log('[send-approvals] Tech lead email sent to:', position.techLeadEmail)
         }
-        sent.push('tech_lead')
+        if (techToken.status !== 'already_approved') sent.push('tech_lead')
       } else {
         console.warn('[send-approvals] No tech lead email on position')
       }
@@ -62,13 +81,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // ── HR — independent try/catch ────────────────────────────────────
     try {
       if (position.hrEmail) {
-        await prisma.approvalToken.deleteMany({
-          where: { positionId: position.id, type: 'hr', status: 'pending' },
-        })
-        const hrToken = await prisma.approvalToken.create({
-          data: { positionId: position.id, type: 'hr', email: position.hrEmail, expiresAt: expires },
-        })
-        if (process.env.RESEND_API_KEY) {
+        const hrToken = await issueToken(position.id, 'hr', position.hrEmail, expires)
+        if (hrToken.status === 'already_approved') { alreadyApproved.push('hr') }
+        else if (process.env.RESEND_API_KEY) {
           await sendEmail({
             to:      position.hrEmail,
             subject: `Action Required: Review interview questions for ${position.title}`,
@@ -76,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           })
           console.log('[send-approvals] HR email sent to:', position.hrEmail)
         }
-        sent.push('hr')
+        if (hrToken.status !== 'already_approved') sent.push('hr')
       } else {
         console.warn('[send-approvals] No HR email on position')
       }
@@ -86,12 +101,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       failed.push('hr')
     }
 
-    await prisma.position.update({ where: { id: position.id }, data: { status: 'pending_approval' } })
+    // Only (re)enter pending_approval when an approval is actually outstanding —
+    // never demote an active position because someone pressed "Resend".
+    if (sent.length > 0 && position.status !== 'active') {
+      await prisma.position.update({ where: { id: position.id }, data: { status: 'pending_approval' } })
+    }
 
     return NextResponse.json({
       success: true,
       sent,
       failed,
+      alreadyApproved,
       emailsConfigured: !!process.env.RESEND_API_KEY,
       warning: !process.env.RESEND_API_KEY ? 'RESEND_API_KEY not configured — tokens created but emails not sent' : undefined,
     })

@@ -1,4 +1,4 @@
-import { SLOT_CONFIG, SlotConfig } from './config'
+import { SLOT_CONFIG, SlotConfig, earliestSlotStart } from './config'
 
 // ── Config-driven fixed daily slot generation (Screen-scoped) ──────────────
 // Slots are absolute UTC instants; wall-clock hours are interpreted in the
@@ -31,12 +31,13 @@ function tzDateParts(from: Date, daysAhead: number, tz: string) {
 // All bookable slot instants within the horizon (future-only), per config.
 export function generateSlots(cfg: SlotConfig = SLOT_CONFIG, from: Date = new Date()): Date[] {
   const out: Date[] = []
+  const earliest = earliestSlotStart(cfg, from).getTime()   // today included; past + lead excluded
   for (let day = 0; day <= cfg.horizonDays; day++) {
     const { y, m, d, weekday } = tzDateParts(from, day, cfg.timezone)
     if (!cfg.workingDays.includes(weekday)) continue
     for (let hh = cfg.startHour * 60; hh < cfg.endHour * 60; hh += cfg.blockMinutes) {
       const slot = zonedToUtc(y, m, d, Math.floor(hh / 60), hh % 60, cfg.timezone)
-      if (slot.getTime() > from.getTime() + 60_000) out.push(slot) // future-only, small buffer
+      if (slot.getTime() >= earliest) out.push(slot)
     }
   }
   return out.sort((a, b) => a.getTime() - b.getTime())

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { bookSlot } from '@/lib/screen/scheduling/booking'
 import { sendBookingEmail } from '@/lib/screen/scheduling/emails'
 import { appUrl } from '@/lib/screen/app-url'
+import { earliestSlotStart } from '@/lib/screen/scheduling/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
     if (interview.status === 'completed') return NextResponse.json({ error: 'This interview has already been completed' }, { status: 409 })
     // Consent soft-gate: must be acknowledged before a slot can be confirmed.
     if (!interview.consentGiven) return NextResponse.json({ error: 'Please acknowledge the consent notice before booking.', needsConsent: true }, { status: 403 })
+    // Lead-time floor (config, default 0 = today's remaining slots are bookable).
+    if (scheduledAt.getTime() < earliestSlotStart().getTime() - 120_000) {
+      return NextResponse.json({ error: 'That time has already passed — please pick a later slot.', reason: 'too_soon' }, { status: 400 })
+    }
 
     // Atomic booking — fails cleanly if the slot was just taken (no FK/500).
     const booked = await bookSlot(interview.id, interview.positionId, interview.candidateId, scheduledAt, interview.duration)
@@ -50,12 +55,13 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
     // Reminder records (a cron sends these).
     const m24 = new Date(scheduledAt.getTime() - 24 * 3600_000)
     const m15 = new Date(scheduledAt.getTime() - 15 * 60_000)
-    await prisma.scheduledEmail.createMany({
-      data: [
-        { to: interview.candidate.email, subject: `Reminder: Interview tomorrow — ${interview.position.title}`, type: '24hr_reminder', scheduledAt: m24, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
-        { to: interview.candidate.email, subject: `Your interview starts in 15 minutes — ${interview.position.title}`, type: '15min_reminder', scheduledAt: m15, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
-      ],
-    }).catch(() => {})
+    // Only reminders that are still ahead — a same-day booking must not trigger
+    // an immediate "interview tomorrow" email from the cron.
+    const reminders = [
+      { to: interview.candidate.email, subject: `Reminder: Interview tomorrow — ${interview.position.title}`, type: '24hr_reminder', scheduledAt: m24, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
+      { to: interview.candidate.email, subject: `Your interview starts in 15 minutes — ${interview.position.title}`, type: '15min_reminder', scheduledAt: m15, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
+    ].filter((r) => r.scheduledAt.getTime() > Date.now())
+    if (reminders.length) await prisma.scheduledEmail.createMany({ data: reminders }).catch(() => {})
 
     return NextResponse.json({ success: true, scheduledAt: scheduledAt.toISOString(), joinUrl })
   } catch (err) {
