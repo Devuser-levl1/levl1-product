@@ -48,7 +48,7 @@ export default function RubricApprovalPage() {
         if (d.error)       { setError(d.error);     return }
         setData(d)
       })
-      .catch(() => setError('Failed to load rubric review'))
+      .catch(() => setError('Couldn\'t load the rubric review. Please refresh the page.'))
       .finally(() => setLoading(false))
   }, [token])
 

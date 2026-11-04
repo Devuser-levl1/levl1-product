@@ -146,7 +146,7 @@ export default function ReportPage() {
       addReport(interviewId, data)
       updateCandidate(candidate.id, { reportGenerated: true, reportGeneratedAt: new Date().toISOString() })
       toast.success('Report generated')
-    } catch { toast.error('Could not generate report — check API key') } finally { setGenerating(false) }
+    } catch { toast.error('Couldn\'t generate the report. Please try again.') } finally { setGenerating(false) }
   }
   function pushToL2() { if (candidate) { updateCandidate(candidate.id, { status: 'scheduled', recommendation: report?.recommendation }); toast.success(`${candidate.name} pushed to L2 shortlist`) } }
   function rejectCandidate() { if (candidate) { updateCandidate(candidate.id, { status: 'cancelled' }); toast.success('Candidate marked as rejected') } }
@@ -158,7 +158,7 @@ export default function ReportPage() {
     return (
       <Centered>
         <ClipboardList size={48} color="var(--lv-border-strong)" />
-        <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '8px 0' }}>No Report Found</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '8px 0' }}>Report not found</h2>
         <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 340, lineHeight: 1.6, textAlign: 'center' }}>No report exists for interview ID <strong>{interviewId}</strong>.{candidate ? ' Click below to generate one.' : ' The interview ID may be incorrect.'}</p>
         {candidate && <Button onClick={generateReport} loading={generating} leftIcon={<Zap size={16} />}>{generating ? 'Generating…' : 'Generate Report'}</Button>}
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Go back</Button>

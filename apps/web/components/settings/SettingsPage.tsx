@@ -226,7 +226,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ senderEmail, senderName }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error ?? 'Could not start verification'); return; }
+      if (!res.ok) { toast.error(data.error ?? 'Couldn\'t start domain verification. Please try again.'); return; }
       setDomainRecords(Array.isArray(data.records) ? data.records : []);
       setDomainMsg('Add the DNS records below in your domain provider, then click “Check Verification”.');
     } catch {
@@ -249,7 +249,7 @@ export default function SettingsPage() {
         setDomainMsg(`Not verified yet (status: ${data.status ?? 'pending'}). DNS can take up to a few hours to propagate.`);
       }
     } catch {
-      toast.error('Could not check verification');
+      toast.error('Couldn\'t check verification. Please try again.');
     } finally {
       setDomainBusy(null);
     }
@@ -264,12 +264,12 @@ export default function SettingsPage() {
     setAccountType(next); setSavingType(true)
     try {
       const res = await fetch('/api/agency/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountType: next }) })
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Could not save')
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Couldn\'t save. Please try again.')
       setAccount({ type: next, orgName: agencyName })
       toast.success(next === 'company' ? 'Switched to in-house — Clients tab and client fields hidden' : 'Switched to agency — Clients tab and client fields restored')
     } catch (e) {
       setAccountType(prev)
-      toast.error(e instanceof Error ? e.message : 'Could not save account type')
+      toast.error(e instanceof Error ? e.message : 'Couldn\'t save the account type. Please try again.')
     } finally { setSavingType(false) }
   }
 
@@ -284,7 +284,7 @@ export default function SettingsPage() {
         toast.success('Settings saved')
       } else {
         const data = await res.json()
-        toast.error(data.error ?? 'Failed to save settings')
+        toast.error(data.error ?? 'Couldn\'t save settings. Please try again.')
       }
     } catch {
       toast.error('Network error — could not save settings')
@@ -325,7 +325,7 @@ export default function SettingsPage() {
         toast.error('Payment not confirmed yet. If you were charged, contact hello@levl1.io');
       }
     } catch {
-      toast.error('Could not verify payment. Contact hello@levl1.io if you were charged.');
+      toast.error('Couldn\'t verify the payment. Contact hello@levl1.io if you were charged.');
     }
   }, [refreshAgencyPlan]);
 
@@ -353,7 +353,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ planId }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error ?? 'Could not create order'); setBillingLoading(null); return; }
+      if (!res.ok) { toast.error(data.error ?? 'Couldn\'t start checkout. Please try again.'); setBillingLoading(null); return; }
 
       const cf = (window as unknown as Record<string, unknown>).Cashfree;
       if (cf && typeof cf === 'function') {
@@ -699,7 +699,7 @@ export default function SettingsPage() {
                         const res = await fetch('/api/agency/team', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
                         if (res.ok) { toast.success('Invite resent'); }
                         else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                      } catch { toast.error('Failed to resend'); }
+                      } catch { toast.error('Couldn\'t resend the invite. Please try again.'); }
                     }}
                     className="lv-btn lv-btn--secondary lv-btn--sm" aria-label={`Resend invite to ${m.email}`}
                   >
@@ -711,7 +711,7 @@ export default function SettingsPage() {
                         const res = await fetch('/api/agency/team', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
                         if (res.ok) { toast.success('Member removed'); loadTeam(); }
                         else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                      } catch { toast.error('Failed to remove'); }
+                      } catch { toast.error('Couldn\'t remove the member. Please try again.'); }
                     }}
                     className="lv-btn lv-btn--ghost lv-btn--sm lv-btn--icon" aria-label={`Remove ${m.email}`} title="Remove" style={{ color: "var(--lv-danger)" }}
                   >
@@ -747,7 +747,7 @@ export default function SettingsPage() {
                       });
                       if (res.ok) { toast.success('Invite sent!'); setInviteEmail(''); setShowInviteRow(false); loadTeam(); }
                       else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                    } catch { toast.error('Failed to send invite'); }
+                    } catch { toast.error('Couldn\'t send the invite. Please try again.'); }
                     finally { setInvitingNew(false); }
                   }}
                   className="lv-btn lv-btn--primary"

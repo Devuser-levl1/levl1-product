@@ -47,11 +47,11 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
         body: JSON.stringify({ interviewId: data.interviewId }),
       })
       const d = await res.json()
-      if (!res.ok) { setOtpStatus('fail'); setOtpError(d.error ?? 'Could not send code'); return }
+      if (!res.ok) { setOtpStatus('fail'); setOtpError(d.error ?? 'Couldn\'t send the code. Please try again.'); return }
       setOtpSent(true); setOtpEmail(d.email ?? '')
       setOtpStatus('idle')
     } catch {
-      setOtpStatus('fail'); setOtpError('Could not send code')
+      setOtpStatus('fail'); setOtpError('Couldn\'t send the code. Please try again.')
     }
   }
 

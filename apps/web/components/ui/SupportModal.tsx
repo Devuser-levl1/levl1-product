@@ -69,7 +69,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
       toast.success(`Ticket #${data.ticketNumber} submitted. We'll respond within 24 hours.`)
       handleClose()
     } catch {
-      toast.error('Failed to submit ticket. Please try again.')
+      toast.error('Couldn\'t submit your ticket. Please try again.')
     } finally {
       setSending(false)
     }

@@ -240,7 +240,7 @@ export default function ApprovalPage() {
         setData(d)
         setQuestions(d.questions)
       })
-      .catch(() => setError('Failed to load approval data'))
+      .catch(() => setError('Couldn\'t load this review. Please refresh the page.'))
       .finally(() => setLoading(false))
   }, [token])
 

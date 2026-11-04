@@ -35,7 +35,7 @@ export default function IntegrationsPage() {
     try {
       const res = await fetch('/api/interviews/integrations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: p.provider, credentials: creds }) })
       const d = await res.json()
-      if (!res.ok) { setErr(d.error ?? 'Could not connect'); return }
+      if (!res.ok) { setErr(d.error ?? 'Couldn\'t connect. Please try again.'); return }
       setOpenFor(null); setCreds({}); load()
     } finally { setBusy('') }
   }

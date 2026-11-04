@@ -64,7 +64,7 @@ function OnboardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       onSaved()
       onClose()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save client')
+      toast.error(err instanceof Error ? err.message : 'Couldn\'t save the client. Please try again.')
     } finally {
       setSaving(false)
     }

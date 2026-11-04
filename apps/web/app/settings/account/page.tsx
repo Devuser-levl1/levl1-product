@@ -33,7 +33,7 @@ export default function AccountPage() {
     try {
       const res = await fetch('/api/levl/link', { method: 'POST' })
       const d = await res.json()
-      if (!res.ok) { setMsgTone('danger'); setMsg(d.error ?? 'Could not link'); return }
+      if (!res.ok) { setMsgTone('danger'); setMsg(d.error ?? 'Couldn\'t link the account. Please try again.'); return }
       setMsgTone('success'); setMsg('Connected. Both products are now available with this login.')
       load()
     } finally { setBusy(false) }

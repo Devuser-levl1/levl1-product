@@ -59,7 +59,7 @@ export default function UpgradeWallModal() {
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error ?? 'Could not create payment order')
+        toast.error(data.error ?? 'Couldn\'t start checkout. Please try again.')
         setLoading(null)
         return
       }

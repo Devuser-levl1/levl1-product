@@ -38,7 +38,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     fetch(`/api/schedule/${data.interviewId}/slots`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d) => { if (!alive) return; setSlots(Array.isArray(d.slots) ? d.slots : []); if (d.timezone) setTz(d.timezone); setInstantStart(d.instantStart !== false) })
-      .catch(() => { if (alive) { setSlots([]); setError('Could not load available times. Please refresh, or contact your recruiter.') } })
+      .catch(() => { if (alive) { setSlots([]); setError('Couldn\'t load available times. Please refresh, or contact your recruiter.') } })
     return () => { alive = false }
   }, [consented, data.interviewId])
 
@@ -65,7 +65,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       if (!res.ok) throw new Error('failed')
       setConsented(true)
     } catch {
-      setError('Could not record your consent. Please try again or contact your recruiter.')
+      setError('Couldn\'t record your consent. Please try again or contact your recruiter.')
     } finally {
       setConsenting(false)
     }
@@ -89,7 +89,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       setTimeout(() => router.push(`/candidate/join/${data.interviewId}`), 1800)
     } catch (e) {
       setBooking(false)
-      setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Could not confirm your slot. Please try again or contact your recruiter.')
+      setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Couldn\'t confirm your slot. Please try again or contact your recruiter.')
     }
   }
 
@@ -103,7 +103,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       router.push(d.next || `/candidate/join/${data.interviewId}`)
     } catch (e) {
       setStarting(false)
-      setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Could not start the interview. Please try again or pick a time.')
+      setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Couldn\'t start the interview. Please try again or pick a time.')
     }
   }
 

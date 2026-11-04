@@ -34,7 +34,7 @@ export default function JDApprovalPage() {
         if (d.error)       { setError(d.error); return }
         setData(d)
       })
-      .catch(() => setError('Failed to load JD review'))
+      .catch(() => setError('Couldn\'t load the JD review. Please refresh the page.'))
       .finally(() => setLoading(false))
   }, [token])
 

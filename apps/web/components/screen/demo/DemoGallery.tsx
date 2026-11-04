@@ -33,7 +33,7 @@ export function DemoGallery() {
     try {
       const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim(), marketingConsent: consent }) })
       const d = await res.json()
-      if (!res.ok) { setErr(d.error ?? 'Could not start the demo.'); setStarting(false); return }
+      if (!res.ok) { setErr(d.error ?? 'Couldn\'t start the demo. Please try again.'); setStarting(false); return }
       router.push(`/interview/${d.interviewId}?demo=1`)
     } catch { setErr('Network error — please try again.'); setStarting(false) }
   }

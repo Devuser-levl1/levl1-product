@@ -53,7 +53,7 @@ export default function PlaybackPage() {
         if (!r.ok) throw new Error('Interview not found.')
         setData(await r.json())
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Couldn\'t load this recording. Please refresh the page.'))
   }, [interviewId])
 
   // ── One clock: seconds since the recording started ──

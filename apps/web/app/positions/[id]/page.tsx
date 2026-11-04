@@ -212,12 +212,12 @@ export default function PositionDetailPage() {
     try {
       const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      if (!res.ok) throw new Error(data.error ?? 'Couldn\'t save. Please try again.')
       setPosition(p => p ? { ...p, conceptRubric: data.conceptRubric, knockoutQuestions: data.knockoutQuestions } : p)
       if (which === 'cr') setCrDraft(null); else setKoDraft(null)
       toast.success(which === 'cr' ? 'Concept rubric saved' : 'Knockout questions saved')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save')
+      toast.error(e instanceof Error ? e.message : 'Couldn\'t save. Please try again.')
     } finally { setCfgSaving(null) }
   }
   const regenerateRubric = async () => {
@@ -241,12 +241,12 @@ export default function PositionDetailPage() {
     try {
       const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logistics: lgDraft }) })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      if (!res.ok) throw new Error(data.error ?? 'Couldn\'t save. Please try again.')
       setPosition(p => p ? { ...p, logistics: data.logistics ?? lgDraft } : p)
       setLgDraft(null)
       toast.success('Logistics filters saved')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save')
+      toast.error(e instanceof Error ? e.message : 'Couldn\'t save. Please try again.')
     } finally { setLgSaving(false) }
   }
   const saveMustHaves = async () => {
@@ -255,12 +255,12 @@ export default function PositionDetailPage() {
     try {
       const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mustHaves: mhDraft }) })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+      if (!res.ok) throw new Error(data.error ?? 'Couldn\'t save. Please try again.')
       setPosition(p => p ? { ...p, mustHaves: data.mustHaves ?? mhDraft } : p)
       setMhDraft(null)
       toast.success('Must-have requirements saved')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save')
+      toast.error(e instanceof Error ? e.message : 'Couldn\'t save. Please try again.')
     } finally { setMhSaving(false) }
   }
 
@@ -281,7 +281,7 @@ export default function PositionDetailPage() {
         if (data) setPosition(data)
         else toast.error('Position not found')
       })
-      .catch(() => toast.error('Failed to load position'))
+      .catch(() => toast.error('Couldn\'t load this position. Please refresh the page.'))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -370,11 +370,11 @@ export default function PositionDetailPage() {
       if (newStatus === 'won')  { body.wonCandidateId = wonCandidate; body.wonNotes = wonNotes }
       if (newStatus === 'lost') { body.lostReason = lostReason; body.lostNotes = lostNotes }
       const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      if (!res.ok) throw new Error('Failed to update')
+      if (!res.ok) throw new Error('Couldn\'t update. Please try again.')
       setPosition(p => p ? { ...p, status: newStatus } : p)
       setStatusModal(null); setStatusDropOpen(false)
       toast.success(`Position marked as ${newStatus}`)
-    } catch { toast.error('Failed to update position status') }
+    } catch { toast.error('Couldn\'t update the position status. Please try again.') }
   }
 
   const closeDelete = () => { setDeleteTarget(null); setDeleteReason('') }
@@ -709,7 +709,7 @@ export default function PositionDetailPage() {
                       if (!res.ok) throw new Error(d.error)
                       toast.success(d.emailsConfigured ? 'Approval emails sent!' : 'Approval tokens created (add RESEND_API_KEY to send emails)')
                     } catch (err: unknown) {
-                      toast.error(err instanceof Error ? err.message : 'Failed to send approvals')
+                      toast.error(err instanceof Error ? err.message : 'Couldn\'t send approval requests. Please try again.')
                     }
                   }}>
                   {(position.techLeadApproved && position.hrApproved) ? 'Resend Reminder' : 'Send for Approval'}
@@ -786,7 +786,7 @@ export default function PositionDetailPage() {
                                       } : undefined,
                                     } : p)
                                     toast.success(isApproved ? 'Approval removed' : 'Question approved')
-                                  } catch { toast.error('Failed to update') }
+                                  } catch { toast.error('Couldn\'t update. Please try again.') }
                                 }}>
                                 {isApproved ? 'Approved' : 'Approve'}
                               </Button>

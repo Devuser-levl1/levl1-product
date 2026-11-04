@@ -125,7 +125,7 @@ function CandidateCard({
         toast.error(err.error ?? 'Report generation failed');
       }
     } catch {
-      toast.error('Failed to generate report');
+      toast.error('Couldn\'t generate the report. Please try again.');
     } finally {
       setGeneratingReport(false);
     }

@@ -28,7 +28,7 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/auth/otp/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Could not send a code.'); setLoading(false); return }
+      if (!res.ok) { setError(data.error ?? 'Couldn\'t send the code. Please try again.'); setLoading(false); return }
       toast.success('Check your email for a 6-digit code')
       setStep('code'); setLoading(false)
     } catch { setError('Something went wrong. Please try again.'); setLoading(false) }

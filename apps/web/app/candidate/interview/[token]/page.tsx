@@ -69,7 +69,7 @@ export default function CandidateInterviewEntry() {
         setPageState('checking')
       })
       .catch(() => {
-        setErrorMsg('Could not reach the server. Please check your connection.')
+        setErrorMsg('Couldn\'t reach the server. Please check your connection.')
         setPageState('error')
       })
   }, [token, router])

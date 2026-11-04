@@ -103,7 +103,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({ step: 1, agencyName, website, foundedYear: foundedYear ? parseInt(foundedYear) : undefined, teamSize, accountType, voiceAccent: voiceKey, city: hqCity }),
       })
       setStep(2)
-    } catch { toast.error('Failed to save — please retry') }
+    } catch { toast.error('Couldn\'t save. Please try again.') }
     finally { setSaving(false) }
   }
 
@@ -118,7 +118,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({ step: 2, gstNumber, panNumber, legalName, registeredAddress: regAddress, city, state, pinCode }),
       })
       setStep(3)
-    } catch { toast.error('Failed to save — please retry') }
+    } catch { toast.error('Couldn\'t save. Please try again.') }
     finally { setSaving(false) }
   }
 
@@ -150,7 +150,7 @@ export default function OnboardingPage() {
       toast.success('Setup complete. Welcome to Levl1.')
       router.push('/dashboard')
     } catch {
-      toast.error('Could not save — redirecting anyway')
+      toast.error('Couldn\'t save — continuing anyway.')
       router.push('/dashboard')
     }
     finally { setSaving(false) }

@@ -152,7 +152,7 @@ export default function PositionRankingPage() {
       addPositionReport(positionId, { ...data, positionId })
       toast.success('Position insights generated')
     } catch {
-      toast.error('Could not generate insights — check API key')
+      toast.error('Couldn\'t generate insights. Please try again.')
     } finally {
       setGenerating(false)
     }
@@ -396,7 +396,7 @@ export default function PositionRankingPage() {
           boxShadow: 'none',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <SectionTitle icon={<Globe size={16} />} label="Talent Pool Insights" />
+            <SectionTitle icon={<Globe size={16} />} label="Candidate Pool Insights" />
             <span className="no-print" style={{ marginBottom: 18 }}><Button size="sm" onClick={generateSummary} disabled={completed.length === 0} loading={generating} leftIcon={<Sparkles size={14} />}>
               {generating ? 'Generating…' : posReport ? 'Regenerate' : 'Generate Insights'}
             </Button></span>
