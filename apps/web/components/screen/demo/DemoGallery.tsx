@@ -41,7 +41,7 @@ export function DemoGallery() {
   return (
     <div id="try-live" style={{ maxWidth: 1080, margin: '0 auto', padding: '8px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>✨ Live demo · no signup</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>Live demo · no signup</div>
         <h2 style={{ fontSize: 32, fontWeight: 600, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Try a real AI interview in <span style={{ color: INDIGO }}>60 seconds</span></h2>
         <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>Pick a technical role and start a live voice interview instantly — no job description, no login. You&apos;ll get the full evidence report at the end.</p>
       </div>
@@ -66,8 +66,8 @@ export function DemoGallery() {
               {p.skills.map((s) => <span key={s} style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{s}</span>)}
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>
-              <span>⏱ ~{p.durationMin} min</span>
-              <span>🎙 {p.accent}</span>
+              <span>~{p.durationMin} min</span>
+              <span>{p.accent}</span>
               <span>{p.language}</span>
             </div>
             <button onClick={() => openLead(p.slug)} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 6, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 14, background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>

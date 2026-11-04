@@ -74,7 +74,7 @@ export default function IntegrationsPage() {
               </div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-body)', marginTop: 3 }}>
                 {p.connection
-                  ? <>Connected{p.connection.account ? ` · ${p.connection.account}` : ''} · {p.connection.lastSyncedAt ? `last sync ${new Date(p.connection.lastSyncedAt).toLocaleString('en-IN')}` : 'never synced'}{p.connection.status === 'error' && p.connection.lastError ? ` · ⚠ ${p.connection.lastError}` : ''}</>
+                  ? <>Connected{p.connection.account ? ` · ${p.connection.account}` : ''} · {p.connection.lastSyncedAt ? `last sync ${new Date(p.connection.lastSyncedAt).toLocaleString('en-IN')}` : 'never synced'}{p.connection.status === 'error' && p.connection.lastError ? ` · Error: ${p.connection.lastError}` : ''}</>
                   : p.implemented ? 'Not connected' : 'Available later'}
               </div>
             </div>

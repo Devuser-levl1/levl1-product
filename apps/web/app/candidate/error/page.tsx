@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react'
 import { PoweredBy } from '@/components/screen/candidate/CandidateShell'
 
 export const dynamic = 'force-dynamic'
@@ -36,7 +37,7 @@ export default function CandidateErrorPage({
           boxShadow: 'var(--lv-shadow-md)',
         }}
       >
-        <div aria-hidden="true" style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+        <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-muted)', color: 'var(--lv-text-muted)' }}><Lock size={20} /></div>
         <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 10px' }}>
           We hit a snag
         </h1>

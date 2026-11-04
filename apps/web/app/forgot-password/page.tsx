@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Zap, ArrowLeft } from 'lucide-react'
+import { Zap, ArrowLeft, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function ForgotPasswordPage() {
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
 
         {sent ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>📧</div>
+            <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-muted)', color: 'var(--lv-text-muted)' }}><Mail size={20} /></div>
             <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#1E293B', marginBottom: 10 }}>Check your inbox</h2>
             <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, marginBottom: 24 }}>
               If <strong>{email}</strong> has an account, we&apos;ve sent a password reset link. It expires in 1 hour.
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
             </form>
             <div style={{ textAlign: 'center', marginTop: 24 }}>
               <Link href="/interviews/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>
-                <ArrowLeft size={13} /> Back to login
+                <ArrowLeft size={14} /> Back to login
               </Link>
             </div>
           </>

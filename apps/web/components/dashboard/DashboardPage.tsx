@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
-import { Briefcase, Users, Video, TrendingUp, ArrowRight, Play, Monitor, Plus, Upload } from "lucide-react";
+import { Briefcase, Video, TrendingUp, ArrowRight, Play, Monitor, Plus, Upload } from "lucide-react";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -12,22 +12,15 @@ import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
 // Design-System Pass 3 (group 1): canonical components + tokens. Data loading,
 // calculations and every handler are unchanged from the previous version.
 
-function StatCard({ icon: Icon, label, value, sub, tone, loading, onClick }: {
-  icon: React.ElementType; label: string; value: string | number; sub: string
-  tone: "brand" | "success" | "warning" | "accent"; loading?: boolean; onClick?: () => void
+function StatCard({ label, value, sub, loading, onClick }: {
+  label: string; value: string | number; sub: string; loading?: boolean; onClick?: () => void
 }) {
-  const tint = { brand: [lv.brandSoft, lv.brand], success: [lv.successSoft, lv.success], warning: [lv.warningSoft, lv.warning], accent: [lv.accentSoft, lv.accent] }[tone];
   return (
     <Card onClick={onClick}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: space[4] }}>
-        <span className="lv-eyebrow">{label}</span>
-        <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: radius.md, background: tint[0], display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={17} color={tint[1]} strokeWidth={2} />
-        </span>
-      </div>
+      <div className="lv-eyebrow" style={{ marginBottom: space[3] }}>{label}</div>
       {loading
-        ? <Skeleton width={56} height={32} radius={8} />
-        : <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"] + 4, fontWeight: 600, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{value}</div>}
+        ? <Skeleton width={56} height={32} radius={6} />
+        : <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 600, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{value}</div>}
       <div style={{ fontSize: text.sm, color: lv.textMuted, marginTop: space[2] }}>{sub}</div>
     </Card>
   );
@@ -117,7 +110,7 @@ export default function DashboardPage() {
   const openUpload = () => { setActiveSection("candidates"); setShowUploadFlow(true); };
 
   const viewAll = (onClick: () => void) => (
-    <Button variant="tertiary" size="sm" onClick={onClick} rightIcon={<ArrowRight size={13} />}>View all</Button>
+    <Button variant="tertiary" size="sm" onClick={onClick} rightIcon={<ArrowRight size={14} />}>View all</Button>
   );
 
   return (
@@ -132,10 +125,10 @@ export default function DashboardPage() {
     <Page>
       <PageHeader
         eyebrow={dateStr}
-        title={`${greeting} 👋`}
+        title={greeting}
         description="Here's your recruitment pipeline at a glance."
         actions={<>
-          <Button variant="secondary" leftIcon={<Upload size={15} />} onClick={openUpload}>Upload Candidates</Button>
+          <Button variant="secondary" leftIcon={<Upload size={16} />} onClick={openUpload}>Upload Candidates</Button>
           <Button leftIcon={<Plus size={16} />} onClick={openNewPosition}>New Position</Button>
         </>}
       />
@@ -143,10 +136,10 @@ export default function DashboardPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: space[6] }}>
         {/* Stat cards */}
         <div className="dash-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: space[4] }}>
-          <StatCard icon={Briefcase}  label="Active Positions" value={activePositions} loading={statsLoading} sub={`${stats?.totalPositions ?? positions.length} total positions`} tone="brand"   onClick={() => setActiveSection("positions")} />
-          <StatCard icon={Users}      label="Candidates"       value={totalCandidates} loading={statsLoading} sub={`${topCandidates.length} interviews completed`}               tone="success" onClick={() => setActiveSection("candidates")} />
-          <StatCard icon={Video}      label="Upcoming"         value={scheduledCount}  loading={statsLoading} sub="Interviews scheduled"                                         tone="warning" onClick={() => setActiveSection("interviews")} />
-          <StatCard icon={TrendingUp} label="Avg Score"        value={displayScoredCount > 0 ? displayAvgScore : "—"} loading={statsLoading} sub={`Across ${displayScoredCount} reports`} tone="accent" onClick={() => setActiveSection("reports")} />
+          <StatCard label="Active Positions" value={activePositions} loading={statsLoading} sub={`${stats?.totalPositions ?? positions.length} total positions`} onClick={() => setActiveSection("positions")} />
+          <StatCard label="Candidates"       value={totalCandidates} loading={statsLoading} sub={`${topCandidates.length} interviews completed`} onClick={() => setActiveSection("candidates")} />
+          <StatCard label="Upcoming"         value={scheduledCount}  loading={statsLoading} sub="Interviews scheduled" onClick={() => setActiveSection("interviews")} />
+          <StatCard label="Avg Score"        value={displayScoredCount > 0 ? displayAvgScore : "—"} loading={statsLoading} sub={`Across ${displayScoredCount} reports`} onClick={() => setActiveSection("reports")} />
         </div>
 
         {/* Middle row */}
@@ -166,7 +159,7 @@ export default function DashboardPage() {
                     <div key={iv.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: space[3] }}>
                       <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
                         <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: radius.md, background: lv.brandSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <Video size={16} color={lv.brand} />
+                          <Video size={16} />
                         </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={nameStyle}>{iv.candidateName}</div>
@@ -189,7 +182,7 @@ export default function DashboardPage() {
                             onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}>Start</Button>
                         </Tooltip>
                         <Tooltip content="Watch the live transcript and scores in a separate tab" position="top">
-                          <Button size="sm" variant="secondary" leftIcon={<Monitor size={13} />}
+                          <Button size="sm" variant="secondary" leftIcon={<Monitor size={14} />}
                             onClick={() => window.open(`/interview/${iv.id}/monitor`, "_blank")}>Monitor</Button>
                         </Tooltip>
                       </div>

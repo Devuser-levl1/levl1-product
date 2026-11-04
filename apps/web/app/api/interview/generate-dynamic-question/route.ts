@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         'Reference the candidate\'s specific experience, projects, or technologies where possible. ' +
         'Prefer questions that test depth via a relevant edge case (failure modes, scale, concurrency, error handling) when the topic is technical. ' +
         'Be conversational — this should feel natural in a live interview, not like a written quiz. ' +
-        'No positive reinforcement. No preamble. Return only the question text.',
+        'No positive reinforcement. No preamble. No emoji or decorative symbols. Return only the question text.',
       messages: [{
         role: 'user',
         content:

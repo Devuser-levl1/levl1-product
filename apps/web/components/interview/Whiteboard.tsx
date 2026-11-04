@@ -268,7 +268,7 @@ export default function Whiteboard({ onExport, onDone }: Props) {
         <div style={{ padding: '8px 14px', borderTop: '1px solid #1E293B', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: '#64748B' }}>Draw your answer, then click Done</span>
           <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
-            <CheckCircle2 size={13} /> Done — Submit Diagram ✓
+            <CheckCircle2 size={14} /> Done — Submit Diagram
           </button>
         </div>
       )}

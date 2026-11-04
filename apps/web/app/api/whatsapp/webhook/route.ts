@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
         subject: `Interview Confirmed — ${candidate.position.title}`,
         from: agency ? agencyFromAddress(agency) : undefined,
         html: `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#1E293B">
-<h2>Interview Confirmed ✅</h2>
+<h2>Interview confirmed</h2>
 <p>Hi ${candidate.name}, your interview for <strong>${candidate.position.title}</strong> at
 <strong>${candidate.position.company}</strong> is confirmed for <strong>${dateStr}</strong>.</p>
 <p><a href="${interviewUrl}" style="display:inline-block;background:#4F46E5;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Join Interview →</a></p>

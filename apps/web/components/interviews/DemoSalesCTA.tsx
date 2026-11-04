@@ -14,7 +14,7 @@ export function DemoSalesCTA({ label = 'Book a demo' }: { label?: string }) {
   return (
     <a href="/contact" target="_blank" rel="noopener" className="no-print"
       style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 60, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 15px', borderRadius: 100, textDecoration: 'none', color: '#fff', fontWeight: 600, fontSize: 13, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', boxShadow: '0 8px 22px rgba(79,70,229,0.3)' }}>
-      <span>💬</span> {label}
+      {label}
     </a>
   )
 }

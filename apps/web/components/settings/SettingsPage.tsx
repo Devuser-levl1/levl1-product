@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, isValidElement } from "react";
-import { Settings, Bell, Mic, Users, Play, Loader2, CreditCard, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus, Mail } from "lucide-react";
+import { Play, Loader2, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus } from "lucide-react";
 import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
 import { ACCOUNT_TYPES, isAccountType, type AccountType } from "@/lib/screen/account-type";
 import toast from "react-hot-toast";
@@ -12,13 +12,10 @@ import { Field as FormField, PageHeader, Alert } from "@/components/screen/ui";
 
 // Design-System Pass 3 (group 6): local helpers render the canonical Screen
 // components; settings state, saves and team/billing calls are unchanged.
-function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
+function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
     <section className="lv-card lv-card--pad" aria-label={title} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingBottom: 16, borderBottom: "1px solid var(--lv-border)" }}>
-        <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 6, background: "var(--lv-brand-soft)", border: "1px solid var(--lv-brand-soft-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={17} color="var(--lv-brand)" />
-        </div>
+      <div style={{ paddingBottom: 16, borderBottom: "1px solid var(--lv-border)" }}>
         <div>
           <h2 className="lv-card__title">{title}</h2>
           <div style={{ fontSize: 13, color: "var(--lv-text-muted)", marginTop: 3 }}>{description}</div>
@@ -407,7 +404,7 @@ export default function SettingsPage() {
       )}
 
       {/* Agency Profile */}
-      <Section icon={Settings} title="Agency Profile" description="Your agency's public identity on the platform">
+      <Section title="Agency Profile" description="Your agency's public identity on the platform">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Agency Name">
             <input className="lv-input" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} />
@@ -452,7 +449,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Email Configuration */}
-      <Section icon={Bell} title="Email Configuration" description="Send interview emails from your own verified domain">
+      <Section title="Email Configuration" description="Send interview emails from your own verified domain">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
@@ -460,7 +457,7 @@ export default function SettingsPage() {
             background: domainVerified ? "color-mix(in srgb, var(--lv-success) 10%, transparent)" : "var(--lv-surface-muted)",
             color: domainVerified ? "var(--lv-success)" : "var(--lv-text-muted)",
           }}>
-            {domainVerified ? <CheckCircle2 size={13} /> : null}
+            {domainVerified ? <CheckCircle2 size={14} /> : null}
             {domainVerified ? `Verified — sending from ${senderEmail}` : "Not verified"}
           </span>
         </div>
@@ -510,12 +507,12 @@ export default function SettingsPage() {
       </Section>
 
       {/* Candidate invite email template (org-wide; positions can override) */}
-      <Section icon={Mail} title="Candidate Invite Email" description="The email candidates receive with their interview link. Positions can override it.">
+      <Section title="Candidate Invite Email" description="The email candidates receive with their interview link. Positions can override it.">
         <InviteTemplateEditor endpoint="/api/agency/invite-template" scope="agency" />
       </Section>
 
       {/* Branding (white-label reports & candidate portal) */}
-      <Section icon={CheckCircle2} title="Branding" description="Your logo and colour appear on reports and the candidate portal">
+      <Section title="Branding" description="Your logo and colour appear on reports and the candidate portal">
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div style={{ width: 80, height: 80, borderRadius: 8, border: "1px solid var(--lv-border)", background: "var(--lv-surface-sunken)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             {logoUrl
@@ -543,7 +540,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Voice & Accent */}
-      <Section icon={Mic} title="Voice &amp; Accent" description="Default AI interviewer voice for all interviews">
+      <Section title="Voice &amp; Accent" description="Default AI interviewer voice for all interviews">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {VOICE_OPTIONS.map((v) => (
             <div
@@ -569,8 +566,7 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              {/* Flag + name */}
-              <span style={{ fontSize: 18, flexShrink: 0 }}>{v.flag}</span>
+              {/* Name */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-brand)" }}>
                   {v.accent}
@@ -595,8 +591,8 @@ export default function SettingsPage() {
                 onMouseLeave={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-accent) 7%, transparent)"; }}
               >
                 {previewLoading === v.key
-                  ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
-                  : <Play size={11} fill="var(--lv-accent)" />
+                  ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                  : <Play size={12} fill="var(--lv-accent)" />
                 }
                 Preview
               </button>
@@ -626,7 +622,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Notifications */}
-      <Section icon={Bell} title="Notifications" description="Choose when and how you get notified">
+      <Section title="Notifications" description="Choose when and how you get notified">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <ToggleRow label="Email notifications"  sub="Receive updates via email"                              checked={notifEmail}      onChange={setNotifEmail}      />
           <div style={{ height: 1, background: "var(--lv-surface-muted)" }} />
@@ -639,7 +635,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Interview Defaults */}
-      <Section icon={Mic} title="Interview Defaults" description="Default settings applied to new interviews">
+      <Section title="Interview Defaults" description="Default settings applied to new interviews">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Interview Duration">
             {/* Build 06: production interviews are fixed at 30 minutes — no
@@ -657,10 +653,10 @@ export default function SettingsPage() {
       </Section>
 
       {/* Team Members */}
-      <Section icon={Users} title="Team Members" description="Manage who has access to this dashboard">
+      <Section title="Team Members" description="Manage who has access to this dashboard">
         {teamLoading ? (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <Loader2 size={20} color="var(--lv-accent)" style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+            <Loader2 size={20} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
           </div>
         ) : (
           <>
@@ -707,7 +703,7 @@ export default function SettingsPage() {
                     }}
                     className="lv-btn lv-btn--secondary lv-btn--sm" aria-label={`Resend invite to ${m.email}`}
                   >
-                    <RefreshCw size={13} aria-hidden="true" /> Resend
+                    <RefreshCw size={14} aria-hidden="true" /> Resend
                   </button>
                   <button
                     onClick={async () => {
@@ -771,7 +767,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Billing */}
-      <Section icon={CreditCard} title="Billing & Plan" description="Manage your subscription and usage">
+      <Section title="Billing & Plan" description="Manage your subscription and usage">
         {/* Current plan card */}
         <div style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 6%, transparent) 100%)',
@@ -841,7 +837,7 @@ export default function SettingsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                   {plan.features.map((f) => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                      <CheckCircle2 size={13} color={plan.color} style={{ marginTop: 1, flexShrink: 0 }} />
+                      <CheckCircle2 size={14} color={plan.color} style={{ marginTop: 1, flexShrink: 0 }} />
                       <span style={{ fontSize: 12, color: 'var(--lv-text-body)', lineHeight: 1.5 }}>{f}</span>
                     </div>
                   ))}

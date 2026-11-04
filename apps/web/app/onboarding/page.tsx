@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase } from 'lucide-react'
+import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase, Check } from 'lucide-react'
 import { ACCOUNT_TYPES, type AccountType } from '@/lib/screen/account-type'
 import { VOICE_OPTIONS, DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
 import { Play, Loader2 } from 'lucide-react'
@@ -147,7 +147,7 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step: 4, onboardingComplete: true }),
       })
-      toast.success('Setup complete! Welcome to Levl1 🎉')
+      toast.success('Setup complete. Welcome to Levl1.')
       router.push('/dashboard')
     } catch {
       toast.error('Could not save — redirecting anyway')
@@ -190,7 +190,7 @@ export default function OnboardingPage() {
             <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={18} color="var(--lv-brand)" />
+                  <Building2 size={16} />
                 </div>
                 <div>
                   <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
@@ -264,8 +264,7 @@ export default function OnboardingPage() {
                         <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : 'var(--lv-surface)' }}>
                           <button type="button" role="radio" aria-checked={on} onClick={() => setVoiceKey(v.key)}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--lv-font-sans)' }}>
-                            <span style={{ fontSize: 18 }}>{v.flag}</span>
-                            <span>
+                                                        <span>
                               <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
                               <span style={{ display: 'block', fontSize: 12, color: 'var(--lv-text-muted)' }}>{v.description}</span>
                             </span>
@@ -293,7 +292,7 @@ export default function OnboardingPage() {
             <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={18} color="var(--lv-brand)" />
+                  <FileText size={16} />
                 </div>
                 <div>
                   <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>GST & Business Details</h2>
@@ -359,7 +358,7 @@ export default function OnboardingPage() {
             <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={18} color="var(--lv-brand)" />
+                  <Users size={16} />
                 </div>
                 <div>
                   <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Invite Your Team</h2>
@@ -395,7 +394,7 @@ export default function OnboardingPage() {
                     </select>
                     <button type="button" onClick={() => removeMember(i)} disabled={members.length === 1}
                       className="lv-btn lv-btn--ghost lv-btn--icon" aria-label={`Remove team member ${i + 1}`}>
-                      <Trash2 size={15} aria-hidden="true" />
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -428,7 +427,7 @@ export default function OnboardingPage() {
             <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CreditCard size={18} color="var(--lv-success)" />
+                  <CreditCard size={16} color="var(--lv-success)" />
                 </div>
                 <div>
                   <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Start Your Free Trial</h2>
@@ -440,11 +439,11 @@ export default function OnboardingPage() {
               <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 4%, transparent) 100%)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 8, padding: '20px 24px', marginBottom: 28 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', marginBottom: 12 }}>Trial includes:</div>
                 {[
-                  '✓  5 AI interviews',
-                  '✓  14 days full access',
-                  '✓  All features — question generation, reports, approvals',
+                  '5 AI interviews',
+                  '14 days full access',
+                  'All features — question generation, reports, approvals',
                 ].map(p => (
-                  <div key={p} style={{ fontSize: 14, color: 'var(--lv-text-body)', fontWeight: 500, marginBottom: 8 }}>{p}</div>
+                  <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--lv-text-body)', fontWeight: 500, marginBottom: 8 }}><Check size={14} aria-hidden="true" style={{ color: 'var(--lv-text-muted)', flexShrink: 0 }} />{p}</div>
                 ))}
                 <div style={{ marginTop: 16, padding: '10px 14px', background: 'color-mix(in srgb, var(--lv-success) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 15%, transparent)', borderRadius: 8, fontSize: 13, color: 'var(--lv-success)', fontWeight: 600 }}>
                   Your trial ends: {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}

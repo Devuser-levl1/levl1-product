@@ -162,7 +162,7 @@ export default function MonitorPage() {
 
           {/* Candidate link */}
           <ButtonLink href={`/interview/${interviewId}`} target="_blank" rel="noopener noreferrer" variant="tertiary" size="sm"
-            leftIcon={<ExternalLink size={13} />} aria-label="Candidate view (opens in new tab)">
+            leftIcon={<ExternalLink size={14} />} aria-label="Candidate view (opens in new tab)">
             Candidate View
           </ButtonLink>
 
@@ -205,7 +205,7 @@ export default function MonitorPage() {
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
                   <span style={{ fontSize: text.xs, fontWeight: 600, letterSpacing: '0.03em', color: entry.speaker === 'ai' ? lv.brandText : lv.success }}>
-                    {entry.speaker === 'ai' ? `🤖 AI (${INTERVIEWER_NAME})` : `👤 ${candidate.name.split(' ')[0]}`}
+                    {entry.speaker === 'ai' ? `AI (${INTERVIEWER_NAME})` : candidate.name.split(' ')[0]}
                   </span>
                   <span style={{ fontSize: 11, color: lv.textMuted }}>
                     {new Date(entry.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -282,7 +282,7 @@ export default function MonitorPage() {
                       ? <span style={{ fontSize: 11, color: lv.textMuted, marginLeft: 'auto' }}>PRESET</span>
                       : <span style={{ fontSize: 11, color: lv.accent, marginLeft: 'auto' }}>DYNAMIC</span>
                     }
-                    <CheckCircle2 size={13} color={lv.success} aria-hidden="true" />
+                    <CheckCircle2 size={14} color={lv.success} aria-hidden="true" />
                   </div>
 
                   <div style={{ fontSize: text.xs, color: lv.textBody, lineHeight: 1.45 }}>

@@ -108,7 +108,7 @@ export default function CandidateInterviewEntry() {
   if (pageState === 'loading') {
     return (
       <Shell>
-        <Loader2 size={36} color="var(--lv-accent)" style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
+        <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
         <p style={{ fontSize: 16, color: 'var(--lv-text-muted)' }}>Verifying your interview link…</p>
       </Shell>
     )
@@ -190,7 +190,7 @@ export default function CandidateInterviewEntry() {
             You are about to start your AI interview for <strong>{meta?.positionTitle}</strong> at <strong>{meta?.company}</strong>.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 13, color: 'var(--lv-accent)', fontWeight: 600 }}>
-            <Clock size={13} />
+            <Clock size={14} />
             <span>{meta?.duration ?? 30} minutes</span>
           </div>
         </div>
@@ -212,10 +212,10 @@ export default function CandidateInterviewEntry() {
             borderRadius: 6, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: 'var(--lv-warning)',
           }}>
             {micStatus === 'fail' && (
-              <p style={{ margin: '0 0 4px' }}>⚠ Microphone blocked — please allow microphone access in your browser settings and reload.</p>
+              <p style={{ margin: '0 0 4px' }}>Microphone blocked — please allow microphone access in your browser settings and reload.</p>
             )}
             {browserStatus === 'fail' && (
-              <p style={{ margin: 0 }}>⚠ Your browser may not support voice recognition. Use Chrome or Edge for the best experience.</p>
+              <p style={{ margin: 0 }}>Your browser may not support voice recognition. Use Chrome or Edge for the best experience.</p>
             )}
           </div>
         )}

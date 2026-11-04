@@ -413,7 +413,7 @@ export default function PositionDetailPage() {
     { key: 'actions', header: 'Actions', render: (c) => (
       <div style={{ display: 'flex', gap: space[2], alignItems: 'center' }}>
         {c.status === 'pending' && (
-          <Button variant="secondary" size="sm" leftIcon={<Send size={13} />}
+          <Button variant="secondary" size="sm" leftIcon={<Send size={14} />}
             onClick={async () => {
               try {
                 const res = await fetch('/api/send-invite', {
@@ -430,7 +430,7 @@ export default function PositionDetailPage() {
           </Button>
         )}
         {c.status === 'completed' && (
-          <Button variant="secondary" size="sm" leftIcon={<FileText size={13} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
+          <Button variant="secondary" size="sm" leftIcon={<FileText size={14} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
         )}
         <Button variant="ghost" size="sm" iconOnly aria-label={`Delete ${c.name}`} title="Delete candidate"
           onClick={() => setDeleteTarget({ id: c.id, name: c.name })} style={{ color: lv.danger }}>
@@ -470,7 +470,7 @@ export default function PositionDetailPage() {
 
       {/* Fix 7: won modal */}
       <Modal open={statusModal === 'won'} onClose={() => setStatusModal(null)} size="sm"
-        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Trophy size={18} color={lv.warning} aria-hidden="true" />Mark position as won</span>}
+        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Trophy size={16} color={lv.warning} aria-hidden="true" />Mark position as won</span>}
         footer={<ActionBar>
           <Button variant="secondary" onClick={() => setStatusModal(null)}>Cancel</Button>
           <Button onClick={() => handleStatusChange('won')}>Confirm</Button>
@@ -490,7 +490,7 @@ export default function PositionDetailPage() {
 
       {/* Fix 7: lost modal */}
       <Modal open={statusModal === 'lost'} onClose={() => setStatusModal(null)} size="sm"
-        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><X size={18} color={lv.danger} aria-hidden="true" />Mark position as lost</span>}
+        title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><X size={16} color={lv.danger} aria-hidden="true" />Mark position as lost</span>}
         footer={<ActionBar>
           <Button variant="secondary" onClick={() => setStatusModal(null)}>Cancel</Button>
           <Button onClick={() => handleStatusChange('lost')} disabled={!lostReason}>Confirm</Button>
@@ -652,7 +652,7 @@ export default function PositionDetailPage() {
             </Card>
 
             {/* Candidate invite email (F2) — per-position override */}
-            <Card title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Mail size={16} color={lv.brand} aria-hidden="true" />Candidate invite email</span>}
+            <Card title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}><Mail size={16} aria-hidden="true" />Candidate invite email</span>}
               subtitle="Uses your agency template unless you customise it for this position."
               actions={<Button variant="secondary" size="sm" aria-expanded={showInvite} onClick={() => setShowInvite(v => !v)}>{showInvite ? 'Close' : 'Customise'}</Button>}>
               {showInvite && (
@@ -768,7 +768,7 @@ export default function PositionDetailPage() {
                               {q.difficulty && <Badge tone="neutral">{q.difficulty}</Badge>}
                               {q.estimatedMinutes && <Badge tone="neutral">{q.estimatedMinutes}m</Badge>}
                               <Button variant={isApproved ? 'secondary' : 'tertiary'} size="sm" aria-pressed={!!isApproved}
-                                leftIcon={isApproved ? <CheckCircle2 size={13} color={lv.success} /> : <Edit3 size={13} />}
+                                leftIcon={isApproved ? <CheckCircle2 size={14} color={lv.success} /> : <Edit3 size={14} />}
                                 onClick={async () => {
                                   try {
                                     await fetch(`/api/positions/${id}/questions/approve`, {
@@ -867,7 +867,7 @@ export default function PositionDetailPage() {
                           </div>
                         )}
                         {rc && <Badge tone={rc.tone}>{rc.label}</Badge>}
-                        <Button variant="secondary" size="sm" leftIcon={<FileText size={13} />}
+                        <Button variant="secondary" size="sm" leftIcon={<FileText size={14} />}
                           onClick={(e) => { e.stopPropagation(); router.push(`/reports/${id}`) }}>
                           View Report
                         </Button>

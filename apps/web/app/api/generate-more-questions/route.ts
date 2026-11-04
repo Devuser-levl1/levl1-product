@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         `Do NOT repeat, rephrase, or paraphrase any existing questions. ` +
         `Do NOT regenerate any of the removed questions listed. ` +
         `Focus on angles not yet covered by existing questions. ` +
+        `Plain text only — no emoji, symbols or decorative characters. ` +
         `Return ONLY a valid JSON array — no markdown, no explanation.`,
       messages: [{
         role: 'user',

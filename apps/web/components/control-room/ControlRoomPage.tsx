@@ -129,9 +129,6 @@ export function ControlRoomPage() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 22 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 6, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Radar size={18} color={C.brand} />
-            </div>
             <h1 style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 600, color: C.ink, letterSpacing: "-0.02em" }}>Control Room</h1>
             <LivePulse ok={!error} />
           </div>
@@ -218,12 +215,12 @@ export function ControlRoomPage() {
               <a key={r.id} href={`/playback/${r.id}`} className="cr-row"
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderTop: i ? `1px solid ${C.line}` : "none", textDecoration: "none", color: C.ink }}
               >
-                <PlayCircle size={18} color={r.hasRecording ? C.brand : C.muted} aria-hidden="true" />
+                <PlayCircle size={16} color={r.hasRecording ? C.brand : C.muted} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{r.candidate}</div>
                   <div style={{ fontSize: 12, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.position} · {r.company}</div>
                 </div>
-                {r.integrityEvents > 0 && <Chip tone="amber"><Flag size={11} /> {r.integrityEvents}</Chip>}
+                {r.integrityEvents > 0 && <Chip tone="amber"><Flag size={12} /> {r.integrityEvents}</Chip>}
                 <span style={{ fontSize: 12, color: C.muted, minWidth: 90, textAlign: "right" }}>
                   {new Date(r.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -429,7 +426,7 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
           {ended && d && (
             <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ flex: 1, fontSize: 13, color: C.body }}>This interview has ended.</div>
-              <ButtonLink href={`/playback/${d.interview.id}`} size="sm" leftIcon={<PlayCircle size={15} />}>Open playback</ButtonLink>
+              <ButtonLink href={`/playback/${d.interview.id}`} size="sm" leftIcon={<PlayCircle size={16} />}>Open playback</ButtonLink>
             </div>
           )}
 
@@ -602,14 +599,14 @@ function EmptyState() {
   return (
     <div style={{ background: C.surface, border: `1px dashed ${C.line}`, borderRadius: 8, padding: "44px 24px", textAlign: "center", marginBottom: 28 }}>
       <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 8, background: C.brandSoft, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-        <Radar size={22} color={C.brand} />
+        <Radar size={22} />
       </div>
       <div style={{ fontSize: 16, fontWeight: 600, color: C.ink }}>No interviews running right now</div>
       <div style={{ fontSize: 13, color: C.body, marginTop: 4 }}>
         Live interviews appear here the moment a candidate starts. Problems surface at the top automatically.
       </div>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: C.muted, marginTop: 12 }}>
-        Recently ended interviews can be replayed below <ChevronRight size={13} />
+        Recently ended interviews can be replayed below <ChevronRight size={14} />
       </div>
     </div>
   );

@@ -188,12 +188,7 @@ export default function StartInterviewModal({ candidate, position, onClose }: Pr
 
   return (
     <Modal open onClose={onClose} size="sm"
-      title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: space[2] }}>
-        <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: radius.md, background: lv.gradientBrand, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Play size={12} color="white" fill="white" />
-        </span>
-        Start Interview
-      </span>}
+      title="Start Interview"
       footer={<ActionBar>
         <Button variant="secondary" onClick={onClose}>Cancel</Button>
         <Button onClick={handleBegin} leftIcon={<Play size={14} fill="currentColor" strokeWidth={0} />}>Begin Interview →</Button>

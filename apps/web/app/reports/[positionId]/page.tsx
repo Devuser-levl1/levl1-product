@@ -26,13 +26,6 @@ function scoreColor(s: number) {
   return 'var(--lv-danger)'
 }
 
-function rankEmoji(rank: number) {
-  if (rank === 1) return '🥇'
-  if (rank === 2) return '🥈'
-  if (rank === 3) return '🥉'
-  return null
-}
-
 function initials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
@@ -193,7 +186,7 @@ export default function PositionRankingPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={13} color="white" fill="white" />
+            <Zap size={14} color="white" fill="white" />
           </div>
           <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
         </div>
@@ -251,7 +244,7 @@ export default function PositionRankingPage() {
           boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <SectionTitle icon={<TrendingUp size={15} />} label="Candidate Rankings" />
+            <SectionTitle icon={<TrendingUp size={16} />} label="Candidate Rankings" />
             <div style={{ display: 'flex', gap: 8 }} className="no-print">
               <Button variant="tertiary" size="sm" onClick={selectAll}>Select All</Button>
               <Button variant="tertiary" size="sm" onClick={clearAll}>Clear</Button>
@@ -273,7 +266,6 @@ export default function PositionRankingPage() {
                 <tbody>
                   {completed.map((c, idx) => {
                     const rank = idx + 1
-                    const medal = rankEmoji(rank)
                     const rec = c.recommendation ? REC_CFG[c.recommendation] : null
                     const report = c.interviewId ? reports[c.interviewId] : undefined
                     const techScore = report?.sectionScores?.technical?.score
@@ -304,10 +296,7 @@ export default function PositionRankingPage() {
 
                         {/* Rank */}
                         <td style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
-                          {medal
-                            ? <span style={{ fontSize: 18 }}>{medal}</span>
-                            : <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', fontFamily: 'var(--lv-font-display)' }}>#{rank}</span>
-                          }
+                          <span style={{ fontSize: 12, fontWeight: rank <= 3 ? 600 : 500, color: rank <= 3 ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontVariantNumeric: 'tabular-nums' }}>#{rank}</span>
                         </td>
 
                         {/* Candidate */}
@@ -369,10 +358,10 @@ export default function PositionRankingPage() {
                         <td style={{ padding: '14px 12px' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
                             {c.interviewId && report && (
-                              <Button variant="secondary" size="sm" rightIcon={<ChevronRight size={13} />} aria-label={`View report for ${c.name}`} onClick={() => router.push(`/report/${c.interviewId}`)}>View</Button>
+                              <Button variant="secondary" size="sm" rightIcon={<ChevronRight size={14} />} aria-label={`View report for ${c.name}`} onClick={() => router.push(`/report/${c.interviewId}`)}>View</Button>
                             )}
                             {(c.recommendation === 'strong_yes' || c.recommendation === 'yes') && (
-                              <Button variant="secondary" size="sm" leftIcon={<UserCheck size={13} />} aria-label={`Push ${c.name} to L2`} style={{ color: 'var(--lv-success)' }}
+                              <Button variant="secondary" size="sm" leftIcon={<UserCheck size={14} />} aria-label={`Push ${c.name} to L2`} style={{ color: 'var(--lv-success)' }}
                                 onClick={() => { updateCandidate(c.id, { status: 'scheduled' }); toast.success(`${c.name} pushed to L2`) }}>L2</Button>
                             )}
                           </div>
@@ -407,7 +396,7 @@ export default function PositionRankingPage() {
           boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <SectionTitle icon={<Globe size={15} />} label="Talent Pool Insights" />
+            <SectionTitle icon={<Globe size={16} />} label="Talent Pool Insights" />
             <span className="no-print" style={{ marginBottom: 18 }}><Button size="sm" onClick={generateSummary} disabled={completed.length === 0} loading={generating} leftIcon={<Sparkles size={14} />}>
               {generating ? 'Generating…' : posReport ? 'Regenerate' : 'Generate Insights'}
             </Button></span>
@@ -418,7 +407,7 @@ export default function PositionRankingPage() {
               {/* Strengths */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                  <CheckCircle2 size={13} color="var(--lv-success)" />
+                  <CheckCircle2 size={14} color="var(--lv-success)" />
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Strengths</span>
                 </div>
                 {posReport.poolStrengths.map((s, i) => (
@@ -431,7 +420,7 @@ export default function PositionRankingPage() {
               {/* Gaps */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                  <AlertTriangle size={13} color="var(--lv-warning)" />
+                  <AlertTriangle size={14} color="var(--lv-warning)" />
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-warning)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Gaps</span>
                 </div>
                 {posReport.poolGaps.map((g, i) => (
@@ -446,7 +435,7 @@ export default function PositionRankingPage() {
               {posReport.marketObservation && (
                 <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-brand) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 6, padding: '14px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Globe size={13} color="var(--lv-accent)" />
+                    <Globe size={14} />
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Market Observation</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>{posReport.marketObservation}</p>
@@ -457,7 +446,7 @@ export default function PositionRankingPage() {
               {posReport.hiringRecommendation && (
                 <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-success) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 18%, transparent)', borderRadius: 6, padding: '14px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <CheckCircle2 size={13} color="var(--lv-success)" />
+                    <CheckCircle2 size={14} color="var(--lv-success)" />
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Hiring Recommendation</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>{posReport.hiringRecommendation}</p>
@@ -483,7 +472,7 @@ export default function PositionRankingPage() {
             padding: '28px 36px', marginBottom: 24,
             boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
           }}>
-            <SectionTitle icon={<Flag size={15} />} label="Question Health Flags" />
+            <SectionTitle icon={<Flag size={16} />} label="Question Health Flags" />
             <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginBottom: 16, marginTop: -8 }}>
               {posReport.questionHealthFlags.length} question{posReport.questionHealthFlags.length > 1 ? 's' : ''} had consistently low response quality
             </p>
@@ -522,7 +511,7 @@ export default function PositionRankingPage() {
             padding: '24px 36px', marginBottom: 24,
             boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
           }}>
-            <SectionTitle icon={<Users size={15} />} label="Pending Interviews" />
+            <SectionTitle icon={<Users size={16} />} label="Pending Interviews" />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {allCandidates.filter(c => ['pending', 'invited', 'scheduled'].includes(c.status)).map(c => (
                 <div key={c.id} style={{

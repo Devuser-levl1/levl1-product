@@ -174,9 +174,6 @@ export default function ClientsPage() {
                   {/* Client header */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--lv-brand-soft)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Building2 size={20} color="var(--lv-brand)" />
-                      </div>
                       <div style={{ minWidth: 0 }}>
                         <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>{client.name}</h2>
                         <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: '3px 0 0' }}>
@@ -226,10 +223,10 @@ export default function ClientsPage() {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Button variant="secondary" size="sm" leftIcon={<ExternalLink size={13} />} onClick={() => router.push(`/positions?client=${client.id}`)}>
+                    <Button variant="secondary" size="sm" leftIcon={<ExternalLink size={14} />} onClick={() => router.push(`/positions?client=${client.id}`)}>
                       View Positions
                     </Button>
-                    <Button variant="secondary" size="sm" leftIcon={<Plus size={13} />}
+                    <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />}
                       onClick={() => {
                         // Copy client ID to clipboard for linking positions
                         navigator.clipboard?.writeText(client.id)
@@ -238,7 +235,7 @@ export default function ClientsPage() {
                       Add Position
                     </Button>
                     {completedInterviews > 0 && (
-                      <Button variant="tertiary" size="sm" leftIcon={<AlertCircle size={13} />} onClick={() => toast('Client report view — coming soon')}>
+                      <Button variant="tertiary" size="sm" leftIcon={<AlertCircle size={14} />} onClick={() => toast('Client report view — coming soon')}>
                         View Reports
                       </Button>
                     )}

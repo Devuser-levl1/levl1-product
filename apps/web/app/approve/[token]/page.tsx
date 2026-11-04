@@ -91,15 +91,15 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
           </div>
 
           {/* Status indicator */}
-          {status === 'approved' && <CheckCircle2 size={18} color="#10B981" style={{ flexShrink: 0 }} />}
-          {status === 'removed'  && <XCircle      size={18} color="#EF4444" style={{ flexShrink: 0 }} />}
+          {status === 'approved' && <CheckCircle2 size={16} color="#10B981" style={{ flexShrink: 0 }} />}
+          {status === 'removed'  && <XCircle      size={16} color="#EF4444" style={{ flexShrink: 0 }} />}
         </div>
 
         {/* Expandable details */}
         {(q.expectedKeyPoints?.length || q.followUp) && (
           <button type="button" onClick={() => setExpanded(!expanded)}
             style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 12, marginTop: 8, padding: 0, fontFamily: 'var(--font-sans)' }}>
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             {expanded ? 'Hide' : 'View'} key points
           </button>
         )}
@@ -143,15 +143,15 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
             <>
               <button onClick={onApprove}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: `1px solid ${status === 'approved' ? 'rgba(16,185,129,0.3)' : '#E2E8F0'}`, background: status === 'approved' ? 'rgba(16,185,129,0.08)' : '#fff', color: status === 'approved' ? '#059669' : '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                <CheckCircle2 size={11} /> {status === 'approved' ? 'Approved' : 'Approve'}
+                <CheckCircle2 size={12} /> {status === 'approved' ? 'Approved' : 'Approve'}
               </button>
               <button onClick={() => setEditing(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                <Edit3 size={11} /> Edit
+                <Edit3 size={12} /> Edit
               </button>
               <button onClick={onRemove}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.04)', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                <Trash2 size={11} /> Remove
+                <Trash2 size={12} /> Remove
               </button>
             </>
           )}
@@ -293,7 +293,7 @@ export default function ApprovalPage() {
   // ── Loading ──
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-      <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite' }} />
+      <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
     </div>
   )
 

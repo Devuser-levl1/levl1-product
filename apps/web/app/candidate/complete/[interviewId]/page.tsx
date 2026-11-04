@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { loadCandidateInterview } from '@/lib/candidatePortal'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +46,7 @@ export default async function CandidateCompletePage({
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
           }}
         >
-          ✓
+          <Check size={28} aria-hidden="true" />
         </div>
 
         <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 12px' }}>

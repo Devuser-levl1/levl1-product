@@ -62,7 +62,7 @@ function html(kind: 'confirm' | 'reschedule' | 'cancel', c: BookingEmailCtx, dat
     <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 18px">Hi ${c.candidateName},<br>${intro}</p>
     <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:16px 20px;margin-bottom:22px">
       <div style="font-size:15px;font-weight:700;color:#0F172A">${c.positionTitle} at ${c.company}</div>
-      <div style="font-size:14px;color:#475569;margin-top:6px;${kind === 'cancel' ? 'text-decoration:line-through' : ''}">📅 ${dateStr}</div>
+      <div style="font-size:14px;color:#475569;margin-top:6px;${kind === 'cancel' ? 'text-decoration:line-through' : ''}">${dateStr}</div>
     </div>
     ${kind !== 'cancel' ? `<a href="${c.joinUrl}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-weight:700">Join interview when ready →</a>` : ''}
     ${kind !== 'cancel' && c.consentUrl ? `<p style="font-size:12px;color:#94A3B8;margin-top:14px">Before you start you'll be asked to acknowledge a short recording &amp; data-processing consent notice. <a href="${c.consentUrl}" style="color:#4F46E5">Review it here</a>.</p>` : ''}

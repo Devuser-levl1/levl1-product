@@ -20,7 +20,7 @@ async function notifySales(lead: { name: string; email: string; personaSlug: str
         <tr><td style="color:#64748B;padding:2px 14px 2px 0">Name</td><td><strong>${lead.name}</strong></td></tr>
         <tr><td style="color:#64748B;padding:2px 14px 2px 0">Work email</td><td><a href="mailto:${lead.email}">${lead.email}</a></td></tr>
         <tr><td style="color:#64748B;padding:2px 14px 2px 0">Tried role</td><td>${roleTitle}</td></tr>
-        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Marketing consent</td><td>${lead.marketingConsent ? '✅ opted in' : '— not opted in'}</td></tr>
+        <tr><td style="color:#64748B;padding:2px 14px 2px 0">Marketing consent</td><td>${lead.marketingConsent ? 'Opted in' : 'Not opted in'}</td></tr>
         <tr><td style="color:#64748B;padding:2px 14px 2px 0">When</td><td>${new Date().toUTCString()}</td></tr>
       </table>
       <p style="color:#94A3B8;font-size:12px;margin-top:16px">Reply to this email to reach the prospect directly.</p>

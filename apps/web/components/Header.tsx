@@ -180,7 +180,7 @@ export default function Header() {
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--lv-surface-muted)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = showNotifs ? "var(--lv-brand-soft)" : "transparent"; }}
           >
-            <Bell size={18} color={showNotifs ? lv.brand : lv.textMuted} aria-hidden="true" />
+            <Bell size={16} color={showNotifs ? lv.brand : lv.textMuted} aria-hidden="true" />
             {unreadCount > 0 && (
               <span aria-hidden="true" style={{
                 position: "absolute", top: 8, right: 8,
@@ -267,7 +267,7 @@ export default function Header() {
               <div style={{ fontSize: 13, fontWeight: 600, color: lv.text, lineHeight: 1.2 }}>{userName || 'User'}</div>
               <div style={{ fontSize: 12, color: lv.textMuted, lineHeight: 1.2 }}>{agencyPlan?.plan === 'trial' ? 'Trial' : 'Admin'}</div>
             </div>
-            <ChevronDown className="header-user-chevron" size={13} color={lv.textMuted} aria-hidden="true" />
+            <ChevronDown className="header-user-chevron" size={14} color={lv.textMuted} aria-hidden="true" />
           </button>
 
           {showUser && (

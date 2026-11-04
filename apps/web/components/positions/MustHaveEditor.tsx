@@ -34,7 +34,7 @@ export function MustHaveEditor({ value, onChange, suggestions = [], disabled }: 
         {value.length === 0 && <li style={{ fontSize: text.sm, color: lv.textMuted }}>No must-haves yet — the interview treats every skill equally.</li>}
         {value.map((m) => (
           <li key={m} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: lv.brand, color: lv.onBrand, borderRadius: radius.pill, padding: "4px 4px 4px 10px", fontSize: text.sm, fontWeight: 600 }}>
-            <ShieldCheck size={13} aria-hidden="true" /> {m}
+            <ShieldCheck size={14} aria-hidden="true" /> {m}
             {!disabled && (
               <button type="button" onClick={() => remove(m)} aria-label={`Remove ${m}`} className="lv-chip-remove"
                 style={{ border: "none", background: "rgba(255,255,255,0.22)", color: lv.onBrand, width: 22, height: 22, borderRadius: 6, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>

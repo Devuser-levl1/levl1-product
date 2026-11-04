@@ -30,7 +30,7 @@ export async function generateQuestionSet(title: string, jd: string): Promise<QS
       model: CLAUDE_MODEL, max_tokens: 1600, temperature: 0.3,
       messages: [{ role: 'user', content: `Generate interview questions for "${title}". JD: ${jd.slice(0, 1500)}.
 Return ONLY JSON: {"technicalQuestions":[{"question":"..","expectedKeyPoints":[".."]}],"scenarioQuestions":[...],"behavioralQuestions":[...],"eqQuestions":[...]}
-6-7 technical, 2-3 each for scenario / behavioral / eq.` }],
+6-7 technical, 2-3 each for scenario / behavioral / eq. Plain text only — no emoji or decorative symbols.` }],
     })
     const raw = res.content[0].type === 'text' ? res.content[0].text : '{}'
     const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim())

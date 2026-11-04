@@ -120,6 +120,8 @@ QUALITY STANDARDS:
 - 12+ year roles: concept checks at senior depth only (no textbook basics); applied questions on leadership, strategy, architecture
 - 0-3 year roles: NO org design — fundamentals and problem solving
 
+- Plain text only: no emoji, symbols or decorative characters in any question or key point
+
 OUTPUT: ONLY valid JSON, no markdown, no explanation.`;
 
     const userPrompt = `Generate interview questions for this role:

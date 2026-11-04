@@ -141,13 +141,13 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
 
         {/* Greeting */}
         <section className="lv-card" style={card}>
-          <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 6px' }}>Hi {data.candidateFirstName} 👋</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 6px' }}>Hi {data.candidateFirstName}</h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-body)', margin: '0 0 16px', lineHeight: 1.6 }}>
             You&apos;re about to begin your interview for <strong>{data.positionTitle}</strong> at <strong>{data.company}</strong>.
           </p>
           {scheduledLabel && (
             <div style={{ fontSize: 13, color: 'var(--lv-text-body)', background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '8px 12px' }}>
-              <span aria-hidden="true">📅 </span>Scheduled for {scheduledLabel}
+              Scheduled for {scheduledLabel}
             </div>
           )}
         </section>
@@ -162,7 +162,7 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
           {/* Step 1 — OTP */}
           <li style={{ padding: '12px 0', borderBottom: '1px solid var(--lv-border)' }}>
             <Row
-              icon={<Mail size={18} />}
+              icon={<Mail size={16} />}
               title="Verify your email"
               sub={otpSent ? `Code sent to ${otpEmail}` : 'We’ll send a 6-digit code'}
               status={otpStatus}
@@ -190,17 +190,17 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
           </li>
 
           {/* Step 2 — name */}
-          <li><Row icon={<CheckCircle2 size={18} />} title="Confirm your identity" sub={`You are ${data.candidateName}`} status={nameStatus} borderBottom>
+          <li><Row icon={<CheckCircle2 size={16} />} title="Confirm your identity" sub={`You are ${data.candidateName}`} status={nameStatus} borderBottom>
             {nameStatus !== 'done' && <ActionBtn brand={brand} busy={nameStatus === 'busy'} onClick={confirmName} disabled={otpStatus !== 'done'}>That&apos;s me</ActionBtn>}
           </Row></li>
 
           {/* Step 3 — photo */}
-          <li><Row icon={<Camera size={18} />} title="Take a verification photo" sub="A single still is captured for integrity" status={photoStatus} borderBottom failHint="Camera access denied — enable it and retry.">
+          <li><Row icon={<Camera size={16} />} title="Take a verification photo" sub="A single still is captured for integrity" status={photoStatus} borderBottom failHint="Camera access denied — enable it and retry.">
             {photoStatus !== 'done' && <ActionBtn brand={brand} busy={photoStatus === 'busy'} onClick={capturePhoto} disabled={nameStatus !== 'done'}>{photoStatus === 'fail' ? 'Retry' : 'Capture'}</ActionBtn>}
           </Row></li>
 
           {/* Step 4 — mic */}
-          <li><Row icon={<Mic size={18} />} title="Test your microphone" sub="Required for the voice interview" status={micStatus} failHint="Microphone access denied — enable it and retry." last>
+          <li><Row icon={<Mic size={16} />} title="Test your microphone" sub="Required for the voice interview" status={micStatus} failHint="Microphone access denied — enable it and retry." last>
             {micStatus !== 'done' && <ActionBtn brand={brand} busy={micStatus === 'busy'} onClick={testMic}>{micStatus === 'fail' ? 'Retry' : 'Test mic'}</ActionBtn>}
           </Row></li>
           </ol>
@@ -226,7 +226,7 @@ function Row({
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: last ? '12px 0 0' : '12px 0', borderBottom: borderBottom ? '1px solid var(--lv-border)' : 'none', flexWrap: 'wrap' }}>
       <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 6, flexShrink: 0, background: status === 'done' ? 'var(--lv-success-soft)' : 'var(--lv-surface-muted)', color: status === 'done' ? 'var(--lv-success)' : 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {status === 'done' ? <CheckCircle2 size={18} /> : icon}
+        {status === 'done' ? <CheckCircle2 size={16} /> : icon}
       </div>
       <div style={{ flex: '1 1 160px', minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)' }}>

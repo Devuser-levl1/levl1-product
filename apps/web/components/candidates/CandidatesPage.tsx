@@ -174,7 +174,7 @@ function CandidateCard({
         <span title="Add a phone number to enable WhatsApp invites and reminders. Email invites still send."
           style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "flex-start", gap: 4, fontSize: 11, fontWeight: 600, lineHeight: 1.35,
             padding: "2px 8px", borderRadius: radius.pill, background: lv.warningSoft, color: lv.warning, border: `1px solid ${lv.warningBorder}` }}>
-          <AlertTriangle size={11} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /> No phone — WhatsApp unavailable
+          <AlertTriangle size={12} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} /> No phone — WhatsApp unavailable
         </span>
       )}
 
@@ -224,7 +224,7 @@ function CandidateCard({
             onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}>
             Start Interview
           </Button>
-          <Button variant="secondary" size="sm" leftIcon={<Monitor size={13} />} onClick={handleMonitor}
+          <Button variant="secondary" size="sm" leftIcon={<Monitor size={14} />} onClick={handleMonitor}
             title="Open recruiter monitor in new tab" aria-label={`Monitor ${candidate.name}'s interview (opens in new tab)`}>
             Monitor
           </Button>
@@ -235,7 +235,7 @@ function CandidateCard({
       {isCompleted && candidate.interviewId && (
         <div style={divider}>
           <Button variant="secondary" size="sm" fullWidth onClick={handleGenerateReport} loading={generatingReport}
-            leftIcon={<FileText size={13} />}
+            leftIcon={<FileText size={14} />}
             style={candidate.reportGenerated ? { color: lv.success } : undefined}>
             {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : "Generate Report"}
           </Button>

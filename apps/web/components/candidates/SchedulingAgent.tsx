@@ -227,7 +227,7 @@ export function SchedulingBadge({
   if (candidate.status === "pending") {
     return (
       <>
-        <Button size="sm" leftIcon={<Send size={13} />} onClick={() => setShowInvite(true)}>
+        <Button size="sm" leftIcon={<Send size={14} />} onClick={() => setShowInvite(true)}>
           Send Invite
         </Button>
         {showInvite && <InviteModal candidate={candidate} position={position} onClose={() => setShowInvite(false)} />}
@@ -326,7 +326,7 @@ export function SchedulingBadge({
   if (candidate.status === "no_show") {
     return (
       <div style={{ display: "flex", gap: 6 }}>
-        <Button variant="secondary" size="sm" leftIcon={<Calendar size={13} />} onClick={() => setShowSchedule(true)}>
+        <Button variant="secondary" size="sm" leftIcon={<Calendar size={14} />} onClick={() => setShowSchedule(true)}>
           Reschedule
         </Button>
         {showSchedule && <ScheduleModal candidate={candidate} position={position} onClose={() => setShowSchedule(false)} />}
@@ -378,7 +378,7 @@ export function BulkInviteBar({ candidateIds }: { candidateIds: string[] }) {
   };
 
   return (
-    <Button size="sm" onClick={sendAll} loading={loading} leftIcon={<Send size={13} />}>
+    <Button size="sm" onClick={sendAll} loading={loading} leftIcon={<Send size={14} />}>
       {loading ? "Sending…" : <>Send {targets.length} Invite{targets.length !== 1 ? "s" : ""}</>}
     </Button>
   );

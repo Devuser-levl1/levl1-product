@@ -69,7 +69,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
               flexShrink: 0,
             }}
           >
-            <BookOpen size={15} color="white" />
+            <BookOpen size={16} color="white" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.60)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
@@ -90,7 +90,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
 

@@ -110,7 +110,7 @@ export function InviteTemplateEditor({ endpoint, scope, previewVars }: {
               style={{ minHeight: 240, resize: "vertical", lineHeight: 1.55 }} />
           </Field>
           <div role="group" aria-labelledby="ite-vars">
-            <div id="ite-vars" className="lv-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}><Braces size={13} aria-hidden="true" /> Insert variable</div>
+            <div id="ite-vars" className="lv-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}><Braces size={14} aria-hidden="true" /> Insert variable</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {INVITE_VARIABLES.map((v) => (
                 <button key={v.key} type="button" disabled={!canEdit} onClick={() => insert(v.key)} title={v.label} aria-label={`Insert ${v.label}`} className="lv-chip-add"

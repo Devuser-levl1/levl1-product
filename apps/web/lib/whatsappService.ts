@@ -94,11 +94,11 @@ export async function sendWhatsAppInvite({
     .map((slot, i) => `${i + 1}. ${slot.label}`)
     .join('\n')
 
-  const message = `Hi ${candidateName}! 👋
+  const message = `Hi ${candidateName},
 
 You've been invited to interview for *${positionTitle}* at *${company}* by ${agencyName}.
 
-⚠️ *Please note:* This is an L1 technical interview conducted by an *AI interviewer* (not a human). It takes about 30 minutes, covers *technical and behavioral* questions, and your responses will be *recorded and evaluated*.
+*Please note:* This is an L1 technical interview conducted by an *AI interviewer* (not a human). It takes about 30 minutes, covers *technical and behavioral* questions, and your responses will be *recorded and evaluated*.
 
 You'll be asked to confirm your consent on the scheduling page before picking a time. Open it here: ${schedulingUrl}
 
@@ -131,18 +131,18 @@ export async function sendWhatsAppConfirmation({
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata',
   })
 
-  const message = `✅ *Interview Confirmed!*
+  const message = `*Interview confirmed*
 
 Hi ${candidateName}, your interview for *${positionTitle}* is confirmed.
 
-📅 *Date:* ${dateStr}
-🕐 *Time:* ${timeStr} IST
-⏱ *Duration:* 30 minutes
+*Date:* ${dateStr}
+*Time:* ${timeStr} IST
+*Duration:* 30 minutes
 
 Join here when it's time:
 ${interviewUrl}
 
-Good luck! 🎯`
+Good luck.`
 
   await send(candidatePhone, message, 'Confirmation')
 }
@@ -168,16 +168,14 @@ export async function sendWhatsAppReminder({
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata',
   })
 
-  const emoji = label.includes('15') ? '⏰' : '📅'
-
-  const message = `${emoji} *Interview Reminder*
+  const message = `*Interview reminder*
 
 Hi ${candidateName}! Your interview for *${positionTitle}* is in *${label}* at ${timeStr} IST.
 
 Join here:
 ${interviewUrl}
 
-Find a quiet place and make sure your mic is working. Good luck! 🎯`
+Find a quiet place and make sure your mic is working. Good luck.`
 
   await send(candidatePhone, message, 'Reminder')
 }

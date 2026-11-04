@@ -74,8 +74,8 @@ export default function InterviewCompletePage() {
           </p>
           {[
             { icon: <CheckCircle2 size={14} color="var(--lv-success)" />, text: 'Your interview has been submitted' },
-            { icon: <Clock size={14} color="var(--lv-accent)" />,        text: 'The team will review your evaluation within 2–3 business days' },
-            { icon: <Mail size={14} color="var(--lv-brand)" />,         text: "You'll hear back via email with next steps" },
+            { icon: <Clock size={14} />,        text: 'The team will review your evaluation within 2–3 business days' },
+            { icon: <Mail size={14} />,         text: "You'll hear back via email with next steps" },
           ].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: i < 2 ? 10 : 0 }}>
               <div style={{ marginTop: 1, flexShrink: 0 }}>{item.icon}</div>

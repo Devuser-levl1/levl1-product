@@ -116,7 +116,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
                 }]),
             // Next / Finish button
             {
-              text:   isLast ? 'Create My First Position ✓' : 'Next →',
+              text:   isLast ? 'Create my first position' : 'Next →',
               action: isLast
                 ? () => { tour.complete(); onOpenNewPosition() }
                 : () => tour.next(),

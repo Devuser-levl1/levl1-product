@@ -111,7 +111,7 @@ export default function TrialBanner() {
             flexShrink: 0,
           }}
         >
-          <X size={13} />
+          <X size={14} />
         </button>
       )}
     </div>

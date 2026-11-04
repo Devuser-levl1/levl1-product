@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Star } from 'lucide-react'
+import { MessageSquare, X, Star, Check } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function FeedbackWidget() {
@@ -113,7 +113,7 @@ export function FeedbackWidget() {
               onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--lv-text-body)' }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--lv-text-muted)' }}
             >
-              <X size={15} />
+              <X size={16} />
             </button>
           </div>
 
@@ -128,8 +128,8 @@ export function FeedbackWidget() {
                 gap: 10,
               }}
             >
-              <div style={{ fontSize: 28 }}>🙏</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Thank you for your feedback!</div>
+              <Check size={22} aria-hidden="true" style={{ color: 'var(--lv-success)' }} />
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Thanks for your feedback</div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>It helps us improve Levl1 for you.</div>
             </div>
           ) : (
@@ -240,7 +240,7 @@ export function FeedbackWidget() {
           e.currentTarget.style.transform = 'translateY(0)'
         }}
       >
-        <MessageSquare size={15} />
+        <MessageSquare size={16} />
         Feedback
       </button>
 

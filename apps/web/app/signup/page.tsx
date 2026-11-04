@@ -147,7 +147,7 @@ export default function SignupPage() {
 
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 28, border: '1px solid rgba(255,255,255,0.20)' }}>
-            ✦ Free trial — no credit card needed
+            Free trial — no credit card needed
           </div>
 
           <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
@@ -161,7 +161,7 @@ export default function SignupPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {PERKS.map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <CheckCircle2 size={18} color="rgba(255,255,255,0.9)" />
+                <CheckCircle2 size={16} color="rgba(255,255,255,0.9)" />
                 <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.90)', fontWeight: 500 }}>{p}</span>
               </div>
             ))}

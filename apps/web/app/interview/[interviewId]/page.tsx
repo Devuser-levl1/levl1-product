@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2 } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check } from 'lucide-react'
 import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
 import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -2147,7 +2147,7 @@ export default function InterviewPage() {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center' }}>
-          <Loader2 size={32} color="#7C3AED" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
           <div style={{ fontSize: 14, color: '#94A3B8' }}>Loading your interview…</div>
         </div>
       </div>
@@ -2174,7 +2174,7 @@ export default function InterviewPage() {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5', padding: 32 }}>
         <div style={{ textAlign: 'center', color: '#fff', maxWidth: 340 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>💻</div>
+          <Monitor size={28} aria-hidden="true" style={{ marginBottom: 16 }} />
           <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, marginBottom: 12 }}>Desktop Required</div>
           <div style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.6 }}>
             This interview is optimised for desktop. Please open this link on a laptop or desktop computer to begin.
@@ -2193,7 +2193,7 @@ export default function InterviewPage() {
       return (
         <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
           <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
-            <div style={{ fontSize: 56, marginBottom: 20 }}>📊</div>
+            <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F4F5', color: '#52525B' }}><BarChart3 size={20} /></div>
             <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Your sample report is ready</div>
             <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
               Great job, {candidate.name.split(' ')[0]}! We&apos;ve scored your responses and run the same integrity checks a real candidate gets. Open your evidence report to see scores, strengths, concerns and the integrity panel.
@@ -2214,7 +2214,7 @@ export default function InterviewPage() {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>✅</div>
+          <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F7F3', color: '#2E7550' }}><Check size={22} /></div>
           <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Interview Complete</div>
           <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
             Thank you, {candidate.name.split(' ')[0]}. Your interview has been submitted. The team at {position.company} will be in touch with next steps.
@@ -2235,7 +2235,7 @@ export default function InterviewPage() {
         </div>
         <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(79,70,229,0.08)' }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', border: '3px solid #7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Mic size={32} color="#7C3AED" />
+            <Mic size={32} />
           </div>
           <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
@@ -2398,7 +2398,7 @@ export default function InterviewPage() {
 
         {messageFromRecruiter && (
           <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <span>📋 {messageFromRecruiter}</span>
+            <span>{messageFromRecruiter}</span>
             <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
           </div>
         )}
@@ -2418,7 +2418,7 @@ export default function InterviewPage() {
                 </div>
                 <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.6, margin: 0 }}>{currentQ.question}</p>
                 {currentQ.section === 'whiteboard' && (
-                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>✏️ Use the Whiteboard tab below to sketch your answer</div>
+                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>Use the Whiteboard tab below to sketch your answer</div>
                 )}
               </>
             ) : (
@@ -2467,10 +2467,10 @@ export default function InterviewPage() {
             {/* tab strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
               <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
-                <Code2 size={13} /> Code / Text
+                <Code2 size={14} /> Code / Text
               </button>
               <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'whiteboard' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
-                <PenLine size={13} /> Whiteboard
+                <PenLine size={14} /> Whiteboard
               </button>
               {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
             </div>
@@ -2595,7 +2595,7 @@ export default function InterviewPage() {
             <div style={{ padding: '22px 28px 0', borderBottom: '1px solid #F1F5F9', paddingBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <AlertTriangle size={18} color="#DC2626" />
+                  <AlertTriangle size={16} color="#DC2626" />
                 </div>
                 <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#1E293B' }}>
                   End Interview?

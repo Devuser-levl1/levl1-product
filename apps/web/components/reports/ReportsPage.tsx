@@ -464,7 +464,7 @@ export default function ReportsPage() {
           background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`,
           borderRadius: radius.md, display: "flex", alignItems: "center", gap: space[3],
         }}>
-          <Zap size={14} color={lv.brand} fill="currentColor" aria-hidden="true" />
+          <Zap size={14} fill="currentColor" aria-hidden="true" />
           <span style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.5 }}>
             <strong style={{ color: lv.brandText }}>Tip:</strong> Click any position card&apos;s &ldquo;View Rankings&rdquo; to see the full candidate table. Click &ldquo;AI Summary&rdquo; to generate talent pool insights for that position.
           </span>

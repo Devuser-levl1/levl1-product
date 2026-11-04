@@ -128,7 +128,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     return (
       <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <ShieldCheck size={18} color={brand} aria-hidden="true" />
+          <ShieldCheck size={16} color={brand} aria-hidden="true" />
           <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Before you schedule</h1>
         </div>
         <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.6, margin: '0 0 16px' }}>

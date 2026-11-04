@@ -100,9 +100,6 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
       {/* Time info */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
-          <div aria-hidden="true" style={{ width: 30, height: 30, borderRadius: radius.sm, background: lv.surfaceSunken, border: `1px solid ${lv.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Video size={14} color={lv.textMuted} />
-          </div>
           <div>
             <div className="font-mono" style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{time}</div>
             <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 1 }}>{date}</div>
@@ -128,7 +125,7 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
       {/* CTA */}
       <div style={{ display: "flex", gap: space[2] }}>
         <Button style={{ flex: 1 }} onClick={() => onStart(interview)}
-          leftIcon={isLive ? <Radio size={14} /> : <Play size={13} fill="currentColor" strokeWidth={0} />}>
+          leftIcon={isLive ? <Radio size={14} /> : <Play size={14} fill="currentColor" strokeWidth={0} />}>
           {isLive ? "Join Live" : "Start"}
         </Button>
         <Button variant="secondary" leftIcon={<Monitor size={14} />}

@@ -152,7 +152,7 @@ export default function PlaybackPage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: flagged ? C.amberSoft : C.greenSoft, border: `1px solid ${flagged ? C.amberLine : C.greenLine}` }}>
-          {flagged ? <ShieldAlert size={18} color={C.amber} aria-hidden="true" /> : <ShieldCheck size={18} color={C.green} aria-hidden="true" />}
+          {flagged ? <ShieldAlert size={16} color={C.amber} aria-hidden="true" /> : <ShieldCheck size={16} color={C.green} aria-hidden="true" />}
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: flagged ? C.amber : C.green }}>{flagged ? 'Flagged for human review' : 'No integrity concerns'}</div>
             <div style={{ fontSize: 12, color: C.body }}>{events.length} event{events.length === 1 ? '' : 's'} · never an auto-fail</div>

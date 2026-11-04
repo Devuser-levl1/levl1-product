@@ -94,7 +94,7 @@ export function ConceptRubricEditor({ value, onChange, onGenerate, generating, c
             <Input aria-label="Concept" placeholder="Concept, e.g. Kafka consumer groups" value={c.concept} onChange={(e) => update(i, { concept: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0 }} />
             <Textarea aria-label="Strong answer" placeholder="Strong answer shows…" value={c.strong} onChange={(e) => update(i, { strong: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 64, resize: "vertical" }} />
             <Textarea aria-label="Weak answer" placeholder="Weak answer looks like…" value={c.weak} onChange={(e) => update(i, { weak: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 64, resize: "vertical" }} />
-            <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${c.concept || "concept"}`} onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={15} /></Button>
+            <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${c.concept || "concept"}`} onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={16} /></Button>
           </div>
         ))}
       </div>
@@ -120,7 +120,7 @@ export function KnockoutEditor({ value, onChange }: { value: KnockoutQuestion[];
           <div key={k.id} style={{ display: "flex", flexWrap: "wrap", gap: space[2], alignItems: "center" }}>
             <Input aria-label="Knockout question" placeholder="e.g. Are you willing to relocate to Pune?" value={k.question} onChange={(e) => update(i, { question: e.target.value })} maxLength={200} style={{ flex: "3 1 240px", minWidth: 0 }} />
             <Input aria-label="Required answer" placeholder="Required answer" value={k.requiredAnswer} onChange={(e) => update(i, { requiredAnswer: e.target.value })} maxLength={120} title="The answer that passes, e.g. Yes" style={{ flex: "1 1 140px", minWidth: 0 }} />
-            <Button variant="ghost" size="sm" iconOnly aria-label="Remove knockout question" onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={15} /></Button>
+            <Button variant="ghost" size="sm" iconOnly aria-label="Remove knockout question" onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={16} /></Button>
           </div>
         ))}
       </div>

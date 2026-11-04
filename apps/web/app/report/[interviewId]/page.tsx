@@ -179,7 +179,7 @@ export default function ReportPage() {
       <DemoSalesCTA />
       {/* Print header */}
       <div className="print-only" style={{ display: 'none', padding: '0 0 16px', borderBottom: `2px solid ${INDIGO}`, marginBottom: 24, alignItems: 'center', gap: 10 }}>
-        <Zap size={18} color="var(--lv-accent)" fill="var(--lv-accent)" />
+        <Zap size={16} fill="var(--lv-accent)" />
         <span style={{ fontSize: 18, fontWeight: 600, color: INDIGO }}>Levl1</span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>Confidential — for internal use only</span>
       </div>
@@ -188,7 +188,7 @@ export default function ReportPage() {
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'color-mix(in srgb, var(--lv-surface) 95%, transparent)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 clamp(12px, 3vw, 32px)', minHeight: 56, flexWrap: 'wrap' }}>
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Back</Button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-          <div aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={13} color="white" fill="white" /></div>
+          <div aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={14} color="white" fill="white" /></div>
           <span style={{ fontSize: 14, fontWeight: 600, color: INDIGO }}>Levl1</span>
         </div>
         <div style={{ flex: 1 }} />
@@ -345,7 +345,7 @@ function Collapsible({ title, children }: { title: string; children: React.React
     <section style={card}>
       <button type="button" className="rp-collapse" aria-expanded={open} onClick={() => setOpen((o) => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', borderRadius: 8 }}>
         <SectionHead title={title} color={INDIGO} />
-        <span aria-hidden="true" style={{ marginLeft: 'auto', color: 'var(--lv-text-muted)' }}>{open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</span>
+        <span aria-hidden="true" style={{ marginLeft: 'auto', color: 'var(--lv-text-muted)' }}>{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
       </button>
       {open && <div style={{ marginTop: 4 }}>{children}</div>}
     </section>

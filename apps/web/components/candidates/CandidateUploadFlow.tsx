@@ -4,11 +4,7 @@ import {
   useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent,
 } from "react";
 import { useAppStore, Candidate } from "@/store/appStore";
-import {
-  X, Upload, Clipboard, UserPlus, CheckCircle2,
-  AlertCircle, Trash2, ChevronRight, ChevronDown, ChevronUp,
-  AlertTriangle,
-} from "lucide-react";
+import { X, Upload, Clipboard, UserPlus, CheckCircle2, AlertCircle, Trash2, ChevronRight, ChevronDown, ChevronUp, AlertTriangle, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button, Badge, Alert, Field, Input, Select, Textarea, type Tone } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
@@ -388,7 +384,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
         {/* Header */}
         <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: "0 clamp(16px, 3vw, 28px)", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
-            <Upload size={18} color={lv.brand} aria-hidden="true" />
+            <Upload size={16} aria-hidden="true" />
             <h2 id="cuf-title" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text }}>Upload Candidates</h2>
           </div>
           <Button variant="ghost" iconOnly aria-label="Close upload" onClick={onClose}><X size={20} /></Button>
@@ -443,12 +439,9 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                 <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
                   <ul aria-label="Files to process" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: space[2] }}>
                     {files.map((f) => {
-                      const isPdf    = f.name.toLowerCase().endsWith(".pdf");
-                      const isDoc    = f.name.toLowerCase().endsWith(".doc") || f.name.toLowerCase().endsWith(".docx");
-                      const fileIcon = isPdf ? "📄" : isDoc ? "📝" : "📎";
                       return (
                         <li key={f.id} className="lv-card" style={{ display: "flex", alignItems: "center", gap: space[3], padding: `${space[2]}px ${space[3]}px` }}>
-                          <span aria-hidden="true" style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{fileIcon}</span>
+                          <FileText size={16} aria-hidden="true" style={{ flexShrink: 0, color: lv.textMuted }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: text.sm, fontWeight: 500, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
                             <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{f.size}</div>
@@ -609,12 +602,12 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                           />
                           {!e.email && (
                             <div style={{ fontSize: text.xs, fontWeight: 600, color: lv.danger, display: "flex", alignItems: "center", gap: 3 }}>
-                              <AlertTriangle size={11} aria-hidden="true" /> Required
+                              <AlertTriangle size={12} aria-hidden="true" /> Required
                             </div>
                           )}
                           {e.isDuplicate && (
                             <div style={{ fontSize: text.xs, color: lv.danger, display: "flex", alignItems: "center", gap: 3 }}>
-                              <AlertCircle size={11} aria-hidden="true" /> {e.duplicateInfo}
+                              <AlertCircle size={12} aria-hidden="true" /> {e.duplicateInfo}
                             </div>
                           )}
                         </div>

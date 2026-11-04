@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, X, Smartphone } from 'lucide-react'
+import { Download, X, Smartphone, Share } from 'lucide-react'
 
 const DISMISS_KEY = 'levl1_install_dismissed'
 
@@ -96,7 +96,7 @@ export function InstallPrompt() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Smartphone size={18} color="#fff" />
+          <Smartphone size={16} color="#fff" />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>
@@ -117,7 +117,7 @@ export function InstallPrompt() {
       {isIOS ? (
         /* iOS instructions */
         <div style={{ fontSize: 12, color: 'var(--lv-text-body)', lineHeight: 1.6 }}>
-          Tap the <strong>Share</strong> button <span style={{ fontSize: 14 }}>⬆</span> in Safari,
+          Tap the <strong>Share</strong> button <Share size={14} aria-hidden="true" style={{ verticalAlign: '-2px' }} /> in Safari,
           then choose <strong>&ldquo;Add to Home Screen&rdquo;</strong>.
         </div>
       ) : (
@@ -140,7 +140,7 @@ export function InstallPrompt() {
             cursor:       'pointer',
           }}
         >
-          <Download size={15} />
+          <Download size={16} />
           Install App
         </button>
       )}

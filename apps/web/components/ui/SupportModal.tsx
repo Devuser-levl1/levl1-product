@@ -146,7 +146,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
 

@@ -196,7 +196,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel,
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[2], flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: space[2], alignItems: "center" }}>
           <span style={{ fontSize: text.xs, fontFamily: lv.fontMono, color: lv.accent, background: lv.accentSoft, border: `1px solid ${lv.border}`, padding: "2px 8px", borderRadius: radius.sm }}>{q.techTag}</span>
-          <Button variant="tertiary" size="sm" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} rightIcon={expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}>
+          <Button variant="tertiary" size="sm" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} rightIcon={expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}>
             Key points
           </Button>
         </div>
@@ -208,7 +208,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel,
             </>
           ) : (
             <>
-              <Button variant="secondary" size="sm" aria-pressed={approved} onClick={onApprove} leftIcon={<Check size={13} color={lv.success} />}>
+              <Button variant="secondary" size="sm" aria-pressed={approved} onClick={onApprove} leftIcon={<Check size={14} color={lv.success} />}>
                 {approved ? "Approved" : approveLabel}
               </Button>
               <Button variant="ghost" size="sm" iconOnly aria-label="Edit question" title="Edit" onClick={() => setEditing(true)}><Edit3 size={14} /></Button>
@@ -610,7 +610,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       if (approvalData.emailsConfigured) {
         toast.success(`Approval emails sent to ${sent.length > 0 ? sent.join(" & ") : "approvers"}`);
       } else {
-        toast("Approval tokens created — add RESEND_API_KEY to send emails automatically", { icon: "⚠️" });
+        toast("Approval tokens created — add RESEND_API_KEY to send emails automatically");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send approvals");
@@ -733,9 +733,6 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       {/* ── Top bar ── */}
       <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: `0 ${gutter}`, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
-          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: radius.md, background: lv.gradientBrand, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Sparkles size={14} color="#fff" />
-          </div>
           <span id="npf-title" style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text }}>New Position Setup</span>
         </div>
         <Button variant="ghost" iconOnly aria-label="Close new position setup" onClick={onClose}><X size={20} /></Button>
@@ -845,7 +842,6 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   {VOICE_OPTIONS.map((v) => (
                     <label key={v.key} className="lv-option" data-checked={voiceAccent === v.key} style={{ flexWrap: "wrap" }}>
                       <input type="radio" name="posVoice" value={v.key} checked={voiceAccent === v.key} onChange={() => setVoiceAccent(v.key)} />
-                      <span aria-hidden="true" style={{ fontSize: text.md }}>{v.flag}</span>
                       <span style={{ fontSize: text.sm, color: voiceAccent === v.key ? lv.brandText : lv.textBody, fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>{v.accent}</span>
                       <span style={{ fontSize: text.xs, color: lv.textMuted }}>Interviewer: <strong style={{ color: lv.textBody }}>{v.interviewerName}</strong></span>
                       <Button variant="secondary" size="sm" aria-label={`Preview ${v.interviewerName}'s voice`} leftIcon={<Play size={12} fill="currentColor" />} style={{ cursor: previewingVoice ? "wait" : undefined }}
@@ -896,7 +892,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3] }}>
                     {pastedJD.trim().length > 50 ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: text.xs, color: lv.textMuted }}>
-                        <FileText size={13} aria-hidden="true" /> {pastedJD.trim().split(/\s+/).length} words
+                        <FileText size={14} aria-hidden="true" /> {pastedJD.trim().split(/\s+/).length} words
                       </div>
                     ) : <div />}
                     <Button onClick={parseJD} disabled={pastedJD.trim().length < 50} loading={jdParsing} leftIcon={<Search size={14} />}>
@@ -943,7 +939,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                       </div>
                       <Textarea aria-label="Generated job description" value={generatedJD} onChange={(e) => setGeneratedJD(e.target.value)} style={{ resize: "vertical", lineHeight: 1.65, minHeight: 400 }} />
                       <div style={{ fontSize: text.xs, color: lv.textMuted, display: "flex", alignItems: "center", gap: 6 }}>
-                        <AlertCircle size={13} aria-hidden="true" /> This JD needs client approval before interviews begin
+                        <AlertCircle size={14} aria-hidden="true" /> This JD needs client approval before interviews begin
                       </div>
                     </>
                   ) : (
@@ -1215,7 +1211,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   <Card style={{ background: lv.brandSoft, borderColor: lv.brandSoftBorder }}
                     title={<span style={{ display: "inline-flex", alignItems: "center", gap: space[2] }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: lv.danger }} />Live Dynamic Questions</span>}>
                     <p style={{ fontSize: text.sm, color: lv.textBody, lineHeight: 1.6, margin: `0 0 ${space[2]}px` }}>Generated in real time during the interview based on each candidate&apos;s responses. Cannot be pre-reviewed.</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: space[2], fontSize: text.sm, color: lv.textBody }}><Check size={13} color={lv.success} aria-hidden="true" /> Resume project deep dives · Follow-up probes · Coding challenges (if hands-on)</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: space[2], fontSize: text.sm, color: lv.textBody }}><Check size={14} color={lv.success} aria-hidden="true" /> Resume project deep dives · Follow-up probes · Coding challenges (if hands-on)</div>
                   </Card>
                 </div>
               )}
@@ -1247,7 +1243,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               )}
 
               {allApproved && (
-                <Button fullWidth onClick={activatePosition} loading={activating} leftIcon={<Sparkles size={15} />}>
+                <Button fullWidth onClick={activatePosition} loading={activating} leftIcon={<Sparkles size={16} />}>
                   {activating ? "Saving…" : "Activate Position"}
                 </Button>
               )}

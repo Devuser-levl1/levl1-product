@@ -1,7 +1,7 @@
 export interface VoiceOption {
   accent:      string       // display name
   key:         string       // stored in DB / URL param
-  flag:        string
+  flag:        string       // region code (UI no longer renders emoji flags)
   voiceId:     string       // ElevenLabs voice ID
   description: string
   interviewerName: string   // what the AI introduces itself as
@@ -11,7 +11,7 @@ export const VOICE_OPTIONS: VoiceOption[] = [
   {
     key:             'american',
     accent:          'American English',
-    flag:            '🇺🇸',
+    flag:            'US',
     voiceId:         'f0JpDwzbGK384Dd1WH2s', // Ananya (female) — matches the default interviewer
     description:     'Clear, neutral American accent',
     interviewerName: 'Ananya',
@@ -19,7 +19,7 @@ export const VOICE_OPTIONS: VoiceOption[] = [
   {
     key:             'british',
     accent:          'British English',
-    flag:            '🇬🇧',
+    flag:            'GB',
     voiceId:         'onwK4e9ZLuTAKqWW03F9', // Daniel
     description:     'Professional British accent',
     interviewerName: 'James',
@@ -27,7 +27,7 @@ export const VOICE_OPTIONS: VoiceOption[] = [
   {
     key:             'indian',
     accent:          'Indian English',
-    flag:            '🇮🇳',
+    flag:            'IN',
     voiceId:         'pNInz6obpgDQGcFmaJgB', // Adam (native Indian voice coming soon)
     description:     'Neutral accent, comfortable for Indian candidates',
     interviewerName: 'Vikram',

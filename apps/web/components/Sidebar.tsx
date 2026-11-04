@@ -113,7 +113,7 @@ export default function Sidebar() {
             boxShadow: "0 4px 12px rgba(124,58,237,0.40)",
           }}
         >
-          <Zap size={15} color="white" strokeWidth={2.5} fill="white" />
+          <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
         </div>
 
         <AnimatePresence>
@@ -508,10 +508,10 @@ export default function Sidebar() {
           }}
         >
           {sidebarCollapsed ? (
-            <ChevronRight size={15} />
+            <ChevronRight size={16} />
           ) : (
             <>
-              <ChevronLeft size={15} />
+              <ChevronLeft size={16} />
               <span>Collapse</span>
             </>
           )}

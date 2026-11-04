@@ -170,7 +170,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
           const baseUrl = appUrl()
           await sendEmail({
             to:      position.agency.senderEmail,
-            subject: `✅ ${position.title} is now live on Levl1`,
+            subject: `${position.title} is now live on Levl1`,
             html:    `<p>All approvers have approved the interview questions for <strong>${position.title}</strong>. The position is now active.</p><a href="${baseUrl}/positions/${position.id}">View Position →</a>`,
           }).catch(() => {})
         }
