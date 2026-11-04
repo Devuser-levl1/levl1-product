@@ -119,7 +119,7 @@ export default function PositionsPage() {
         description="Manage open positions and track interview progress."
         actions={
           <Tooltip content="Claude AI generates tailored questions based on the JD and tech stack" position="left">
-            <Button leftIcon={<Plus size={16} />} onClick={() => setShowNewPositionFlow(true)}>New Position</Button>
+            <Button variant="secondary" leftIcon={<Plus size={16} />} onClick={() => setShowNewPositionFlow(true)}>New Position</Button>
           </Tooltip>
         }
       />

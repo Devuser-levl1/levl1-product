@@ -129,7 +129,7 @@ export default function DashboardPage() {
         description="Here's your recruitment pipeline at a glance."
         actions={<>
           <Button variant="secondary" leftIcon={<Upload size={16} />} onClick={openUpload}>Upload Candidates</Button>
-          <Button leftIcon={<Plus size={16} />} onClick={openNewPosition}>New Position</Button>
+          <Button variant="secondary" leftIcon={<Plus size={16} />} onClick={openNewPosition}>New Position</Button>
         </>}
       />
 

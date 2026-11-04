@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X, Paperclip } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -40,6 +40,18 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
   const [userEmail,    setUserEmail]    = useState(defaultEmail)
   const [fileName,     setFileName]     = useState('')
   const [sending,      setSending]      = useState(false)
+
+  // Escape closes the modal, same as the backdrop / close button (form is reset).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setIssueType(''); setSubject(''); setDescription(''); setFileName('')
+      onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   if (!open) return null
 
