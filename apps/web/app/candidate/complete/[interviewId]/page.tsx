@@ -18,7 +18,7 @@ export default async function CandidateCompletePage({
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, var(--lv-success-soft) 0%, var(--lv-accent-soft) 100%)',
+        background: 'var(--lv-bg)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -36,7 +36,7 @@ export default async function CandidateCompletePage({
           borderRadius: 18,
           padding: '44px 36px',
           textAlign: 'center',
-          boxShadow: 'var(--lv-shadow-md)',
+          boxShadow: 'none',
         }}
       >
         <div

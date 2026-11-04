@@ -169,17 +169,17 @@ export default function CandidateInterviewEntry() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={16} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
       </div>
 
       {/* Card */}
       <div style={{
         background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
         padding: '32px 36px', width: '100%', maxWidth: 480,
-        boxShadow: '0 4px 24px color-mix(in srgb, var(--lv-brand) 8%, transparent)',
+        boxShadow: 'none',
       }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
@@ -189,7 +189,7 @@ export default function CandidateInterviewEntry() {
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
             You are about to start your AI interview for <strong>{meta?.positionTitle}</strong> at <strong>{meta?.company}</strong>.
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 13, color: 'var(--lv-accent)', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 13, color: 'var(--lv-text-muted)', fontWeight: 600 }}>
             <Clock size={14} />
             <span>{meta?.duration ?? 30} minutes</span>
           </div>
@@ -269,7 +269,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)',
+      background: 'var(--lv-bg)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '32px 16px',
       fontFamily: 'var(--lv-font-sans)',

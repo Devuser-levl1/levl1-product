@@ -20,8 +20,8 @@ export default function ResetPasswordPage() {
 
   const INPUT: React.CSSProperties = {
     width: '100%', padding: '11px 14px', borderRadius: 8,
-    border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)',
-    outline: 'none', boxSizing: 'border-box', background: '#F8FAFC',
+    border: '1px solid var(--lv-border)', fontSize: 14, fontFamily: 'var(--font-sans)',
+    outline: 'none', boxSizing: 'border-box', background: 'var(--lv-surface-sunken)',
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,50 +49,50 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-sans)' }}>
-      <div style={{ width: '100%', maxWidth: 400, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-sans)' }}>
+      <div style={{ width: '100%', maxWidth: 400, background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '40px', boxShadow: 'none' }}>
         <Link href="/interviews/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 36 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Zap size={14} color="white" fill="white" />
           </div>
-          <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Levl1</span>
+          <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
         </Link>
 
         {done ? (
           <div style={{ textAlign: 'center' }}>
-            <CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px' }} />
-            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>Password updated!</h2>
-            <p style={{ fontSize: 14, color: '#64748B' }}>Redirecting to your dashboard…</p>
+            <CheckCircle2 size={48} color="var(--lv-success)" style={{ margin: '0 auto 16px' }} />
+            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>Password updated!</h2>
+            <p style={{ fontSize: 14, color: 'var(--lv-text-muted)' }}>Redirecting to your dashboard…</p>
           </div>
         ) : (
           <>
-            <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 8 }}>
+            <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>
               Set new password
             </h1>
-            <p style={{ fontSize: 14, color: '#94A3B8', marginBottom: 28 }}>At least 8 characters.</p>
+            <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', marginBottom: 28 }}>At least 8 characters.</p>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>New password</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', marginBottom: 6 }}>New password</label>
                 <div style={{ position: 'relative' }}>
                   <input required type={showPw ? 'text' : 'password'} style={{ ...INPUT, paddingRight: 44 }}
                     value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
                   <button type="button" onClick={() => setShowPw(!showPw)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', padding: 0 }}>
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--lv-text-muted)', display: 'flex', padding: 0 }}>
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Confirm password</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', marginBottom: 6 }}>Confirm password</label>
                 <input required type="password" style={INPUT} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat password" autoComplete="new-password" />
               </div>
               {error && (
-                <p style={{ fontSize: 13, color: '#DC2626', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--lv-danger)', background: 'color-mix(in srgb, var(--lv-danger) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-danger) 15%, transparent)', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
                   {error}
                 </p>
               )}
               <button type="submit" disabled={loading}
-                style={{ background: loading ? '#94A3B8' : 'linear-gradient(135deg,#4F46E5,#7C3AED)', color: '#fff', border: 'none', borderRadius: 6, padding: '13px 20px', fontSize: 16, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.28)' }}>
+                style={{ background: loading ? 'var(--lv-text-muted)' : 'var(--lv-gradient-brand)', color: '#fff', border: 'none', borderRadius: 6, padding: '13px 20px', fontSize: 16, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px color-mix(in srgb, var(--lv-accent) 28%, transparent)' }}>
                 {loading ? 'Updating…' : 'Update Password'}
               </button>
             </form>

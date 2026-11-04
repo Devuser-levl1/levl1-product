@@ -39,19 +39,19 @@ export function ConsentCheckbox({ checked, onChange, disabled, children, note }:
 
 const CSS = `
 .lv-consent { position: relative; display: flex; align-items: flex-start; gap: 12px; min-height: 44px; box-sizing: border-box;
-  padding: 12px 14px; border: 1.5px solid #CBD5E1; border-radius: 12px; background: #FFFFFF; cursor: pointer; text-align: left;
+  padding: 12px 14px; border: 1.5px solid var(--lv-border-strong); border-radius: 8px; background: var(--lv-surface); cursor: pointer; text-align: left;
   transition: border-color .15s, background .15s, box-shadow .15s; }
 .lv-consent:hover { border-color: #818CF8; }
-.lv-consent[data-checked="true"] { border-color: #4F46E5; background: #EEF2FF; }
+.lv-consent[data-checked="true"] { border-color: var(--lv-brand); background: var(--lv-brand-soft); }
 .lv-consent[data-disabled] { cursor: default; }
 .lv-consent-input { position: absolute; left: 6px; top: 6px; width: 44px; height: 44px; margin: 0; opacity: 0; cursor: inherit; }
-.lv-consent-box { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 1px; box-sizing: border-box; border: 2px solid #4F46E5;
+.lv-consent-box { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 1px; box-sizing: border-box; border: 2px solid var(--lv-brand);
   border-radius: 6px; background: #FFFFFF; color: transparent; display: inline-flex; align-items: center; justify-content: center;
   transition: background .15s, color .15s; }
-.lv-consent[data-checked="true"] .lv-consent-box { background: #4F46E5; color: #FFFFFF; }
+.lv-consent[data-checked="true"] .lv-consent-box { background: var(--lv-brand); color: #FFFFFF; }
 .lv-consent-input:focus-visible + .lv-consent-box { outline: 3px solid #A5B4FC; outline-offset: 2px; }
-.lv-consent-text { font-size: 14px; line-height: 1.55; color: #1E293B; }
-.lv-consent-text strong { color: #0F172A; }
-.lv-consent-note { display: block; margin-top: 4px; font-size: 13px; font-weight: 600; color: #4F46E5; }
+.lv-consent-text { font-size: 14px; line-height: 1.55; color: var(--lv-text); }
+.lv-consent-text strong { color: var(--lv-text); }
+.lv-consent-note { display: block; margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--lv-brand-text); }
 @media (forced-colors: active) { .lv-consent-box { border-color: CanvasText; } .lv-consent[data-checked="true"] .lv-consent-box { background: Highlight; color: HighlightText; } }
 `

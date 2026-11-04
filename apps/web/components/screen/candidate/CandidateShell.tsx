@@ -27,7 +27,7 @@ export function CandidateShell({ children, brand, agencyName, logo, width = 560 
   width?: number
 }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)', padding: '32px 16px', fontFamily: 'var(--lv-font-sans)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--lv-bg)', padding: '32px 16px', fontFamily: 'var(--lv-font-sans)' }}>
       <div style={{ maxWidth: width, margin: '0 auto' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           {logo ? (
@@ -40,7 +40,7 @@ export function CandidateShell({ children, brand, agencyName, logo, width = 560 
           )}
           <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>{agencyName}</div>
         </header>
-        <main className="lv-card" style={{ padding: 'clamp(20px, 5vw, 28px)', boxShadow: 'var(--lv-shadow-md)' }}>
+        <main className="lv-card" style={{ padding: 'clamp(20px, 5vw, 28px)', boxShadow: 'none' }}>
           {children}
         </main>
         <PoweredBy />

@@ -17,7 +17,7 @@ export default function CandidateErrorPage({
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)',
+        background: 'var(--lv-bg)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -34,7 +34,7 @@ export default function CandidateErrorPage({
           width: '100%',
           padding: 'clamp(28px, 6vw, 40px) clamp(20px, 5vw, 32px)',
           textAlign: 'center',
-          boxShadow: 'var(--lv-shadow-md)',
+          boxShadow: 'none',
         }}
       >
         <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-muted)', color: 'var(--lv-text-muted)' }}><Lock size={20} /></div>

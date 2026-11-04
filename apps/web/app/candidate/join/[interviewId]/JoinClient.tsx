@@ -118,10 +118,10 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
     ? new Date(data.scheduledAt).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) + ' IST'
     : null
 
-  const card: React.CSSProperties = { padding: 'clamp(20px, 5vw, 28px)', marginBottom: 20, boxShadow: 'var(--lv-shadow-md)' }
+  const card: React.CSSProperties = { padding: 'clamp(20px, 5vw, 28px)', marginBottom: 20, boxShadow: 'none' }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, var(--lv-bg) 0%, var(--lv-accent-soft) 100%)', padding: '32px 16px', fontFamily: 'var(--lv-font-sans)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--lv-bg)', padding: '32px 16px', fontFamily: 'var(--lv-font-sans)' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         {/* Branding */}
         <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>

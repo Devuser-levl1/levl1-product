@@ -68,14 +68,14 @@ export default function SignupPage() {
       style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh', fontFamily: 'var(--font-sans)' }}
     >
       {/* ── LEFT: Form ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 60px', background: '#fff', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 60px', background: 'var(--lv-surface)', overflowY: 'auto' }}>
         <div style={{ maxWidth: 400, width: '100%' }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px color-mix(in srgb, var(--lv-accent) 25%, transparent)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'none' }}>
               <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
             </div>
-            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
+            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
           </Link>
 
           <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', letterSpacing: '-0.025em', marginBottom: 6 }}>
@@ -139,21 +139,17 @@ export default function SignupPage() {
       {/* ── RIGHT: Value prop panel ── */}
       <div
         className="login-right-panel"
-        style={{ background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', position: 'relative', overflow: 'hidden' }}
+        style={{ background: 'var(--lv-surface-sunken)', borderLeft: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', position: 'relative', overflow: 'hidden' }}
       >
-        {/* Decorative circles */}
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-
         <div style={{ position: 'relative' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 28, border: '1px solid rgba(255,255,255,0.20)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--lv-surface)', borderRadius: 4, padding: '4px 10px', fontSize: 12, fontWeight: 500, color: 'var(--lv-text-body)', marginBottom: 28, border: '1px solid var(--lv-border)' }}>
             Free trial — no credit card needed
           </div>
 
-          <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 32, fontWeight: 600, color: 'var(--lv-text)', lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.02em' }}>
             AI interviews in<br />minutes, not weeks
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: 36 }}>
+          <p style={{ fontSize: 16, color: 'var(--lv-text-muted)', lineHeight: 1.7, marginBottom: 36 }}>
             Screen candidates 10× faster with Ananya, your AI interviewer. Get structured evaluations before the first human call.
           </p>
 
@@ -161,8 +157,8 @@ export default function SignupPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {PERKS.map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <CheckCircle2 size={16} color="rgba(255,255,255,0.9)" />
-                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.90)', fontWeight: 500 }}>{p}</span>
+                <CheckCircle2 size={16} color="var(--lv-text-muted)" />
+                <span style={{ fontSize: 15, color: 'var(--lv-text-body)', fontWeight: 400 }}>{p}</span>
               </div>
             ))}
           </div>

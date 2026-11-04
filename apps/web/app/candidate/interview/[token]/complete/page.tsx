@@ -25,23 +25,23 @@ export default function InterviewCompletePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, var(--lv-success-soft) 0%, var(--lv-accent-soft) 100%)',
+      background: 'var(--lv-bg)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '32px 16px', fontFamily: 'var(--lv-font-sans)',
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 40 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={16} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
       </div>
 
       {/* Card */}
       <div style={{
         background: 'var(--lv-surface)', border: '1px solid var(--lv-success-border)', borderRadius: 20,
         padding: '48px 44px', width: '100%', maxWidth: 460, textAlign: 'center',
-        boxShadow: '0 8px 32px color-mix(in srgb, var(--lv-success) 10%, transparent)',
+        boxShadow: 'none',
       }}>
         {/* Success icon */}
         <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
