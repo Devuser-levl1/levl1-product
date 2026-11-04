@@ -12,6 +12,8 @@ export async function GET(_req: NextRequest, { params }: { params: { interviewId
   const interview = await prisma.interview.findUnique({ where: { id: params.interviewId }, select: { positionId: true, consentGiven: true } })
   if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
   const booked = await bookedStartIso(interview.positionId)
-  const slots = availableSlots(booked).slice(0, 40).map((s) => s.toISOString())
+  // Full horizon (Fixpack 6 #2): with a 24/7 window, a 40-slot cap reached only
+  // ~20 hours ahead. The page groups by day, so the whole horizon is fine.
+  const slots = availableSlots(booked).slice(0, 2000).map((s) => s.toISOString())
   return NextResponse.json({ slots, timezone: SLOT_CONFIG.timezone, consentGiven: interview.consentGiven, instantStart: SLOT_CONFIG.instantStart, leadMinutes: SLOT_CONFIG.leadMinutes })
 }

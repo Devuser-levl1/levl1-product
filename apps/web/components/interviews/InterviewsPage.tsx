@@ -8,6 +8,8 @@ import { SchedulingOverview, TodayInterviews } from "../candidates/SchedulingAge
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
 import { Page, PageHeader, Button, Badge, Card, EmptyState, Table, Eyebrow, type Column } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { MONITORING_HELP } from "@/components/control-room/monitoring-help";
 
 // Design-System Pass 3 (group 4): presentation on the Screen design system.
 // Start/monitor actions and the interview grouping are unchanged.
@@ -126,11 +128,13 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
           leftIcon={isLive ? <Radio size={14} /> : <Play size={14} fill="currentColor" strokeWidth={0} />}>
           {isLive ? "Join Live" : "Start"}
         </Button>
-        <Button variant="secondary" leftIcon={<Monitor size={14} />}
-          aria-label={`Monitor ${interview.candidateName}'s interview (opens in new tab)`}
-          onClick={() => window.open(`/interview/${interview.id}/monitor`, "_blank")}>
-          Monitor
-        </Button>
+        <Tooltip content={MONITORING_HELP.monitor} position="top" maxWidth={260}>
+          <Button variant="secondary" leftIcon={<Monitor size={14} />}
+            aria-label={`Monitor ${interview.candidateName}'s interview (opens in new tab)`}
+            onClick={() => window.open(`/interview/${interview.id}/monitor`, "_blank")}>
+            Monitor
+          </Button>
+        </Tooltip>
       </div>
     </article>
   );

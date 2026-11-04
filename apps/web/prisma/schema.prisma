@@ -397,6 +397,12 @@ model Interview {
   terminationReason   String?   // COMPLETED | TERMINATED_BY_CANDIDATE | CONSENT_WITHDRAWN | ABANDONED
   consentWithdrawnAt  DateTime?
   wrapUpAt            DateTime? // set once when wrap-up runs — idempotency marker
+  // Report pipeline state (Fixpack 6 #3) — a completed interview must never
+  // silently produce nothing. null = not attempted yet; generating | ready | failed.
+  reportStatus        String?
+  reportError         String?   @db.Text
+  reportAttempts      Int       @default(0)
+  reportUpdatedAt     DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

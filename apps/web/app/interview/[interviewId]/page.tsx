@@ -453,6 +453,11 @@ export default function InterviewPage() {
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
   const terminationAskedRef = useRef(false)      // candidate already asked to confirm end (Build 01-B1)
   const wrapUpFiredRef = useRef(false)           // one-shot wrap-up guard — closing fires exactly once (Build 01-B2)
+  // Fixpack 6 #4: each Q&A question is asked at most once. Two flows advancing
+  // at the same moment (both calling moveToQuestion(current + 1)) previously
+  // re-asked the same question.
+  const lastAskedIdxRef = useRef(-1)
+  const askedQuestionIdsRef = useRef<Set<string>>(new Set())
   // ── Warm-up arc (Build 03) — routes brief small-talk replies away from the
   // question pipeline and suppresses the question cold-start timers while active.
   const warmupActiveRef = useRef(false)
@@ -609,7 +614,7 @@ export default function InterviewPage() {
       lastSpeechAt: lastSpeechAtRef.current,
       tabHidden: typeof document !== 'undefined' && document.hidden,
       interim: liveTranscriptRef.current || '',
-      ...(grew || final ? { transcript: tx.map((e) => ({ speaker: e.speaker, text: e.text, timestamp: e.timestamp })) } : {}),
+      ...(grew || final ? { transcript: tx.map((e) => ({ speaker: e.speaker, text: e.text, timestamp: e.timestamp, ...(e.segment ? { segment: e.segment } : {}) })) } : {}),
     }
     if (grew) sentTranscriptLenRef.current = tx.length
     try {
@@ -1389,6 +1394,13 @@ export default function InterviewPage() {
       await startClosing(); return
     }
 
+    // Fixpack 6 #4: duplicate / stale advance → ignore; an already-asked
+    // question (e.g. re-inserted) → skip it.
+    if (idx <= lastAskedIdxRef.current) return
+    if (qs[idx]?.id && askedQuestionIdsRef.current.has(qs[idx].id)) { lastAskedIdxRef.current = idx; await moveToQuestion(idx + 1); return }
+    lastAskedIdxRef.current = idx
+    if (qs[idx]?.id) askedQuestionIdsRef.current.add(qs[idx].id)
+
     currentQIdxRef.current = idx
     setCurrentQIdx(idx)
     setPhase('questioning')
@@ -1564,7 +1576,7 @@ export default function InterviewPage() {
     fetch(`/api/interviews/${interviewId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        status: 'completed', completedAt: new Date().toISOString(), terminationReason: reason,
+        status: 'completed', completedAt: new Date().toISOString(), terminationReason: reason, questionResponses: responsesRef.current,
         ...(reason === TERMINATION_REASONS.CONSENT_WITHDRAWN ? { consentWithdrawnAt: new Date().toISOString() } : {}),
       }),
     }).catch(() => {})
@@ -1666,7 +1678,7 @@ export default function InterviewPage() {
     fetch(`/api/interviews/${interviewId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString(), terminationReason: TERMINATION_REASONS.COMPLETED }),
+      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString(), terminationReason: TERMINATION_REASONS.COMPLETED, questionResponses: responsesRef.current }),
     }).catch(() => {})
 
     try {
@@ -1743,13 +1755,13 @@ export default function InterviewPage() {
         body: JSON.stringify({ interviewId, action: 'finalize', turns, completed }),
       }).catch(() => {})
     }
-    const say = async (text: string, bargeIn = true) => {
-      turns.push({ speaker: 'ai', text })
+    const say = async (text: string, bargeIn = true, topic?: string) => {
+      turns.push({ speaker: 'ai', text, ...(topic ? { topic } : {}) })
       addTranscript({ speaker: 'ai', text, type: 'transition', segment: 'logistics' })
       await speakText(text, { bargeIn })
     }
 
-    await say(logisticsIntro())
+    await say(logisticsIntro(), true, 'location')
     let silent = 0
     let budgetMs = LOGISTICS_MAX_MS   // server may extend it for recruiter knockout questions
     while (!wrapUpFiredRef.current) {
@@ -1761,10 +1773,15 @@ export default function InterviewPage() {
         silent = 0
         turns.push({ speaker: 'candidate', text: reply })
         addTranscript({ speaker: 'candidate', text: reply, type: 'transition', segment: 'logistics' })
-      } else silent += 1
+      } else {
+        // Fixpack 6 #4: record the silence so the server knows this question was
+        // asked and unanswered — it moves on instead of re-asking it.
+        silent += 1
+        turns.push({ speaker: 'candidate', text: '[no response]' })
+      }
       const wrapNow = silent >= 2 || Date.now() - startedAt > budgetMs
       setPhase('processing')
-      let next: { say?: string; done?: boolean; budgetMs?: number } = {}
+      let next: { say?: string; done?: boolean; budgetMs?: number; topic?: string } = {}
       try {
         const r = await fetch('/api/interview/logistics', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1775,7 +1792,7 @@ export default function InterviewPage() {
       if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, 5 * 60_000)
       if (wrapUpFiredRef.current) break
       if (!next.say) break
-      await say(next.say, !(next.done || wrapNow))   // the closing line isn't interruptible
+      await say(next.say, !(next.done || wrapNow), next.topic)   // the closing line isn't interruptible
       if (next.done || wrapNow) break
     }
     finalize(!wrapUpFiredRef.current)

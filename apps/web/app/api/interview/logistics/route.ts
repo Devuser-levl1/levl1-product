@@ -10,6 +10,7 @@ import {
 import { sanitizeKnockouts } from '@/lib/screen/position-config'
 import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
 import { computeVerdicts, sanitizeExtraction } from '@/lib/screen/logistics/result'
+import { describeTopics, inferTopic, isRepeat, nextUncovered, scriptedForTopic, topicState, type LogisticsTopic } from '@/lib/screen/logistics/topics'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -31,7 +32,8 @@ function cleanTurns(raw: unknown): SegmentTurn[] {
     const o = (t && typeof t === 'object' ? t : {}) as Record<string, unknown>
     const speaker = o.speaker === 'ai' || o.speaker === 'candidate' ? o.speaker : null
     const text = typeof o.text === 'string' ? o.text.trim().slice(0, 800) : ''
-    return speaker && text ? [{ speaker, text }] : []
+    const topic = typeof o.topic === 'string' && /^(location|notice|comp|workauth|close|knockout:[\w-]{1,40})$/.test(o.topic) ? o.topic : undefined
+    return speaker && text ? [{ speaker, text, ...(topic ? { topic } : {}) }] : []
   })
 }
 
@@ -96,21 +98,42 @@ export async function POST(req: NextRequest) {
 
     // ── Turn ──
     const wrapNow = body.wrapNow === true || candidateTurns >= budget.maxReplies
-    if (!client) return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
+    // Fixpack 6 #4: deterministic topic tracking — no topic is ever re-asked.
+    const state = topicState(turns, knockouts)
+    const next = nextUncovered(state, knockouts)
+    const closeTurn = { say: `Thanks — I've noted all of that for the team.`, done: true, topic: 'close' as LogisticsTopic }
+    // Guard every candidate line (model or scripted) against repeats.
+    const guard = (say: string, done: boolean, claimed?: unknown) => {
+      if (done || wrapNow) return { say, done: true, topic: 'close' as LogisticsTopic }
+      const topic = inferTopic(say, knockouts) ?? (typeof claimed === 'string' ? claimed as LogisticsTopic : null)
+      if (topic && isRepeat(topic, state)) {
+        console.warn('[interview/logistics] blocked repeat of topic', topic, '→', next ?? 'close')
+        return next ? { say: scriptedForTopic(next, cfg, knockouts, state), done: false, topic: next } : closeTurn
+      }
+      return { say, done: false, topic: topic ?? next ?? undefined }
+    }
+    const scripted = () => {
+      const s = scriptedTurn(cfg, candidateTurns, wrapNow, knockouts)
+      return guard(s.say, s.done)
+    }
+    if (!client) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
     try {
       const r = await client.messages.create({
         model: LIVE_INTERVIEW_MODEL, max_tokens: 220, temperature: 0.6,
         system: logisticsTurnSystem(cfg, knockouts, resolveInterviewerVoice(interview.position.voiceAccent, interview.position.agency?.voiceAccent).name),
-        messages: [{ role: 'user', content: logisticsTurnUser(turns, wrapNow) }],
+        messages: [{ role: 'user', content: logisticsTurnUser(turns, wrapNow, {
+          asked: describeTopics(state.asked, knockouts),
+          next: next ? describeTopics([next], knockouts) : 'none — confirm and close (done=true)',
+        }) }],
       })
       const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
       const j = parseJson(text)
       const say = typeof j?.say === 'string' ? j.say.trim() : ''
-      if (!say) return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
-      return NextResponse.json({ say, done: j?.done === true || wrapNow, budgetMs: budget.maxMs })
+      if (!say) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
+      return NextResponse.json({ ...guard(say, j?.done === true, j?.topic), budgetMs: budget.maxMs })
     } catch (e) {
       console.error('[interview/logistics] turn failed:', e instanceof Error ? e.message : e)
-      return NextResponse.json({ ...scriptedTurn(cfg, candidateTurns, wrapNow, knockouts), budgetMs: budget.maxMs })
+      return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
     }
   } catch (err) {
     console.error('[interview/logistics]', err instanceof Error ? err.message : err)

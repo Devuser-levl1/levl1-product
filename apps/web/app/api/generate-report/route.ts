@@ -9,10 +9,35 @@ import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { reconcileConcepts, sanitizeConceptRubric } from '@/lib/screen/position-config'
 import { appUrl } from '@/lib/screen/app-url'
+import { markReport, serverReportInput } from '@/lib/screen/report/pipeline'
+
+// Fixpack 6 #3: when the caller sends no transcript/responses (recruiter
+// "Generate Report", the server sweep), use what the server already persisted
+// (heartbeat transcript + responses) instead of producing an empty report.
+// `any` preserved deliberately: the route has always consumed req.json() untyped;
+// typing the whole legacy body is out of scope for this fix.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function withServerFallback(raw: any): Promise<any> {
+  const empty = (v: unknown) => !Array.isArray(v) || v.length === 0
+  if (typeof raw.interviewId !== 'string' || !empty(raw.transcript) || !empty(raw.questionResponses)) return raw
+  const srv = await serverReportInput(raw.interviewId).catch(() => null)
+  if (!srv || (srv.transcript.length === 0 && srv.questionResponses.length === 0)) return raw
+  console.log('[generate-report] Using server-persisted transcript:', srv.transcript.length, 'lines,', srv.questionResponses.length, 'responses')
+  return { ...raw, ...srv, candidateId: (raw.candidateId as string | undefined) ?? srv.candidateId }
+}
+
+// Every failure path marks the interview "report failed" (visible to the
+// recruiter) before returning — never a silent nothing.
+function fail(interviewId: unknown, message: string, status = 500) {
+  if (typeof interviewId === 'string' && interviewId) void markReport(interviewId, 'failed', message)
+  return NextResponse.json({ error: message }, { status })
+}
 
 export async function POST(req: NextRequest) {
+  let interviewIdForStatus: unknown = null
   try {
-    const body = await req.json()
+    const body = await withServerFallback(await req.json())
+    interviewIdForStatus = body.interviewId
     console.log('[generate-report] Called')
     console.log('[generate-report] candidateId:', body.candidateId)
     console.log('[generate-report] transcript length:', body.transcript?.length)
@@ -21,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'No API key configured' }, { status: 500 })
+      return fail(body.interviewId, 'No API key configured')
     }
 
     const {
@@ -44,6 +69,7 @@ export async function POST(req: NextRequest) {
     if (!interviewId) {
       return NextResponse.json({ error: 'interviewId is required' }, { status: 400 })
     }
+    await markReport(interviewId, 'generating', null, true)
 
     // Recruiter-marked must-have requirements for this position (Screen F3).
     // Recruiter-marked must-haves (F3) + the JD-derived concept rubric (#13).
@@ -69,13 +95,16 @@ export async function POST(req: NextRequest) {
           `The interview for ${candidateName || 'this candidate'} was marked complete, but no transcript or ` +
           `question responses were captured. This may indicate an audio/microphone issue or an early exit. ` +
           `No evaluation could be performed — a manual re-interview or review is recommended.`,
+        // Insufficient-evidence report (Fixpack 6 #3): not a pass/fail.
         sectionScores: {
-          technical:  { score: 0, outOf: 100 },
-          scenario:   { score: 0, outOf: 100 },
-          behavioral: { score: 0, outOf: 100 },
-          eq:         { score: 0, outOf: 100 },
-          whiteboard: { score: 0, outOf: 100 },
+          technical:  { score: null, outOf: 100, status: INSUFFICIENT_EVIDENCE },
+          scenario:   { score: null, outOf: 100, status: INSUFFICIENT_EVIDENCE },
+          behavioral: { score: null, outOf: 100, status: INSUFFICIENT_EVIDENCE },
+          eq:         { score: null, outOf: 100, status: INSUFFICIENT_EVIDENCE },
+          whiteboard: { score: null, outOf: 100, status: INSUFFICIENT_EVIDENCE },
         },
+        communication: { status: INSUFFICIENT_EVIDENCE } as Prisma.InputJsonValue,
+        insufficientEvidence: true,
         strengthAreas: [],
         concernAreas: ['No transcript or question responses were captured during the interview.'],
         questionWiseEvaluation: [],
@@ -107,9 +136,11 @@ export async function POST(req: NextRequest) {
           console.log('[generate-report] Saved report ID:', savedReportId)
         } catch (dbError: unknown) {
           const msg = dbError instanceof Error ? dbError.message : String(dbError)
-          console.error('[generate-report] Minimal report DB save failed (non-fatal):', msg)
+          console.error('[generate-report] Minimal report DB save failed:', msg)
+          return fail(interviewId, `Report could not be saved: ${msg}`)
         }
       }
+      await markReport(interviewId, 'ready')
 
       return NextResponse.json({
         ...minimalReport,
@@ -144,7 +175,10 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: SCORING_MODEL,  // brain split: final scoring on the deeper model
-      max_tokens: 4096,
+      // Fixpack 6 #3: 4096 truncated full reports (long per-question JSON) →
+      // JSON.parse failed → silent no-report. 16k fits comfortably; truncation
+      // is now detected explicitly below.
+      max_tokens: 16000,
       system:
         'You are a senior recruitment consultant evaluating a candidate interview. ' +
         'Evaluate ONLY based on what the candidate explicitly said in the transcript. ' +
@@ -225,9 +259,19 @@ export async function POST(req: NextRequest) {
       // NOTE: SCORING_MODEL is Opus 4.8, which rejects temperature/top_p/top_k (400).
     })
 
-    const raw = response.content[0].type === 'text' ? response.content[0].text : '{}'
+    if (response.stop_reason === 'max_tokens') {
+      console.error('[generate-report] Output truncated at max_tokens')
+      return fail(interviewId, 'Report output was cut off (too long) — retry')
+    }
+    if (response.stop_reason === 'refusal') {
+      return fail(interviewId, 'The scoring model declined to produce this report')
+    }
+    const raw = response.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('') || '{}'
     console.log('[generate-report] Claude raw response:', raw.slice(0, 300))
-    const clean = raw.replace(/```json|```/g, '').trim()
+    // Tolerate a stray preamble/fence: take the outermost JSON object.
+    const unfenced = raw.replace(/```json|```/g, '')
+    const first = unfenced.indexOf('{'), last = unfenced.lastIndexOf('}')
+    const clean = (first >= 0 && last > first ? unfenced.slice(first, last + 1) : unfenced).trim()
 
     let report
     try {
@@ -236,14 +280,20 @@ export async function POST(req: NextRequest) {
       const msg = parseError instanceof Error ? parseError.message : String(parseError)
       console.error('[generate-report] JSON parse failed:', msg)
       console.error('[generate-report] Raw output (first 500 chars):', raw.slice(0, 500))
-      return NextResponse.json({ error: 'Report generation failed — invalid response format' }, { status: 500 })
+      return fail(interviewId, 'Report generation failed — invalid response format')
     }
 
     // ── Insufficient-evidence honesty (Build 01-B3) ───────────────────
     // Never emit a confident score for content that wasn't actually evaluable.
     {
-      const evResponses = (Array.isArray(questionResponses) ? questionResponses : [])
+      // Evidence = per-question responses; when none were captured (e.g. a
+      // server-side regeneration from the persisted transcript), the
+      // candidate's own transcript lines are the evidence.
+      const qrEvidence = (Array.isArray(questionResponses) ? questionResponses : [])
         .map((r: { candidateResponse?: string }) => ({ response: r.candidateResponse }))
+      const evResponses = qrEvidence.length ? qrEvidence : (Array.isArray(transcript) ? transcript : [])
+        .filter((e: { speaker?: string }) => e.speaker === 'candidate')
+        .map((e: { text?: string }) => ({ response: e.text }))
       // Per-question evidence tag (evidence-linked, audit-able).
       if (Array.isArray(report.questionWiseEvaluation)) {
         report.questionWiseEvaluation = report.questionWiseEvaluation.map((q: { candidateResponse?: string }) => ({
@@ -438,13 +488,17 @@ export async function POST(req: NextRequest) {
           console.error('[generate-report] webhook dispatch failed (non-fatal):', whErr)
         }
       } catch (dbError: unknown) {
+        // Fatal now (Fixpack 6 #3): an unsaved report is invisible to the
+        // recruiter, so flag it and let the caller / sweep retry.
         const msg = dbError instanceof Error ? dbError.message : String(dbError)
-        console.error('[generate-report] DB save failed (non-fatal):', msg)
-        // Non-fatal — still return the report to the client
+        console.error('[generate-report] DB save failed:', msg)
+        return fail(interviewId, `Report could not be saved: ${msg}`)
       }
     } else {
       console.warn('[generate-report] No candidateId provided — skipping DB save')
+      return fail(interviewId, 'No candidate linked to this interview — report not saved')
     }
+    await markReport(interviewId, 'ready')
 
     return NextResponse.json({
       ...report,
@@ -465,6 +519,6 @@ export async function POST(req: NextRequest) {
     const stack   = err instanceof Error ? err.stack   : undefined
     console.error('[generate-report] Error:', message)
     if (stack) console.error('[generate-report] Stack:', stack)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return fail(interviewIdForStatus, message)
   }
 }

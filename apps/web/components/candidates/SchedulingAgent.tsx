@@ -7,7 +7,7 @@ import {
   RefreshCw, X, Send, ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { Button, Modal, ActionBar, Alert, Field, Textarea, Input } from "@/components/screen/ui";
+import { Button, Modal, ActionBar, Alert, Field, Input } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
 
 // Design-System Pass 3 (group 3): presentation on the Screen design system.
@@ -30,35 +30,29 @@ interface ScheduleModalProps {
 export function InviteModal({ candidate, position, onClose }: InviteModalProps) {
   const { updateCandidate } = useAppStore();
   const [sending,      setSending]      = useState(false);
-  const [emailPreview, setEmailPreview] = useState<string | null>(null);
-  const [editableEmail, setEditableEmail] = useState<string | null>(null);
+  const [previewing,   setPreviewing]   = useState(false);
+  const [emailPreview, setEmailPreview] = useState<{ to: string; subject: string; html: string } | null>(null);
 
   const duration = position.interviewDuration ?? 30;
 
+  // Fixpack 6 #1: PREVIEW ONLY. Calls the read-only preview endpoint, which
+  // renders the real template and sends nothing / changes nothing. Only
+  // "Confirm & Send" below calls /api/send-invite.
   const preview = async () => {
-    setSending(true);
+    setPreviewing(true);
     try {
-      const res = await fetch("/api/send-invite", {
+      const res = await fetch("/api/send-invite/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          candidateId:   candidate.id,
-          candidateName: candidate.name,
-          candidateEmail:candidate.email,
-          positionTitle: position.title,
-          company:       position.company,
-          duration,
-        }),
+        body: JSON.stringify({ candidateId: candidate.id, candidateEmail: candidate.email }),
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setEmailPreview(data.emailPreview);
-      setEditableEmail(data.emailPreview);
+      if (!res.ok || data.error) throw new Error(data.error || "Couldn't build the preview. Please try again.");
+      setEmailPreview({ to: data.to, subject: data.subject, html: data.html });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed";
-      toast.error(msg);
+      toast.error(err instanceof Error ? err.message : "Couldn't build the preview. Please try again.");
     } finally {
-      setSending(false);
+      setPreviewing(false);
     }
   };
 
@@ -100,7 +94,7 @@ export function InviteModal({ candidate, position, onClose }: InviteModalProps) 
       description={<>This will mark the candidate as &ldquo;Invited&rdquo;</>}
       footer={<ActionBar>
         <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button onClick={confirm} disabled={position.status !== "active"} loading={sending} leftIcon={<Send size={14} />}>
+        <Button onClick={confirm} disabled={position.status !== "active" || previewing} loading={sending} leftIcon={<Send size={14} />}>
           {sending ? "Sending…" : "Confirm & Send"}
         </Button>
       </ActionBar>}>
@@ -127,18 +121,22 @@ export function InviteModal({ candidate, position, onClose }: InviteModalProps) 
           <Alert tone="danger">Position is not yet approved — complete approval before scheduling interviews</Alert>
         )}
 
-        {/* Email preview */}
+        {/* Email preview — read-only render of exactly what will be sent. Nothing is sent from here. */}
         {emailPreview ? (
-          <Field label="Email Preview (editable)">
-            <Textarea
-              value={editableEmail ?? ""}
-              onChange={(e) => setEditableEmail(e.target.value)}
-              style={{ fontFamily: lv.fontMono, fontSize: text.xs, resize: "vertical", lineHeight: 1.7, minHeight: 220 }}
-            />
-          </Field>
+          <section aria-label="Email preview" style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
+            <div style={{ fontSize: text.sm, color: lv.textBody }}>
+              <div><span style={{ color: lv.textMuted }}>To:</span> {emailPreview.to}</div>
+              <div><span style={{ color: lv.textMuted }}>Subject:</span> <strong style={{ color: lv.text, fontWeight: 600 }}>{emailPreview.subject}</strong></div>
+            </div>
+            <iframe title="Invite email preview" sandbox="" srcDoc={emailPreview.html}
+              style={{ width: "100%", height: 360, border: `1px solid ${lv.border}`, borderRadius: radius.md, background: "#FFFFFF" }} />
+            <div style={{ fontSize: text.xs, color: lv.textMuted }}>
+              Preview only — nothing has been sent. To change the wording, edit the invite template in Settings → Candidate Invite Email.
+            </div>
+          </section>
         ) : (
-          <Button variant="secondary" style={{ alignSelf: "flex-start" }} onClick={preview} loading={sending} leftIcon={<Mail size={14} />}>
-            {sending ? "Loading…" : "Preview Email"}
+          <Button variant="secondary" style={{ alignSelf: "flex-start" }} onClick={preview} loading={previewing} disabled={sending} leftIcon={<Mail size={14} />}>
+            {previewing ? "Loading preview…" : "Preview Email"}
           </Button>
         )}
       </div>

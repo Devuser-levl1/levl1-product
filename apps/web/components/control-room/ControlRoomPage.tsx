@@ -9,6 +9,8 @@ import {
 import type { Health, HealthLevel, HumanPresence } from "@/lib/screen/control-room/health";
 import { Button, ButtonLink, Alert } from "@/components/screen/ui";
 import { lv } from "@/lib/screen/ui/tokens";
+import { HelpIcon } from "@/components/ui/Tooltip";
+import { MONITORING_HELP } from "./monitoring-help";
 
 // ── Recruiter Control Room (Screen) ────────────────────────────────────────
 // Exception-first: problem sessions sort to the top in large red/amber tiles
@@ -151,10 +153,10 @@ export function ControlRoomPage() {
 
       {/* ── Summary strip ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 26 }}>
-        <Stat label="Live now" value={data?.counts.live} tone="brand" />
-        <Stat label="Need attention" value={data?.counts.alert} tone={data?.counts.alert ? "red" : "muted"} />
-        <Stat label="Watching" value={data?.counts.watch} tone={data?.counts.watch ? "amber" : "muted"} />
-        <Stat label="Human verified" value={data?.counts.humanPresent} tone="green" suffix={data ? ` / ${data.counts.live}` : ""} />
+        <Stat label="Live now" help={MONITORING_HELP.liveNow} value={data?.counts.live} tone="brand" />
+        <Stat label="Need attention" help={MONITORING_HELP.needAttention} value={data?.counts.alert} tone={data?.counts.alert ? "red" : "muted"} />
+        <Stat label="Keep an eye on" help={MONITORING_HELP.keepAnEyeOn} value={data?.counts.watch} tone={data?.counts.watch ? "amber" : "muted"} />
+        <Stat label="Human present" help={MONITORING_HELP.humanPresent} value={data?.counts.humanPresent} tone="green" suffix={data ? ` / ${data.counts.live}` : ""} />
       </div>
 
       {error && (
@@ -531,12 +533,15 @@ function Section({ title, count, tone, children }: { title: string; count: numbe
   );
 }
 
-function Stat({ label, value, tone, suffix }: { label: string; value: number | undefined; tone: "brand" | "red" | "amber" | "green" | "muted"; suffix?: string }) {
+function Stat({ label, help, value, tone, suffix }: { label: string; help?: string; value: number | undefined; tone: "brand" | "red" | "amber" | "green" | "muted"; suffix?: string }) {
   const fg = { brand: C.brand, red: C.red, amber: C.amber, green: C.green, muted: C.ink }[tone];
   const bg = tone === "red" ? C.redSoft : tone === "amber" ? C.amberSoft : C.surface;
   return (
     <div style={{ background: bg, border: `1px solid ${tone === "red" ? C.redLine : tone === "amber" ? C.amberLine : C.line}`, borderRadius: 8, padding: "14px 16px" }}>
-      <div style={{ fontSize: 12, color: C.body, fontWeight: 500 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.body, fontWeight: 500 }}>
+        {label}
+        {help && <HelpIcon content={help} position="bottom" />}
+      </div>
       <div style={{ fontSize: 28, fontWeight: 600, color: fg, fontFamily: lv.fontDisplay, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
         {value ?? "–"}<span style={{ fontSize: 14, color: C.muted, fontWeight: 600 }}>{suffix}</span>
       </div>

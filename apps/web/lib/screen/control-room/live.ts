@@ -8,7 +8,9 @@ import type { Prisma } from '@prisma/client'
 export const HEARTBEAT_MS = 5000
 export const TAIL_ENTRIES = 30
 
-export interface HeartbeatTranscriptEntry { speaker: 'ai' | 'candidate'; text: string; timestamp: string }
+// `segment` marks recruiter-only parts (e.g. 'logistics') so a server-side
+// report regeneration can exclude them, exactly as the live client does.
+export interface HeartbeatTranscriptEntry { speaker: 'ai' | 'candidate'; text: string; timestamp: string; segment?: string }
 
 export interface HeartbeatInput {
   phase?: string
@@ -42,7 +44,8 @@ function cleanTranscript(raw: unknown): HeartbeatTranscriptEntry[] | undefined {
     const speaker = o.speaker === 'ai' || o.speaker === 'candidate' ? o.speaker : null
     const text = str(o.text, 4000)
     const ts = iso(o.timestamp)
-    return speaker && text && ts ? [{ speaker, text, timestamp: ts.toISOString() }] : []
+    const segment = str(o.segment, 32)
+    return speaker && text && ts ? [{ speaker, text, timestamp: ts.toISOString(), ...(segment ? { segment } : {}) }] : []
   })
 }
 

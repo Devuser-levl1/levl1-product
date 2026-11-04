@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, Position, Candidate, CandidateReport } from "@/store/appStore";
+
+/* Row returned by GET /api/reports/pending */
+interface PendingReport {
+  id: string; candidateId: string; completedAt: string | null; terminationReason: string | null;
+  reportStatus: "generating" | "ready" | "failed" | null; reportError: string | null;
+  reportAttempts: number; autoRetryExhausted: boolean;
+}
 
 /* Shape of a report row returned by GET /api/reports */
 type DbReport = Omit<
@@ -178,8 +185,22 @@ export default function ReportsPage() {
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [reportGenId, setReportGenId] = useState<string | null>(null);
 
+  /* Report pipeline status for completed interviews with no report (Fixpack 6 #3) */
+  const [pending, setPending] = useState<Record<string, PendingReport>>({});
+  const loadPending = useCallback(() => {
+    fetch("/api/reports/pending")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows) => {
+        if (!Array.isArray(rows)) return;
+        const byCandidate: Record<string, PendingReport> = {};
+        for (const row of rows as PendingReport[]) byCandidate[row.candidateId] = row;
+        setPending(byCandidate);
+      })
+      .catch(() => {});
+  }, []);
+
   /* Load existing reports from DB — the page only shows reports that exist in the DB */
-  useEffect(() => {
+  const loadReports = useCallback(() => {
     fetch("/api/reports")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -214,6 +235,16 @@ export default function ReportsPage() {
       .catch((err) => console.warn("Failed to load reports from DB:", err));
   }, [addReport]);
 
+  useEffect(() => {
+    loadReports();
+    // Kick the server-side sweep for this agency (generates any missing reports
+    // in the background), then poll status so nothing stays silently blank.
+    fetch("/api/reports/sweep", { method: "POST" }).catch(() => {});
+    loadPending();
+    const iv = setInterval(() => { loadPending(); loadReports(); }, 20000);
+    return () => clearInterval(iv);
+  }, [loadReports, loadPending]);
+
   /* Manually trigger report generation for a completed candidate with no report */
   async function generateReportManually(candidate: Candidate) {
     const pos = positions.find((p) => p.id === candidate.positionId);
@@ -245,9 +276,10 @@ export default function ReportsPage() {
       updateCandidate(candidate.id, { reportGenerated: true, reportGeneratedAt: new Date().toISOString() });
       toast.success("Report generated");
     } catch {
-      toast.error("Could not generate report — check API key / logs");
+      toast.error("Couldn't generate the report. It's marked as failed — please try again.");
     } finally {
       setReportGenId(null);
+      loadPending();
     }
   }
 
@@ -368,9 +400,20 @@ export default function ReportsPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{c.name}</div>
                   <div style={{ fontSize: text.xs, color: lv.textMuted }}>{c.positionTitle}</div>
+                  {pending[c.id]?.reportStatus === "failed" && (
+                    <div style={{ fontSize: text.xs, color: lv.danger, marginTop: 2 }}>
+                      Report failed{pending[c.id]?.autoRetryExhausted ? " — automatic retries stopped" : " — retrying automatically"}. {pending[c.id]?.reportError ?? ""}
+                    </div>
+                  )}
                 </div>
+                {(() => {
+                  const st = pending[c.id]?.reportStatus;
+                  if (st === "generating" && reportGenId !== c.id) return <Badge tone="neutral">Generating…</Badge>;
+                  if (st === "failed") return <Badge tone="danger">Report failed</Badge>;
+                  return <Badge tone="neutral">Pending</Badge>;
+                })()}
                 <Button variant="secondary" size="sm" onClick={() => generateReportManually(c)} loading={reportGenId === c.id} leftIcon={<Sparkles size={14} />}>
-                  {reportGenId === c.id ? "Generating…" : "Generate Report"}
+                  {reportGenId === c.id ? "Generating…" : pending[c.id]?.reportStatus === "failed" ? "Retry" : "Generate Report"}
                 </Button>
               </li>
             ))}

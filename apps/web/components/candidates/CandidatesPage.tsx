@@ -10,6 +10,8 @@ import { SchedulingBadge, BulkInviteBar } from "./SchedulingAgent";
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
 import { Page, PageHeader, Button, Badge, Alert, Select, EmptyState, type Tone } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { MONITORING_HELP } from "@/components/control-room/monitoring-help";
 
 // Design-System Pass 3 (group 3): presentation on the Screen design system.
 // Pipeline grouping, report generation and monitor/interview actions unchanged.
@@ -224,10 +226,12 @@ function CandidateCard({
             onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}>
             Start Interview
           </Button>
-          <Button variant="secondary" size="sm" leftIcon={<Monitor size={14} />} onClick={handleMonitor}
-            title="Open recruiter monitor in new tab" aria-label={`Monitor ${candidate.name}'s interview (opens in new tab)`}>
-            Monitor
-          </Button>
+          <Tooltip content={MONITORING_HELP.monitor} position="top" maxWidth={260}>
+            <Button variant="secondary" size="sm" leftIcon={<Monitor size={14} />} onClick={handleMonitor}
+              aria-label={`Monitor ${candidate.name}'s interview (opens in new tab)`}>
+              Monitor
+            </Button>
+          </Tooltip>
         </div>
       )}
 

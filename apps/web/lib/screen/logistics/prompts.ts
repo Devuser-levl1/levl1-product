@@ -15,7 +15,9 @@ export function logisticsBudget(knockouts: number): { maxMs: number; maxReplies:
   return { maxMs: LOGISTICS_MAX_MS + knockouts * KNOCKOUT_EXTRA_MS, maxReplies: LOGISTICS_MAX_CANDIDATE_TURNS + knockouts }
 }
 
-export interface SegmentTurn { speaker: 'ai' | 'candidate'; text: string }
+// `topic` (AI turns) is the logistics topic that turn asked — tracked so no
+// topic is ever re-asked (Fixpack 6 #4).
+export interface SegmentTurn { speaker: 'ai' | 'candidate'; text: string; topic?: string }
 
 /** Deterministic opener — no model latency on the first beat. */
 export function logisticsIntro(): string {
@@ -79,12 +81,17 @@ STYLE:
 - If they want to skip a topic, respect it and move on.
 - If WRAP_NOW is true: skip any remaining topics and give the confirm-and-close turn immediately with done=true.
 
-Return ONLY JSON: {"say": "<what you say next>", "done": <true|false>}`
+NEVER REPEAT A TOPIC:
+- Each topic is asked ONCE. You are told which topics were already asked — never ask about one of them again, never circle back to an earlier topic, and never re-ask a question in different words.
+- A CANDIDATE line of exactly "[no response]" means they didn't answer in time. Do NOT re-ask it — acknowledge lightly ("No problem, the recruiter can pick that up") and move to the NEXT topic.
+
+Return ONLY JSON: {"say": "<what you say next>", "done": <true|false>, "topic": "<location|notice|comp|workauth|knockout:<id>|close — the topic your question is about>"}`
 }
 
-export function logisticsTurnUser(turns: SegmentTurn[], wrapNow: boolean): string {
+export function logisticsTurnUser(turns: SegmentTurn[], wrapNow: boolean, topics?: { asked: string; next: string }): string {
   const convo = turns.map((t) => `${t.speaker === 'ai' ? INTERVIEWER_NAME.toUpperCase() : 'CANDIDATE'}: ${t.text}`).join('\n')
-  return `Logistics segment so far:\n${convo}\n\nWRAP_NOW: ${wrapNow}\nWrite your next turn as JSON.`
+  const topicLines = topics ? `\n\nTOPICS ALREADY ASKED (never ask these again): ${topics.asked}\nNEXT TOPIC TO ASK: ${topics.next}` : ''
+  return `Logistics segment so far:\n${convo}${topicLines}\n\nWRAP_NOW: ${wrapNow}\nWrite your next turn as JSON.`
 }
 
 export function extractionSystem(cfg: LogisticsConfig, defaultCurrency: string, today: string, knockouts: KnockoutQuestion[] = []): string {

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Page, PageHeader, Card, Button, Badge, EmptyState, Skeleton, type Tone } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+import { MONITORING_HELP } from "@/components/control-room/monitoring-help";
 
 // Design-System Pass 3 (group 1): canonical components + tokens. Data loading,
 // calculations and every handler are unchanged from the previous version.
@@ -181,7 +182,7 @@ export default function DashboardPage() {
                           <Button variant="secondary" size="sm" fullWidth leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
                             onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}>Start</Button>
                         </Tooltip>
-                        <Tooltip content="Watch the live transcript and scores in a separate tab" position="top">
+                        <Tooltip content={MONITORING_HELP.monitor} position="top" maxWidth={260}>
                           <Button size="sm" variant="secondary" leftIcon={<Monitor size={14} />}
                             onClick={() => window.open(`/interview/${iv.id}/monitor`, "_blank")}>Monitor</Button>
                         </Tooltip>

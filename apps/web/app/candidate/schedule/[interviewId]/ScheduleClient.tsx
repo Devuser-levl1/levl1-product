@@ -42,18 +42,28 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     return () => { alive = false }
   }, [consented, data.interviewId])
 
-  // Group slots by calendar day in the slot timezone.
+  // Group slots by calendar day in the slot timezone. With the 24/7 window
+  // (Fixpack 6 #2) a day has up to 48 times, so the page shows one day at a
+  // time (day picker) with times bucketed into parts of the day.
   const grouped = useMemo(() => {
-    const map = new Map<string, { iso: string; time: string }[]>()
+    const map = new Map<string, { iso: string; time: string; hour: number }[]>()
     for (const iso of slots ?? []) {
       const s = new Date(iso)
       const dayKey = s.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz })
       const time = s.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+      const hour = Number(s.toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: tz }).slice(0, 2)) % 24
       if (!map.has(dayKey)) map.set(dayKey, [])
-      map.get(dayKey)!.push({ iso, time })
+      map.get(dayKey)!.push({ iso, time, hour })
     }
     return Array.from(map.entries())
   }, [slots, tz])
+  const [dayIdx, setDayIdx] = useState(0)
+  const activeDay = grouped[Math.min(dayIdx, Math.max(0, grouped.length - 1))]
+  const PARTS: { label: string; from: number; to: number }[] = [
+    { label: 'Early morning', from: 0, to: 6 }, { label: 'Morning', from: 6, to: 12 },
+    { label: 'Afternoon', from: 12, to: 17 }, { label: 'Evening', from: 17, to: 24 },
+  ]
+  const partOf = (h: number) => PARTS.find((p) => h >= p.from && h < p.to)?.label ?? 'Evening'
   const todayKey = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz })
 
   async function giveConsent() {
@@ -220,11 +230,24 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
           ) : grouped.length === 0 ? (
             <p style={{ fontSize: 14, color: 'var(--lv-text-muted)' }}>No open times right now{instantStart ? ' — use “Interview now” above.' : '. Please contact your recruiter.'}</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxHeight: '52vh', overflowY: 'auto', padding: 2 }}>
-              {grouped.map(([day, times]) => (
-                <section key={day} aria-label={day}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', margin: '0 0 8px' }}>{day === todayKey ? `Today · ${day}` : day}</h3>
-                  <div role="radiogroup" aria-label={`Times on ${day}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Day picker */}
+              <div role="radiogroup" aria-label="Day" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                {grouped.map(([day], i) => {
+                  const on = activeDay?.[0] === day
+                  return (
+                    <button key={day} type="button" role="radio" aria-checked={on} className="lv-slot" onClick={() => setDayIdx(i)}
+                      style={{ flexShrink: 0, border: `1px solid ${on ? brand : 'var(--lv-border-control)'}`, background: on ? brand : 'var(--lv-surface)', color: on ? onBrand(brand) : 'var(--lv-text-body)' }}>
+                      {day === todayKey ? 'Today' : day}
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '44vh', overflowY: 'auto', padding: 2 }}>
+              {activeDay && PARTS.map((part) => [part, activeDay[1].filter((s) => partOf(s.hour) === part.label)] as const).filter(([, times]) => times.length > 0).map(([part, times]) => (
+                <section key={part.label} aria-label={`${activeDay[0]} — ${part.label}`}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', margin: '0 0 8px' }}>{part.label}</h3>
+                  <div role="radiogroup" aria-label={`${part.label} times on ${activeDay[0]}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {times.map((t) => {
                       const active = selected === t.iso
                       return (
@@ -248,6 +271,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
                   </div>
                 </section>
               ))}
+              </div>
             </div>
           )}
 

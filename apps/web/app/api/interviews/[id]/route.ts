@@ -102,6 +102,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.consentWithdrawnAt !== undefined) data.consentWithdrawnAt = isoDate(body.consentWithdrawnAt)
     if (typeof body.terminationReason === 'string' && TERMINATIONS.has(body.terminationReason)) data.terminationReason = body.terminationReason
     if (typeof body.candidateJoined === 'boolean') data.candidateJoined = body.candidateJoined
+    // Fixpack 6 #3: the room persists per-question responses at the end so the
+    // report can be (re)generated server-side without the candidate's tab.
+    if (Array.isArray(body.questionResponses)) data.questionResponses = body.questionResponses.slice(0, 200) as Prisma.InputJsonValue
 
     // Recruiter-only fields.
     if (isRecruiter) {
