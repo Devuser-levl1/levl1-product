@@ -160,7 +160,7 @@ export default function OnboardingPage() {
     <div style={{ minHeight: '100vh', background: 'var(--lv-bg)', fontFamily: 'var(--lv-font-sans)', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
       <header style={{ height: 60, background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', padding: '0 clamp(16px, 4vw, 32px)', gap: 12, flexShrink: 0 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
         <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
 
           {/* ── STEP 1: Agency Details ── */}
           {step === 1 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={16} />
@@ -289,7 +289,7 @@ export default function OnboardingPage() {
 
           {/* ── STEP 2: GST & Business Details ── */}
           {step === 2 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText size={16} />
@@ -355,7 +355,7 @@ export default function OnboardingPage() {
 
           {/* ── STEP 3: Team Members ── */}
           {step === 3 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Users size={16} />
@@ -424,7 +424,7 @@ export default function OnboardingPage() {
 
           {/* ── STEP 4: Payment Setup ── */}
           {step === 4 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CreditCard size={16} color="var(--lv-success)" />
@@ -436,8 +436,8 @@ export default function OnboardingPage() {
               </div>
 
               {/* Trial perks */}
-              <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 4%, transparent) 100%)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 8, padding: '20px 24px', marginBottom: 28 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', marginBottom: 12 }}>Trial includes:</div>
+              <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '20px 24px', marginBottom: 28 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 12 }}>Trial includes</div>
                 {[
                   '5 AI interviews',
                   '14 days full access',

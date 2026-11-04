@@ -280,7 +280,7 @@ export default function MonitorPage() {
                     <span style={{ fontSize: 11, color: lv.textMuted }}>Q{idx + 1}</span>
                     {r.isPreset
                       ? <span style={{ fontSize: 11, color: lv.textMuted, marginLeft: 'auto' }}>PRESET</span>
-                      : <span style={{ fontSize: 11, color: lv.accent, marginLeft: 'auto' }}>DYNAMIC</span>
+                      : <span style={{ fontSize: 11, color: lv.textMuted, marginLeft: 'auto' }}>DYNAMIC</span>
                     }
                     <CheckCircle2 size={14} color={lv.success} aria-hidden="true" />
                   </div>

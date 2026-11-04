@@ -247,7 +247,7 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
       aria-label={`${t.candidate}, ${t.health.level === "alert" ? "needs attention" : t.health.level === "watch" ? "watch" : "all clear"} — open details`}
       style={{
         textAlign: "left", cursor: "pointer", background: C.surface, borderRadius: 8, padding: compact ? 14 : 16,
-        border: `1px solid ${tone.line}`, boxShadow: t.health.level === "alert" ? `0 0 0 3px ${tone.soft}, ${lv.shadowMd}` : lv.shadowSm,
+        border: `1px solid ${tone.line}`, boxShadow: t.health.level === "alert" ? `0 0 0 3px ${tone.soft}` : "none",
         display: "flex", flexDirection: "column", gap: 12, transition: "transform .12s, box-shadow .12s", fontFamily: "inherit",
         animation: t.health.level === "alert" ? "cr-attn 2.4s ease-in-out infinite" : undefined,
       }}
@@ -585,7 +585,7 @@ function LivePulse({ ok }: { ok: boolean }) {
       {ok ? "Live" : "Offline"}
       <style>{`
         @keyframes cr-pulse { 0% { box-shadow: 0 0 0 0 rgba(5,150,105,.55) } 70% { box-shadow: 0 0 0 7px rgba(5,150,105,0) } 100% { box-shadow: 0 0 0 0 rgba(5,150,105,0) } }
-        @keyframes cr-attn { 0%,100% { box-shadow: 0 0 0 3px var(--lv-danger-soft), var(--lv-shadow-md) } 50% { box-shadow: 0 0 0 5px var(--lv-danger-border), var(--lv-shadow-md) } }
+        @keyframes cr-attn { 0%,100% { box-shadow: 0 0 0 3px var(--lv-danger-soft) } 50% { box-shadow: 0 0 0 5px var(--lv-danger-border) } }
         @media (prefers-reduced-motion: reduce) { .cr-tile { animation: none !important; } }
         .cr-tile:focus-visible, .cr-row:focus-visible { outline: none; box-shadow: var(--lv-focus-ring) !important; }
         .cr-row:hover { background: var(--lv-surface-muted); }

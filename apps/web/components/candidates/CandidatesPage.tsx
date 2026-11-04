@@ -139,11 +139,11 @@ function CandidateCard({
       <div style={{ display: "flex", alignItems: "flex-start", gap: space[2] }}>
         <div aria-hidden="true" style={{
           width: 34, height: 34, borderRadius: "50%",
-          background: isScheduled ? lv.accentSoft : lv.brandSoft,
-          border: `1px solid ${isScheduled ? lv.brandSoftBorder : lv.border}`,
+          background: lv.surfaceMuted,
+          border: `1px solid ${lv.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: text.xs, fontWeight: 600,
-          color: lv.brandText,
+          color: lv.textBody,
           flexShrink: 0,
         }}>
           {initials}
@@ -220,7 +220,7 @@ function CandidateCard({
       {/* ── Start Interview / Monitor actions ── */}
       {showActions && (
         <div style={{ ...divider, display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <Button size="sm" style={{ flex: "1 1 auto" }} leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
+          <Button variant="secondary" size="sm" style={{ flex: "1 1 auto" }} leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
             onClick={(e) => { e.stopPropagation(); onStartInterview(candidate); }}>
             Start Interview
           </Button>
@@ -235,8 +235,7 @@ function CandidateCard({
       {isCompleted && candidate.interviewId && (
         <div style={divider}>
           <Button variant="secondary" size="sm" fullWidth onClick={handleGenerateReport} loading={generatingReport}
-            leftIcon={<FileText size={14} />}
-            style={candidate.reportGenerated ? { color: lv.success } : undefined}>
+            leftIcon={<FileText size={14} />}>
             {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : "Generate Report"}
           </Button>
         </div>

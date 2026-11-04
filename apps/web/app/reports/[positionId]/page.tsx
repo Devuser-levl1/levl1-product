@@ -55,11 +55,11 @@ function Sparkline({ scores }: { scores: number[] }) {
   }).join(' ')
   return (
     <svg width={w} height={h} style={{ overflow: 'visible' }}>
-      <polyline points={pts} fill="none" stroke="var(--lv-accent)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={pts} fill="none" stroke="var(--lv-text-body)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
       {scores.map((s, i) => {
         const x = (i / (scores.length - 1)) * w
         const y = h - ((s - min) / range) * h * 0.8 - h * 0.1
-        return <circle key={i} cx={x} cy={y} r={2.5} fill="var(--lv-accent)" />
+        return <circle key={i} cx={x} cy={y} r={2.5} fill="var(--lv-text-body)" />
       })}
     </svg>
   )
@@ -69,7 +69,7 @@ function Sparkline({ scores }: { scores: number[] }) {
 function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-      <div style={{ color: 'var(--lv-accent)' }}>{icon}</div>
+      <div style={{ color: 'var(--lv-text-muted)' }}>{icon}</div>
       <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
         {label}
       </h2>
@@ -185,7 +185,7 @@ export default function PositionRankingPage() {
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.push('/dashboard')}>Dashboard</Button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Zap size={14} color="white" fill="white" />
           </div>
           <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
@@ -204,7 +204,7 @@ export default function PositionRankingPage() {
         <section style={{
           background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
-          boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
+          boxShadow: 'none',
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
@@ -212,7 +212,7 @@ export default function PositionRankingPage() {
               <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
                 {position.title}
               </h1>
-              <p style={{ fontSize: 14, color: 'var(--lv-accent)', fontWeight: 600, margin: '0 0 2px' }}>{position.company} · {position.department}</p>
+              <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', fontWeight: 500, margin: '0 0 2px' }}>{position.company} · {position.department}</p>
               {reportDate && <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: 0 }}>Generated: {reportDate}</p>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -241,7 +241,7 @@ export default function PositionRankingPage() {
         <section style={{
           background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
-          boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
+          boxShadow: 'none',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
             <SectionTitle icon={<TrendingUp size={16} />} label="Candidate Rankings" />
@@ -304,9 +304,9 @@ export default function PositionRankingPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{
                               width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                              background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
+                              background: 'var(--lv-surface-muted)', border: '1px solid var(--lv-border)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 11, fontWeight: 600, color: '#FFFFFF',
+                              fontSize: 11, fontWeight: 600, color: 'var(--lv-text-body)',
                             }}>
                               {initials(c.name)}
                             </div>
@@ -393,7 +393,7 @@ export default function PositionRankingPage() {
         <section style={{
           background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
-          boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
+          boxShadow: 'none',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <SectionTitle icon={<Globe size={16} />} label="Talent Pool Insights" />
@@ -436,7 +436,7 @@ export default function PositionRankingPage() {
                 <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-brand) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 6, padding: '14px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <Globe size={14} />
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Market Observation</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--lv-text-muted)' }}>Market observation</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>{posReport.marketObservation}</p>
                 </div>
@@ -470,7 +470,7 @@ export default function PositionRankingPage() {
           <section style={{
             background: 'var(--lv-surface)', border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)', borderRadius: 8,
             padding: '28px 36px', marginBottom: 24,
-            boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
+            boxShadow: 'none',
           }}>
             <SectionTitle icon={<Flag size={16} />} label="Question Health Flags" />
             <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginBottom: 16, marginTop: -8 }}>
@@ -509,7 +509,7 @@ export default function PositionRankingPage() {
           <section style={{
             background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
             padding: '24px 36px', marginBottom: 24,
-            boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
+            boxShadow: 'none',
           }}>
             <SectionTitle icon={<Users size={16} />} label="Pending Interviews" />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>

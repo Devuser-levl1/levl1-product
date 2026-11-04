@@ -60,11 +60,9 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
         display: "flex", flexDirection: "column", gap: space[4],
         position: "relative", overflow: "hidden",
         borderColor: isLive ? lv.brandSoftBorder : undefined,
-        boxShadow: isLive ? lv.shadowMd : undefined,
       }}
     >
       {/* Top accent bar */}
-      {isLive && <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: lv.gradientBrand }} />}
 
       {/* LIVE badge */}
       {isLive && (
@@ -77,10 +75,10 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
       <div style={{ display: "flex", alignItems: "flex-start", gap: space[3], paddingTop: 4 }}>
         <div aria-hidden="true" style={{
           width: 46, height: 46, borderRadius: radius.md,
-          background: isLive ? lv.brandSoft : lv.surfaceMuted,
-          border: `1px solid ${isLive ? lv.brandSoftBorder : lv.border}`,
+          background: lv.surfaceMuted,
+          border: `1px solid ${lv.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: text.md, fontWeight: 600, color: isLive ? lv.brandText : lv.textBody,
+          fontSize: text.md, fontWeight: 600, color: lv.textBody,
           flexShrink: 0, fontFamily: lv.fontDisplay,
         }}>
           {interview.candidateName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -124,7 +122,7 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
 
       {/* CTA */}
       <div style={{ display: "flex", gap: space[2] }}>
-        <Button style={{ flex: 1 }} onClick={() => onStart(interview)}
+        <Button variant={isLive ? "primary" : "secondary"} style={{ flex: 1 }} onClick={() => onStart(interview)}
           leftIcon={isLive ? <Radio size={14} /> : <Play size={14} fill="currentColor" strokeWidth={0} />}>
           {isLive ? "Join Live" : "Start"}
         </Button>

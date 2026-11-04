@@ -179,7 +179,7 @@ export default function ReportPage() {
       <DemoSalesCTA />
       {/* Print header */}
       <div className="print-only" style={{ display: 'none', padding: '0 0 16px', borderBottom: `2px solid ${INDIGO}`, marginBottom: 24, alignItems: 'center', gap: 10 }}>
-        <Zap size={16} fill="var(--lv-accent)" />
+        <Zap size={16} />
         <span style={{ fontSize: 18, fontWeight: 600, color: INDIGO }}>Levl1</span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>Confidential — for internal use only</span>
       </div>
@@ -238,7 +238,7 @@ export default function ReportPage() {
             <CompetencyRadar dimensions={dimensions} />
           </section>
           <section style={card}>
-            <SectionHead title="Communication" sub="Spoken delivery · separate axis" color="var(--lv-accent)" />
+            <SectionHead title="Communication" sub="Spoken delivery · separate axis" color="var(--lv-text-muted)" />
             <CommunicationDial communication={R.communication} />
           </section>
         </div>

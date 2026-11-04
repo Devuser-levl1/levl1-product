@@ -158,7 +158,7 @@ export default function DashboardPage() {
                   return (
                     <div key={iv.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: space[3] }}>
                       <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
-                        <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: radius.md, background: lv.brandSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: radius.md, background: lv.surfaceMuted, color: lv.textMuted, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Video size={16} />
                         </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                       </div>
                       <div style={{ display: "flex", gap: space[2] }}>
                         <Tooltip content="Launch the AI interview room for this candidate" position="top">
-                          <Button size="sm" fullWidth leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
+                          <Button variant="secondary" size="sm" fullWidth leftIcon={<Play size={12} fill="currentColor" strokeWidth={0} />}
                             onClick={() => { if (linkedCandidate) setModalCandidate(linkedCandidate); }}>Start</Button>
                         </Tooltip>
                         <Tooltip content="Watch the live transcript and scores in a separate tab" position="top">
@@ -208,8 +208,8 @@ export default function DashboardPage() {
                     <div key={c.id} role={c.interviewId ? "button" : undefined} tabIndex={c.interviewId ? 0 : undefined}
                       onClick={open} onKeyDown={(e) => { if (e.key === "Enter") open(); }}
                       className="lv-card--interactive" style={{ ...rowStyle, cursor: c.interviewId ? "pointer" : "default" }}>
-                      <span style={{ width: 24, fontSize: text.xs, fontWeight: 600, color: idx === 0 ? lv.warning : lv.textMuted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{idx + 1}</span>
-                      <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: idx === 0 ? lv.brandSoft : lv.surfaceMuted, border: `1px solid ${idx === 0 ? lv.brandSoftBorder : lv.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 600, color: idx === 0 ? lv.brandText : lv.textMuted, flexShrink: 0 }}>{initials}</span>
+                      <span style={{ width: 24, fontSize: text.xs, fontWeight: 600, color: idx === 0 ? lv.text : lv.textMuted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{idx + 1}</span>
+                      <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: lv.surfaceMuted, border: `1px solid ${lv.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 600, color: lv.textBody, flexShrink: 0 }}>{initials}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={nameStyle}>{c.name}</div>
                         <div style={metaStyle}>{c.positionTitle}</div>

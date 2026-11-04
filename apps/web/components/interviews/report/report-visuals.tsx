@@ -8,7 +8,7 @@ import { useState } from 'react'
 // Indigo brand; prints cleanly.
 
 const INDIGO = 'var(--lv-brand)'
-const VIOLET = 'var(--lv-accent)'
+const VIOLET = 'var(--lv-text-body)'   // communication axis — monochrome ink (no second hue)
 const INSUFFICIENT = 'INSUFFICIENT_EVIDENCE'
 
 export interface Dimension { key: string; label: string; score: number | null; outOf: number; status?: string; color?: string }
@@ -95,7 +95,7 @@ export function CommunicationDial({ communication }: { communication: Communicat
         {!insufficient && communication?.cefr && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CEFR</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-on-brand)', background: VIOLET, borderRadius: 6, padding: '3px 10px' }}>{communication.cefr}</span>
+            <span className="lv-badge lv-badge--neutral">{communication.cefr}</span>
           </div>
         )}
         {insufficient ? <div style={{ marginTop: 4 }}><InsufficientTag /></div> : (
@@ -232,7 +232,7 @@ export interface CultureFitShape {
 export function CultureFitPanel({ cultureFit }: { cultureFit: CultureFitShape | null }) {
   if (!cultureFit || !Array.isArray(cultureFit.responses) || cultureFit.responses.length === 0) return null
   const s = cultureFit.fitScore
-  const band = s >= 75 ? 'var(--lv-success)' : s >= 50 ? 'var(--lv-accent)' : 'var(--lv-warning)'
+  const band = s >= 75 ? 'var(--lv-success)' : s >= 50 ? 'var(--lv-text-muted)' : 'var(--lv-warning)'
   return (
     <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 22 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -244,11 +244,11 @@ export function CultureFitPanel({ cultureFit }: { cultureFit: CultureFitShape | 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {cultureFit.responses.map((r, i) => {
           const adj = r.reverse ? 6 - r.value : r.value  // positive-direction strength
-          const hue = adj >= 4 ? 'var(--lv-success)' : adj >= 3 ? 'var(--lv-accent)' : 'var(--lv-warning)'
+          const hue = adj >= 4 ? 'var(--lv-success)' : adj >= 3 ? 'var(--lv-text-muted)' : 'var(--lv-warning)'
           return (
             <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 13, padding: '9px 11px', border: '1px solid var(--lv-surface-muted)', borderRadius: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                {r.dimension && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-accent)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 6 }}>{r.dimension}</span>}
+                {r.dimension && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 6 }}>{r.dimension}</span>}
                 <span style={{ color: 'var(--lv-text-body)' }}>{r.prompt}</span>
                 {r.reverse && <span style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}> · reverse-scored</span>}
               </div>
@@ -329,11 +329,11 @@ export function IntegrityPanel({ integrity, terminationReason }: { integrity: In
             const qText = qContextOf(cl.events)
             const labels = Array.from(new Set(cl.events.map((e) => e.label)))
             return (
-              <div key={i} style={{ border: '1px solid color-mix(in srgb, var(--lv-accent) 25%, transparent)', background: 'color-mix(in srgb, var(--lv-accent) 4%, transparent)', borderRadius: 6, padding: '10px 12px' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-accent)', marginBottom: 6 }}>
+              <div key={i} style={{ border: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', borderRadius: 6, padding: '10px 12px' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 6 }}>
                   Correlated activity — {labels.length} signals co-occurred{qText ? <> while answering: <span style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--lv-brand)' }}>“{qText.slice(0, 90)}{qText.length > 90 ? '…' : ''}”</span></> : ''}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '2px solid color-mix(in srgb, var(--lv-accent) 25%, transparent)', paddingLeft: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '2px solid var(--lv-border-strong)', paddingLeft: 10 }}>
                   {cl.events.map((e, j) => <EvidenceRow key={j} e={e} />)}
                 </div>
               </div>
@@ -456,7 +456,7 @@ export function LogisticsPanel({ logistics }: { logistics: LogisticsShape | null
             <div key={r.key} className={r.sensitive ? 'no-print' : undefined} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${r.verdict === 'mismatch' ? 'var(--lv-danger-border)' : 'var(--lv-surface-muted)'}`, borderRadius: 6, background: r.verdict === 'mismatch' ? 'var(--lv-danger-soft)' : 'var(--lv-surface)' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {r.title}{r.sensitive && <span style={{ fontSize: 11, color: 'var(--lv-accent)', background: 'color-mix(in srgb, var(--lv-accent) 8%, transparent)', borderRadius: 100, padding: '1px 7px', letterSpacing: 0, textTransform: 'none' }}>Sensitive · don&apos;t share</span>}
+                  {r.title}{r.sensitive && <span style={{ fontSize: 11, color: 'var(--lv-text-body)', background: 'var(--lv-surface-muted)', borderRadius: 100, padding: '1px 7px', letterSpacing: 0, textTransform: 'none' }}>Sensitive · don&apos;t share</span>}
                 </div>
                 <div style={{ fontSize: 14, color: 'var(--lv-text)', marginTop: 3, lineHeight: 1.5 }}>{r.summary}</div>
               </div>

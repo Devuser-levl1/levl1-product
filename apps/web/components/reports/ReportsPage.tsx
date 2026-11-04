@@ -156,7 +156,7 @@ function PositionCard({
 
       {/* Actions */}
       <div style={{ display: "flex", gap: space[2], marginTop: "auto" }}>
-        <Button size="sm" style={{ flex: 1 }} onClick={onViewRankings} disabled={none}
+        <Button variant="secondary" size="sm" style={{ flex: 1 }} onClick={onViewRankings} disabled={none}
           leftIcon={<BarChart2 size={14} />} rightIcon={<ChevronRight size={14} />}>
           View Rankings
         </Button>
@@ -369,7 +369,7 @@ export default function ReportsPage() {
                   <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{c.name}</div>
                   <div style={{ fontSize: text.xs, color: lv.textMuted }}>{c.positionTitle}</div>
                 </div>
-                <Button size="sm" onClick={() => generateReportManually(c)} loading={reportGenId === c.id} leftIcon={<Sparkles size={14} />}>
+                <Button variant="secondary" size="sm" onClick={() => generateReportManually(c)} loading={reportGenId === c.id} leftIcon={<Sparkles size={14} />}>
                   {reportGenId === c.id ? "Generating…" : "Generate Report"}
                 </Button>
               </li>
@@ -414,9 +414,9 @@ export default function ReportsPage() {
                     {/* Avatar */}
                     <div aria-hidden="true" style={{
                       width: 38, height: 38, borderRadius: radius.md, flexShrink: 0,
-                      background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`,
+                      background: lv.surfaceMuted, border: `1px solid ${lv.border}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: text.xs, fontWeight: 600, color: lv.brandText,
+                      fontSize: text.xs, fontWeight: 600, color: lv.textBody,
                     }}>
                       {initials(r.candidateName)}
                     </div>

@@ -212,35 +212,13 @@ export function FeedbackWidget() {
         </div>
       )}
 
-      {/* Floating button */}
+      {/* Floating button — quiet secondary affordance (not a primary action) */}
       <button
         onClick={handleOpen}
-        style={{
-          display:      'flex',
-          alignItems:   'center',
-          gap:          8,
-          padding:      '10px 16px',
-          background:   'var(--lv-gradient-brand)',
-          border:       'none',
-          borderRadius: 100,
-          color:        '#fff',
-          fontSize:     13,
-          fontWeight:   600,
-          cursor:       'pointer',
-          fontFamily:   'var(--font-sans)',
-          boxShadow:    'none',
-          transition:   'box-shadow 0.18s, transform 0.18s',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = 'none'
-          e.currentTarget.style.transform = 'translateY(-1px)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'none'
-          e.currentTarget.style.transform = 'translateY(0)'
-        }}
+        className="lv-btn lv-btn--secondary"
+        style={{ borderRadius: 999, boxShadow: 'var(--lv-shadow-md)' }}
       >
-        <MessageSquare size={16} />
+        <MessageSquare size={14} />
         Feedback
       </button>
 
