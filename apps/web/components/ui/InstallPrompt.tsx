@@ -76,7 +76,7 @@ export function InstallPrompt() {
         right:         16,
         zIndex:        200,
         background:    'var(--lv-surface)',
-        borderRadius:  14,
+        borderRadius:  8,
         border:        '1px solid var(--lv-border)',
         boxShadow:     '0 8px 32px color-mix(in srgb, var(--lv-brand) 18%, transparent)',
         padding:       '14px 16px',
@@ -91,7 +91,7 @@ export function InstallPrompt() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 9,
+          width: 36, height: 36, borderRadius: 6,
           background: 'linear-gradient(135deg,var(--lv-brand),var(--lv-accent))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -99,7 +99,7 @@ export function InstallPrompt() {
           <Smartphone size={18} color="#fff" />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-text)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>
             Add Levl1 to Home Screen
           </div>
           <div style={{ fontSize: 11, color: 'var(--lv-text-muted)', marginTop: 1 }}>
@@ -136,7 +136,7 @@ export function InstallPrompt() {
             borderRadius: 8,
             color:        '#fff',
             fontSize:     13,
-            fontWeight:   700,
+            fontWeight:   600,
             cursor:       'pointer',
           }}
         >

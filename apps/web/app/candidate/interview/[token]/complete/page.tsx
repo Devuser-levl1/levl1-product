@@ -31,10 +31,10 @@ export default function InterviewCompletePage() {
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 40 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={16} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 800, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
       </div>
 
       {/* Card */}
@@ -55,21 +55,21 @@ export default function InterviewCompletePage() {
         </div>
 
         <h1 style={{
-          fontFamily: 'var(--lv-font-display)', fontSize: 26, fontWeight: 800,
+          fontFamily: 'var(--lv-font-display)', fontSize: 28, fontWeight: 600,
           color: 'var(--lv-text)', marginBottom: 12, letterSpacing: '-0.02em',
         }}>
           {name ? `Well done, ${name}!` : 'Interview Complete!'}
         </h1>
-        <p style={{ fontSize: 15, color: 'var(--lv-text-body)', lineHeight: 1.75, marginBottom: 32 }}>
+        <p style={{ fontSize: 16, color: 'var(--lv-text-body)', lineHeight: 1.75, marginBottom: 32 }}>
           Thank you for completing your interview. Your responses have been recorded and will be reviewed by the hiring team.
         </p>
 
         {/* What happens next */}
         <div style={{
-          background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 12,
+          background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '20px 24px', textAlign: 'left', marginBottom: 28,
         }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 14 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 14 }}>
             What happens next
           </p>
           {[

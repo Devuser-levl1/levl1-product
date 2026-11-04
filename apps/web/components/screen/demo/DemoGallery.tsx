@@ -41,8 +41,8 @@ export function DemoGallery() {
   return (
     <div id="try-live" style={{ maxWidth: 1080, margin: '0 auto', padding: '8px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>✨ Live demo · no signup</div>
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Try a real AI interview in <span style={{ color: INDIGO }}>60 seconds</span></h2>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>✨ Live demo · no signup</div>
+        <h2 style={{ fontSize: 32, fontWeight: 600, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Try a real AI interview in <span style={{ color: INDIGO }}>60 seconds</span></h2>
         <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>Pick a technical role and start a live voice interview instantly — no job description, no login. You&apos;ll get the full evidence report at the end.</p>
       </div>
 
@@ -52,25 +52,25 @@ export function DemoGallery() {
         ))}
       </div>
 
-      {err && <div style={{ textAlign: 'center', color: '#DC2626', fontSize: 13.5, marginBottom: 16, fontWeight: 600 }}>{err}</div>}
+      {err && <div style={{ textAlign: 'center', color: '#DC2626', fontSize: 14, marginBottom: 16, fontWeight: 600 }}>{err}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 18 }}>
         {shown.map((p) => (
-          <div key={p.slug} className="lv-demo-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: 22 }}>
+          <div key={p.slug} className="lv-demo-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: VIOLET, background: 'rgba(124,58,237,0.08)', borderRadius: 6, padding: '2px 8px' }}>{p.category}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: VIOLET, background: 'rgba(124,58,237,0.08)', borderRadius: 6, padding: '2px 8px' }}>{p.category}</span>
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>{p.title}</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#0F172A', margin: '0 0 6px' }}>{p.title}</h3>
             <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5, minHeight: 38 }}>{p.blurb}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-              {p.skills.map((s) => <span key={s} style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{s}</span>)}
+              {p.skills.map((s) => <span key={s} style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{s}</span>)}
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>
               <span>⏱ ~{p.durationMin} min</span>
               <span>🎙 {p.accent}</span>
               <span>{p.language}</span>
             </div>
-            <button onClick={() => openLead(p.slug)} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 14, background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>
+            <button onClick={() => openLead(p.slug)} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 6, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 14, background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>
               Try interview →
             </button>
           </div>
@@ -78,22 +78,22 @@ export function DemoGallery() {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 32, fontSize: 14, color: '#64748B' }}>
-        Evaluating for your team? <a href="/contact" style={{ color: INDIGO, fontWeight: 700 }}>Book a demo with our team →</a>
+        Evaluating for your team? <a href="/contact" style={{ color: INDIGO, fontWeight: 600 }}>Book a demo with our team →</a>
       </div>
 
       {/* Lead-capture gate — name + work email before the demo starts. */}
       {leadFor && (
         <div onClick={() => !starting && setLeadFor(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '100%', background: '#fff', borderRadius: 16, padding: 26 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: VIOLET, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{chosen?.title} · ~{chosen?.durationMin} min</div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>Start your live interview</h3>
-            <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 18px' }}>Tell us who you are and we&apos;ll begin right away. You&apos;ll get the full evidence report at the end.</p>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '100%', background: '#fff', borderRadius: 8, padding: 26 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: VIOLET, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{chosen?.title} · ~{chosen?.durationMin} min</div>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#0F172A', margin: '0 0 6px' }}>Start your live interview</h3>
+            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 18px' }}>Tell us who you are and we&apos;ll begin right away. You&apos;ll get the full evidence report at the end.</p>
 
             <label style={lbl}>Name</label>
             <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={inp} />
             <label style={lbl}>Work email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') start() }} placeholder="you@company.com" style={inp} />
-            <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
 
             <div style={{ marginTop: 14 }}>
               <ConsentCheckbox checked={consent} onChange={setConsent}>
@@ -104,8 +104,8 @@ export function DemoGallery() {
             {err && <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginTop: 10 }}>{err}</div>}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button onClick={() => setLeadFor(null)} disabled={starting} style={{ flex: 1, padding: 11, borderRadius: 10, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={start} disabled={starting} style={{ flex: 2, padding: 11, borderRadius: 10, border: 'none', color: '#fff', fontWeight: 700, fontSize: 14, cursor: starting ? 'default' : 'pointer', background: starting ? VIOLET : `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>{starting ? 'Starting…' : 'Start interview →'}</button>
+              <button onClick={() => setLeadFor(null)} disabled={starting} style={{ flex: 1, padding: 11, borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={start} disabled={starting} style={{ flex: 2, padding: 11, borderRadius: 6, border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: starting ? 'default' : 'pointer', background: starting ? VIOLET : `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>{starting ? 'Starting…' : 'Start interview →'}</button>
             </div>
           </div>
         </div>
@@ -116,5 +116,5 @@ export function DemoGallery() {
   )
 }
 
-const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', margin: '12px 0 5px' }
-const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }
+const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', margin: '12px 0 5px' }
+const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }

@@ -109,7 +109,7 @@ export default function CandidateInterviewEntry() {
     return (
       <Shell>
         <Loader2 size={36} color="var(--lv-accent)" style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
-        <p style={{ fontSize: 15, color: 'var(--lv-text-muted)' }}>Verifying your interview link…</p>
+        <p style={{ fontSize: 16, color: 'var(--lv-text-muted)' }}>Verifying your interview link…</p>
       </Shell>
     )
   }
@@ -119,7 +119,7 @@ export default function CandidateInterviewEntry() {
     return (
       <Shell>
         <AlertTriangle size={40} color="var(--lv-warning)" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>
           Link Expired
         </h2>
         <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
@@ -134,7 +134,7 @@ export default function CandidateInterviewEntry() {
     return (
       <Shell>
         <CheckCircle2 size={40} color="var(--lv-success)" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>
           Interview Already Completed
         </h2>
         <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
@@ -149,7 +149,7 @@ export default function CandidateInterviewEntry() {
     return (
       <Shell>
         <AlertTriangle size={40} color="var(--lv-danger)" style={{ marginBottom: 16 }} />
-        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 8 }}>
+        <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>
           Invalid Link
         </h2>
         <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
@@ -169,21 +169,21 @@ export default function CandidateInterviewEntry() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={16} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 800, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
       </div>
 
       {/* Card */}
       <div style={{
-        background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
+        background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
         padding: '32px 36px', width: '100%', maxWidth: 480,
         boxShadow: '0 4px 24px color-mix(in srgb, var(--lv-brand) 8%, transparent)',
       }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 6 }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 6 }}>
             Welcome, {meta?.candidateName?.split(' ')[0]}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
@@ -197,7 +197,7 @@ export default function CandidateInterviewEntry() {
 
         {/* Pre-flight checks */}
         <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
             Pre-flight check
           </p>
           <CheckRow label="Microphone access" status={micStatus} />
@@ -209,7 +209,7 @@ export default function CandidateInterviewEntry() {
         {pageState === 'ready' && !allOk && (
           <div style={{
             background: 'color-mix(in srgb, var(--lv-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)',
-            borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: 'var(--lv-warning)',
+            borderRadius: 6, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: 'var(--lv-warning)',
           }}>
             {micStatus === 'fail' && (
               <p style={{ margin: '0 0 4px' }}>⚠ Microphone blocked — please allow microphone access in your browser settings and reload.</p>
@@ -234,7 +234,7 @@ export default function CandidateInterviewEntry() {
           disabled={!canStart}
           aria-busy={pageState === 'checking' || undefined}
           className="lv-btn lv-btn--primary lv-btn--full"
-          style={{ height: 48, fontSize: 15 }}
+          style={{ height: 48, fontSize: 16 }}
         >
           {pageState === 'checking'
             ? <><span className="lv-spinner" aria-hidden="true" /> Checking system…</>

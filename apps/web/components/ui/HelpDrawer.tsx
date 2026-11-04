@@ -63,7 +63,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
         >
           <div
             style={{
-              width: 32, height: 32, borderRadius: 9,
+              width: 32, height: 32, borderRadius: 6,
               background: 'rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
@@ -75,7 +75,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
             <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.60)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
               How it works
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3, fontFamily: 'var(--font-display)' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', lineHeight: 1.3, fontFamily: 'var(--lv-font-sans)' }}>
               {topic?.title ?? 'Help'}
             </div>
           </div>
@@ -83,7 +83,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
             onClick={onClose}
             style={{
               background: 'rgba(255,255,255,0.12)', border: 'none',
-              borderRadius: 7, padding: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.75)',
+              borderRadius: 6, padding: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.75)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, transition: 'background 0.15s',
             }}
@@ -121,7 +121,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
                       background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(79,70,229,0.08) 100%)',
                       border: '1.5px solid rgba(124,58,237,0.22)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 800, color: '#7C3AED',
+                      fontSize: 11, fontWeight: 600, color: '#7C3AED',
                       flexShrink: 0, zIndex: 1,
                     }}
                   >
@@ -129,7 +129,7 @@ export function HelpDrawer({ topicId, onClose }: HelpDrawerProps) {
                   </div>
 
                   <div style={{ flex: 1, paddingBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', marginBottom: 4, marginTop: 5, fontFamily: 'var(--font-display)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', marginBottom: 4, marginTop: 5, fontFamily: 'var(--lv-font-sans)' }}>
                       {step.title}
                     </div>
                     <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.65 }}>

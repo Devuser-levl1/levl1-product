@@ -12,8 +12,8 @@ interface Me {
   linked: { hire: boolean; interviews: boolean }
 }
 
-const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 22, marginBottom: 16 }
-const pill = (on: boolean) => ({ fontSize: 11, fontWeight: 700, borderRadius: 100, padding: '3px 10px', color: on ? 'var(--lv-success)' : 'var(--lv-text-muted)', background: on ? 'color-mix(in srgb, var(--lv-success) 10%, transparent)' : 'var(--lv-surface-muted)' })
+const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 22, marginBottom: 16 }
+const pill = (on: boolean) => ({ fontSize: 11, fontWeight: 600, borderRadius: 100, padding: '3px 10px', color: on ? 'var(--lv-success)' : 'var(--lv-text-muted)', background: on ? 'color-mix(in srgb, var(--lv-success) 10%, transparent)' : 'var(--lv-surface-muted)' })
 
 export default function AccountPage() {
   const [me, setMe] = useState<Me | null>(null)
@@ -53,18 +53,18 @@ export default function AccountPage() {
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>Your Levl1 account</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>Your Levl1 account</h1>
       <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: '0 0 24px' }}>{me.email} — one login works across the Levl1 products you&apos;re entitled to.</p>
 
       <div style={card}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 12 }}>Product access</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 12 }}>Product access</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--lv-text-body)' }}>HirePilot</span>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--lv-text-body)' }}>HirePilot</span>
             <span style={pill(me.entitlements.hire)}>{me.entitlements.hire ? 'Active' : 'Not connected'}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--lv-text-body)' }}>Levl1 Interviews</span>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--lv-text-body)' }}>Levl1 Interviews</span>
             <span style={pill(me.entitlements.interviews)}>{me.entitlements.interviews ? 'Active' : 'Not connected'}</span>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function AccountPage() {
 
       {canLink && (
         <div style={card}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 4 }}>Connect your other Levl1 product</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 4 }}>Connect your other Levl1 product</div>
           <div style={{ fontSize: 13, color: 'var(--lv-text-body)', marginBottom: 14 }}>We found another Levl1 account under <strong>{me.email}</strong>. Connect it to use both products with this single login.</div>
           <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={link} disabled={busy}>{busy ? 'Connecting…' : 'Connect & verify by email'}</button>
         </div>

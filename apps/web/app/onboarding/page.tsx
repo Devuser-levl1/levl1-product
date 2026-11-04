@@ -20,7 +20,7 @@ function StepDot({ n, active, done }: { n: number; active: boolean; done: boolea
       width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: done ? 'var(--lv-success)' : active ? 'var(--lv-brand)' : 'var(--lv-border)',
       color: done || active ? 'var(--lv-on-brand)' : 'var(--lv-text-muted)',
-      fontSize: 12, fontWeight: 700, flexShrink: 0, transition: 'all 0.2s',
+      fontSize: 12, fontWeight: 600, flexShrink: 0, transition: 'all 0.2s',
     }}>
       {done ? '✓' : n}
     </div>
@@ -163,7 +163,7 @@ export default function OnboardingPage() {
         <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 15, fontWeight: 700, color: 'var(--lv-brand)' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
         <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}>· Account Setup</span>
       </header>
 
@@ -176,7 +176,7 @@ export default function OnboardingPage() {
               <div key={s.n} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   <StepDot n={s.n} active={step === s.n} done={step > s.n} /><span className="lv-sr-only">{`Step ${s.n} of ${STEPS.length}${step === s.n ? ' (current)' : step > s.n ? ' (done)' : ''}: `}</span>
-                  <span className="ob-step-label" style={{ fontSize: 11, color: step >= s.n ? 'var(--lv-brand-text)' : 'var(--lv-text-muted)', fontWeight: step === s.n ? 700 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
+                  <span className="ob-step-label" style={{ fontSize: 11, color: step >= s.n ? 'var(--lv-brand-text)' : 'var(--lv-text-muted)', fontWeight: step === s.n ? 600 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div aria-hidden="true" style={{ width: 'clamp(12px, 6vw, 72px)', height: 2, background: step > s.n ? 'var(--lv-success)' : 'var(--lv-border)', margin: '0 8px', marginBottom: 20, transition: 'background 0.3s', flexShrink: 0 }} />
@@ -187,13 +187,13 @@ export default function OnboardingPage() {
 
           {/* ── STEP 1: Agency Details ── */}
           {step === 1 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>{accountType === 'company' ? 'Company Details' : accountType === 'agency' ? 'Agency Details' : 'About your organization'}</h2>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>{accountType === 'company' ? 'Tell us about your company' : accountType === 'agency' ? 'Tell us about your recruitment agency' : 'First — how do you hire?'}</p>
                 </div>
               </div>
@@ -208,12 +208,12 @@ export default function OnboardingPage() {
                       const Icon = t.value === 'agency' ? Briefcase : Building2
                       return (
                         <button key={t.value} type="button" role="radio" aria-checked={on} onClick={() => setAccountType(t.value)}
-                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
-                          <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? 'var(--lv-brand)' : 'color-mix(in srgb, var(--lv-brand) 8%, transparent)' }}>
+                          style={{ display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', padding: '14px 16px', borderRadius: 8, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface)', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--lv-font-sans)' }}>
+                          <span style={{ width: 32, height: 32, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? 'var(--lv-brand)' : 'color-mix(in srgb, var(--lv-brand) 8%, transparent)' }}>
                             <Icon size={16} color={on ? 'var(--lv-on-brand)' : 'var(--lv-brand)'} />
                           </span>
                           <span>
-                            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{t.label}</span>
+                            <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{t.label}</span>
                             <span style={{ display: 'block', fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2, lineHeight: 1.4 }}>{t.desc}</span>
                           </span>
                         </button>
@@ -261,12 +261,12 @@ export default function OnboardingPage() {
                     {VOICE_OPTIONS.map(v => {
                       const on = voiceKey === v.key
                       return (
-                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : 'var(--lv-surface)' }}>
+                        <div key={v.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, border: `2px solid ${on ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: on ? 'color-mix(in srgb, var(--lv-brand) 5%, transparent)' : 'var(--lv-surface)' }}>
                           <button type="button" role="radio" aria-checked={on} onClick={() => setVoiceKey(v.key)}
                             style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--lv-font-sans)' }}>
                             <span style={{ fontSize: 18 }}>{v.flag}</span>
                             <span>
-                              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
+                              <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: on ? 'var(--lv-brand)' : 'var(--lv-text)' }}>{v.interviewerName} · {v.accent}{v.key === DEFAULT_VOICE_KEY ? ' (default)' : ''}</span>
                               <span style={{ display: 'block', fontSize: 12, color: 'var(--lv-text-muted)' }}>{v.description}</span>
                             </span>
                           </button>
@@ -281,7 +281,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <button type="submit" disabled={saving}
-                  className="lv-btn lv-btn--primary" style={{ height: 48, fontSize: 15 }}>
+                  className="lv-btn lv-btn--primary" style={{ height: 48, fontSize: 16 }}>
                   {saving ? 'Saving…' : <><span>Continue</span><ChevronRight size={16} /></>}
                 </button>
               </form>
@@ -290,13 +290,13 @@ export default function OnboardingPage() {
 
           {/* ── STEP 2: GST & Business Details ── */}
           {step === 2 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>GST & Business Details</h2>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>GST & Business Details</h2>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>Required for billing and invoicing</p>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function OnboardingPage() {
                     Back
                   </button>
                   <button type="submit" disabled={saving}
-                    className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 15 }}>
+                    className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 16 }}>
                     {saving ? 'Saving…' : <><span>Continue</span><ChevronRight size={16} /></>}
                   </button>
                 </div>
@@ -356,19 +356,19 @@ export default function OnboardingPage() {
 
           {/* ── STEP 3: Team Members ── */}
           {step === 3 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Users size={18} color="var(--lv-brand)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>Invite Your Team</h2>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Invite Your Team</h2>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>Invite your team to Levl1</p>
                 </div>
               </div>
 
               {/* Role legend */}
-              <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: 'var(--lv-text-muted)', lineHeight: 1.8 }}>
+              <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 6, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: 'var(--lv-text-muted)', lineHeight: 1.8 }}>
                 <strong style={{ color: 'var(--lv-text-body)' }}>Roles:</strong>{' '}
                 <strong>Admin</strong> — full access incl. billing &nbsp;·&nbsp;
                 <strong>Recruiter</strong> — create positions, manage candidates &nbsp;·&nbsp;
@@ -380,7 +380,7 @@ export default function OnboardingPage() {
                 {/* Header */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.3fr) minmax(96px, 120px) 40px', gap: 8, paddingBottom: 4 }}>
                   {['Name', 'Email', 'Role', ''].map(h => (
-                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
+                    <div key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
                   ))}
                 </div>
                 {members.map((m, i) => (
@@ -416,7 +416,7 @@ export default function OnboardingPage() {
                   Skip for now
                 </button>
                 <button type="button" onClick={saveStep3} disabled={inviting}
-                  className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 15 }}>
+                  className="lv-btn lv-btn--primary" style={{ flex: 1, height: 48, fontSize: 16 }}>
                   {inviting ? 'Sending…' : <><span>Send Invites & Continue</span><ChevronRight size={16} /></>}
                 </button>
               </div>
@@ -425,20 +425,20 @@ export default function OnboardingPage() {
 
           {/* ── STEP 4: Payment Setup ── */}
           {step === 4 && (
-            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
+            <div style={{ background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(20px, 5vw, 36px) clamp(16px, 5vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CreditCard size={18} color="var(--lv-success)" />
                 </div>
                 <div>
-                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>Start Your Free Trial</h2>
+                  <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Start Your Free Trial</h2>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>No payment needed right now</p>
                 </div>
               </div>
 
               {/* Trial perks */}
-              <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 4%, transparent) 100%)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 12, padding: '20px 24px', marginBottom: 28 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-brand)', marginBottom: 12 }}>Trial includes:</div>
+              <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 4%, transparent) 100%)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 8, padding: '20px 24px', marginBottom: 28 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', marginBottom: 12 }}>Trial includes:</div>
                 {[
                   '✓  5 AI interviews',
                   '✓  14 days full access',
@@ -452,7 +452,7 @@ export default function OnboardingPage() {
               </div>
 
               <button onClick={completeOnboarding} disabled={saving}
-                className="lv-btn lv-btn--primary" style={{ width: '100%', height: 48, fontSize: 15 }}>
+                className="lv-btn lv-btn--primary" style={{ width: '100%', height: 48, fontSize: 16 }}>
                 {saving ? 'Setting up…' : <><span>Complete Setup & Go to Dashboard</span><ChevronRight size={16} /></>}
               </button>
 

@@ -53,16 +53,16 @@ export default function LoginPage() {
       <div style={{ width: 420, maxWidth: '100%', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 18, padding: 32, boxShadow: '0 24px 60px rgba(79,70,229,0.10)' }}>
         <Link href="/interviews" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, marginBottom: 22, textDecoration: 'none' }}>
           <Logo variant="black" height={26} priority />
-          <span style={{ fontSize: 15, fontWeight: 800, color: INDIGO }}>Interviews</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: INDIGO }}>Interviews</span>
         </Link>
 
         {expired && (
-          <div role="status" style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 16 }}>
+          <div role="status" style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', borderRadius: 6, padding: '10px 12px', fontSize: 13, marginBottom: 16 }}>
             Your session has expired. Please sign in again to continue — nothing you saved was lost.
           </div>
         )}
-        <h1 style={{ fontSize: 23, fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>Sign in</h1>
-        <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 22px' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0F172A', margin: '0 0 6px' }}>Sign in</h1>
+        <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 22px' }}>
           {step === 'email' ? 'Enter your work email and we\'ll send you a one-time code.' : `We sent a 6-digit code to ${email}.`}
         </p>
 
@@ -70,7 +70,7 @@ export default function LoginPage() {
           <form onSubmit={requestCode}>
             <label style={labelStyle}>Work email</label>
             <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" style={inputStyle} />
-            <div style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6 }}>Personal email (Gmail, Outlook, etc.) isn&apos;t supported.</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 6 }}>Personal email (Gmail, Outlook, etc.) isn&apos;t supported.</div>
             {error && <div style={errStyle}>{error}</div>}
             <button type="submit" disabled={loading} style={btnStyle(loading)}>
               {loading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <>Send code <ArrowRight size={16} /></>}
@@ -79,7 +79,7 @@ export default function LoginPage() {
         ) : (
           <form onSubmit={verifyCode}>
             <label style={labelStyle}>6-digit code</label>
-            <input autoFocus inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" style={{ ...inputStyle, letterSpacing: 8, fontSize: 20, textAlign: 'center', fontWeight: 700 }} />
+            <input autoFocus inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" style={{ ...inputStyle, letterSpacing: 8, fontSize: 18, textAlign: 'center', fontWeight: 600 }} />
             {error && <div style={errStyle}>{error}</div>}
             <button type="submit" disabled={loading} style={btnStyle(loading)}>
               {loading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <>Verify &amp; sign in <ArrowRight size={16} /></>}
@@ -89,7 +89,7 @@ export default function LoginPage() {
         )}
 
         <div style={{ textAlign: 'center', marginTop: 22, fontSize: 13, color: '#64748B' }}>
-          New to Levl1? <Link href="/signup" style={{ color: INDIGO, fontWeight: 700 }}>Create an account</Link>
+          New to Levl1? <Link href="/signup" style={{ color: INDIGO, fontWeight: 600 }}>Create an account</Link>
         </div>
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -105,9 +105,9 @@ function safeNext(): string | null {
   return next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : null
 }
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 6 }
-const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }
+const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }
 const errStyle: React.CSSProperties = { fontSize: 13, color: '#DC2626', marginTop: 10, fontWeight: 600 }
 function btnStyle(loading: boolean): React.CSSProperties {
-  return { width: '100%', marginTop: 18, padding: '12px', borderRadius: 10, border: 'none', cursor: loading ? 'default' : 'pointer', color: '#fff', fontWeight: 700, fontSize: 14.5, background: `linear-gradient(135deg,${INDIGO},${VIOLET})`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }
+  return { width: '100%', marginTop: 18, padding: '12px', borderRadius: 6, border: 'none', cursor: loading ? 'default' : 'pointer', color: '#fff', fontWeight: 600, fontSize: 14, background: `linear-gradient(135deg,${INDIGO},${VIOLET})`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }
 }

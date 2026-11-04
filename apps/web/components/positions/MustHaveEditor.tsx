@@ -37,7 +37,7 @@ export function MustHaveEditor({ value, onChange, suggestions = [], disabled }: 
             <ShieldCheck size={13} aria-hidden="true" /> {m}
             {!disabled && (
               <button type="button" onClick={() => remove(m)} aria-label={`Remove ${m}`} className="lv-chip-remove"
-                style={{ border: "none", background: "rgba(255,255,255,0.22)", color: lv.onBrand, width: 22, height: 22, borderRadius: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                style={{ border: "none", background: "rgba(255,255,255,0.22)", color: lv.onBrand, width: 22, height: 22, borderRadius: 6, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
                 <X size={12} aria-hidden="true" />
               </button>
             )}

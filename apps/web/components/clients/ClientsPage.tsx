@@ -109,7 +109,7 @@ function OnboardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input id="client-l2" type="range" min={50} max={95} step={5} value={l2Threshold} onChange={e => setL2Threshold(Number(e.target.value))}
                 className="lv-range" style={{ flex: 1 }} />
-              <span aria-hidden="true" style={{ fontFamily: 'var(--lv-font-mono)', fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', minWidth: 44 }}>{l2Threshold}</span>
+              <span aria-hidden="true" style={{ fontFamily: 'var(--lv-font-mono)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', minWidth: 44 }}>{l2Threshold}</span>
             </div>
           </div>
         </div>
@@ -174,11 +174,11 @@ export default function ClientsPage() {
                   {/* Client header */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--lv-brand-soft)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--lv-brand-soft)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Building2 size={20} color="var(--lv-brand)" />
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--lv-text)', margin: 0 }}>{client.name}</h2>
+                        <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>{client.name}</h2>
                         <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: '3px 0 0' }}>
                           {client.industry && <>{client.industry} · </>}
                           Active since {new Date(client.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
@@ -193,7 +193,7 @@ export default function ClientsPage() {
 
                   {/* Positions list */}
                   {positions.length > 0 && (
-                    <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 10, padding: '8px 8px', marginBottom: 14 }}>
+                    <div style={{ background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 6, padding: '8px 8px', marginBottom: 14 }}>
                       <div className="lv-eyebrow" style={{ margin: '4px 8px 6px' }}>Positions</div>
                       <ul style={{ display: 'flex', flexDirection: 'column', gap: 2, listStyle: 'none', margin: 0, padding: 0 }}>
                         {positions.map(p => (

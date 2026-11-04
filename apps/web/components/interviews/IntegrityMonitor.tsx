@@ -75,12 +75,12 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating', on
   const inline = variant === 'inline'
   // Inner self-view tile (identical content; outer wrapper differs by variant).
   const tile = (
-    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: inline ? 14 : 12, overflow: 'hidden', background: '#0F172A', boxShadow: inline ? 'none' : '0 6px 20px rgba(15,23,42,0.25)', border: `1.5px solid ${INDIGO}` }}>
+    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: inline ? 8 : 8, overflow: 'hidden', background: '#0F172A', boxShadow: inline ? 'none' : '0 6px 20px rgba(15,23,42,0.25)', border: `1.5px solid ${INDIGO}` }}>
       <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: camState === 'on' ? 'block' : 'none' }} />
       {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
       <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(15,23,42,0.6)', borderRadius: 100, padding: '2px 8px' }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 0 0 rgba(34,197,94,0.7)', animation: 'lv-pulse 2s infinite' }} />
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>Live monitoring</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>Live monitoring</span>
       </div>
     </div>
   )
@@ -95,8 +95,8 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating', on
 
       {/* Transient, professional "noted for review" notice */}
       {notice && (
-        <div key={notice.id} style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: '#fff', border: `1px solid ${INDIGO}33`, borderLeft: `3px solid ${INDIGO}`, borderRadius: 10, padding: '10px 16px', boxShadow: '0 8px 24px rgba(79,70,229,0.16)', fontSize: 13, color: '#334155', maxWidth: 420 }}>
-          <span style={{ fontWeight: 700, color: INDIGO }}>Integrity:</span> {notice.text}
+        <div key={notice.id} style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: '#fff', border: `1px solid ${INDIGO}33`, borderLeft: `3px solid ${INDIGO}`, borderRadius: 6, padding: '10px 16px', boxShadow: '0 8px 24px rgba(79,70,229,0.16)', fontSize: 13, color: '#334155', maxWidth: 420 }}>
+          <span style={{ fontWeight: 600, color: INDIGO }}>Integrity:</span> {notice.text}
         </div>
       )}
 

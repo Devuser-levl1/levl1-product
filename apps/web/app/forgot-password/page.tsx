@@ -37,19 +37,19 @@ export default function ForgotPasswordPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-sans)' }}>
-      <div style={{ width: '100%', maxWidth: 400, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: '40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
+      <div style={{ width: '100%', maxWidth: 400, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '40px', boxShadow: '0 4px 20px rgba(79,70,229,0.07)' }}>
         {/* Logo */}
         <Link href="/interviews/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 36 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Zap size={14} color="white" fill="white" />
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
+          <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Levl1</span>
         </Link>
 
         {sent ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>📧</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#1E293B', marginBottom: 10 }}>Check your inbox</h2>
+            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#1E293B', marginBottom: 10 }}>Check your inbox</h2>
             <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, marginBottom: 24 }}>
               If <strong>{email}</strong> has an account, we&apos;ve sent a password reset link. It expires in 1 hour.
             </p>
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>
+            <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 8 }}>
               Reset your password
             </h1>
             <p style={{ fontSize: 14, color: '#94A3B8', marginBottom: 28, lineHeight: 1.6 }}>
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
                 <input required type="email" style={INPUT} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
               </div>
               <button type="submit" disabled={loading}
-                style={{ background: loading ? '#94A3B8' : 'linear-gradient(135deg,#4F46E5,#7C3AED)', color: '#fff', border: 'none', borderRadius: 9, padding: '13px 20px', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.28)' }}>
+                style={{ background: loading ? '#94A3B8' : 'linear-gradient(135deg,#4F46E5,#7C3AED)', color: '#fff', border: 'none', borderRadius: 6, padding: '13px 20px', fontSize: 16, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', boxShadow: loading ? 'none' : '0 4px 14px rgba(124,58,237,0.28)' }}>
                 {loading ? 'Sending…' : 'Send Reset Link'}
               </button>
             </form>

@@ -144,7 +144,7 @@ export default function Header() {
             alignItems: "center",
             gap: 10,
             padding: "9px 14px",
-            borderRadius: 10,
+            borderRadius: 6,
             border: `1px solid ${lv.border}`,
             background: lv.surfaceSunken,
             cursor: "pointer",
@@ -171,7 +171,7 @@ export default function Header() {
             aria-expanded={showNotifs}
             aria-haspopup="true"
             style={{
-              width: 40, height: 40, borderRadius: 10,
+              width: 40, height: 40, borderRadius: 6,
               background: showNotifs ? "var(--lv-brand-soft)" : "transparent",
               border: "1px solid transparent",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -195,12 +195,12 @@ export default function Header() {
             <div className="header-notif-panel" style={{
               position: "absolute", top: "calc(100% + 8px)", right: 0,
               width: 340, background: lv.surface,
-              border: `1px solid ${lv.border}`, borderRadius: 14,
+              border: `1px solid ${lv.border}`, borderRadius: 8,
               boxShadow: lv.shadowLg,
               zIndex: 100, overflow: "hidden",
             }}>
               <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${lv.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: lv.fontDisplay, fontSize: 14, fontWeight: 700, color: lv.text }}>Notifications</span>
+                <span style={{ fontFamily: lv.fontDisplay, fontSize: 14, fontWeight: 600, color: lv.text }}>Notifications</span>
                 <button onClick={handleMarkAllRead} className="lv-btn lv-btn--tertiary lv-btn--sm" style={{ height: 28 }}>Mark all read</button>
               </div>
               {notifications.length === 0 ? (
@@ -247,7 +247,7 @@ export default function Header() {
             aria-haspopup="menu"
             style={{
               display: "flex", alignItems: "center", gap: 8, minHeight: 44,
-              padding: "6px 10px", borderRadius: 10,
+              padding: "6px 10px", borderRadius: 6,
               background: showUser ? "var(--lv-brand-soft)" : "transparent",
               border: "1px solid transparent",
               cursor: "pointer", transition: "all 0.15s",
@@ -259,7 +259,7 @@ export default function Header() {
               width: 30, height: 30, borderRadius: "50%",
               background: lv.gradientBrand,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0,
+              fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0,
             }}>
               {userInitials || '?'}
             </div>
@@ -274,7 +274,7 @@ export default function Header() {
             <div role="menu" style={{
               position: "absolute", top: "calc(100% + 8px)", right: 0,
               width: 220, background: lv.surface,
-              border: `1px solid ${lv.border}`, borderRadius: 12,
+              border: `1px solid ${lv.border}`, borderRadius: 8,
               boxShadow: lv.shadowLg,
               zIndex: 100, overflow: "hidden",
               padding: "6px",

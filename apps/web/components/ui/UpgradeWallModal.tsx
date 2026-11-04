@@ -127,7 +127,7 @@ export default function UpgradeWallModal() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <Zap size={20} color="#fff" fill="#fff" />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#fff' }}>{title}</span>
+            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#fff' }}>{title}</span>
           </div>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.80)', lineHeight: 1.6 }}>{subtitle}</p>
 
@@ -167,7 +167,7 @@ export default function UpgradeWallModal() {
               key={plan.id}
               style={{
                 border: plan.popular ? '2px solid var(--lv-accent)' : '1px solid var(--lv-border)',
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: '22px 20px',
                 position: 'relative',
                 background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : '#fff',
@@ -183,7 +183,7 @@ export default function UpgradeWallModal() {
                     background: 'var(--lv-accent)',
                     color: '#fff',
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     padding: '3px 12px',
                     borderRadius: 100,
                     display: 'flex',
@@ -197,9 +197,9 @@ export default function UpgradeWallModal() {
                 </div>
               )}
 
-              <div style={{ fontSize: 15, fontWeight: 800, color: plan.color, fontFamily: 'var(--font-display)', marginBottom: 4 }}>{plan.name}</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: plan.color, fontFamily: 'var(--lv-font-sans)', marginBottom: 4 }}>{plan.name}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 4 }}>
-                <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--lv-text)', fontFamily: 'var(--font-display)' }}>{plan.price}</span>
+                <span style={{ fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', fontFamily: 'var(--lv-font-sans)' }}>{plan.price}</span>
                 <span style={{ fontSize: 13, color: 'var(--lv-text-muted)', fontWeight: 500 }}>{plan.period}</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 16, fontWeight: 500 }}>
@@ -223,10 +223,10 @@ export default function UpgradeWallModal() {
                   background: loading === plan.id ? 'var(--lv-text-muted)' : plan.popular ? 'var(--lv-accent)' : 'var(--lv-brand)',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: 9,
+                  borderRadius: 6,
                   padding: '11px 16px',
                   fontSize: 13,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: loading === plan.id ? 'not-allowed' : 'pointer',
                   fontFamily: 'var(--font-sans)',
                   boxShadow: loading === plan.id ? 'none' : `0 4px 14px color-mix(in srgb, var(--lv-accent) 25%, transparent)`,

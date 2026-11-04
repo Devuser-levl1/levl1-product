@@ -80,13 +80,13 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
           background: isLive ? lv.brandSoft : lv.surfaceMuted,
           border: `1px solid ${isLive ? lv.brandSoftBorder : lv.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: text.md, fontWeight: 700, color: isLive ? lv.brandText : lv.textBody,
+          fontSize: text.md, fontWeight: 600, color: isLive ? lv.brandText : lv.textBody,
           flexShrink: 0, fontFamily: lv.fontDisplay,
         }}>
           {interview.candidateName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0, paddingRight: isLive ? 64 : 0 }}>
-          <h3 style={{ margin: 0, fontSize: text.md, fontWeight: 700, color: lv.text, fontFamily: lv.fontDisplay }}>
+          <h3 style={{ margin: 0, fontSize: text.md, fontWeight: 600, color: lv.text, fontFamily: lv.fontDisplay }}>
             {interview.candidateName}
           </h3>
           <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -104,7 +104,7 @@ function InterviewCard({ interview, onStart }: { interview: Interview; onStart: 
             <Video size={14} color={lv.textMuted} />
           </div>
           <div>
-            <div className="font-mono" style={{ fontSize: text.base, fontWeight: 700, color: lv.text }}>{time}</div>
+            <div className="font-mono" style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{time}</div>
             <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 1 }}>{date}</div>
           </div>
         </div>
@@ -221,7 +221,7 @@ export default function InterviewsPage() {
         ].map((s) => (
           <Card key={s.label} style={{ display: "flex", alignItems: "center", gap: space[3], padding: `${space[3]}px ${space[5]}px` }}>
             <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />
-            <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 700, color: lv.text, letterSpacing: "-0.02em" }}>
+            <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 600, color: lv.text, letterSpacing: "-0.02em" }}>
               {s.value}
             </div>
             <div style={{ fontSize: text.sm, color: lv.textBody, fontWeight: 600 }}>{s.label}</div>

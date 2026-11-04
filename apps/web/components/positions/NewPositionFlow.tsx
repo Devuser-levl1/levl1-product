@@ -111,7 +111,7 @@ function TagInput({ tags, onChange, placeholder, label }: { tags: string[]; onCh
         <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`, color: lv.brandText, fontSize: text.xs, fontWeight: 600, padding: "2px 4px 2px 8px", borderRadius: radius.pill, fontFamily: lv.fontMono }}>
           {t}
           <button type="button" aria-label={`Remove ${t}`} className="lv-chip-add" onClick={() => onChange(tags.filter((x) => x !== t))}
-            style={{ background: "none", border: "none", cursor: "pointer", color: lv.brandText, padding: 0, width: 18, height: 18, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", color: lv.brandText, padding: 0, width: 18, height: 18, borderRadius: 6, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <X size={12} aria-hidden="true" />
           </button>
         </span>
@@ -149,7 +149,7 @@ function SliderField({ label, hint, value, onChange, color }: { label: string; h
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <label htmlFor={id} className="lv-label">{label}</label>
-        <span style={{ fontFamily: lv.fontMono, fontSize: text.base, fontWeight: 700, color: lv.text }}>{value}%</span>
+        <span style={{ fontFamily: lv.fontMono, fontSize: text.base, fontWeight: 600, color: lv.text }}>{value}%</span>
       </div>
       <input id={id} type="range" min={0} max={100} value={value} onChange={(e) => onChange(Number(e.target.value))} className="lv-range" style={{ accentColor: c }} />
       {hint && <p className="lv-hint" style={{ margin: 0 }}>{hint}</p>}
@@ -170,7 +170,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel,
   const [editing, setEditing]   = useState(false);
   const [editText, setEditText] = useState(q.question);
   const saveEdit = () => { onEdit({ ...q, question: editText }); setEditing(false); };
-  const flag = (bg: string, fg: string): React.CSSProperties => ({ fontSize: 10, fontWeight: 800, color: fg, background: bg, padding: "2px 7px", borderRadius: radius.pill, letterSpacing: "0.04em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 3 });
+  const flag = (bg: string, fg: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 600, color: fg, background: bg, padding: "2px 7px", borderRadius: radius.pill, letterSpacing: "0.04em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 3 });
   return (
     <div className="lv-card" style={{ background: approved ? lv.successSoft : lv.surface, borderColor: approved ? lv.successBorder : lv.border, borderLeft: `3px solid ${approved ? lv.success : lv.borderStrong}`, padding: `${space[3]}px ${space[4]}px`, display: "flex", flexDirection: "column", gap: space[3] }}>
       {(q.isNew || q.isReplacement || approved) && (
@@ -239,7 +239,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit, onReplace, approveLabel,
 }
 
 // Shared bits for the step bodies below.
-const stepTitle: React.CSSProperties = { fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, letterSpacing: "-0.02em", color: lv.text, margin: 0 };
+const stepTitle: React.CSSProperties = { fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 600, letterSpacing: "-0.02em", color: lv.text, margin: 0 };
 const stepDesc: React.CSSProperties = { fontSize: text.base, color: lv.textMuted, margin: `${space[1]}px 0 0` };
 const twoCol: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: space[4] };
 const panel: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], padding: `${space[3]}px ${space[4]}px`, background: lv.surface, border: `1px solid ${lv.border}`, borderRadius: radius.md };
@@ -700,7 +700,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
       <section key={section} aria-label={`${label} questions`} style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
           <Eyebrow>{label}</Eyebrow>
-          <span style={{ fontSize: text.xs, color: sApproved === sTotal && sTotal > 0 ? lv.success : lv.textMuted, fontFamily: lv.fontMono, fontWeight: 700 }}>{sApproved}/{sTotal} approved</span>
+          <span style={{ fontSize: text.xs, color: sApproved === sTotal && sTotal > 0 ? lv.success : lv.textMuted, fontFamily: lv.fontMono, fontWeight: 600 }}>{sApproved}/{sTotal} approved</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
           {questions![section].map((q) => (
@@ -736,7 +736,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: radius.md, background: lv.gradientBrand, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sparkles size={14} color="#fff" />
           </div>
-          <span id="npf-title" style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>New Position Setup</span>
+          <span id="npf-title" style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text }}>New Position Setup</span>
         </div>
         <Button variant="ghost" iconOnly aria-label="Close new position setup" onClick={onClose}><X size={20} /></Button>
       </div>
@@ -749,10 +749,10 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
             return (
               <li key={i} aria-current={current ? "step" : undefined} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
-                  <div aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 700, flexShrink: 0, background: done ? lv.success : current ? lv.brand : lv.surfaceMuted, color: done || current ? lv.onBrand : lv.textMuted, boxShadow: current ? lv.focusRing : "none", transition: `all ${lv.dur}` }}>
+                  <div aria-hidden="true" style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 600, flexShrink: 0, background: done ? lv.success : current ? lv.brand : lv.surfaceMuted, color: done || current ? lv.onBrand : lv.textMuted, boxShadow: current ? lv.focusRing : "none", transition: `all ${lv.dur}` }}>
                     {done ? <Check size={12} /> : i + 1}
                   </div>
-                  <span className="step-label" style={{ fontSize: text.xs, fontWeight: current ? 700 : 500, color: current ? lv.brandText : done ? lv.success : lv.textMuted, whiteSpace: "nowrap" }}>{s.short}</span>
+                  <span className="step-label" style={{ fontSize: text.xs, fontWeight: current ? 600 : 500, color: current ? lv.brandText : done ? lv.success : lv.textMuted, whiteSpace: "nowrap" }}>{s.short}</span>
                   <span className="lv-sr-only">{s.label}{done ? " (done)" : current ? " (current)" : ""}</span>
                 </div>
                 {i < STEPS.length - 1 && <div aria-hidden="true" style={{ flex: 1, height: 2, margin: "0 8px", background: done ? lv.success : lv.border, transition: `background ${lv.dur}` }} />}
@@ -1089,7 +1089,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                     return (
                       <button key={level} type="button" role="radio" aria-checked={dynamicIntensity === level} className="lv-seg__opt" onClick={() => setDynamicIntensity(level)}
                         style={{ textAlign: "left", padding: `${space[2]}px ${space[3]}px`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" }}>
-                        <span style={{ fontSize: text.sm, fontWeight: 700 }}>{cfg[level].label}</span>
+                        <span style={{ fontSize: text.sm, fontWeight: 600 }}>{cfg[level].label}</span>
                         <span style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2, fontWeight: 400 }}>{cfg[level].sub}</span>
                       </button>
                     );
@@ -1099,7 +1099,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
               {/* L2 Threshold */}
               <Card title="L2 submission threshold" subtitle="Minimum score for L2 recommendation"
-                actions={<span style={{ fontFamily: lv.fontMono, fontSize: text.xl, fontWeight: 800, color: lv.text }}>{l2ScoreThreshold}<span style={{ fontSize: text.base, fontWeight: 400, color: lv.textMuted }}>/100</span></span>}>
+                actions={<span style={{ fontFamily: lv.fontMono, fontSize: text.xl, fontWeight: 600, color: lv.text }}>{l2ScoreThreshold}<span style={{ fontSize: text.base, fontWeight: 400, color: lv.textMuted }}>/100</span></span>}>
                 <input type="range" min={50} max={95} step={5} value={l2ScoreThreshold} aria-label="L2 submission threshold" onChange={(e) => setL2ScoreThreshold(Number(e.target.value))} className="lv-range" style={{ marginBottom: space[3] }} />
                 <p className="lv-hint" style={{ margin: 0 }}>
                   Candidates scoring below <strong>{l2ScoreThreshold}</strong> will be marked &ldquo;Not recommended for L2&rdquo; even if the AI recommends Yes.
@@ -1166,7 +1166,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <Card style={{ textAlign: "center", padding: `${space[12]}px ${space[5]}px` }}>
                   <div role="status" aria-live="polite">
                     <span className="lv-spinner lv-spinner--lg" aria-hidden="true" style={{ margin: `0 auto ${space[4]}px`, display: "block", color: lv.brand }} />
-                    <p style={{ fontSize: text.md, fontWeight: 700, color: lv.text, margin: 0 }}>Generating interview questions…</p>
+                    <p style={{ fontSize: text.md, fontWeight: 600, color: lv.text, margin: 0 }}>Generating interview questions…</p>
                     <p style={{ fontSize: text.sm, color: lv.textMuted, marginTop: 6 }}>Claude is tailoring questions to the approved JD and role context.</p>
                   </div>
                 </Card>
@@ -1190,7 +1190,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   <Card key={b.label} style={{ padding: `${space[3]}px ${space[4]}px` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: space[2], fontSize: text.sm }}>
                       <span style={{ fontWeight: 600, color: lv.textBody }}>{b.label}</span>
-                      <span style={{ fontFamily: lv.fontMono, color: b.approved === b.total && b.total > 0 ? lv.success : lv.textMuted, fontWeight: 700 }}>{b.approved}/{b.total}</span>
+                      <span style={{ fontFamily: lv.fontMono, color: b.approved === b.total && b.total > 0 ? lv.success : lv.textMuted, fontWeight: 600 }}>{b.approved}/{b.total}</span>
                     </div>
                     <div role="progressbar" aria-label={b.label} aria-valuemin={0} aria-valuemax={b.total} aria-valuenow={b.approved} style={{ height: 6, background: lv.surfaceMuted, borderRadius: 3, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${b.total > 0 ? (b.approved / b.total) * 100 : 0}%`, background: b.color, borderRadius: 3, transition: `width ${lv.dur}` }} />
@@ -1271,7 +1271,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 ].map((s) => (
                   <div key={s.label} className="lv-card" style={{ padding: `${space[3]}px ${space[5]}px`, minWidth: 120, textAlign: "left" }}>
                     <dt><Eyebrow style={{ marginBottom: 4 }}>{s.label}</Eyebrow></dt>
-                    <dd style={{ margin: 0, fontSize: text.base, fontWeight: 700, color: lv.text }}>{s.value}</dd>
+                    <dd style={{ margin: 0, fontSize: text.base, fontWeight: 600, color: lv.text }}>{s.value}</dd>
                   </div>
                 ))}
               </dl>

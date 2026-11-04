@@ -2175,7 +2175,7 @@ export default function InterviewPage() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5', padding: 32 }}>
         <div style={{ textAlign: 'center', color: '#fff', maxWidth: 340 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>💻</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Desktop Required</div>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, marginBottom: 12 }}>Desktop Required</div>
           <div style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.6 }}>
             This interview is optimised for desktop. Please open this link on a laptop or desktop computer to begin.
           </div>
@@ -2194,13 +2194,13 @@ export default function InterviewPage() {
         <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
           <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
             <div style={{ fontSize: 56, marginBottom: 20 }}>📊</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>Your sample report is ready</div>
-            <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
+            <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Your sample report is ready</div>
+            <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
               Great job, {candidate.name.split(' ')[0]}! We&apos;ve scored your responses and run the same integrity checks a real candidate gets. Open your evidence report to see scores, strengths, concerns and the integrity panel.
             </div>
             <button
               onClick={() => router.push(`/report/${interviewId}?demo=1`)}
-              style={{ marginTop: 28, padding: '14px 28px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(79,70,229,0.32)', letterSpacing: '-0.01em' }}
+              style={{ marginTop: 28, padding: '14px 28px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(79,70,229,0.32)', letterSpacing: '-0.01em' }}
             >
               View your sample report →
             </button>
@@ -2215,11 +2215,11 @@ export default function InterviewPage() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>✅</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#4F46E5', marginBottom: 12 }}>Interview Complete</div>
-          <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Interview Complete</div>
+          <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
             Thank you, {candidate.name.split(' ')[0]}. Your interview has been submitted. The team at {position.company} will be in touch with next steps.
           </div>
-          <div style={{ marginTop: 32, padding: '14px 24px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)', borderRadius: 12, color: '#059669', fontSize: 13, fontWeight: 600 }}>
+          <div style={{ marginTop: 32, padding: '14px 24px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)', borderRadius: 8, color: '#059669', fontSize: 13, fontWeight: 600 }}>
             You may now close this window.
           </div>
         </div>
@@ -2230,17 +2230,17 @@ export default function InterviewPage() {
   if (phase === 'waiting') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', gap: 32 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.025em' }}>
+        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#4F46E5', letterSpacing: '-0.025em' }}>
           Levl<span style={{ color: '#7C3AED' }}>1</span>
         </div>
         <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(79,70,229,0.08)' }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', border: '3px solid #7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Mic size={32} color="#7C3AED" />
           </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
           <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
           <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {interviewer.name}</div>
-          <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 10 }}>
+          <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 6 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
           {/* Soft consent gate (I-P0-1): the interview cannot START until the
@@ -2272,7 +2272,7 @@ export default function InterviewPage() {
           <button
             onClick={startInterview}
             disabled={!consentOk}
-            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'linear-gradient(135deg, #4F46E5, #4338CA)' : '#CBD5E1', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
+            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'linear-gradient(135deg, #4F46E5, #4338CA)' : '#CBD5E1', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
           >
             Start Interview →
           </button>
@@ -2296,7 +2296,7 @@ export default function InterviewPage() {
 
       {/* ── Header ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: '#fff', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, color: '#4F46E5', letterSpacing: '-0.02em' }}>
+        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5', letterSpacing: '-0.02em' }}>
           Levl<span style={{ color: '#7C3AED' }}>1</span>
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', textAlign: 'center' }}>
@@ -2305,7 +2305,7 @@ export default function InterviewPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Clock size={14} color={timerColor} />
-            <span className="font-mono" style={{ fontSize: 15, fontWeight: 800, color: timerColor, letterSpacing: '0.05em' }}>{fmt(timeRemaining)}</span>
+            <span className="font-mono" style={{ fontSize: 16, fontWeight: 600, color: timerColor, letterSpacing: '0.05em' }}>{fmt(timeRemaining)}</span>
           </div>
           <button
             onClick={handleEndInterviewRequest}
@@ -2336,7 +2336,7 @@ export default function InterviewPage() {
               position: 'fixed', top: arrowTop, left: arrowLeft, transform: 'translateX(-50%)',
               zIndex: 76, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
               background: '#7C3AED', color: '#fff', borderRadius: 100, padding: '6px 14px',
-              fontSize: 12.5, fontWeight: 700, letterSpacing: '0.01em', whiteSpace: 'nowrap',
+              fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', whiteSpace: 'nowrap',
               boxShadow: '0 8px 22px rgba(124,58,237,0.45)',
               animation: 'tourBounce 1s ease-in-out infinite',
             }}>
@@ -2352,7 +2352,7 @@ export default function InterviewPage() {
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#A78BFA', animation: 'pulseDot 1.2s ease-in-out infinite' }} />
             Quick interface tour…
           </span>
-          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: '#4F46E5', color: '#fff', fontSize: 12.5, fontWeight: 700 }}>Skip tour →</button>
+          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: '#4F46E5', color: '#fff', fontSize: 13, fontWeight: 600 }}>Skip tour →</button>
         </div>
       )}
 
@@ -2360,9 +2360,9 @@ export default function InterviewPage() {
       {cultureFitActive && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: '24px 26px', boxShadow: '0 24px 60px rgba(15,23,42,0.3)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Culture &amp; values fit · separate from your technical score</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 800, color: '#4F46E5', margin: '0 0 6px' }}>A few quick statements</h2>
-            <p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 18px' }}>For each statement, choose how much you agree. There are no right answers — this is about how you like to work.</p>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Culture &amp; values fit · separate from your technical score</div>
+            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', margin: '0 0 6px' }}>A few quick statements</h2>
+            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 18px' }}>For each statement, choose how much you agree. There are no right answers — this is about how you like to work.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {cultureFitItems.map((it, idx) => (
                 <div key={it.id}>
@@ -2372,7 +2372,7 @@ export default function InterviewPage() {
                       const sel = cultureFitAnswers[it.id]?.value === opt.value
                       return (
                         <button key={opt.value} onClick={() => setCultureFitAnswers((a) => ({ ...a, [it.id]: { value: opt.value, label: opt.label } }))}
-                          style={{ padding: '8px 6px', borderRadius: 9, cursor: 'pointer', border: `1px solid ${sel ? '#4F46E5' : '#E2E8F0'}`, background: sel ? '#4F46E5' : '#F8FAFC', color: sel ? '#fff' : '#475569', fontSize: 11, fontWeight: 600, lineHeight: 1.25, transition: 'all 0.12s' }}>
+                          style={{ padding: '8px 6px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel ? '#4F46E5' : '#E2E8F0'}`, background: sel ? '#4F46E5' : '#F8FAFC', color: sel ? '#fff' : '#475569', fontSize: 11, fontWeight: 600, lineHeight: 1.25, transition: 'all 0.12s' }}>
                           {opt.label}
                         </button>
                       )
@@ -2384,7 +2384,7 @@ export default function InterviewPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
               <span style={{ fontSize: 12, color: '#94A3B8' }}>{Object.keys(cultureFitAnswers).length} of {cultureFitItems.length} answered</span>
               <button onClick={submitCultureFit} disabled={Object.keys(cultureFitAnswers).length < cultureFitItems.length}
-                style={{ marginLeft: 'auto', padding: '11px 26px', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 700, cursor: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'not-allowed' : 'pointer', background: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#E2E8F0' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#94A3B8' : '#fff' }}>
+                style={{ marginLeft: 'auto', padding: '11px 26px', borderRadius: 6, border: 'none', fontSize: 14, fontWeight: 600, cursor: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'not-allowed' : 'pointer', background: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#E2E8F0' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#94A3B8' : '#fff' }}>
                 Finish interview →
               </button>
             </div>
@@ -2397,22 +2397,22 @@ export default function InterviewPage() {
       <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 }}>
 
         {messageFromRecruiter && (
-          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <span>📋 {messageFromRecruiter}</span>
             <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
           </div>
         )}
 
         {/* ════ Question Display — FULL WIDTH across the top ════ */}
-        <div data-tour="question" style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+        <div data-tour="question" style={{ background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
                     {SECTION_LABEL[currentQ.section]?.toUpperCase()}
                   </span>
                   <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: '#64748B', background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#64748B', background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
                     {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
                   </span>
                 </div>
@@ -2422,7 +2422,7 @@ export default function InterviewPage() {
                 )}
               </>
             ) : (
-              <div style={{ fontSize: 15, color: '#64748B', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.6 }}>
                 {phase === 'intro' ? 'Your interview is starting…' : 'Preparing next question…'}
               </div>
             )}
@@ -2454,7 +2454,7 @@ export default function InterviewPage() {
             {/* Candidate video — same IntegrityMonitor feed/CV (inline variant).
                 Equal-sized box with normal proportions; objectFit:cover keeps the
                 face naturally framed (no stretch/letterbox). */}
-            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" onPresence={handlePresence} />
             </div>
           </div>
@@ -2463,13 +2463,13 @@ export default function InterviewPage() {
           <div className="iv-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
             {/* tab strip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
-              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
+              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <Code2 size={13} /> Code / Text
               </button>
-              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'whiteboard' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}>
+              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'whiteboard' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <PenLine size={13} /> Whiteboard
               </button>
               {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
@@ -2482,7 +2482,7 @@ export default function InterviewPage() {
                 <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
                   <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
                   {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
-                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
+                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
                       {lang === 'plaintext' ? 'Plain Text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
                     </button>
                   ))}
@@ -2508,22 +2508,22 @@ export default function InterviewPage() {
             {/* base Submit — submits the ACTIVE tab's answer */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
               <span style={{ marginRight: 'auto', fontSize: 11, color: '#94A3B8' }}>{editorTab === 'code' ? 'Submit your written answer for this question' : 'Submit your whiteboard answer for this question'}</span>
-              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? '#4F46E5' : '#E2E8F0', color: canSubmit ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700, transition: 'all 0.15s' }}>
+              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? '#4F46E5' : '#E2E8F0', color: canSubmit ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}>
                 Submit Answer
               </button>
             </div>
           </div>
 
           {/* Transcript — BELOW the editor in the right column. Live, auto-scroll, scrollable back. */}
-          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {/* header + live status */}
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', fontFamily: 'var(--font-display)' }}>Transcript</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', fontFamily: 'var(--lv-font-sans)' }}>Transcript</span>
               {isWarmingUp ? (
                 <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', fontStyle: 'italic' }}>Take your time…</span>
               ) : isListening ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#DC2626' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#DC2626' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
                   Recording…
                 </span>
@@ -2545,13 +2545,13 @@ export default function InterviewPage() {
           <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {transcript.map(entry => (
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
                 <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}
             {liveTranscript && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
                 <span style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
               </div>
             )}
@@ -2565,9 +2565,9 @@ export default function InterviewPage() {
                 onChange={e => setTextInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) submitTextInput() }}
                 placeholder="Type your response… (⌘+Enter)"
-                style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 56, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 56, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
               />
-              <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 10, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 700 }}>Send</button>
+              <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 6, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 600 }}>Send</button>
             </div>
           )}
           </div>
@@ -2594,10 +2594,10 @@ export default function InterviewPage() {
             {/* Header */}
             <div style={{ padding: '22px 28px 0', borderBottom: '1px solid #F1F5F9', paddingBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <AlertTriangle size={18} color="#DC2626" />
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, color: '#1E293B' }}>
+                <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#1E293B' }}>
                   End Interview?
                 </div>
               </div>
@@ -2608,7 +2608,7 @@ export default function InterviewPage() {
               {timeRemaining > 0 && (
                 <div style={{
                   padding: '10px 14px', background: 'rgba(245,158,11,0.08)',
-                  border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
+                  border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6,
                   fontSize: 13, fontWeight: 600, color: '#92400E', marginBottom: 14,
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
@@ -2630,7 +2630,7 @@ export default function InterviewPage() {
               <button
                 onClick={handleEndConfirmContinue}
                 style={{
-                  padding: '9px 20px', borderRadius: 9,
+                  padding: '9px 20px', borderRadius: 6,
                   border: '1px solid #E2E8F0', background: '#fff',
                   color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: 13,
                   transition: 'all 0.15s',
@@ -2644,9 +2644,9 @@ export default function InterviewPage() {
                 onClick={handleEndConfirmEnd}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '9px 20px', borderRadius: 9, border: 'none',
+                  padding: '9px 20px', borderRadius: 6, border: 'none',
                   background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
-                  color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13,
+                  color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13,
                   boxShadow: '0 4px 14px rgba(79,70,229,0.35)', transition: 'all 0.15s',
                   letterSpacing: '-0.01em',
                 }}

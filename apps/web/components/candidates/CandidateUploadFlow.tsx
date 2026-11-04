@@ -389,7 +389,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
         <div style={{ background: lv.surface, borderBottom: `1px solid ${lv.border}`, padding: "0 clamp(16px, 3vw, 28px)", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
             <Upload size={18} color={lv.brand} aria-hidden="true" />
-            <h2 id="cuf-title" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>Upload Candidates</h2>
+            <h2 id="cuf-title" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text }}>Upload Candidates</h2>
           </div>
           <Button variant="ghost" iconOnly aria-label="Close upload" onClick={onClose}><X size={20} /></Button>
         </div>
@@ -537,7 +537,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
           {hasResults && (
             <section aria-labelledby="cuf-results" style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], flexWrap: "wrap" }}>
-                <h3 id="cuf-results" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text }}>
+                <h3 id="cuf-results" style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text }}>
                   Extraction Results — {extracted.length} candidate{extracted.length !== 1 ? "s" : ""}
                 </h3>
                 {!presetPositionId && (

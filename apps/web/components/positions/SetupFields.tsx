@@ -52,11 +52,11 @@ export function QuestionMixEditor({ value, onChange }: { value: QuestionMix; onC
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: space[3] }}>
         {MIX_KEYS.map((k) => (
           <div key={k} role="group" aria-label={MIX_LABEL[k].label} style={{ border: `1px solid ${lv.border}`, borderRadius: radius.md, padding: `${space[3]}px ${space[3]}px`, background: lv.surfaceSunken }}>
-            <div style={{ fontSize: text.sm, fontWeight: 700, color: lv.text }}>{MIX_LABEL[k].label}</div>
+            <div style={{ fontSize: text.sm, fontWeight: 600, color: lv.text }}>{MIX_LABEL[k].label}</div>
             <div style={{ ...small, marginBottom: space[2], minHeight: 30 }}>{MIX_LABEL[k].hint}</div>
             <div style={{ display: "flex", alignItems: "center", gap: space[3] }}>
               <Button variant="secondary" size="sm" iconOnly aria-label={`Fewer ${MIX_LABEL[k].label}`} onClick={() => set(k, -1)} disabled={value[k] === 0}><Minus size={14} /></Button>
-              <span aria-live="polite" style={{ fontSize: text.md, fontWeight: 800, color: lv.brandText, minWidth: 16, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{value[k]}</span>
+              <span aria-live="polite" style={{ fontSize: text.md, fontWeight: 600, color: lv.brandText, minWidth: 16, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{value[k]}</span>
               <Button variant="secondary" size="sm" iconOnly aria-label={`More ${MIX_LABEL[k].label}`} onClick={() => set(k, +1)} disabled={value[k] >= MIX_MAX_PER_TYPE || total >= MIX_MAX_TOTAL}><Plus size={14} /></Button>
             </div>
           </div>

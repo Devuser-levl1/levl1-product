@@ -77,12 +77,15 @@ export default function RootLayout({
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#FFFFFF",
-              color: "#4F46E5",
-              border: "1px solid #E2E8F0",
+              // --lv-toast-* exist only on Screen recruiter routes
+              // (screen-tokens.css); elsewhere the fallbacks ARE the previous
+              // literals, so Hire / marketing toasts are unchanged.
+              background: "var(--lv-toast-bg, #FFFFFF)",
+              color: "var(--lv-toast-text, #4F46E5)",
+              border: "1px solid var(--lv-toast-border, #E2E8F0)",
               fontFamily: "Inter, system-ui, sans-serif",
               fontSize: 13,
-              boxShadow: "0 4px 12px rgba(79,70,229,0.08)",
+              boxShadow: "var(--lv-toast-shadow, 0 4px 12px rgba(79,70,229,0.08))",
             },
           }}
         />

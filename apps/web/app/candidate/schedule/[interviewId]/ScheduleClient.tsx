@@ -114,7 +114,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
         <div role="status" style={{ textAlign: 'center', padding: '24px 0' }}>
           <CheckCircle2 size={48} color="var(--lv-success)" aria-hidden="true" style={{ marginBottom: 12 }} />
-          <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 8px' }}>Slot confirmed!</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 8px' }}>Slot confirmed!</h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)' }}>
             A confirmation email is on its way. Redirecting you to the interview page…
           </p>
@@ -129,7 +129,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <ShieldCheck size={18} color={brand} aria-hidden="true" />
-          <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>Before you schedule</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>Before you schedule</h1>
         </div>
         <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.6, margin: '0 0 16px' }}>
           Please read and acknowledge the following about your interview for{' '}
@@ -181,7 +181,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       {/* ── Instant start — AI interviews need no human availability ── */}
       {instantStart && (
         <section aria-labelledby="sched-now" style={{ marginBottom: 24 }}>
-          <h1 id="sched-now" style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>
+          <h1 id="sched-now" style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>
             {alreadyBooked ? 'Want to start sooner?' : 'Ready when you are'}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', margin: '0 0 14px' }}>
@@ -206,7 +206,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
               <span style={{ flex: 1, height: 1, background: 'var(--lv-border)' }} /> OR SCHEDULE FOR LATER <span style={{ flex: 1, height: 1, background: 'var(--lv-border)' }} />
             </div>
           )}
-          <h2 id="sched-later" style={{ fontSize: instantStart ? 16 : 20, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>
+          <h2 id="sched-later" style={{ fontSize: instantStart ? 16 : 18, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>
             Pick your interview time
           </h2>
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', margin: '0 0 16px' }}>
@@ -223,7 +223,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxHeight: '52vh', overflowY: 'auto', padding: 2 }}>
               {grouped.map(([day, times]) => (
                 <section key={day} aria-label={day}>
-                  <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-text-body)', margin: '0 0 8px' }}>{day === todayKey ? `Today · ${day}` : day}</h3>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', margin: '0 0 8px' }}>{day === todayKey ? `Today · ${day}` : day}</h3>
                   <div role="radiogroup" aria-label={`Times on ${day}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {times.map((t) => {
                       const active = selected === t.iso

@@ -225,7 +225,7 @@ export default function Whiteboard({ onExport, onDone }: Props) {
   ]
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', borderRadius: 10, overflow: 'hidden', border: '1px solid #1E293B', position: 'relative' }}>
+    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: '1px solid #1E293B', position: 'relative' }}>
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#1E293B' }}>
         <div style={{ display: 'flex', gap: 2 }}>
@@ -267,7 +267,7 @@ export default function Whiteboard({ onExport, onDone }: Props) {
       {onDone && (
         <div style={{ padding: '8px 14px', borderTop: '1px solid #1E293B', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: '#64748B' }}>Draw your answer, then click Done</span>
-          <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
+          <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 6, border: 'none', background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
             <CheckCircle2 size={13} /> Done — Submit Diagram ✓
           </button>
         </div>

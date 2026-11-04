@@ -96,7 +96,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
           transform:     'translate(-50%,-50%)',
           zIndex:        851,
           background:    'var(--lv-surface)',
-          borderRadius:  14,
+          borderRadius:  8,
           boxShadow:     '0 16px 60px color-mix(in srgb, var(--lv-brand) 18%, transparent)',
           width:         '100%',
           maxWidth:      480,
@@ -119,7 +119,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
         >
           <div
             style={{
-              width: 34, height: 34, borderRadius: 9,
+              width: 34, height: 34, borderRadius: 6,
               background: 'rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
@@ -128,7 +128,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
             <LifeBuoy size={16} color="white" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display)' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: 'var(--lv-font-sans)' }}>
               Submit a Support Ticket
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
@@ -139,7 +139,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
             onClick={handleClose}
             style={{
               background: 'rgba(255,255,255,0.12)', border: 'none',
-              borderRadius: 7, padding: 6, cursor: 'pointer',
+              borderRadius: 6, padding: 6, cursor: 'pointer',
               color: 'rgba(255,255,255,0.75)', display: 'flex',
               transition: 'background 0.15s',
             }}
@@ -279,10 +279,10 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               padding:      '12px 0',
               background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
               border:       'none',
-              borderRadius: 9,
+              borderRadius: 6,
               color:        '#fff',
               fontSize:     14,
-              fontWeight:   700,
+              fontWeight:   600,
               cursor:       sending ? 'wait' : 'pointer',
               fontFamily:   'var(--font-sans)',
               boxShadow:    '0 2px 10px color-mix(in srgb, var(--lv-accent) 28%, transparent)',

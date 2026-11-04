@@ -27,7 +27,7 @@ function StatCard({ icon: Icon, label, value, sub, tone, loading, onClick }: {
       </div>
       {loading
         ? <Skeleton width={56} height={32} radius={8} />
-        : <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"] + 4, fontWeight: 700, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{value}</div>}
+        : <div style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"] + 4, fontWeight: 600, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{value}</div>}
       <div style={{ fontSize: text.sm, color: lv.textMuted, marginTop: space[2] }}>{sub}</div>
     </Card>
   );
@@ -215,15 +215,15 @@ export default function DashboardPage() {
                     <div key={c.id} role={c.interviewId ? "button" : undefined} tabIndex={c.interviewId ? 0 : undefined}
                       onClick={open} onKeyDown={(e) => { if (e.key === "Enter") open(); }}
                       className="lv-card--interactive" style={{ ...rowStyle, cursor: c.interviewId ? "pointer" : "default" }}>
-                      <span style={{ width: 24, fontSize: text.xs, fontWeight: 700, color: idx === 0 ? lv.warning : lv.textMuted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{idx + 1}</span>
-                      <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: idx === 0 ? lv.brandSoft : lv.surfaceMuted, border: `1px solid ${idx === 0 ? lv.brandSoftBorder : lv.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 700, color: idx === 0 ? lv.brandText : lv.textMuted, flexShrink: 0 }}>{initials}</span>
+                      <span style={{ width: 24, fontSize: text.xs, fontWeight: 600, color: idx === 0 ? lv.warning : lv.textMuted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{idx + 1}</span>
+                      <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: idx === 0 ? lv.brandSoft : lv.surfaceMuted, border: `1px solid ${idx === 0 ? lv.brandSoftBorder : lv.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: text.xs, fontWeight: 600, color: idx === 0 ? lv.brandText : lv.textMuted, flexShrink: 0 }}>{initials}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={nameStyle}>{c.name}</div>
                         <div style={metaStyle}>{c.positionTitle}</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: space[1], flexShrink: 0 }}>
                         <Tooltip content="Composite score across all interview sections (0–100)" position="left">
-                          <span style={{ fontSize: text.lg, fontWeight: 700, color: lv.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", cursor: "default" }}>{c.score}</span>
+                          <span style={{ fontSize: text.lg, fontWeight: 600, color: lv.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", cursor: "default" }}>{c.score}</span>
                         </Tooltip>
                         {rec && (
                           <Tooltip position="left" content={

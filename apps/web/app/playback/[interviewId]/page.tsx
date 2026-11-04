@@ -145,31 +145,31 @@ export default function PlaybackPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <div className="lv-eyebrow" style={{ color: C.brandText }}>Interview playback</div>
-          <h1 style={{ margin: '4px 0 2px', fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 700, color: C.ink, letterSpacing: '-0.02em' }}>{data.interview.candidate.name}</h1>
-          <div style={{ fontSize: 13.5, color: C.body }}>
+          <h1 style={{ margin: '4px 0 2px', fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 600, color: C.ink, letterSpacing: '-0.02em' }}>{data.interview.candidate.name}</h1>
+          <div style={{ fontSize: 14, color: C.body }}>
             {data.interview.position.title} · {data.interview.position.company}
             {data.interview.startedAt && ` · ${new Date(data.interview.startedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, background: flagged ? C.amberSoft : C.greenSoft, border: `1px solid ${flagged ? C.amberLine : C.greenLine}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: flagged ? C.amberSoft : C.greenSoft, border: `1px solid ${flagged ? C.amberLine : C.greenLine}` }}>
           {flagged ? <ShieldAlert size={18} color={C.amber} aria-hidden="true" /> : <ShieldCheck size={18} color={C.green} aria-hidden="true" />}
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: flagged ? C.amber : C.green }}>{flagged ? 'Flagged for human review' : 'No integrity concerns'}</div>
-            <div style={{ fontSize: 11.5, color: C.body }}>{events.length} event{events.length === 1 ? '' : 's'} · never an auto-fail</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: flagged ? C.amber : C.green }}>{flagged ? 'Flagged for human review' : 'No integrity concerns'}</div>
+            <div style={{ fontSize: 12, color: C.body }}>{events.length} event{events.length === 1 ? '' : 's'} · never an auto-fail</div>
           </div>
         </div>
         <span style={{ alignSelf: 'center' }}><ButtonLink href={`/report/${data.interview.id}`} variant="secondary" size="sm">Open report →</ButtonLink></span>
       </div>
 
       {/* Player */}
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 18, marginBottom: 18, boxShadow: lv.shadowSm }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, padding: 18, marginBottom: 18, boxShadow: lv.shadowSm }}>
         {hasAudio ? (
           <audio ref={audioRef} src={`/api/control-room/${interviewId}/audio`} preload="metadata"
             onLoadedMetadata={onLoadedMeta} onDurationChange={onDurationChange}
             onTimeUpdate={(e) => { if (!fixingDurRef.current) setT(e.currentTarget.currentTime) }}
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: C.body, background: C.sunken, borderRadius: 10, padding: '8px 12px', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.body, background: C.sunken, borderRadius: 6, padding: '8px 12px', marginBottom: 14 }}>
             <Headphones size={14} color={C.muted} aria-hidden="true" /> No recording was retained for this interview — the transcript and flag timeline are still navigable.
           </div>
         )}
@@ -189,7 +189,7 @@ export default function PlaybackPage() {
               style={{ position: 'absolute', left: 0, right: 0, top: 22, height: 6, borderRadius: 3, background: C.line, cursor: 'pointer' }}>
               <div style={{ width: `${Math.min(100, (t / duration) * 100)}%`, height: '100%', borderRadius: 3, background: C.brand }} />
             </div>
-            <div style={{ position: 'absolute', top: 16, left: `calc(${Math.min(100, (t / duration) * 100)}% - 9px)`, width: 18, height: 18, borderRadius: 9, background: C.surface, border: `3px solid ${C.brand}`, boxShadow: lv.shadowSm, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: 16, left: `calc(${Math.min(100, (t / duration) * 100)}% - 9px)`, width: 18, height: 18, borderRadius: 6, background: C.surface, border: `3px solid ${C.brand}`, boxShadow: lv.shadowSm, pointerEvents: 'none' }} />
             {events.map((e) => (
               <button key={e.id} onClick={() => seek(Math.max(0, e.sec - 2))} title={`${fmt(e.sec)} · ${e.label}`} aria-label={`Jump to ${e.label} at ${fmt(e.sec)}`}
                 style={{ position: 'absolute', top: 0, left: `calc(${Math.min(100, (e.sec / duration) * 100)}% - 5px)`, width: 10, height: 18, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}>
@@ -225,11 +225,11 @@ export default function PlaybackPage() {
                     className="pb-line" role={hasAudio ? 'button' : undefined} tabIndex={hasAudio ? 0 : undefined}
                     aria-label={hasAudio ? `Play from ${fmt(e.sec)}` : undefined} aria-current={active || undefined}
                     onKeyDown={hasAudio ? (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); seek(e.sec) } } : undefined}
-                    style={{ display: 'flex', gap: 12, padding: '8px 10px', borderRadius: 10, cursor: hasAudio ? 'pointer' : 'default', background: active ? C.brandSoft : 'transparent', borderLeft: `3px solid ${active ? C.brand : nearFlag ? C.red : 'transparent'}` }}>
-                    <span style={{ fontSize: 11.5, color: C.muted, fontVariantNumeric: 'tabular-nums', minWidth: 38, paddingTop: 2 }}>{fmt(e.sec)}</span>
+                    style={{ display: 'flex', gap: 12, padding: '8px 10px', borderRadius: 6, cursor: hasAudio ? 'pointer' : 'default', background: active ? C.brandSoft : 'transparent', borderLeft: `3px solid ${active ? C.brand : nearFlag ? C.red : 'transparent'}` }}>
+                    <span style={{ fontSize: 12, color: C.muted, fontVariantNumeric: 'tabular-nums', minWidth: 38, paddingTop: 2 }}>{fmt(e.sec)}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: e.speaker === 'ai' ? C.brandText : C.ink, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e.speaker === 'ai' ? 'Interviewer' : 'Candidate'}</div>
-                      <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.ink }}>{e.text}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: e.speaker === 'ai' ? C.brandText : C.ink, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e.speaker === 'ai' ? 'Interviewer' : 'Candidate'}</div>
+                      <div style={{ fontSize: 14, lineHeight: 1.55, color: C.ink }}>{e.text}</div>
                     </div>
                   </div>
                 )
@@ -244,12 +244,12 @@ export default function PlaybackPage() {
               {[...events].sort((a, b) => a.sec - b.sec).map((e) => (
                 <li key={e.id}>
                   <button type="button" className="pb-ev" onClick={() => seek(Math.max(0, e.sec - 2))} disabled={!hasAudio}
-                    style={{ width: '100%', textAlign: 'left', display: 'flex', gap: 10, padding: '8px 10px', borderRadius: 10, border: 'none', background: Math.abs(e.sec - t) < 3 ? C.redSoft : 'transparent', cursor: hasAudio ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                    style={{ width: '100%', textAlign: 'left', display: 'flex', gap: 10, padding: '8px 10px', borderRadius: 6, border: 'none', background: Math.abs(e.sec - t) < 3 ? C.redSoft : 'transparent', cursor: hasAudio ? 'pointer' : 'default', fontFamily: 'inherit' }}>
                     <Flag size={14} color={e.high ? C.red : C.amber} aria-hidden="true" style={{ marginTop: 2, flexShrink: 0 }} />
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: e.high ? C.red : C.ink }}>{e.label}</span>
-                        <span style={{ fontSize: 11.5, color: C.brandText, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(e.sec)}</span>
+                        <span style={{ fontSize: 12, color: C.brandText, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(e.sec)}</span>
                       </div>
                       {e.detail && <div style={{ fontSize: 12, color: C.body, lineHeight: 1.45, marginTop: 2 }}>{e.detail}</div>}
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Confidence {Math.round(e.confidence * 100)}%</div>
@@ -259,7 +259,7 @@ export default function PlaybackPage() {
               ))}
             </ol>
           )}
-          <p style={{ margin: '10px 4px 0', fontSize: 11.5, color: C.muted }}>Flags route to human review — they never affect the competency score.</p>
+          <p style={{ margin: '10px 4px 0', fontSize: 12, color: C.muted }}>Flags route to human review — they never affect the competency score.</p>
         </Panel>
       </div>
     </Shell>

@@ -93,17 +93,17 @@ export function AIVisualizer({
         justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', letterSpacing: '0.01em' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#E2E8F0', letterSpacing: '0.01em' }}>
             {INTERVIEWER_NAME}
           </div>
-          <div style={{ fontSize: 10, color: '#475569', fontWeight: 500, marginTop: 1 }}>
+          <div style={{ fontSize: 11, color: '#475569', fontWeight: 500, marginTop: 1 }}>
             AI Interviewer
           </div>
         </div>
         {timeRemaining !== undefined && (
           <div style={{
             fontSize:     13,
-            fontWeight:   800,
+            fontWeight:   600,
             color:        timerColor,
             fontFamily:   'monospace',
             letterSpacing:'0.05em',
@@ -125,7 +125,7 @@ export function AIVisualizer({
             </div>
           )}
           {positionTitle && (
-            <div style={{ fontSize: 10, color: '#334155', marginTop: 1 }}>{positionTitle}</div>
+            <div style={{ fontSize: 11, color: '#334155', marginTop: 1 }}>{positionTitle}</div>
           )}
         </div>
       )}

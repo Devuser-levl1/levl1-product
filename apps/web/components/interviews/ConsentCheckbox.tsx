@@ -52,6 +52,6 @@ const CSS = `
 .lv-consent-input:focus-visible + .lv-consent-box { outline: 3px solid #A5B4FC; outline-offset: 2px; }
 .lv-consent-text { font-size: 14px; line-height: 1.55; color: #1E293B; }
 .lv-consent-text strong { color: #0F172A; }
-.lv-consent-note { display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: #4F46E5; }
+.lv-consent-note { display: block; margin-top: 4px; font-size: 13px; font-weight: 600; color: #4F46E5; }
 @media (forced-colors: active) { .lv-consent-box { border-color: CanvasText; } .lv-consent[data-checked="true"] .lv-consent-box { background: Highlight; color: HighlightText; } }
 `

@@ -42,8 +42,8 @@ export function BottomNav() {
           >
             <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
             <span style={{
-              fontSize:   10,
-              fontWeight: active ? 700 : 500,
+              fontSize:   11,
+              fontWeight: active ? 600 : 500,
               letterSpacing: '0.01em',
               lineHeight: 1,
             }}>

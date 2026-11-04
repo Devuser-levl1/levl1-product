@@ -91,10 +91,10 @@ export default function AcceptInvitePage() {
       <main className="lv-card" style={{ width: '100%', maxWidth: 440, padding: 'clamp(24px, 6vw, 40px)', boxShadow: 'var(--lv-shadow-md)' }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Zap size={14} color="white" fill="white" />
           </div>
-          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 17, fontWeight: 700, color: 'var(--lv-brand-text)' }}>Levl1</span>
+          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand-text)' }}>Levl1</span>
         </div>
 
         <h1 className="lv-page-title" style={{ marginBottom: 8 }}>Accept Invitation</h1>
@@ -127,7 +127,7 @@ export default function AcceptInvitePage() {
 
           {error && <Alert tone="danger">{error}</Alert>}
 
-          <Button type="submit" fullWidth loading={saving} style={{ height: 48, fontSize: 15, marginTop: 4 }}>
+          <Button type="submit" fullWidth loading={saving} style={{ height: 48, fontSize: 16, marginTop: 4 }}>
             {saving ? 'Creating account…' : 'Create Account & Join Team'}
           </Button>
         </form>

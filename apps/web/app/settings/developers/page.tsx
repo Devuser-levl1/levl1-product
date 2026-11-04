@@ -9,12 +9,12 @@ const EVENTS = ['interview.completed', 'report.ready'] as const
 interface Key { id: string; name: string; prefix: string; lastUsedAt: string | null; revokedAt: string | null }
 interface Endpoint { id: string; url: string; secret: string; events: string[]; active: boolean }
 
-const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 22, marginBottom: 20 }
+const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 22, marginBottom: 20 }
 
 export default function InterviewsDevelopers() {
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>Developers / API</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>Developers / API</h1>
       <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: '0 0 24px' }}>Integrate Levl1 Interviews into your ATS: authenticate the public API (<code>/api/v1</code>) with a key, and receive results via signed webhooks.</p>
       <Keys />
       <Webhooks />
@@ -38,12 +38,12 @@ function Keys() {
   async function revoke(id: string) { if (!(await confirm({ title: 'Revoke this key?', description: 'Integrations using it stop working immediately. This cannot be undone.', confirmLabel: 'Revoke key', destructive: true }))) return; await fetch(`/api/interviews/api-keys/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 12 }}>API keys</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 12 }}>API keys</div>
       {raw && (
-        <div style={{ background: 'var(--lv-success-soft)', border: '1px solid var(--lv-success-border)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-success)', marginBottom: 6 }}>Copy your key now — shown only once.</div>
+        <div style={{ background: 'var(--lv-success-soft)', border: '1px solid var(--lv-success-border)', borderRadius: 6, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-success)', marginBottom: 6 }}>Copy your key now — shown only once.</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <code style={{ flex: 1, background: 'var(--lv-surface)', border: '1px solid var(--lv-success-border)', borderRadius: 6, padding: '8px 10px', fontSize: 12.5, overflowX: 'auto', whiteSpace: 'nowrap' }}>{raw}</code>
+            <code style={{ flex: 1, background: 'var(--lv-surface)', border: '1px solid var(--lv-success-border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, overflowX: 'auto', whiteSpace: 'nowrap' }}>{raw}</code>
             <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={() => navigator.clipboard.writeText(raw)}>Copy</button>
             <button className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => setRaw(null)}>Done</button>
           </div>
@@ -55,9 +55,9 @@ function Keys() {
       </div>
       {confirmDialog}
       {loadState === 'loading' ? <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}><span className="lv-spinner" aria-hidden="true" style={{ color: 'var(--lv-brand)' }} /> Loading…</div> : loadState === 'error' ? <Alert tone="danger" title="Couldn't load API keys" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => { setLoadState('loading'); load() }}>Retry</button>}>Check your connection and try again.</Alert> : keys.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No API keys yet — generate one above to authenticate the public API.</div> : keys.map((k) => (
-        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8, opacity: k.revokedAt ? 0.55 : 1 }}>
+        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 6, marginBottom: 8, opacity: k.revokedAt ? 0.55 : 1 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)' }}>{k.name} <code style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{k.prefix}…</code></div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)' }}>{k.name} <code style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{k.prefix}…</code></div>
             <div style={{ fontSize: 12, color: 'var(--lv-text-body)' }}>{k.revokedAt ? 'Revoked' : k.lastUsedAt ? `Last used ${new Date(k.lastUsedAt).toLocaleString('en-IN')}` : 'Never used'}</div>
           </div>
           {!k.revokedAt && <button className="lv-btn lv-btn--secondary lv-btn--sm" style={{ color: 'var(--lv-danger)' }} onClick={() => revoke(k.id)}>Revoke</button>}
@@ -84,9 +84,9 @@ function Webhooks() {
   async function remove(id: string) { if (!(await confirm({ title: 'Delete this endpoint?', description: 'Levl1 stops sending events to it. This cannot be undone.', confirmLabel: 'Delete endpoint', destructive: true }))) return; await fetch(`/api/interviews/webhooks/${id}`, { method: 'DELETE' }); load() }
   return (
     <div style={card}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 4 }}>Webhook endpoints</div>
-      <div style={{ fontSize: 12.5, color: 'var(--lv-text-body)', marginBottom: 14 }}>Signed with <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> using the endpoint secret.</div>
-      <div style={{ border: '1px dashed var(--lv-border-strong)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 4 }}>Webhook endpoints</div>
+      <div style={{ fontSize: 13, color: 'var(--lv-text-body)', marginBottom: 14 }}>Signed with <code>X-Levl1-Signature: sha256=&lt;hmac&gt;</code> using the endpoint secret.</div>
+      <div style={{ border: '1px dashed var(--lv-border-strong)', borderRadius: 6, padding: 14, marginBottom: 16 }}>
         <input className="lv-input" style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }} aria-label="Webhook endpoint URL" placeholder="https://your-ats.example.com/levl1/webhook" value={url} onChange={(e) => setUrl(e.target.value)} />
         <div style={{ display: 'flex', gap: 14, marginBottom: 10, flexWrap: 'wrap' }}>
           {EVENTS.map((ev) => <label key={ev} style={{ fontSize: 13, color: 'var(--lv-text-body)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={events.includes(ev)} onChange={(e) => setEvents((p) => e.target.checked ? [...p, ev] : p.filter((x) => x !== ev))} /><code>{ev}</code></label>)}
@@ -96,12 +96,12 @@ function Webhooks() {
       </div>
       {confirmDialog}
       {loadState === 'loading' ? <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}><span className="lv-spinner" aria-hidden="true" style={{ color: 'var(--lv-brand)' }} /> Loading…</div> : loadState === 'error' ? <Alert tone="danger" title="Couldn't load webhook endpoints" action={<button type="button" className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => { setLoadState('loading'); load() }}>Retry</button>}>Check your connection and try again.</Alert> : eps.length === 0 ? <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>No endpoints yet — add one above to receive interview results.</div> : eps.map((ep) => (
-        <div key={ep.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 10, marginBottom: 8 }}>
+        <div key={ep.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--lv-surface-muted)', borderRadius: 6, marginBottom: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lv-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</div>
             <div style={{ fontSize: 12, color: 'var(--lv-text-body)' }}>{ep.events.join(', ')}</div>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'color-mix(in srgb, var(--lv-success) 10%, transparent)' : 'var(--lv-surface-muted)', color: ep.active ? 'var(--lv-success)' : 'var(--lv-text-body)' }}>{ep.active ? 'Active' : 'Paused'}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 100, background: ep.active ? 'color-mix(in srgb, var(--lv-success) 10%, transparent)' : 'var(--lv-surface-muted)', color: ep.active ? 'var(--lv-success)' : 'var(--lv-text-body)' }}>{ep.active ? 'Active' : 'Paused'}</span>
           <button className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => toggle(ep)}>{ep.active ? 'Pause' : 'Resume'}</button>
           <button className="lv-btn lv-btn--secondary lv-btn--sm" style={{ color: 'var(--lv-danger)' }} onClick={() => remove(ep.id)}>Delete</button>
         </div>

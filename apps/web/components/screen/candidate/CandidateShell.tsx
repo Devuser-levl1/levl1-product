@@ -34,11 +34,11 @@ export function CandidateShell({ children, brand, agencyName, logo, width = 560 
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt={agencyName} height={36} style={{ objectFit: 'contain', maxWidth: 160 }} />
           ) : (
-            <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 10, background: brand, color: onBrand(brand), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+            <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 6, background: brand, color: onBrand(brand), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
               {agencyName.charAt(0)}
             </div>
           )}
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--lv-text)' }}>{agencyName}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>{agencyName}</div>
         </header>
         <main className="lv-card" style={{ padding: 'clamp(20px, 5vw, 28px)', boxShadow: 'var(--lv-shadow-md)' }}>
           {children}
@@ -52,7 +52,7 @@ export function CandidateShell({ children, brand, agencyName, logo, width = 560 
 export function PoweredBy({ link }: { link?: boolean }) {
   return (
     <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--lv-text-muted)' }}>
-      Powered by {link ? <a href="https://levl1.io" style={{ color: 'var(--lv-text-body)', fontWeight: 700, textDecoration: 'none' }}>Levl1</a> : 'Levl1'}
+      Powered by {link ? <a href="https://levl1.io" style={{ color: 'var(--lv-text-body)', fontWeight: 600, textDecoration: 'none' }}>Levl1</a> : 'Levl1'}
     </div>
   )
 }
@@ -74,7 +74,7 @@ export const BrandButton = forwardRef<HTMLButtonElement, BrandButtonProps>(funct
     <button ref={ref} type={type} disabled={disabled || loading} aria-busy={loading || undefined}
       className={['lv-btn', 'lv-btn--brand', fullWidth && 'lv-btn--full'].filter(Boolean).join(' ')}
       style={{
-        height: solid ? 48 : 40, fontSize: solid ? 15 : 13, fontWeight: 700,
+        height: solid ? 48 : 40, fontSize: solid ? 16 : 13, fontWeight: 600,
         background: solid ? brand : 'var(--lv-surface)', color: solid ? onBrand(brand) : brand,
         border: `1px solid ${brand}`, boxShadow: solid ? 'var(--lv-shadow-sm)' : 'none', ...style,
       }}

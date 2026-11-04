@@ -158,7 +158,7 @@ export default function ReportPage() {
     return (
       <Centered>
         <ClipboardList size={48} color="var(--lv-border-strong)" />
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--lv-text)', margin: '8px 0' }}>No Report Found</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '8px 0' }}>No Report Found</h2>
         <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', maxWidth: 340, lineHeight: 1.6, textAlign: 'center' }}>No report exists for interview ID <strong>{interviewId}</strong>.{candidate ? ' Click below to generate one.' : ' The interview ID may be incorrect.'}</p>
         {candidate && <Button onClick={generateReport} loading={generating} leftIcon={<Zap size={16} />}>{generating ? 'Generating…' : 'Generate Report'}</Button>}
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Go back</Button>
@@ -180,7 +180,7 @@ export default function ReportPage() {
       {/* Print header */}
       <div className="print-only" style={{ display: 'none', padding: '0 0 16px', borderBottom: `2px solid ${INDIGO}`, marginBottom: 24, alignItems: 'center', gap: 10 }}>
         <Zap size={18} color="var(--lv-accent)" fill="var(--lv-accent)" />
-        <span style={{ fontSize: 18, fontWeight: 800, color: INDIGO }}>Levl1</span>
+        <span style={{ fontSize: 18, fontWeight: 600, color: INDIGO }}>Levl1</span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>Confidential — for internal use only</span>
       </div>
 
@@ -188,8 +188,8 @@ export default function ReportPage() {
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'color-mix(in srgb, var(--lv-surface) 95%, transparent)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 clamp(12px, 3vw, 32px)', minHeight: 56, flexWrap: 'wrap' }}>
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Back</Button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-          <div aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={13} color="white" fill="white" /></div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: INDIGO }}>Levl1</span>
+          <div aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={13} color="white" fill="white" /></div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: INDIGO }}>Levl1</span>
         </div>
         <div style={{ flex: 1 }} />
         <ButtonLink href={`/playback/${interviewId}`} variant="tertiary" size="sm" leftIcon={<PlayCircle size={14} />}>Replay interview</ButtonLink>
@@ -199,24 +199,24 @@ export default function ReportPage() {
       <div className="report-body" style={{ maxWidth: 920, margin: '0 auto', padding: '28px 24px 60px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
         {/* R1 — Verdict-forward header */}
-        <section style={{ background: 'var(--lv-surface)', border: `1px solid ${verdict.border}`, borderRadius: 14, padding: 'clamp(18px, 3vw, 26px)', borderTop: `4px solid ${verdict.color}` }}>
+        <section style={{ background: 'var(--lv-surface)', border: `1px solid ${verdict.border}`, borderRadius: 8, padding: 'clamp(18px, 3vw, 26px)', borderTop: `4px solid ${verdict.color}` }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 240 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: verdict.bg, borderRadius: 100, padding: '6px 16px', marginBottom: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: verdict.color }} />
-                <span style={{ fontSize: 16, fontWeight: 800, color: verdict.color }}>{insufficient ? 'Insufficient evidence' : verdict.label}</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color: verdict.color }}>{insufficient ? 'Insufficient evidence' : verdict.label}</span>
                 {!insufficient && <span style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontWeight: 600 }}>· {verdict.tone}</span>}
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>{R.candidateName ?? candidate?.name ?? 'Candidate'}</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>{R.candidateName ?? candidate?.name ?? 'Candidate'}</h1>
               <div style={{ fontSize: 14, color: 'var(--lv-text-muted)' }}>{[R.positionTitle ?? candidate?.positionTitle, R.company].filter(Boolean).join(' · ')}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--lv-text-muted)', marginTop: 6 }}>{[R.interviewDate, R.duration ? `${R.duration} min` : null].filter(Boolean).join('  ·  ')}</div>
+              <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginTop: 6 }}>{[R.interviewDate, R.duration ? `${R.duration} min` : null].filter(Boolean).join('  ·  ')}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 44, fontWeight: 800, color: insufficient ? 'var(--lv-text-muted)' : verdict.color, fontFamily: 'var(--lv-font-display)', lineHeight: 1 }}>{insufficient ? '—' : R.overallScore}</div>
+              <div style={{ fontSize: 44, fontWeight: 600, color: insufficient ? 'var(--lv-text-muted)' : verdict.color, fontFamily: 'var(--lv-font-display)', lineHeight: 1 }}>{insufficient ? '—' : R.overallScore}</div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2 }}>{insufficient ? 'not scored' : 'composite / 100'}</div>
             </div>
           </div>
-          {R.professionalSummary && <p style={{ fontSize: 13.5, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid var(--lv-surface-muted)' }}>{R.professionalSummary}</p>}
+          {R.professionalSummary && <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid var(--lv-surface-muted)' }}>{R.professionalSummary}</p>}
         </section>
 
         {/* R1a — Logistics: early filters (location, notice, comp, work-auth) */}
@@ -273,7 +273,7 @@ export default function ReportPage() {
               {R.transcriptHighlights.map((h, i) => (
                 <div key={i} style={{ borderLeft: `3px solid ${INDIGO}`, paddingLeft: 12 }}>
                   <div style={{ fontSize: 13, color: 'var(--lv-text-body)', fontStyle: 'italic' }}>“{h.quote}”</div>
-                  {h.context && <div style={{ fontSize: 11.5, color: 'var(--lv-text-muted)', marginTop: 2 }}>{h.context}</div>}
+                  {h.context && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2 }}>{h.context}</div>}
                 </div>
               ))}
             </div>
@@ -281,7 +281,7 @@ export default function ReportPage() {
           {R.questionWiseEvaluation?.length ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {R.questionWiseEvaluation.map((q, i) => (
-                <div key={i} style={{ fontSize: 12.5, color: 'var(--lv-text-body)', padding: '8px 0', borderTop: i ? '1px solid var(--lv-surface-muted)' : 'none' }}>
+                <div key={i} style={{ fontSize: 13, color: 'var(--lv-text-body)', padding: '8px 0', borderTop: i ? '1px solid var(--lv-surface-muted)' : 'none' }}>
                   <strong style={{ color: 'var(--lv-text)' }}>{q.questionText}</strong>
                   {q.status === 'INSUFFICIENT_EVIDENCE' ? <span style={{ color: 'var(--lv-text-muted)' }}> — insufficient evidence to score</span> : typeof q.score === 'number' ? <span style={{ color: 'var(--lv-text-muted)' }}> — {q.score}/10</span> : null}
                   {q.candidateResponseExcerpt && <div style={{ fontStyle: 'italic', color: 'var(--lv-text-muted)', marginTop: 2 }}>“{q.candidateResponseExcerpt}”</div>}
@@ -319,7 +319,7 @@ export default function ReportPage() {
 }
 
 /* ─── Small presentational helpers ─────────────────────────────── */
-const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 'clamp(16px, 3vw, 22px)' }
+const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 'clamp(16px, 3vw, 22px)' }
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--lv-font-sans)', gap: 12 }}>{children}<style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style></div>
@@ -329,7 +329,7 @@ function SectionHead({ title, sub, color }: { title: string; sub?: string; color
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{ width: 4, height: 16, borderRadius: 2, background: color }} />
-        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--lv-text)', margin: 0 }}>{title}</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', margin: 0 }}>{title}</h3>
       </div>
       {sub && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 3, marginLeft: 12 }}>{sub}</div>}
     </div>

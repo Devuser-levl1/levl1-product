@@ -129,19 +129,19 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={data.agencyLogoUrl} alt={data.agencyName} height={40} style={{ objectFit: 'contain', maxWidth: 160 }} />
           ) : (
-            <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 10, background: brand, display: 'flex', alignItems: 'center', justifyContent: 'center', color: onBrand(brand), fontWeight: 800 }}>
+            <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 6, background: brand, display: 'flex', alignItems: 'center', justifyContent: 'center', color: onBrand(brand), fontWeight: 600 }}>
               {data.agencyName.charAt(0)}
             </div>
           )}
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lv-text)' }}>{data.agencyName}</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>{data.agencyName}</div>
             <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>Interview Portal</div>
           </div>
         </header>
 
         {/* Greeting */}
         <section className="lv-card" style={card}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 6px' }}>Hi {data.candidateFirstName} 👋</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 6px' }}>Hi {data.candidateFirstName} 👋</h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-body)', margin: '0 0 16px', lineHeight: 1.6 }}>
             You&apos;re about to begin your interview for <strong>{data.positionTitle}</strong> at <strong>{data.company}</strong>.
           </p>
@@ -225,11 +225,11 @@ function Row({
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: last ? '12px 0 0' : '12px 0', borderBottom: borderBottom ? '1px solid var(--lv-border)' : 'none', flexWrap: 'wrap' }}>
-      <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: status === 'done' ? 'var(--lv-success-soft)' : 'var(--lv-surface-muted)', color: status === 'done' ? 'var(--lv-success)' : 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 6, flexShrink: 0, background: status === 'done' ? 'var(--lv-success-soft)' : 'var(--lv-surface-muted)', color: status === 'done' ? 'var(--lv-success)' : 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {status === 'done' ? <CheckCircle2 size={18} /> : icon}
       </div>
       <div style={{ flex: '1 1 160px', minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--lv-text)' }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text)' }}>
           {title}{status === 'done' && <span className="lv-sr-only"> — done</span>}
         </div>
         <div aria-live="polite" style={{ fontSize: 12, color: status === 'fail' ? 'var(--lv-warning)' : 'var(--lv-text-muted)', fontWeight: status === 'fail' ? 600 : 400 }}>{status === 'fail' && failHint ? failHint : sub}</div>

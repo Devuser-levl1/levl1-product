@@ -137,7 +137,7 @@ function Metric({ label, value, sub, n, accent }: { label: string; value: string
         <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: accent }} />{label}
       </span>
       <div style={{ display: "flex", alignItems: "baseline", gap: space[2] }}>
-        <span style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 700, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</span>
+        <span style={{ fontFamily: lv.fontDisplay, fontSize: text["2xl"], fontWeight: 600, color: lv.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</span>
         <span className="font-mono" style={{ fontSize: 11, color: lv.textMuted, fontWeight: 600 }}>N={n}</span>
       </div>
       <span style={{ fontSize: text.xs, color: lv.textMuted, fontWeight: 500 }}>{sub}</span>
@@ -168,7 +168,7 @@ function Histogram({ buckets, threshold }: { buckets: { label: string; lo: numbe
           const isPass = b.lo >= threshold;
           return (
             <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
-              <span className="font-mono" style={{ fontSize: 11, color: lv.textBody, fontWeight: 700 }}>{b.count || ""}</span>
+              <span className="font-mono" style={{ fontSize: 11, color: lv.textBody, fontWeight: 600 }}>{b.count || ""}</span>
               <div title={`${b.label}: ${b.count}`} style={{
                 width: "100%", height: `${(b.count / max) * 100}%`, minHeight: b.count ? 4 : 0,
                 borderRadius: `${radius.sm}px ${radius.sm}px 0 0`,

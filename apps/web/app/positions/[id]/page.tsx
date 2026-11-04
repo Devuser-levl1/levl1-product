@@ -155,7 +155,7 @@ function ScoreBar({ score, threshold }: { score: number; threshold?: number }) {
       <div style={{ flex: 1, height: 6, borderRadius: 3, background: lv.surfaceMuted, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 3 }} />
       </div>
-      <span style={{ fontSize: text.sm, fontWeight: 700, color, fontFamily: lv.fontMono, minWidth: 28 }}>{score}</span>
+      <span style={{ fontSize: text.sm, fontWeight: 600, color, fontFamily: lv.fontMono, minWidth: 28 }}>{score}</span>
       {belowThreshold && (
         <span style={{ fontSize: text.xs, color: lv.warning, fontWeight: 600 }}>↓ L2</span>
       )}
@@ -665,7 +665,7 @@ export default function PositionDetailPage() {
             <div style={twoCol}>
               <Card title="L2 score threshold">
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: space[2], marginBottom: space[2] }}>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: lv.brandText, fontFamily: lv.fontDisplay }}>{threshold}</span>
+                  <span style={{ fontSize: 32, fontWeight: 600, color: lv.brandText, fontFamily: lv.fontDisplay }}>{threshold}</span>
                   <span style={{ fontSize: text.base, color: lv.textMuted }}>/100</span>
                 </div>
                 <p style={{ ...muted, fontSize: text.xs }}>
@@ -686,7 +686,7 @@ export default function PositionDetailPage() {
                       <div style={{ flex: 1, height: 6, borderRadius: 3, background: lv.surfaceMuted, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${value}%`, background: color, borderRadius: 3 }} />
                       </div>
-                      <span style={{ fontSize: text.xs, fontWeight: 700, color: lv.text, fontFamily: lv.fontMono, minWidth: 32, textAlign: 'right' }}>{value}%</span>
+                      <span style={{ fontSize: text.xs, fontWeight: 600, color: lv.text, fontFamily: lv.fontMono, minWidth: 32, textAlign: 'right' }}>{value}%</span>
                     </div>
                   ))}
                 </div>

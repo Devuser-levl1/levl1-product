@@ -142,7 +142,7 @@ function CandidateCard({
           background: isScheduled ? lv.accentSoft : lv.brandSoft,
           border: `1px solid ${isScheduled ? lv.brandSoftBorder : lv.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: text.xs, fontWeight: 700,
+          fontSize: text.xs, fontWeight: 600,
           color: lv.brandText,
           flexShrink: 0,
         }}>
@@ -157,7 +157,7 @@ function CandidateCard({
           </div>
         </div>
         {candidate.score !== undefined && (
-          <div className="font-mono" aria-label={`Score ${candidate.score}`} style={{ fontSize: text.md, fontWeight: 800, color: lv.text, flexShrink: 0 }}>
+          <div className="font-mono" aria-label={`Score ${candidate.score}`} style={{ fontSize: text.md, fontWeight: 600, color: lv.text, flexShrink: 0 }}>
             {candidate.score}
           </div>
         )}
@@ -325,7 +325,7 @@ export default function CandidatesPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <div aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: col.dotColor }} />
-                    <h2 id={`col-${col.key}`} style={{ margin: 0, fontSize: text.xs, fontWeight: 700, color: lv.textBody, letterSpacing: "0.02em" }}>
+                    <h2 id={`col-${col.key}`} style={{ margin: 0, fontSize: text.xs, fontWeight: 600, color: lv.textBody, letterSpacing: "0.02em" }}>
                       {col.label}
                     </h2>
                   </div>

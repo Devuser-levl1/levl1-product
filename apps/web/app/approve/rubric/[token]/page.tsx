@@ -22,7 +22,7 @@ function RubricRow({ label, value, color }: { label: string; value: number; colo
         <div style={{ width: 120, height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${value}%`, background: color, borderRadius: 3 }} />
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color, minWidth: 44 }}>{value}%</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 600, color, minWidth: 44 }}>{value}%</div>
       </div>
     </div>
   )
@@ -82,11 +82,11 @@ export default function RubricApprovalPage() {
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         {error ? (
           <><AlertCircle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>Unable to load</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>Unable to load</h2>
           <p style={{ color: '#94A3B8', fontSize: 14, lineHeight: 1.6 }}>{error}</p></>
         ) : (
           <><CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>
             {submitted ? 'Thank you!' : 'Already submitted'}
           </h2>
           <p style={{ color: '#94A3B8', fontSize: 14 }}>
@@ -108,17 +108,17 @@ export default function RubricApprovalPage() {
         <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Levl1</span>
         <span style={{ fontSize: 12, color: '#94A3B8', marginLeft: 4 }}>· Scoring Rubric Review</span>
       </header>
 
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '36px 24px 80px' }}>
         {/* Position info */}
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, color: '#4F46E5', margin: '0 0 6px' }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', margin: '0 0 6px' }}>
             Scoring Rubric Approval
           </h1>
-          <p style={{ fontSize: 15, color: '#475569', margin: '0 0 4px', fontWeight: 600 }}>
+          <p style={{ fontSize: 16, color: '#475569', margin: '0 0 4px', fontWeight: 600 }}>
             {data.positionTitle} · {data.company}
           </p>
           <p style={{ fontSize: 13, color: '#94A3B8', margin: 0 }}>
@@ -132,8 +132,8 @@ export default function RubricApprovalPage() {
         </p>
 
         {/* Rubric breakdown */}
-        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '24px 28px', marginBottom: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>
+        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '24px 28px', marginBottom: 20 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>
             Scoring Breakdown
           </h3>
           <RubricRow label="Technical Depth"   value={r.technical}     color="#4F46E5" />
@@ -141,14 +141,14 @@ export default function RubricApprovalPage() {
           <RubricRow label="Behavioral / EQ" value={r.behavioral}    color="#10B981" />
           <RubricRow label="EQ & Soft Skills"  value={r.eq}            color="#F59E0B" />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 0', marginTop: 4 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>Total</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 800, color: '#10B981' }}>100%</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1E293B' }}>Total</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 600, color: '#10B981' }}>100%</span>
           </div>
         </div>
 
         {/* L2 threshold */}
-        <div style={{ background: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46', marginBottom: 4 }}>L2 Submission Threshold</div>
+        <div style={{ background: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#065F46', marginBottom: 4 }}>L2 Submission Threshold</div>
           <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.6 }}>
             Candidates scoring <strong>{data.l2ScoreThreshold}+</strong> out of 100 will be recommended for Level 2 interviews.
             All others will be marked as below threshold.
@@ -162,17 +162,17 @@ export default function RubricApprovalPage() {
           </label>
           <textarea value={comments} onChange={e => setComments(e.target.value)}
             placeholder="If you&apos;d like the weightings adjusted, note your preferred breakdown here…"
-            style={{ width: '100%', minHeight: 88, padding: '10px 14px', borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC' }} />
+            style={{ width: '100%', minHeight: 88, padding: '10px 14px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC' }} />
         </div>
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => handleSubmit('changes_requested')} disabled={submitting}
-            style={{ padding: '12px 24px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
+            style={{ padding: '12px 24px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
             Request Changes
           </button>
           <button onClick={() => handleSubmit('approved')} disabled={submitting}
-            style={{ flex: 1, background: submitting ? '#94A3B8' : 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 9, padding: '12px 24px', fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: submitting ? 'none' : '0 4px 12px rgba(16,185,129,0.30)', fontFamily: 'var(--font-sans)' }}>
+            style={{ flex: 1, background: submitting ? '#94A3B8' : 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 16, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: submitting ? 'none' : '0 4px 12px rgba(16,185,129,0.30)', fontFamily: 'var(--font-sans)' }}>
             <CheckCircle2 size={16} />
             {submitting ? 'Submitting…' : 'Approve Rubric →'}
           </button>

@@ -37,7 +37,7 @@ export default function CandidateErrorPage({
         }}
       >
         <div aria-hidden="true" style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 10px' }}>
+        <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 10px' }}>
           We hit a snag
         </h1>
         <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.6, margin: 0 }}>{message}</p>

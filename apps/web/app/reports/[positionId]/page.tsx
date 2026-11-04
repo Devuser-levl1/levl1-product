@@ -44,7 +44,7 @@ function MiniBar({ score, color }: { score: number; color: string }) {
       <div style={{ width: 56, height: 5, borderRadius: 3, background: 'var(--lv-surface-muted)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 3 }} />
       </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'var(--lv-font-display)' }}>{score}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color, fontFamily: 'var(--lv-font-display)' }}>{score}</span>
     </div>
   )
 }
@@ -77,7 +77,7 @@ function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string })
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
       <div style={{ color: 'var(--lv-accent)' }}>{icon}</div>
-      <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 13, fontWeight: 700, color: 'var(--lv-text-body)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
+      <h2 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>
         {label}
       </h2>
     </div>
@@ -169,7 +169,7 @@ export default function PositionRankingPage() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--lv-font-sans)' }}>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: 20, color: 'var(--lv-brand)' }}>Position not found</h2>
+          <h2 style={{ fontSize: 18, color: 'var(--lv-brand)' }}>Position not found</h2>
           <div style={{ marginTop: 16 }}><Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.push('/dashboard')}>Back</Button></div>
         </div>
       </div>
@@ -192,10 +192,10 @@ export default function PositionRankingPage() {
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.push('/dashboard')}>Dashboard</Button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Zap size={13} color="white" fill="white" />
           </div>
-          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 14, fontWeight: 700, color: 'var(--lv-brand)' }}>Levl1</span>
+          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
         </div>
 
         <div style={{ flex: 1 }} />
@@ -209,14 +209,14 @@ export default function PositionRankingPage() {
 
         {/* ════ HEADER ════ */}
         <section style={{
-          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
+          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
           boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Position Report</div>
-              <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Position Report</div>
+              <h1 style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
                 {position.title}
               </h1>
               <p style={{ fontSize: 14, color: 'var(--lv-accent)', fontWeight: 600, margin: '0 0 2px' }}>{position.company} · {position.department}</p>
@@ -229,7 +229,7 @@ export default function PositionRankingPage() {
           </div>
 
           {/* Stats strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--lv-border)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--lv-border)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--lv-border)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--lv-border)' }}>
             {[
               { label: 'Interviewed',  value: completed.length },
               { label: 'Shortlisted',  value: shortlisted },
@@ -237,7 +237,7 @@ export default function PositionRankingPage() {
               { label: 'Avg Score',    value: `${avgScore}` },
             ].map((s, i) => (
               <div key={s.label} style={{ background: 'var(--lv-surface)', padding: '16px 20px', textAlign: 'center', borderRight: i < 3 ? '1px solid var(--lv-border)' : 'none' }}>
-                <div style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 800, color: 'var(--lv-brand)', lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontFamily: 'var(--lv-font-display)', fontSize: 22, fontWeight: 600, color: 'var(--lv-brand)', lineHeight: 1 }}>{s.value}</div>
                 <div style={{ fontSize: 11, color: 'var(--lv-text-muted)', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
               </div>
             ))}
@@ -246,7 +246,7 @@ export default function PositionRankingPage() {
 
         {/* ════ CANDIDATE RANKINGS TABLE ════ */}
         <section style={{
-          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
+          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
           boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
         }}>
@@ -266,7 +266,7 @@ export default function PositionRankingPage() {
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--lv-border)' }}>
                     {['', '#', 'Candidate', 'Score', 'Technical', 'Behavioral', 'Recommendation', 'Actions'].map(h => (
-                      <th key={h} style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-text-muted)', textAlign: h === 'Score' || h === 'Technical' || h === 'Behavioral' ? 'center' : 'left', padding: '0 12px 12px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textAlign: h === 'Score' || h === 'Technical' || h === 'Behavioral' ? 'center' : 'left', padding: '0 12px 12px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -306,7 +306,7 @@ export default function PositionRankingPage() {
                         <td style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
                           {medal
                             ? <span style={{ fontSize: 18 }}>{medal}</span>
-                            : <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-text-muted)', fontFamily: 'var(--lv-font-display)' }}>#{rank}</span>
+                            : <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', fontFamily: 'var(--lv-font-display)' }}>#{rank}</span>
                           }
                         </td>
 
@@ -317,7 +317,7 @@ export default function PositionRankingPage() {
                               width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                               background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 11, fontWeight: 800, color: '#FFFFFF',
+                              fontSize: 11, fontWeight: 600, color: '#FFFFFF',
                             }}>
                               {initials(c.name)}
                             </div>
@@ -331,7 +331,7 @@ export default function PositionRankingPage() {
                         {/* Overall score */}
                         <td style={{ padding: '14px 12px', textAlign: 'center' }}>
                           <span style={{
-                            fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 800,
+                            fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600,
                             color: sColor,
                           }}>
                             {c.score}
@@ -356,7 +356,7 @@ export default function PositionRankingPage() {
                         <td style={{ padding: '14px 12px' }}>
                           {rec && (
                             <span style={{
-                              fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+                              fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20,
                               background: rec.bg, color: rec.color, border: `1px solid ${rec.border}`,
                               whiteSpace: 'nowrap',
                             }}>
@@ -390,7 +390,7 @@ export default function PositionRankingPage() {
             <div className="no-print" style={{
               marginTop: 16, padding: '12px 16px',
               background: 'color-mix(in srgb, var(--lv-brand) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-brand) 20%, transparent)',
-              borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12,
+              borderRadius: 6, display: 'flex', alignItems: 'center', gap: 12,
             }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)' }}>{selected.size} selected</span>
               <Button size="sm" leftIcon={<UserCheck size={14} />} onClick={pushSelectedToL2}>Push Selected to L2</Button>
@@ -402,7 +402,7 @@ export default function PositionRankingPage() {
 
         {/* ════ TALENT POOL INSIGHTS ════ */}
         <section style={{
-          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
+          background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
           padding: '28px 36px', marginBottom: 24,
           boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
         }}>
@@ -419,7 +419,7 @@ export default function PositionRankingPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <CheckCircle2 size={13} color="var(--lv-success)" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Strengths</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Strengths</span>
                 </div>
                 {posReport.poolStrengths.map((s, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
@@ -432,7 +432,7 @@ export default function PositionRankingPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <AlertTriangle size={13} color="var(--lv-warning)" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lv-warning)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Gaps</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-warning)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Common Gaps</span>
                 </div>
                 {posReport.poolGaps.map((g, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
@@ -444,10 +444,10 @@ export default function PositionRankingPage() {
 
               {/* Market observation */}
               {posReport.marketObservation && (
-                <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-brand) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 10, padding: '14px 18px' }}>
+                <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-brand) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-brand) 12%, transparent)', borderRadius: 6, padding: '14px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <Globe size={13} color="var(--lv-accent)" />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Market Observation</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Market Observation</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>{posReport.marketObservation}</p>
                 </div>
@@ -455,10 +455,10 @@ export default function PositionRankingPage() {
 
               {/* Hiring recommendation */}
               {posReport.hiringRecommendation && (
-                <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-success) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 18%, transparent)', borderRadius: 10, padding: '14px 18px' }}>
+                <div style={{ gridColumn: '1 / -1', background: 'color-mix(in srgb, var(--lv-success) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 18%, transparent)', borderRadius: 6, padding: '14px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <CheckCircle2 size={13} color="var(--lv-success)" />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Hiring Recommendation</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-success)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Hiring Recommendation</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>{posReport.hiringRecommendation}</p>
                 </div>
@@ -479,7 +479,7 @@ export default function PositionRankingPage() {
         {/* ════ QUESTION HEALTH FLAGS ════ */}
         {posReport && posReport.questionHealthFlags.length > 0 && (
           <section style={{
-            background: 'var(--lv-surface)', border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)', borderRadius: 16,
+            background: 'var(--lv-surface)', border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)', borderRadius: 8,
             padding: '28px 36px', marginBottom: 24,
             boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
           }}>
@@ -492,7 +492,7 @@ export default function PositionRankingPage() {
               {posReport.questionHealthFlags.map((flag, i) => (
                 <div key={i} style={{
                   background: 'color-mix(in srgb, var(--lv-warning) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 20%, transparent)',
-                  borderRadius: 10, padding: '16px 18px',
+                  borderRadius: 6, padding: '16px 18px',
                 }}>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <AlertTriangle size={14} color="var(--lv-warning)" style={{ marginTop: 2, flexShrink: 0 }} />
@@ -518,7 +518,7 @@ export default function PositionRankingPage() {
         {/* ════ USERS NOT YET INTERVIEWED ════ */}
         {allCandidates.filter(c => c.status === 'pending' || c.status === 'invited' || c.status === 'scheduled').length > 0 && (
           <section style={{
-            background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 16,
+            background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8,
             padding: '24px 36px', marginBottom: 24,
             boxShadow: '0 1px 4px color-mix(in srgb, var(--lv-brand) 6%, transparent)',
           }}>
@@ -532,7 +532,7 @@ export default function PositionRankingPage() {
                   <div style={{
                     width: 26, height: 26, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-brand) 10%, transparent)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 800, color: 'var(--lv-brand)',
+                    fontSize: 11, fontWeight: 600, color: 'var(--lv-brand)',
                   }}>
                     {initials(c.name)}
                   </div>

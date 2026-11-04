@@ -48,11 +48,11 @@ export default async function CandidateCompletePage({
           ✓
         </div>
 
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 12px' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 12px' }}>
           Thank you{data ? `, ${data.candidateFirstName}` : ''}!
         </h1>
 
-        <p style={{ fontSize: 15, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 16, color: 'var(--lv-text-body)', lineHeight: 1.7, margin: 0 }}>
           {data ? (
             <>
               Your interview for <strong>{data.positionTitle}</strong> at{' '}
@@ -74,7 +74,7 @@ export default async function CandidateCompletePage({
             <img src={data.agencyLogoUrl} alt={data.agencyName} height={36} style={{ objectFit: 'contain', maxWidth: 160 }} />
           ) : (
             data && (
-              <div style={{ fontSize: 14, fontWeight: 700, color: brand }}>{data.agencyName}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: brand }}>{data.agencyName}</div>
             )
           )}
           <div style={{ fontSize: 12, color: 'var(--lv-border-strong)', marginTop: 8 }}>Powered by Levl1</div>

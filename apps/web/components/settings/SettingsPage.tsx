@@ -16,7 +16,7 @@ function Section({ icon: Icon, title, description, children }: { icon: React.Ele
   return (
     <section className="lv-card lv-card--pad" aria-label={title} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingBottom: 16, borderBottom: "1px solid var(--lv-border)" }}>
-        <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 10, background: "var(--lv-brand-soft)", border: "1px solid var(--lv-brand-soft-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 6, background: "var(--lv-brand-soft)", border: "1px solid var(--lv-brand-soft-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={17} color="var(--lv-brand)" />
         </div>
         <div>
@@ -425,7 +425,7 @@ export default function SettingsPage() {
             {accountType === null && <option value="">Not set — position setup asks for client details</option>}
             {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
           </select>
-          <div style={{ fontSize: 11.5, color: "var(--lv-text-muted)", marginTop: 5 }}>
+          <div style={{ fontSize: 12, color: "var(--lv-text-muted)", marginTop: 5 }}>
             Saves immediately. In-house accounts don&apos;t see the Clients tab or client fields; existing client records are kept and come back if you switch to agency.
           </div>
         </Field>
@@ -455,7 +455,7 @@ export default function SettingsPage() {
       <Section icon={Bell} title="Email Configuration" description="Send interview emails from your own verified domain">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{
-            display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
+            display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
             padding: "4px 10px", borderRadius: 100,
             background: domainVerified ? "color-mix(in srgb, var(--lv-success) 10%, transparent)" : "var(--lv-surface-muted)",
             color: domainVerified ? "var(--lv-success)" : "var(--lv-text-muted)",
@@ -486,12 +486,12 @@ export default function SettingsPage() {
         {domainMsg && <div style={{ fontSize: 12, color: "var(--lv-text-body)" }}>{domainMsg}</div>}
 
         {domainRecords.length > 0 && (
-          <div style={{ border: "1px solid var(--lv-border)", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ border: "1px solid var(--lv-border)", borderRadius: 6, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr style={{ background: "var(--lv-surface-sunken)" }}>
                   {["Type", "Hostname", "Value"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "var(--lv-text-muted)", fontWeight: 700 }}>{h}</th>
+                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "var(--lv-text-muted)", fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
       {/* Branding (white-label reports & candidate portal) */}
       <Section icon={CheckCircle2} title="Branding" description="Your logo and colour appear on reports and the candidate portal">
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ width: 80, height: 80, borderRadius: 12, border: "1px solid var(--lv-border)", background: "var(--lv-surface-sunken)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          <div style={{ width: 80, height: 80, borderRadius: 8, border: "1px solid var(--lv-border)", background: "var(--lv-surface-sunken)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             {logoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={logoUrl} alt="Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
@@ -550,7 +550,7 @@ export default function SettingsPage() {
               key={v.key}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
-                padding: "12px 14px", borderRadius: 10,
+                padding: "12px 14px", borderRadius: 6,
                 border: `1.5px solid ${voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 35%, transparent)" : "var(--lv-border)"}`,
                 background: voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 5%, transparent)" : "var(--lv-surface-sunken)",
                 cursor: "pointer", transition: "all 0.15s",
@@ -570,7 +570,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Flag + name */}
-              <span style={{ fontSize: 20, flexShrink: 0 }}>{v.flag}</span>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{v.flag}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-brand)" }}>
                   {v.accent}
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                 disabled={!!previewLoading}
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 12px", borderRadius: 7,
+                  padding: "6px 12px", borderRadius: 6,
                   border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)",
                   background: "color-mix(in srgb, var(--lv-accent) 7%, transparent)", color: "var(--lv-accent)",
                   fontSize: 12, fontWeight: 600, cursor: previewLoading ? "wait" : "pointer",
@@ -668,7 +668,7 @@ export default function SettingsPage() {
             {teamUsers.map((u) => (
               <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--lv-accent)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-accent)" }}>
                     {u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -678,7 +678,7 @@ export default function SettingsPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span className="lv-badge lv-badge--success" style={{ textTransform: "capitalize" }}>{u.role}</span>
-                  <span style={{ fontSize: 10, color: "var(--lv-text-muted)" }}>Active</span>
+                  <span style={{ fontSize: 11, color: "var(--lv-text-muted)" }}>Active</span>
                 </div>
               </div>
             ))}
@@ -687,7 +687,7 @@ export default function SettingsPage() {
             {teamMembers.filter(m => m.status === 'invited').map((m) => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-surface-muted)", border: "1px solid var(--lv-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--lv-text-muted)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-surface-muted)", border: "1px solid var(--lv-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-text-muted)" }}>
                     {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -776,7 +776,7 @@ export default function SettingsPage() {
         <div style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 6%, transparent) 100%)',
           border: '1px solid color-mix(in srgb, var(--lv-brand) 15%, transparent)',
-          borderRadius: 12,
+          borderRadius: 8,
           padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
@@ -786,7 +786,7 @@ export default function SettingsPage() {
         }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-muted)', marginBottom: 4 }}>Current Plan</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-display)', textTransform: 'capitalize' }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-display)', textTransform: 'capitalize' }}>
               {agencyPlan?.plan ?? 'Trial'}
             </div>
             {agencyPlan?.plan === 'trial' && (
@@ -831,13 +831,13 @@ export default function SettingsPage() {
                 key={plan.id}
                 style={{
                   border: plan.popular ? '1.5px solid var(--lv-accent)' : '1px solid var(--lv-border)',
-                  borderRadius: 12, padding: '18px 16px',
+                  borderRadius: 8, padding: '18px 16px',
                   position: 'relative',
                   background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : 'var(--lv-surface)',
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, fontFamily: 'var(--lv-font-display)', marginBottom: 2 }}>{plan.name}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--lv-text)', marginBottom: 10 }}>{plan.price}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: plan.color, fontFamily: 'var(--lv-font-display)', marginBottom: 2 }}>{plan.name}</div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 10 }}>{plan.price}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                   {plan.features.map((f) => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>

@@ -182,7 +182,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
       .levl1-tour-step .shepherd-title {
         color: #fff !important;
         font-size: 14px !important;
-        font-weight: 700 !important;
+        font-weight: 600 !important;
         letter-spacing: -0.01em !important;
         line-height: 1.3 !important;
         flex: 1 !important;

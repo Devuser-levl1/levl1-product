@@ -13,7 +13,7 @@ interface Provider {
 }
 interface SyncSummary { jobs: { created: number; updated: number }; candidates: { created: number; updated: number; skipped: number }; errors: string[] }
 
-const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 14, padding: 20, marginBottom: 14 }
+const card: React.CSSProperties = { background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 20, marginBottom: 14 }
 
 export default function IntegrationsPage() {
   const [providers, setProviders] = useState<Provider[]>([])
@@ -56,7 +56,7 @@ export default function IntegrationsPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--lv-text)', margin: '0 0 4px' }}>Integrations</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 4px' }}>Integrations</h1>
       <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: '0 0 24px' }}>Connect your ATS (or HirePilot) to pull jobs and candidates into Interviews, then generate questions and run screening interviews.</p>
       {err && <Alert tone="danger" style={{ marginBottom: 14 }}>{err}</Alert>}
 
@@ -68,9 +68,9 @@ export default function IntegrationsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 15.5, fontWeight: 800, color: 'var(--lv-text)' }}>{p.label}</span>
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--lv-text-muted)', background: 'var(--lv-surface-muted)', borderRadius: 100, padding: '2px 8px' }}>{p.authType === 'oauth' ? 'OAuth' : 'API key'}</span>
-                {!p.implemented && <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--lv-text-muted)' }}>coming soon</span>}
+                <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>{p.label}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', background: 'var(--lv-surface-muted)', borderRadius: 100, padding: '2px 8px' }}>{p.authType === 'oauth' ? 'OAuth' : 'API key'}</span>
+                {!p.implemented && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)' }}>coming soon</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-body)', marginTop: 3 }}>
                 {p.connection
@@ -96,12 +96,12 @@ export default function IntegrationsPage() {
                 <button className="lv-btn lv-btn--primary lv-btn--sm" onClick={() => connect(p)} disabled={busy === 'connect-' + p.provider}>{busy === 'connect-' + p.provider ? 'Validating…' : 'Connect & validate'}</button>
                 <button className="lv-btn lv-btn--secondary lv-btn--sm" onClick={() => setOpenFor(null)}>Cancel</button>
               </div>
-              {p.provider === 'levl1_hire' && <div style={{ fontSize: 11.5, color: 'var(--lv-text-muted)' }}>Generate a key in HirePilot → Settings → Developers, then paste it here.</div>}
+              {p.provider === 'levl1_hire' && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>Generate a key in HirePilot → Settings → Developers, then paste it here.</div>}
             </div>
           )}
 
           {summary[p.provider] && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lv-surface-muted)', fontSize: 12.5, color: 'var(--lv-text-body)' }}>
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lv-surface-muted)', fontSize: 13, color: 'var(--lv-text-body)' }}>
               Jobs: <strong>{summary[p.provider].jobs.created}</strong> new, {summary[p.provider].jobs.updated} updated · Candidates: <strong>{summary[p.provider].candidates.created}</strong> new, {summary[p.provider].candidates.updated} updated, {summary[p.provider].candidates.skipped} skipped
               {summary[p.provider].errors.length > 0 && <div style={{ color: 'var(--lv-danger)', marginTop: 4 }}>{summary[p.provider].errors.join('; ')}</div>}
             </div>

@@ -155,7 +155,7 @@ export default function MonitorPage() {
           {/* Timer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Clock size={14} color={lv.textMuted} aria-hidden="true" />
-            <span className="font-mono" style={{ fontSize: text.sm, fontWeight: 700, color: timeRemaining <= 120 && session ? lv.danger : timeRemaining <= 300 && session ? lv.warning : lv.textMuted }}>
+            <span className="font-mono" style={{ fontSize: text.sm, fontWeight: 600, color: timeRemaining <= 120 && session ? lv.danger : timeRemaining <= 300 && session ? lv.warning : lv.textMuted }}>
               {session ? `${fmt(elapsedSecs)} elapsed · ${fmt(timeRemaining)} left` : '—'}
             </span>
           </div>
@@ -204,14 +204,14 @@ export default function MonitorPage() {
             {txEntries.map((entry) => (
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: text.xs, fontWeight: 700, letterSpacing: '0.03em', color: entry.speaker === 'ai' ? lv.brandText : lv.success }}>
+                  <span style={{ fontSize: text.xs, fontWeight: 600, letterSpacing: '0.03em', color: entry.speaker === 'ai' ? lv.brandText : lv.success }}>
                     {entry.speaker === 'ai' ? `🤖 AI (${INTERVIEWER_NAME})` : `👤 ${candidate.name.split(' ')[0]}`}
                   </span>
                   <span style={{ fontSize: 11, color: lv.textMuted }}>
                     {new Date(entry.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
                   {entry.type !== 'preset' && entry.type !== 'intro' && entry.type !== 'closing' && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: radius.sm, background: lv.accentSoft, color: lv.accent, letterSpacing: '0.04em' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 6px', borderRadius: radius.sm, background: lv.accentSoft, color: lv.accent, letterSpacing: '0.04em' }}>
                       {entry.type.toUpperCase()}
                     </span>
                   )}
@@ -243,7 +243,7 @@ export default function MonitorPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: space[3] }}>
                 <div>
                   <div className="lv-eyebrow">Running Score</div>
-                  <div style={{ fontFamily: lv.fontDisplay, fontSize: text['2xl'], fontWeight: 700, color: scoreColor(score), lineHeight: 1 }}>
+                  <div style={{ fontFamily: lv.fontDisplay, fontSize: text['2xl'], fontWeight: 600, color: scoreColor(score), lineHeight: 1 }}>
                     {responses.length > 0 ? `${score}` : '—'}
                   </div>
                 </div>
@@ -274,13 +274,13 @@ export default function MonitorPage() {
               return (
                 <div key={r.questionId} className="lv-card" style={{ padding: `${space[3]}px ${space[3]}px`, display: 'flex', flexDirection: 'column', gap: space[2] }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: SECTION_COLOR[r.questionType] ?? lv.textMuted, letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: SECTION_COLOR[r.questionType] ?? lv.textMuted, letterSpacing: '0.05em' }}>
                       {r.questionType?.toUpperCase()}
                     </span>
                     <span style={{ fontSize: 11, color: lv.textMuted }}>Q{idx + 1}</span>
                     {r.isPreset
-                      ? <span style={{ fontSize: 10, color: lv.textMuted, marginLeft: 'auto' }}>PRESET</span>
-                      : <span style={{ fontSize: 10, color: lv.accent, marginLeft: 'auto' }}>DYNAMIC</span>
+                      ? <span style={{ fontSize: 11, color: lv.textMuted, marginLeft: 'auto' }}>PRESET</span>
+                      : <span style={{ fontSize: 11, color: lv.accent, marginLeft: 'auto' }}>DYNAMIC</span>
                     }
                     <CheckCircle2 size={13} color={lv.success} aria-hidden="true" />
                   </div>
@@ -293,7 +293,7 @@ export default function MonitorPage() {
                     <div style={{ flex: 1, height: 4, borderRadius: 2, background: lv.surfaceMuted, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${r.score}%`, background: color, borderRadius: 2 }} />
                     </div>
-                    <span className="font-mono" style={{ fontSize: text.sm, fontWeight: 800, color, minWidth: 28, textAlign: 'right' }}>
+                    <span className="font-mono" style={{ fontSize: text.sm, fontWeight: 600, color, minWidth: 28, textAlign: 'right' }}>
                       {r.score}
                     </span>
                   </div>
@@ -307,7 +307,7 @@ export default function MonitorPage() {
                   {r.keyPointsCovered.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {r.keyPointsCovered.slice(0, 3).map((p) => (
-                        <span key={p} style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: radius.sm, background: lv.successSoft, color: lv.success }}>
+                        <span key={p} style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: radius.sm, background: lv.successSoft, color: lv.success }}>
                           ✓ {p}
                         </span>
                       ))}
@@ -337,7 +337,7 @@ export default function MonitorPage() {
               {(session?.candidateTabSwitches ?? 0) > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto' }}>
                   <AlertCircle size={12} color={lv.warning} aria-hidden="true" />
-                  <span style={{ fontSize: text.xs, color: lv.warning, fontWeight: 700 }}>
+                  <span style={{ fontSize: text.xs, color: lv.warning, fontWeight: 600 }}>
                     {session!.candidateTabSwitches} tab switch{session!.candidateTabSwitches !== 1 ? 'es' : ''}
                   </span>
                 </div>

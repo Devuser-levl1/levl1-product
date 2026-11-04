@@ -129,10 +129,10 @@ export function ControlRoomPage() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 22 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 6, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Radar size={18} color={C.brand} />
             </div>
-            <h1 style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 700, color: C.ink, letterSpacing: "-0.02em" }}>Control Room</h1>
+            <h1 style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: 22, fontWeight: 600, color: C.ink, letterSpacing: "-0.02em" }}>Control Room</h1>
             <LivePulse ok={!error} />
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 14, color: C.muted }}>
@@ -213,14 +213,14 @@ export function ControlRoomPage() {
       {/* ── Recently ended → playback ── */}
       {(data?.recentlyEnded.length ?? 0) > 0 && (
         <Section title="Recently ended · replay" count={data!.recentlyEnded.length} tone="muted">
-          <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
             {data!.recentlyEnded.map((r, i) => (
               <a key={r.id} href={`/playback/${r.id}`} className="cr-row"
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderTop: i ? `1px solid ${C.line}` : "none", textDecoration: "none", color: C.ink }}
               >
                 <PlayCircle size={18} color={r.hasRecording ? C.brand : C.muted} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{r.candidate}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{r.candidate}</div>
                   <div style={{ fontSize: 12, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.position} · {r.company}</div>
                 </div>
                 {r.integrityEvents > 0 && <Chip tone="amber"><Flag size={11} /> {r.integrityEvents}</Chip>}
@@ -249,7 +249,7 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
     <button type="button" className="cr-tile" onClick={() => onOpen(t.id)}
       aria-label={`${t.candidate}, ${t.health.level === "alert" ? "needs attention" : t.health.level === "watch" ? "watch" : "all clear"} — open details`}
       style={{
-        textAlign: "left", cursor: "pointer", background: C.surface, borderRadius: 14, padding: compact ? 14 : 16,
+        textAlign: "left", cursor: "pointer", background: C.surface, borderRadius: 8, padding: compact ? 14 : 16,
         border: `1px solid ${tone.line}`, boxShadow: t.health.level === "alert" ? `0 0 0 3px ${tone.soft}, ${lv.shadowMd}` : lv.shadowSm,
         display: "flex", flexDirection: "column", gap: 12, transition: "transform .12s, box-shadow .12s", fontFamily: "inherit",
         animation: t.health.level === "alert" ? "cr-attn 2.4s ease-in-out infinite" : undefined,
@@ -257,11 +257,11 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
       onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")} onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.candidate}</div>
-          <div style={{ fontSize: 12.5, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.position} · {t.company}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.ink, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.candidate}</div>
+          <div style={{ fontSize: 13, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.position} · {t.company}</div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{clock(t.startedAt, now)}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{clock(t.startedAt, now)}</div>
           <div style={{ fontSize: 11, color: C.muted }}>of {t.plannedMinutes}:00</div>
         </div>
       </div>
@@ -271,7 +271,7 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
       {t.health.reasons.length > 0 && (
         <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
           {t.health.reasons.slice(0, compact ? 2 : 3).map((r) => (
-            <li key={r.code} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: r.level === "alert" ? C.red : C.amber, fontWeight: r.level === "alert" ? 600 : 500 }}>
+            <li key={r.code} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: r.level === "alert" ? C.red : C.amber, fontWeight: r.level === "alert" ? 600 : 500 }}>
               <span style={{ width: 6, height: 6, borderRadius: 3, background: r.level === "alert" ? C.red : C.amber, flexShrink: 0 }} />
               {r.label}
             </li>
@@ -281,7 +281,7 @@ function BigTile({ t, now, onOpen, compact }: { t: Tile; now: number; onOpen: (i
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 10, borderTop: `1px solid ${C.line}` }}>
         <SignalIcons h={t.health} flags={t.totalFlags} />
-        <span style={{ marginLeft: "auto", fontSize: 11.5, color: C.muted }}>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: C.muted }}>
           {t.phase ? PHASE_LABEL[t.phase] ?? t.phase : "Not started"}
           {t.questionIndex !== null && t.questionCount ? ` · Q${t.questionIndex + 1}/${t.questionCount}` : ""}
         </span>
@@ -294,12 +294,12 @@ function MiniTile({ t, now, onOpen }: { t: Tile; now: number; onOpen: (id: strin
   const verified = t.health.presence === "present";
   return (
     <button type="button" className="cr-tile" onClick={() => onOpen(t.id)} title={t.health.presenceLabel} aria-label={`${t.candidate} — open details`}
-      style={{ textAlign: "left", cursor: "pointer", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}
+      style={{ textAlign: "left", cursor: "pointer", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.brand)} onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.line)}>
       <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: verified ? C.green : C.muted, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.candidate}</div>
-        <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.position}</div>
+        <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.position}</div>
       </div>
       <span style={{ fontSize: 12, color: C.body, fontVariantNumeric: "tabular-nums" }}>{clock(t.startedAt, now)}</span>
     </button>
@@ -314,11 +314,11 @@ function PresenceBadge({ presence, label, large }: { presence: HumanPresence; la
   }[presence];
   const { Icon } = map;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: map.bg, border: `1px solid ${map.line}`, borderRadius: 12, padding: large ? "12px 14px" : "8px 10px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: map.bg, border: `1px solid ${map.line}`, borderRadius: 8, padding: large ? "12px 14px" : "8px 10px" }}>
       <Icon size={large ? 22 : 18} color={map.fg} aria-hidden="true" style={{ flexShrink: 0 }} />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: large ? 14 : 12.5, fontWeight: 700, color: map.fg }}>{map.head}</div>
-        <div style={{ fontSize: large ? 12.5 : 11.5, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
+        <div style={{ fontSize: large ? 14 : 13, fontWeight: 600, color: map.fg }}>{map.head}</div>
+        <div style={{ fontSize: large ? 13 : 12, color: C.body, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
       </div>
     </div>
   );
@@ -411,8 +411,8 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         {/* header */}
         <div style={{ padding: "18px 20px", background: C.surface, borderBottom: `1px solid ${C.line}`, display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.ink, fontFamily: lv.fontDisplay }}>{d?.interview.candidate.name ?? "Loading…"}</div>
-            {d && <div style={{ fontSize: 12.5, color: C.body }}>{d.interview.position.title} · {d.interview.position.company}</div>}
+            <div style={{ fontSize: 18, fontWeight: 600, color: C.ink, fontFamily: lv.fontDisplay }}>{d?.interview.candidate.name ?? "Loading…"}</div>
+            {d && <div style={{ fontSize: 13, color: C.body }}>{d.interview.position.title} · {d.interview.position.company}</div>}
           </div>
           {d?.interview.startedAt && !ended && (
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>
@@ -427,7 +427,7 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
           {!d && !err && <div role="status" style={{ color: C.muted, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}><span className="lv-spinner" aria-hidden="true" style={{ color: C.brand }} /> Loading…</div>}
 
           {ended && d && (
-            <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ flex: 1, fontSize: 13, color: C.body }}>This interview has ended.</div>
               <ButtonLink href={`/playback/${d.interview.id}`} size="sm" leftIcon={<PlayCircle size={15} />}>Open playback</ButtonLink>
             </div>
@@ -466,14 +466,14 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
           {live?.questionText && !ended && (
             <Card title={`Current question${live.questionIndex !== null && live.questionCount ? ` · ${live.questionIndex + 1} of ${live.questionCount}` : ""}`}>
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.ink }}>{live.questionText}</p>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.ink }}>{live.questionText}</p>
             </Card>
           )}
 
           {live && (
             <Card title="Live transcript">
               <div ref={txRef} style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingRight: 4 }}>
-                {live.transcriptTail.length === 0 && !live.interim && <div style={{ fontSize: 12.5, color: C.muted }}>Nothing said yet.</div>}
+                {live.transcriptTail.length === 0 && !live.interim && <div style={{ fontSize: 13, color: C.muted }}>Nothing said yet.</div>}
                 {live.transcriptTail.map((e, i) => <TxLine key={i} speaker={e.speaker} text={e.text} at={e.timestamp} />)}
                 {live.interim && <TxLine speaker="candidate" text={live.interim} interim />}
               </div>
@@ -482,17 +482,17 @@ function DetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
           {d && (
             <Card title={`Integrity events (${d.events.length})`}>
-              {d.events.length === 0 ? <div style={{ fontSize: 12.5, color: C.muted }}>No integrity events so far.</div> : (
+              {d.events.length === 0 ? <div style={{ fontSize: 13, color: C.muted }}>No integrity events so far.</div> : (
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                   {d.events.map((e) => (
-                    <li key={e.id} style={{ display: "flex", gap: 10, fontSize: 12.5 }}>
+                    <li key={e.id} style={{ display: "flex", gap: 10, fontSize: 13 }}>
                       <span style={{ color: C.muted, fontVariantNumeric: "tabular-nums", minWidth: 58 }}>{new Date(e.occurredAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
                       <span style={{ color: e.high ? C.red : C.body, fontWeight: e.high ? 600 : 400 }}>{e.label}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              <p style={{ margin: "10px 0 0", fontSize: 11.5, color: C.muted }}>Signals route to human review — they never auto-fail a candidate.</p>
+              <p style={{ margin: "10px 0 0", fontSize: 12, color: C.muted }}>Signals route to human review — they never auto-fail a candidate.</p>
             </Card>
           )}
         </div>
@@ -505,10 +505,10 @@ function TxLine({ speaker, text, at, interim }: { speaker: "ai" | "candidate"; t
   const ai = speaker === "ai";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: ai ? "flex-start" : "flex-end" }}>
-      <div style={{ fontSize: 10.5, color: C.muted, marginBottom: 2 }}>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 2 }}>
         {ai ? "Interviewer" : "Candidate"}{at ? ` · ${new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : interim ? " · speaking…" : ""}
       </div>
-      <div style={{ maxWidth: "88%", fontSize: 13, lineHeight: 1.5, padding: "7px 11px", borderRadius: 12, background: ai ? C.surface : C.brandSoft, border: `1px solid ${ai ? C.line : C.brandLine}`, color: C.ink, fontStyle: interim ? "italic" : "normal", opacity: interim ? 0.75 : 1 }}>
+      <div style={{ maxWidth: "88%", fontSize: 13, lineHeight: 1.5, padding: "7px 11px", borderRadius: 8, background: ai ? C.surface : C.brandSoft, border: `1px solid ${ai ? C.line : C.brandLine}`, color: C.ink, fontStyle: interim ? "italic" : "normal", opacity: interim ? 0.75 : 1 }}>
         {text}
       </div>
     </div>
@@ -525,7 +525,7 @@ function Section({ title, count, tone, children }: { title: string; count: numbe
   const dot = tone === "red" ? C.red : tone === "amber" ? C.amber : tone === "green" ? C.green : C.muted;
   return (
     <section style={{ marginBottom: 28 }}>
-      <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: C.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 13, fontWeight: 600, color: C.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>
         <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: dot }} /> {title}
         <span style={{ color: C.muted, fontWeight: 600 }}>{count}</span>
       </h2>
@@ -538,9 +538,9 @@ function Stat({ label, value, tone, suffix }: { label: string; value: number | u
   const fg = { brand: C.brand, red: C.red, amber: C.amber, green: C.green, muted: C.ink }[tone];
   const bg = tone === "red" ? C.redSoft : tone === "amber" ? C.amberSoft : C.surface;
   return (
-    <div style={{ background: bg, border: `1px solid ${tone === "red" ? C.redLine : tone === "amber" ? C.amberLine : C.line}`, borderRadius: 14, padding: "14px 16px" }}>
+    <div style={{ background: bg, border: `1px solid ${tone === "red" ? C.redLine : tone === "amber" ? C.amberLine : C.line}`, borderRadius: 8, padding: "14px 16px" }}>
       <div style={{ fontSize: 12, color: C.body, fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: fg, fontFamily: lv.fontDisplay, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontSize: 28, fontWeight: 600, color: fg, fontFamily: lv.fontDisplay, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
         {value ?? "–"}<span style={{ fontSize: 14, color: C.muted, fontWeight: 600 }}>{suffix}</span>
       </div>
     </div>
@@ -549,8 +549,8 @@ function Stat({ label, value, tone, suffix }: { label: string; value: number | u
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16 }}>
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{title}</div>
+    <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 8, padding: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{title}</div>
       {children}
     </div>
   );
@@ -559,7 +559,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Signal({ label, value, tone }: { label: string; value: string; tone: "green" | "amber" | "red" | "muted" }) {
   const c = { green: C.green, amber: C.amber, red: C.red, muted: C.body }[tone];
   return (
-    <div style={{ background: C.sunken, borderRadius: 10, padding: "9px 11px" }}>
+    <div style={{ background: C.sunken, borderRadius: 6, padding: "9px 11px" }}>
       <div style={{ fontSize: 11, color: C.muted }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: 600, color: c, display: "flex", alignItems: "center", gap: 6 }}>
         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 3, background: c }} /> {value}
@@ -569,7 +569,7 @@ function Signal({ label, value, tone }: { label: string; value: string; tone: "g
 }
 
 function Chip({ tone, children }: { tone: "amber"; children: React.ReactNode }) {
-  return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 600, color: tone === "amber" ? C.amber : C.body, background: C.amberSoft, borderRadius: 999, padding: "2px 8px" }}>{children}</span>;
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: tone === "amber" ? C.amber : C.body, background: C.amberSoft, borderRadius: 999, padding: "2px 8px" }}>{children}</span>;
 }
 
 function ToggleBtn({ on, onClick, title, label, children }: { on: boolean; onClick: () => void; title: string; label?: string; children: React.ReactNode }) {
@@ -583,7 +583,7 @@ function ToggleBtn({ on, onClick, title, label, children }: { on: boolean; onCli
 
 function LivePulse({ ok }: { ok: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: ok ? C.green : C.red, background: ok ? C.greenSoft : C.redSoft, borderRadius: 999, padding: "3px 9px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: ok ? C.green : C.red, background: ok ? C.greenSoft : C.redSoft, borderRadius: 999, padding: "3px 9px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 4, background: ok ? C.green : C.red, animation: ok ? "cr-pulse 1.8s infinite" : undefined }} />
       {ok ? "Live" : "Offline"}
       <style>{`
@@ -600,11 +600,11 @@ function LivePulse({ ok }: { ok: boolean }) {
 
 function EmptyState() {
   return (
-    <div style={{ background: C.surface, border: `1px dashed ${C.line}`, borderRadius: 16, padding: "44px 24px", textAlign: "center", marginBottom: 28 }}>
-      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12, background: C.brandSoft, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+    <div style={{ background: C.surface, border: `1px dashed ${C.line}`, borderRadius: 8, padding: "44px 24px", textAlign: "center", marginBottom: 28 }}>
+      <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 8, background: C.brandSoft, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
         <Radar size={22} color={C.brand} />
       </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>No interviews running right now</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: C.ink }}>No interviews running right now</div>
       <div style={{ fontSize: 13, color: C.body, marginTop: 4 }}>
         Live interviews appear here the moment a candidate starts. Problems surface at the top automatically.
       </div>

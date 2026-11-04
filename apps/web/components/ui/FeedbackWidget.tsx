@@ -83,7 +83,7 @@ export function FeedbackWidget() {
           style={{
             background:   'var(--lv-surface)',
             border:       '1px solid var(--lv-border)',
-            borderRadius: 14,
+            borderRadius: 8,
             boxShadow:    '0 8px 40px color-mix(in srgb, var(--lv-brand) 14%, transparent), 0 2px 8px rgba(0,0,0,0.08)',
             width:        296,
             overflow:     'hidden',
@@ -100,7 +100,7 @@ export function FeedbackWidget() {
               borderBottom: '1px solid var(--lv-surface-muted)',
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lv-brand)', fontFamily: 'var(--font-display)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-sans)' }}>
               Share your feedback
             </span>
             <button
@@ -129,7 +129,7 @@ export function FeedbackWidget() {
               }}
             >
               <div style={{ fontSize: 28 }}>🙏</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--lv-brand)' }}>Thank you for your feedback!</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Thank you for your feedback!</div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>It helps us improve Levl1 for you.</div>
             </div>
           ) : (

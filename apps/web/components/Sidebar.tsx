@@ -104,7 +104,7 @@ export default function Sidebar() {
           style={{
             width: 32,
             height: 32,
-            borderRadius: 9,
+            borderRadius: 6,
             background: "var(--lv-sidebar-accent)",
             display: "flex",
             alignItems: "center",
@@ -127,9 +127,9 @@ export default function Sidebar() {
             >
               <div
                 style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 15,
-                  fontWeight: 700,
+                  fontFamily: "var(--lv-font-sans)",
+                  fontSize: 16,
+                  fontWeight: 600,
                   color: "#FFFFFF",
                   letterSpacing: "-0.02em",
                   lineHeight: 1,
@@ -176,14 +176,14 @@ export default function Sidebar() {
             justifyContent: sidebarCollapsed ? "center" : "flex-start",
             gap: 8,
             padding: sidebarCollapsed ? "9px" : "9px 12px",
-            borderRadius: 10,
+            borderRadius: 6,
             minHeight: 40,
             background: "#FFFFFF",            /* the primary action on the brand panel */
             border: "1px solid #FFFFFF",
             color: "#4338CA",                 /* fixed: white button on the brand panel in both themes */
             cursor: "pointer",
             fontSize: 13,
-            fontWeight: 700,
+            fontWeight: 600,
             fontFamily: "var(--font-sans)",
             boxShadow: "0 2px 8px rgba(15,23,42,0.18)",
             transition: "all 0.15s",
@@ -259,8 +259,8 @@ export default function Sidebar() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12 }}
               style={{
-                fontSize: 10,
-                fontWeight: 700,
+                fontSize: 11,
+                fontWeight: 600,
                 color: "rgba(255,255,255,0.25)",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
@@ -376,7 +376,7 @@ export default function Sidebar() {
                 alignItems: "center",
                 gap: 10,
                 padding: "8px 10px",
-                borderRadius: 9,
+                borderRadius: 6,
                 background: "rgba(255,255,255,0.06)",
                 border: "none",
                 cursor: "pointer",
@@ -397,7 +397,7 @@ export default function Sidebar() {
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 12,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: "white",
                   flexShrink: 0,
                 }}

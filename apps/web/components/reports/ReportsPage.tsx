@@ -119,7 +119,7 @@ function PositionCard({
             </Badge>
           </div>
           <h3 style={{
-            fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700,
+            fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600,
             color: lv.text, margin: "0 0 3px", letterSpacing: "-0.01em",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
@@ -148,7 +148,7 @@ function PositionCard({
           { label: "Avg Score",   value: completedCandidates.length ? avg : "—" },
         ].map((s, i) => (
           <div key={s.label} style={{ padding: `${space[2]}px ${space[3]}px`, textAlign: "center", borderRight: i < 2 ? `1px solid ${lv.border}` : "none" }}>
-            <dd style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.lg, fontWeight: 700, color: lv.text, lineHeight: 1 }}>{s.value}</dd>
+            <dd style={{ margin: 0, fontFamily: lv.fontDisplay, fontSize: text.lg, fontWeight: 600, color: lv.text, lineHeight: 1 }}>{s.value}</dd>
             <dt style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, fontWeight: 500 }}>{s.label}</dt>
           </div>
         ))}
@@ -313,7 +313,7 @@ export default function ReportsPage() {
 
   const sectionHead = (title: string, meta: string, id: string) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], marginBottom: space[4] }}>
-      <h2 id={id} style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 700, color: lv.text, margin: 0 }}>{title}</h2>
+      <h2 id={id} style={{ fontFamily: lv.fontDisplay, fontSize: text.md, fontWeight: 600, color: lv.text, margin: 0 }}>{title}</h2>
       <span style={{ fontSize: text.xs, color: lv.textMuted }}>{meta}</span>
     </div>
   );
@@ -366,7 +366,7 @@ export default function ReportsPage() {
                 borderBottom: idx < needsReport.length - 1 ? `1px solid ${lv.border}` : "none",
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: text.base, fontWeight: 700, color: lv.text }}>{c.name}</div>
+                  <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text }}>{c.name}</div>
                   <div style={{ fontSize: text.xs, color: lv.textMuted }}>{c.positionTitle}</div>
                 </div>
                 <Button size="sm" onClick={() => generateReportManually(c)} loading={reportGenId === c.id} leftIcon={<Sparkles size={14} />}>
@@ -416,14 +416,14 @@ export default function ReportsPage() {
                       width: 38, height: 38, borderRadius: radius.md, flexShrink: 0,
                       background: lv.brandSoft, border: `1px solid ${lv.brandSoftBorder}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: text.xs, fontWeight: 700, color: lv.brandText,
+                      fontSize: text.xs, fontWeight: 600, color: lv.brandText,
                     }}>
                       {initials(r.candidateName)}
                     </div>
 
                     {/* Info */}
                     <div style={{ flex: "1 1 180px", minWidth: 0 }}>
-                      <div style={{ fontSize: text.base, fontWeight: 700, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: text.base, fontWeight: 600, color: lv.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {r.candidateName}
                       </div>
                       <div style={{ fontSize: text.xs, color: lv.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -433,7 +433,7 @@ export default function ReportsPage() {
 
                     {/* Score */}
                     <div style={{ textAlign: "center", flexShrink: 0 }}>
-                      <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, color: sColor, lineHeight: 1 }}>
+                      <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 600, color: sColor, lineHeight: 1 }}>
                         {r.overallScore}
                       </div>
                       <div style={{ fontSize: 11, color: lv.textMuted, marginTop: 2 }}>score</div>

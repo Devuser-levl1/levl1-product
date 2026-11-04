@@ -51,7 +51,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
   return (
     <div style={{
       border: `1px solid ${status === 'approved' ? 'rgba(16,185,129,0.25)' : status === 'removed' ? 'rgba(239,68,68,0.2)' : '#E2E8F0'}`,
-      borderRadius: 10,
+      borderRadius: 6,
       background: status === 'approved' ? 'rgba(16,185,129,0.03)' : status === 'removed' ? 'rgba(239,68,68,0.03)' : '#fff',
       overflow: 'hidden',
       opacity: status === 'removed' ? 0.5 : 1,
@@ -71,13 +71,13 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
               {q.techTag && (
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', background: '#F1F5F9', color: '#475569', padding: '2px 7px', borderRadius: 4, border: '1px solid #E2E8F0' }}>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', background: '#F1F5F9', color: '#475569', padding: '2px 7px', borderRadius: 4, border: '1px solid #E2E8F0' }}>
                   {q.techTag}
                 </span>
               )}
               {q.difficulty && (
                 <span style={{
-                  fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 100,
+                  fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 100,
                   background: q.difficulty === 'advanced' ? 'rgba(239,68,68,0.08)' : q.difficulty === 'intermediate' ? 'rgba(245,158,11,0.08)' : 'rgba(16,185,129,0.08)',
                   color:      q.difficulty === 'advanced' ? '#EF4444' : q.difficulty === 'intermediate' ? '#D97706' : '#10B981',
                 }}>
@@ -107,7 +107,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #F1F5F9' }}>
             {q.expectedKeyPoints?.length ? (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Expected Key Points</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Expected Key Points</div>
                 <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {q.expectedKeyPoints.map((kp, i) => (
                     <li key={i} style={{ fontSize: 13, color: '#475569' }}>{kp}</li>
@@ -117,7 +117,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
             ) : null}
             {q.followUp && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Follow-up</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Follow-up</div>
                 <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>{q.followUp}</p>
               </div>
             )}
@@ -131,7 +131,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
           {editing ? (
             <>
               <button onClick={() => { onEdit(editText); setEditing(false); toast.success('Question updated') }}
-                style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#4F46E5', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#4F46E5', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                 Save
               </button>
               <button onClick={() => { setEditText(q.question); setEditing(false) }}
@@ -142,7 +142,7 @@ function QuestionCard({ q, onApprove, onRemove, onEdit }: {
           ) : (
             <>
               <button onClick={onApprove}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: `1px solid ${status === 'approved' ? 'rgba(16,185,129,0.3)' : '#E2E8F0'}`, background: status === 'approved' ? 'rgba(16,185,129,0.08)' : '#fff', color: status === 'approved' ? '#059669' : '#475569', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: `1px solid ${status === 'approved' ? 'rgba(16,185,129,0.3)' : '#E2E8F0'}`, background: status === 'approved' ? 'rgba(16,185,129,0.08)' : '#fff', color: status === 'approved' ? '#059669' : '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                 <CheckCircle2 size={11} /> {status === 'approved' ? 'Approved' : 'Approve'}
               </button>
               <button onClick={() => setEditing(true)}
@@ -190,7 +190,7 @@ function QuestionSection({ title, questions, type, onUpdate }: {
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
           {title} ({active.length})
         </h3>
         <span style={{ fontSize: 12, color: approved === active.length ? '#059669' : '#94A3B8', fontWeight: 600 }}>
@@ -302,7 +302,7 @@ export default function ApprovalPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <AlertCircle size={48} color="#EF4444" style={{ margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>Unable to load review</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>Unable to load review</h2>
         <p style={{ color: '#94A3B8', fontSize: 14, lineHeight: 1.6 }}>{error}</p>
       </div>
     </div>
@@ -313,7 +313,7 @@ export default function ApprovalPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>Already submitted</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>Already submitted</h2>
         <p style={{ color: '#94A3B8', fontSize: 14 }}>Your approval has already been recorded. Thank you!</p>
       </div>
     </div>
@@ -324,7 +324,7 @@ export default function ApprovalPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
         <CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1E293B', marginBottom: 8 }}>Thank you!</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>Thank you!</h2>
         <p style={{ color: '#64748B', fontSize: 14, lineHeight: 1.6 }}>Your review has been submitted. The recruiter will be notified.</p>
       </div>
     </div>
@@ -347,7 +347,7 @@ export default function ApprovalPage() {
         <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={14} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>Levl1</span>
+        <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>Levl1</span>
         <span style={{ fontSize: 12, color: '#94A3B8', marginLeft: 4 }}>
           · {isTech ? 'Technical Review' : 'HR Review'}
         </span>
@@ -355,11 +355,11 @@ export default function ApprovalPage() {
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '36px 24px 80px' }}>
         {/* Position info */}
-        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '24px 28px', marginBottom: 28 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#4F46E5', margin: '0 0 6px' }}>
+        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '24px 28px', marginBottom: 28 }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', margin: '0 0 6px' }}>
             Interview Questions Review
           </h1>
-          <p style={{ fontSize: 15, color: '#475569', margin: '0 0 16px', fontWeight: 600 }}>
+          <p style={{ fontSize: 16, color: '#475569', margin: '0 0 16px', fontWeight: 600 }}>
             {data.positionTitle} · {data.company}
           </p>
           <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 16px', lineHeight: 1.6 }}>
@@ -390,12 +390,12 @@ export default function ApprovalPage() {
 
         {/* Add question */}
         {addingNew ? (
-          <div style={{ background: '#fff', border: '1px solid #CBD5E1', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+          <div style={{ background: '#fff', border: '1px solid #CBD5E1', borderRadius: 6, padding: 16, marginBottom: 24 }}>
             <textarea value={newQ} onChange={e => setNewQ(e.target.value)} placeholder="Type your new question here…" autoFocus
               style={{ width: '100%', minHeight: 80, padding: '8px 12px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', marginBottom: 10 }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={addQuestion} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#4F46E5', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Add</button>
-              <button onClick={() => { setAddingNew(false); setNewQ('') }} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
+              <button onClick={addQuestion} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: '#4F46E5', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Add</button>
+              <button onClick={() => { setAddingNew(false); setNewQ('') }} style={{ padding: '7px 16px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Cancel</button>
             </div>
           </div>
         ) : (
@@ -409,11 +409,11 @@ export default function ApprovalPage() {
         <div style={{ marginBottom: 28 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Overall comments (optional)</label>
           <textarea value={comments} onChange={e => setComments(e.target.value)} placeholder="Any feedback for the recruiter…"
-            style={{ width: '100%', minHeight: 88, padding: '10px 14px', borderRadius: 9, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC' }} />
+            style={{ width: '100%', minHeight: 88, padding: '10px 14px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 14, fontFamily: 'var(--font-sans)', resize: 'vertical', boxSizing: 'border-box', background: '#F8FAFC' }} />
         </div>
 
         {/* Progress & submit */}
-        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '20px 24px' }}>
+        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ fontSize: 14, color: '#475569' }}>
               <strong style={{ color: approvedCount === totalCount ? '#059669' : '#4F46E5' }}>{approvedCount}</strong> of {totalCount} questions approved
@@ -425,11 +425,11 @@ export default function ApprovalPage() {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => handleSubmit('changes_requested')} disabled={submitting}
-              style={{ padding: '11px 20px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
+              style={{ padding: '11px 20px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: 14, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
               Request Changes
             </button>
             <button onClick={() => handleSubmit('approved')} disabled={submitting}
-              style={{ flex: 1, background: submitting ? '#94A3B8' : 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 9, padding: '11px 20px', fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: submitting ? 'none' : '0 4px 12px rgba(16,185,129,0.30)', fontFamily: 'var(--font-sans)' }}>
+              style={{ flex: 1, background: submitting ? '#94A3B8' : 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', border: 'none', borderRadius: 6, padding: '11px 20px', fontSize: 16, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: submitting ? 'none' : '0 4px 12px rgba(16,185,129,0.30)', fontFamily: 'var(--font-sans)' }}>
               <CheckCircle2 size={16} />
               {submitting ? 'Submitting…' : 'Submit Approval →'}
             </button>

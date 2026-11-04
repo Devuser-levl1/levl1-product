@@ -419,7 +419,7 @@ export function SchedulingOverview() {
               fontFamily: lv.fontSans,
             }}
           >
-            <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 700, color: filter === b.key ? b.color : lv.text, letterSpacing: "-0.02em" }}>
+            <div style={{ fontFamily: lv.fontDisplay, fontSize: text.xl, fontWeight: 600, color: filter === b.key ? b.color : lv.text, letterSpacing: "-0.02em" }}>
               {counts[b.key]}
             </div>
             <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 3, fontWeight: 500 }}>{b.label}</div>
@@ -457,7 +457,7 @@ export function TodayInterviews() {
           const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
           return (
             <div key={i.id} className="lv-card" style={{ padding: `${space[3]}px ${space[4]}px`, minWidth: 200 }}>
-              <div style={{ fontSize: text.sm, fontWeight: 700, color: lv.text }}>{i.candidateName}</div>
+              <div style={{ fontSize: text.sm, fontWeight: 600, color: lv.text }}>{i.candidateName}</div>
               <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>{i.positionTitle}</div>
               <div style={{ fontSize: text.xs, fontFamily: lv.fontMono, color: lv.brandText, marginTop: 6 }}>{timeStr} · {i.duration}m</div>
               <Button size="sm" style={{ marginTop: space[2] }} onClick={() => toast(`Monitoring ${i.candidateName}`)}>

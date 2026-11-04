@@ -72,13 +72,13 @@ export default function SignupPage() {
         <div style={{ maxWidth: 400, width: '100%' }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px color-mix(in srgb, var(--lv-accent) 25%, transparent)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 6, background: 'linear-gradient(135deg, var(--lv-brand), var(--lv-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px color-mix(in srgb, var(--lv-accent) 25%, transparent)' }}>
               <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--lv-brand)' }}>Levl1</span>
+            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
           </Link>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--lv-text)', letterSpacing: '-0.025em', marginBottom: 6 }}>
+          <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', letterSpacing: '-0.025em', marginBottom: 6 }}>
             Start your free trial
           </h1>
           <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', marginBottom: 32, lineHeight: 1.5 }}>
@@ -88,11 +88,11 @@ export default function SignupPage() {
           {step === 'code' ? (
             <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Field label="6-digit code">
-                <Input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ letterSpacing: 8, fontSize: 20, textAlign: 'center', fontWeight: 700, height: 52 }}
+                <Input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ letterSpacing: 8, fontSize: 18, textAlign: 'center', fontWeight: 600, height: 52 }}
                   value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" />
               </Field>
               {error && <Alert tone="danger">{error}</Alert>}
-              <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 15, marginTop: 4 }}>
+              <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 16, marginTop: 4 }}>
                 {loading ? 'Creating your account…' : 'Verify & create account'}
               </Button>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -117,7 +117,7 @@ export default function SignupPage() {
 
             {error && <Alert tone="danger">{error}</Alert>}
 
-            <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 15, marginTop: 4 }}>
+            <Button type="submit" fullWidth loading={loading} rightIcon={<ArrowRight size={16} />} style={{ height: 48, fontSize: 16, marginTop: 4 }}>
               {loading ? 'Sending your code…' : 'Continue'}
             </Button>
 
@@ -146,14 +146,14 @@ export default function SignupPage() {
         <div style={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
 
         <div style={{ position: 'relative' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 28, border: '1px solid rgba(255,255,255,0.20)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 100, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 28, border: '1px solid rgba(255,255,255,0.20)' }}>
             ✦ Free trial — no credit card needed
           </div>
 
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
             AI interviews in<br />minutes, not weeks
           </h2>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: 36 }}>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, marginBottom: 36 }}>
             Screen candidates 10× faster with Ananya, your AI interviewer. Get structured evaluations before the first human call.
           </p>
 
@@ -162,7 +162,7 @@ export default function SignupPage() {
             {PERKS.map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <CheckCircle2 size={18} color="rgba(255,255,255,0.9)" />
-                <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.90)', fontWeight: 500 }}>{p}</span>
+                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.90)', fontWeight: 500 }}>{p}</span>
               </div>
             ))}
           </div>
