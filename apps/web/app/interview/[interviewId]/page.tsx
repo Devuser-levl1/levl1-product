@@ -265,9 +265,11 @@ const SECTION_LABEL: Record<string, string> = {
   technical: 'Technical', behavioral: 'Behavioral',
   scenario: 'Scenario', eq: 'Values', whiteboard: 'System Design',
 }
+// Minimalist pass D3: one neutral hue for every section (chips + progress
+// strip). Kept as hex because callers append alpha suffixes (`color-mix(in srgb, ${c} 8%, transparent)`).
 const SECTION_COLOR: Record<string, string> = {
-  technical: '#7C3AED', behavioral: '#10B981',
-  scenario: '#8B5CF6', eq: '#F59E0B', whiteboard: '#EC4899',
+  technical: '#52525B', behavioral: '#52525B',
+  scenario: '#52525B', eq: '#52525B', whiteboard: '#52525B',
 }
 function fmt(secs: number) {
   const m = Math.floor(Math.max(0, secs) / 60)
@@ -2145,10 +2147,10 @@ export default function InterviewPage() {
 
   if (dbLoading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
         <div style={{ textAlign: 'center' }}>
           <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-          <div style={{ fontSize: 14, color: '#94A3B8' }}>Loading your interview…</div>
+          <div style={{ fontSize: 14, color: 'var(--lv-text-muted)' }}>Loading your interview…</div>
         </div>
       </div>
     )
@@ -2156,10 +2158,10 @@ export default function InterviewPage() {
 
   if (dbError || !interview || !candidate || !position) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-        <div style={{ textAlign: 'center', maxWidth: 380, color: '#94A3B8' }}>
-          <AlertTriangle size={40} style={{ margin: '0 auto 12px', color: '#EF4444' }} />
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
+        <div style={{ textAlign: 'center', maxWidth: 380, color: 'var(--lv-text-muted)' }}>
+          <AlertTriangle size={40} style={{ margin: '0 auto 12px', color: 'var(--lv-danger)' }} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)' }}>
             {dbError || 'Interview not found'}
           </div>
           <div style={{ fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
@@ -2172,11 +2174,11 @@ export default function InterviewPage() {
 
   if (isMobile) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#4F46E5', padding: 32 }}>
-        <div style={{ textAlign: 'center', color: '#fff', maxWidth: 340 }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-bg)', padding: 32 }}>
+        <div style={{ textAlign: 'center', color: 'var(--lv-text)', maxWidth: 340 }}>
           <Monitor size={28} aria-hidden="true" style={{ marginBottom: 16 }} />
           <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, marginBottom: 12 }}>Desktop Required</div>
-          <div style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
             This interview is optimised for desktop. Please open this link on a laptop or desktop computer to begin.
           </div>
         </div>
@@ -2191,20 +2193,20 @@ export default function InterviewPage() {
     // report tab is closed, and the report page surfaces the full integrity panel.
     if (isDemoRef.current) {
       return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
           <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
             <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F4F5', color: '#52525B' }}><BarChart3 size={20} /></div>
-            <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Your sample report is ready</div>
-            <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
+            <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 12 }}>Your sample report is ready</div>
+            <div style={{ fontSize: 16, color: 'var(--lv-text-muted)', lineHeight: 1.7 }}>
               Great job, {candidate.name.split(' ')[0]}! We&apos;ve scored your responses and run the same integrity checks a real candidate gets. Open your evidence report to see scores, strengths, concerns and the integrity panel.
             </div>
             <button
               onClick={() => router.push(`/report/${interviewId}?demo=1`)}
-              style={{ marginTop: 28, padding: '14px 28px', background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(79,70,229,0.32)', letterSpacing: '-0.01em' }}
+              style={{ marginTop: 28, padding: '14px 28px', background: 'var(--lv-gradient-brand)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: 'none', letterSpacing: '-0.01em' }}
             >
               View your sample report →
             </button>
-            <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>
+            <div style={{ marginTop: 14, fontSize: 12, color: 'var(--lv-text-muted)' }}>
               This is a demo — your data is temporary and isn&apos;t shared with any employer.
             </div>
           </div>
@@ -2212,14 +2214,14 @@ export default function InterviewPage() {
       )
     }
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
         <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
-          <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F7F3', color: '#2E7550' }}><Check size={22} /></div>
-          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: '#4F46E5', marginBottom: 12 }}>Interview Complete</div>
-          <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7 }}>
+          <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: '50%', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-success-soft)', color: 'var(--lv-success)' }}><Check size={22} /></div>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 12 }}>Interview Complete</div>
+          <div style={{ fontSize: 16, color: 'var(--lv-text-muted)', lineHeight: 1.7 }}>
             Thank you, {candidate.name.split(' ')[0]}. Your interview has been submitted. The team at {position.company} will be in touch with next steps.
           </div>
-          <div style={{ marginTop: 32, padding: '14px 24px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)', borderRadius: 8, color: '#059669', fontSize: 13, fontWeight: 600 }}>
+          <div style={{ marginTop: 32, padding: '14px 24px', background: 'color-mix(in srgb, var(--lv-success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-success) 22%, transparent)', borderRadius: 8, color: 'var(--lv-success)', fontSize: 13, fontWeight: 600 }}>
             You may now close this window.
           </div>
         </div>
@@ -2229,18 +2231,18 @@ export default function InterviewPage() {
 
   if (phase === 'waiting') {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', gap: 32 }}>
-        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#4F46E5', letterSpacing: '-0.025em' }}>
-          Levl<span style={{ color: '#7C3AED' }}>1</span>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)', gap: 32 }}>
+        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', letterSpacing: '-0.015em' }}>
+          Levl1
         </div>
-        <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: '#fff', borderRadius: 20, border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(79,70,229,0.08)' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto 20px', background: 'linear-gradient(135deg, #4F46E5, #4338CA)', border: '3px solid #7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Mic size={32} />
+        <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', boxShadow: 'none' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 20px', background: 'var(--lv-brand-soft)', color: 'var(--lv-brand)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Mic size={24} />
           </div>
-          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', marginBottom: 8 }}>Your Interview is Ready</div>
-          <div style={{ fontSize: 14, color: '#64748B', marginBottom: 4 }}>{position.title} · {position.company}</div>
-          <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {interviewer.name}</div>
-          <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: '#F8FAFC', borderRadius: 6 }}>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 8 }}>Your Interview is Ready</div>
+          <div style={{ fontSize: 14, color: 'var(--lv-text-muted)', marginBottom: 4 }}>{position.title} · {position.company}</div>
+          <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginBottom: 28 }}>Duration: {position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES} minutes · AI Interviewer: {interviewer.name}</div>
+          <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', lineHeight: 1.7, marginBottom: 28, padding: '14px 16px', background: 'var(--lv-surface-sunken)', borderRadius: 6 }}>
             <strong>Before you start:</strong> ensure you are in a quiet place, your microphone is working, and you have a stable internet connection. Speak clearly and take your time with each answer.
           </div>
           {/* Soft consent gate (I-P0-1): the interview cannot START until the
@@ -2266,17 +2268,17 @@ export default function InterviewPage() {
                 }}>
                 I consent to this interview being <strong>recorded and monitored</strong> and to my responses being processed and evaluated by Levl1&apos;s AI for this hiring assessment. I understand I can withdraw consent at any time to stop the interview.
               </ConsentCheckbox>
-              {consentError && <div role="alert" style={{ marginTop: 8, fontSize: 13, color: '#B91C1C', fontWeight: 600, textAlign: 'left' }}>{consentError}</div>}
+              {consentError && <div role="alert" style={{ marginTop: 8, fontSize: 13, color: 'var(--lv-danger)', fontWeight: 600, textAlign: 'left' }}>{consentError}</div>}
             </div>
           )}
           <button
             onClick={startInterview}
             disabled={!consentOk}
-            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'linear-gradient(135deg, #4F46E5, #4338CA)' : '#CBD5E1', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
+            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'var(--lv-gradient-brand)' : 'var(--lv-border-strong)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
           >
             Start Interview →
           </button>
-          <div style={{ marginTop: 14, fontSize: 12, color: '#94A3B8' }}>{consentOk ? 'Consent acknowledged. You can begin when ready.' : 'Acknowledge the consent notice above to begin.'}</div>
+          <div style={{ marginTop: 14, fontSize: 12, color: 'var(--lv-text-muted)' }}>{consentOk ? 'Consent acknowledged. You can begin when ready.' : 'Acknowledge the consent notice above to begin.'}</div>
         </div>
       </div>
     )
@@ -2284,10 +2286,10 @@ export default function InterviewPage() {
 
   /* ── Active interview UI ───────────────────────────────────── */
   const currentQ   = questions[currentQIdx]
-  const timerColor = timeRemaining <= 120 ? '#DC2626' : timeRemaining <= 300 ? '#D97706' : '#4F46E5'
+  const timerColor = timeRemaining <= 120 ? 'var(--lv-danger)' : timeRemaining <= 300 ? 'var(--lv-warning)' : 'var(--lv-brand)'
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F0F4F8', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--lv-bg)', overflow: 'hidden' }}>
 
       {/* Tier-1 proctoring (Build 01-A) — the single live capture instance now renders
           INLINE in the top-left video slot below (one camera stream + one CV client). */}
@@ -2295,11 +2297,11 @@ export default function InterviewPage() {
       <DemoSalesCTA label="Talk to sales" />
 
       {/* ── Header ── */}
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: '#fff', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: '#4F46E5', letterSpacing: '-0.02em' }}>
-          Levl<span style={{ color: '#7C3AED' }}>1</span>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)', letterSpacing: '-0.02em' }}>
+          Levl1
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#64748B', textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-muted)', textAlign: 'center' }}>
           {candidate.name} · {position.title}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -2309,7 +2311,7 @@ export default function InterviewPage() {
           </div>
           <button
             onClick={handleEndInterviewRequest}
-            style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #FCA5A5', background: 'rgba(239,68,68,0.06)', color: '#DC2626', cursor: 'pointer' }}
+            style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid var(--lv-danger-border)', background: 'color-mix(in srgb, var(--lv-danger) 6%, transparent)', color: 'var(--lv-danger)', cursor: 'pointer' }}
           >
             End Interview
           </button>
@@ -2327,17 +2329,17 @@ export default function InterviewPage() {
             <div style={{
               position: 'fixed', top: tourRect.top - 5, left: tourRect.left - 5,
               width: tourRect.width + 10, height: tourRect.height + 10,
-              borderRadius: 20, border: '3px solid #7C3AED', pointerEvents: 'none', zIndex: 75,
-              boxShadow: '0 0 0 4px rgba(124,58,237,0.22), 0 0 28px rgba(124,58,237,0.5)',
+              borderRadius: 8, border: '2px solid var(--lv-brand)', pointerEvents: 'none', zIndex: 75,
+              boxShadow: '0 0 0 4px color-mix(in srgb, var(--lv-brand) 22%, transparent), 0 0 28px color-mix(in srgb, var(--lv-brand) 50%, transparent)',
               transition: 'top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease',
               animation: 'tourRing 1.4s ease-in-out infinite',
             }} />
             <div style={{
               position: 'fixed', top: arrowTop, left: arrowLeft, transform: 'translateX(-50%)',
               zIndex: 76, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
-              background: '#7C3AED', color: '#fff', borderRadius: 100, padding: '6px 14px',
+              background: 'var(--lv-gradient-brand)', color: '#fff', borderRadius: 100, padding: '6px 14px',
               fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', whiteSpace: 'nowrap',
-              boxShadow: '0 8px 22px rgba(124,58,237,0.45)',
+              boxShadow: 'var(--lv-shadow-md)',
               animation: 'tourBounce 1s ease-in-out infinite',
             }}>
               {above ? <>Look here <span style={{ fontSize: 14 }}>↓</span></> : <><span style={{ fontSize: 14 }}>↑</span> Look here</>}
@@ -2347,32 +2349,32 @@ export default function InterviewPage() {
       })()}
 
       {tourActive && (
-        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: '#0F0F1A', color: '#E2E8F0', borderRadius: 100, padding: '8px 10px 8px 18px', boxShadow: '0 10px 30px rgba(15,23,42,0.35)', border: '1px solid rgba(124,58,237,0.4)' }}>
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: '#18181B', color: 'var(--lv-border)', borderRadius: 100, padding: '8px 10px 8px 18px', boxShadow: '0 10px 30px rgba(15,23,42,0.35)', border: '1px solid #3F3F46' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#A78BFA', animation: 'pulseDot 1.2s ease-in-out infinite' }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818CF8', animation: 'pulseDot 1.2s ease-in-out infinite' }} />
             Quick interface tour…
           </span>
-          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: '#4F46E5', color: '#fff', fontSize: 13, fontWeight: 600 }}>Skip tour →</button>
+          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: 'var(--lv-brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>Skip tour →</button>
         </div>
       )}
 
       {/* ── Likert culture-fit segment (Build 08) — after Q&A, before closing ── */}
       {cultureFitActive && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: '24px 26px', boxShadow: '0 24px 60px rgba(15,23,42,0.3)' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Culture &amp; values fit · separate from your technical score</div>
-            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: '#4F46E5', margin: '0 0 6px' }}>A few quick statements</h2>
-            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 18px' }}>For each statement, choose how much you agree. There are no right answers — this is about how you like to work.</p>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--lv-overlay)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'var(--lv-surface)', borderRadius: 8, padding: '24px 26px', boxShadow: 'var(--lv-shadow-lg)' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', marginBottom: 4 }}>Culture &amp; values fit · separate from your technical score</div>
+            <h2 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 22, fontWeight: 600, color: 'var(--lv-brand)', margin: '0 0 6px' }}>A few quick statements</h2>
+            <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', margin: '0 0 18px' }}>For each statement, choose how much you agree. There are no right answers — this is about how you like to work.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {cultureFitItems.map((it, idx) => (
                 <div key={it.id}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#334155', marginBottom: 8, lineHeight: 1.5 }}>{idx + 1}. {it.prompt}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lv-text-body)', marginBottom: 8, lineHeight: 1.5 }}>{idx + 1}. {it.prompt}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                     {LIKERT_OPTIONS.map((opt) => {
                       const sel = cultureFitAnswers[it.id]?.value === opt.value
                       return (
                         <button key={opt.value} onClick={() => setCultureFitAnswers((a) => ({ ...a, [it.id]: { value: opt.value, label: opt.label } }))}
-                          style={{ padding: '8px 6px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel ? '#4F46E5' : '#E2E8F0'}`, background: sel ? '#4F46E5' : '#F8FAFC', color: sel ? '#fff' : '#475569', fontSize: 11, fontWeight: 600, lineHeight: 1.25, transition: 'all 0.12s' }}>
+                          style={{ padding: '8px 6px', borderRadius: 6, cursor: 'pointer', border: `1px solid ${sel ? 'var(--lv-brand)' : 'var(--lv-border)'}`, background: sel ? 'var(--lv-brand)' : 'var(--lv-surface-sunken)', color: sel ? '#fff' : 'var(--lv-text-body)', fontSize: 11, fontWeight: 600, lineHeight: 1.25, transition: 'all 0.12s' }}>
                           {opt.label}
                         </button>
                       )
@@ -2382,9 +2384,9 @@ export default function InterviewPage() {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
-              <span style={{ fontSize: 12, color: '#94A3B8' }}>{Object.keys(cultureFitAnswers).length} of {cultureFitItems.length} answered</span>
+              <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{Object.keys(cultureFitAnswers).length} of {cultureFitItems.length} answered</span>
               <button onClick={submitCultureFit} disabled={Object.keys(cultureFitAnswers).length < cultureFitItems.length}
-                style={{ marginLeft: 'auto', padding: '11px 26px', borderRadius: 6, border: 'none', fontSize: 14, fontWeight: 600, cursor: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'not-allowed' : 'pointer', background: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#E2E8F0' : 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? '#94A3B8' : '#fff' }}>
+                style={{ marginLeft: 'auto', padding: '11px 26px', borderRadius: 6, border: 'none', fontSize: 14, fontWeight: 600, cursor: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'not-allowed' : 'pointer', background: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'var(--lv-border)' : 'var(--lv-gradient-brand)', color: Object.keys(cultureFitAnswers).length < cultureFitItems.length ? 'var(--lv-text-muted)' : '#fff' }}>
                 Finish interview →
               </button>
             </div>
@@ -2397,32 +2399,32 @@ export default function InterviewPage() {
       <main className="iv-surface" style={{ flex: 1, overflow: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 }}>
 
         {messageFromRecruiter && (
-          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#92400E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ padding: '10px 16px', background: 'color-mix(in srgb, var(--lv-warning) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 30%, transparent)', borderRadius: 6, fontSize: 13, fontWeight: 600, color: 'var(--lv-warning)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <span>{messageFromRecruiter}</span>
-            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E' }}><X size={14} /></button>
+            <button onClick={() => setMessageFromRecruiter(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--lv-warning)' }}><X size={14} /></button>
           </div>
         )}
 
         {/* ════ Question Display — FULL WIDTH across the top ════ */}
-        <div data-tour="question" style={{ background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+        <div data-tour="question" style={{ background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
                     {SECTION_LABEL[currentQ.section]?.toUpperCase()}
                   </span>
-                  <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#64748B', background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', background: 'var(--lv-surface-muted)', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
                     {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#4F46E5', lineHeight: 1.6, margin: 0 }}>{currentQ.question}</p>
+                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)', lineHeight: 1.6, margin: 0 }}>{currentQ.question}</p>
                 {currentQ.section === 'whiteboard' && (
-                  <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>Use the Whiteboard tab below to sketch your answer</div>
+                  <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Use the Whiteboard tab below to sketch your answer</div>
                 )}
               </>
             ) : (
-              <div style={{ fontSize: 16, color: '#64748B', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 16, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
                 {phase === 'intro' ? 'Your interview is starting…' : 'Preparing next question…'}
               </div>
             )}
@@ -2430,7 +2432,7 @@ export default function InterviewPage() {
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
               {questions.map((q, idx) => {
                 const done = idx < currentQIdx; const current = idx === currentQIdx; const color = SECTION_COLOR[q.section]
-                return <div key={q.id} title={SECTION_LABEL[q.section]} style={{ flex: 1, height: 4, borderRadius: 2, background: done ? color : current ? `${color}55` : '#E2E8F0', transition: 'all 0.4s ease' }} />
+                return <div key={q.id} title={SECTION_LABEL[q.section]} style={{ flex: 1, height: 4, borderRadius: 2, background: done ? color : current ? `color-mix(in srgb, ${color} 33%, transparent)` : 'var(--lv-border)', transition: 'all 0.4s ease' }} />
               })}
             </div>
           </div>
@@ -2440,7 +2442,7 @@ export default function InterviewPage() {
 
           {/* ──── LEFT: AI window (top) + candidate video (below) — stacked & EQUAL ──── */}
           <div className="iv-left" style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-            <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1, minHeight: 0, display: 'flex', borderRadius: 18, outline: tourHighlight === 'ai' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+            <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1, minHeight: 0, display: 'flex', borderRadius: 8, outline: tourHighlight === 'ai' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <AIVisualizer
                 phase={phase}
                 isWarmingUp={isWarmingUp}
@@ -2454,7 +2456,7 @@ export default function InterviewPage() {
             {/* Candidate video — same IntegrityMonitor feed/CV (inline variant).
                 Equal-sized box with normal proportions; objectFit:cover keeps the
                 face naturally framed (no stretch/letterbox). */}
-            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0', background: '#0F172A', outline: tourHighlight === 'video' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--lv-border)', background: 'var(--lv-text)', outline: tourHighlight === 'video' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" onPresence={handlePresence} />
             </div>
           </div>
@@ -2463,26 +2465,26 @@ export default function InterviewPage() {
           <div className="iv-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
             {/* tab strip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid #E2E8F0', flexShrink: 0 }}>
-              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'code' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid var(--lv-border)', flexShrink: 0 }}>
+              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? 'var(--lv-brand)' : 'var(--lv-surface-muted)', color: editorTab === 'code' ? '#fff' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <Code2 size={14} /> Code / Text
               </button>
-              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? '#4F46E5' : '#F1F5F9', color: editorTab === 'whiteboard' ? '#fff' : '#64748B', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
+              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? 'var(--lv-brand)' : 'var(--lv-surface-muted)', color: editorTab === 'whiteboard' ? '#fff' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <PenLine size={14} /> Whiteboard
               </button>
-              {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
+              {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
             </div>
 
             {/* tab content — BOTH stay mounted, toggled via display so work is retained when switching */}
             <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
               {/* Code / Text */}
               <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
-                <div style={{ padding: '6px 12px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Language:</span>
+                <div style={{ padding: '6px 12px', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Language:</span>
                   {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
-                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? '#4F46E5' : 'transparent', color: codeLanguage === lang ? '#fff' : '#64748B' }}>
+                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? 'var(--lv-brand)' : 'transparent', color: codeLanguage === lang ? '#fff' : 'var(--lv-text-muted)' }}>
                       {lang === 'plaintext' ? 'Plain Text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
                     </button>
                   ))}
@@ -2506,37 +2508,37 @@ export default function InterviewPage() {
             </div>
 
             {/* base Submit — submits the ACTIVE tab's answer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
-              <span style={{ marginRight: 'auto', fontSize: 11, color: '#94A3B8' }}>{editorTab === 'code' ? 'Submit your written answer for this question' : 'Submit your whiteboard answer for this question'}</span>
-              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? '#4F46E5' : '#E2E8F0', color: canSubmit ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: '1px solid var(--lv-border)', flexShrink: 0 }}>
+              <span style={{ marginRight: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>{editorTab === 'code' ? 'Submit your written answer for this question' : 'Submit your whiteboard answer for this question'}</span>
+              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? 'var(--lv-brand)' : 'var(--lv-border)', color: canSubmit ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}>
                 Submit Answer
               </button>
             </div>
           </div>
 
           {/* Transcript — BELOW the editor in the right column. Live, auto-scroll, scrollable back. */}
-          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '3px solid #7C3AED' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {/* header + live status */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--lv-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', fontFamily: 'var(--lv-font-sans)' }}>Transcript</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-sans)' }}>Transcript</span>
               {isWarmingUp ? (
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', fontStyle: 'italic' }}>Take your time…</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', fontStyle: 'italic' }}>Take your time…</span>
               ) : isListening ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#DC2626' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--lv-danger)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--lv-danger)', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
                   Recording…
                 </span>
               ) : (
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   {micFailed ? <MicOff size={12} /> : <Mic size={12} />}{micFailed ? 'Mic unavailable' : 'Waiting'}
                 </span>
               )}
             </div>
-            {listeningHint && <div style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic' }}>{listeningHint}</div>}
+            {listeningHint && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontStyle: 'italic' }}>{listeningHint}</div>}
             {sttWarning && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: '#B45309', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '8px 10px' }}>
-                <MicOff size={14} color="#D97706" /><span>{sttWarning}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--lv-warning)', background: 'color-mix(in srgb, var(--lv-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 30%, transparent)', borderRadius: 8, padding: '8px 10px' }}>
+                <MicOff size={14} color="var(--lv-warning)" /><span>{sttWarning}</span>
               </div>
             )}
           </div>
@@ -2545,29 +2547,29 @@ export default function InterviewPage() {
           <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {transcript.map(entry => (
               <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: entry.speaker === 'ai' ? '#7C3AED' : '#10B981', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
-                <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.55 }}>{entry.text}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: entry.speaker === 'ai' ? 'var(--lv-brand-text)' : 'var(--lv-text-muted)', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
+                <span style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>{entry.text}</span>
               </div>
             ))}
             {liveTranscript && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#10B981', letterSpacing: '0.04em' }}>YOU</span>
-                <span style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-success)', letterSpacing: '0.04em' }}>YOU</span>
+                <span style={{ fontSize: 13, color: 'var(--lv-text-muted)', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
               </div>
             )}
           </div>
 
           {/* text input fallback at the base of the rail */}
           {(textInputMode || micFailed) && phase === 'listening' && (
-            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid var(--lv-border)', flexShrink: 0 }}>
               <textarea
                 value={textInputValue}
                 onChange={e => setTextInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) submitTextInput() }}
                 placeholder="Type your response… (⌘+Enter)"
-                style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 56, fontFamily: 'var(--font-sans)', outline: 'none', color: '#334155' }}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--lv-border)', fontSize: 13, lineHeight: 1.5, resize: 'vertical', minHeight: 56, fontFamily: 'var(--font-sans)', outline: 'none', color: 'var(--lv-text-body)' }}
               />
-              <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 6, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? '#4F46E5' : '#E2E8F0', color: textInputValue.trim() ? '#fff' : '#94A3B8', fontSize: 13, fontWeight: 600 }}>Send</button>
+              <button onClick={submitTextInput} disabled={!textInputValue.trim()} style={{ padding: '0 16px', borderRadius: 6, border: 'none', cursor: 'pointer', background: textInputValue.trim() ? 'var(--lv-brand)' : 'var(--lv-border)', color: textInputValue.trim() ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600 }}>Send</button>
             </div>
           )}
           </div>
@@ -2581,23 +2583,23 @@ export default function InterviewPage() {
       {showEndConfirm && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(15,10,46,0.65)',
+          background: 'var(--lv-overlay)',
           backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           animation: 'fadeUp 0.18s ease both',
         }}>
           <div style={{
-            background: '#fff', borderRadius: 18, width: 400,
-            boxShadow: '0 32px 80px rgba(79,70,229,0.22), 0 8px 24px rgba(0,0,0,0.1)',
-            border: '1px solid #E2E8F0', overflow: 'hidden',
+            background: 'var(--lv-surface)', borderRadius: 8, width: 400,
+            boxShadow: 'var(--lv-shadow-lg)',
+            border: '1px solid var(--lv-border)', overflow: 'hidden',
           }}>
             {/* Header */}
-            <div style={{ padding: '22px 28px 0', borderBottom: '1px solid #F1F5F9', paddingBottom: 18 }}>
+            <div style={{ padding: '22px 28px 0', borderBottom: '1px solid var(--lv-surface-muted)', paddingBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <AlertTriangle size={16} color="#DC2626" />
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: 'color-mix(in srgb, var(--lv-danger) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={16} color="var(--lv-danger)" />
                 </div>
-                <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#1E293B' }}>
+                <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>
                   End Interview?
                 </div>
               </div>
@@ -2607,16 +2609,16 @@ export default function InterviewPage() {
             <div style={{ padding: '20px 28px' }}>
               {timeRemaining > 0 && (
                 <div style={{
-                  padding: '10px 14px', background: 'rgba(245,158,11,0.08)',
-                  border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6,
-                  fontSize: 13, fontWeight: 600, color: '#92400E', marginBottom: 14,
+                  padding: '10px 14px', background: 'color-mix(in srgb, var(--lv-warning) 8%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--lv-warning) 25%, transparent)', borderRadius: 6,
+                  fontSize: 13, fontWeight: 600, color: 'var(--lv-warning)', marginBottom: 14,
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
-                  <Clock size={14} color="#D97706" />
+                  <Clock size={14} color="var(--lv-warning)" />
                   You have {fmt(timeRemaining)} remaining.
                 </div>
               )}
-              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.65, margin: 0 }}>
+              <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: 0 }}>
                 Ending now will generate a report based on the questions answered so far.
                 {timeRemaining > 0 ? ' You still have time remaining.' : ''}
               </p>
@@ -2624,19 +2626,19 @@ export default function InterviewPage() {
 
             {/* Footer */}
             <div style={{
-              padding: '16px 28px', borderTop: '1px solid #F1F5F9',
+              padding: '16px 28px', borderTop: '1px solid var(--lv-surface-muted)',
               display: 'flex', gap: 10, justifyContent: 'flex-end',
             }}>
               <button
                 onClick={handleEndConfirmContinue}
                 style={{
                   padding: '9px 20px', borderRadius: 6,
-                  border: '1px solid #E2E8F0', background: '#fff',
-                  color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: 13,
+                  border: '1px solid var(--lv-border)', background: 'var(--lv-surface)',
+                  color: 'var(--lv-text-body)', fontWeight: 600, cursor: 'pointer', fontSize: 13,
                   transition: 'all 0.15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFF'; e.currentTarget.style.borderColor = '#CBD5E1' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E2E8F0' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--lv-surface-sunken)'; e.currentTarget.style.borderColor = 'var(--lv-border-strong)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--lv-surface)'; e.currentTarget.style.borderColor = 'var(--lv-border)' }}
               >
                 Continue Interview
               </button>
@@ -2645,13 +2647,13 @@ export default function InterviewPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '9px 20px', borderRadius: 6, border: 'none',
-                  background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                  background: 'var(--lv-gradient-brand)',
                   color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13,
-                  boxShadow: '0 4px 14px rgba(79,70,229,0.35)', transition: 'all 0.15s',
+                  boxShadow: 'none', transition: 'all 0.15s',
                   letterSpacing: '-0.01em',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(79,70,229,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.35)'; e.currentTarget.style.transform = 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px color-mix(in srgb, var(--lv-brand) 45%, transparent)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--lv-brand) 35%, transparent)'; e.currentTarget.style.transform = 'none' }}
               >
                 End &amp; Report →
               </button>
@@ -2678,8 +2680,8 @@ export default function InterviewPage() {
           to { transform: rotate(360deg); }
         }
         @keyframes tourRing {
-          0%, 100% { box-shadow: 0 0 0 4px rgba(124,58,237,0.22), 0 0 24px rgba(124,58,237,0.45); }
-          50%      { box-shadow: 0 0 0 7px rgba(124,58,237,0.10), 0 0 40px rgba(124,58,237,0.65); }
+          0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv-brand) 22%, transparent), 0 0 24px color-mix(in srgb, var(--lv-brand) 45%, transparent); }
+          50%      { box-shadow: 0 0 0 7px color-mix(in srgb, var(--lv-brand) 10%, transparent), 0 0 40px color-mix(in srgb, var(--lv-brand) 65%, transparent); }
         }
         @keyframes tourBounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }

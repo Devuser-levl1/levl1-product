@@ -10,9 +10,9 @@ interface Props {
 /* ── Wave definitions ─────────────────────────────────────────── */
 const WAVES = [
   { freq: 0.020, amp: 30, speed: 0.020, color: '#6366F1', alpha: 0.85, lw: 2.5 },
-  { freq: 0.030, amp: 20, speed: 0.030, color: '#7C3AED', alpha: 0.65, lw: 2.0 },
-  { freq: 0.015, amp: 25, speed: 0.015, color: '#A78BFA', alpha: 0.45, lw: 1.5 },
-  { freq: 0.025, amp: 15, speed: 0.025, color: '#C4B5FD', alpha: 0.30, lw: 1.5 },
+  { freq: 0.030, amp: 20, speed: 0.030, color: '#818CF8', alpha: 0.65, lw: 2.0 },
+  { freq: 0.015, amp: 25, speed: 0.015, color: '#A5B4FC', alpha: 0.45, lw: 1.5 },
+  { freq: 0.025, amp: 15, speed: 0.025, color: '#C7D2FE', alpha: 0.30, lw: 1.5 },
 ] as const
 
 export function WaveformVisualizer({ audioLevel = 0, height = 120 }: Props) {
@@ -43,8 +43,8 @@ export function WaveformVisualizer({ audioLevel = 0, height = 120 }: Props) {
       /* Soft radial glow */
       const grd = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, W * 0.52)
       grd.addColorStop(0,   'rgba(99,102,241,0.10)')
-      grd.addColorStop(0.5, 'rgba(124,58,237,0.05)')
-      grd.addColorStop(1,   'rgba(124,58,237,0)')
+      grd.addColorStop(0.5, 'rgba(99,102,241,0.05)')
+      grd.addColorStop(1,   'rgba(99,102,241,0)')
       ctx.fillStyle = grd
       ctx.fillRect(0, 0, W, H)
 

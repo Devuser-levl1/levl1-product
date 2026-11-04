@@ -7,16 +7,16 @@ import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 /* ── Status config ───────────────────────────────────────────── */
 const STATUS: Partial<Record<string, { label: string; dot: string; color: string }>> = {
-  listening:   { label: 'Listening…',            dot: '#10B981', color: '#10B981' },
-  speaking:    { label: 'Speaking…',             dot: '#A78BFA', color: '#A78BFA' },
-  intro:       { label: 'Speaking…',             dot: '#A78BFA', color: '#A78BFA' },
-  closing:     { label: 'Wrapping up…',          dot: '#A78BFA', color: '#A78BFA' },
-  processing:  { label: 'Thinking…',             dot: '#F59E0B', color: '#F59E0B' },
-  questioning: { label: 'Waiting for response…', dot: '#475569', color: '#64748B' },
-  waiting:     { label: 'Ready to begin',        dot: '#4F46E5', color: '#6366F1' },
-  warmup:      { label: 'Take your time…',       dot: '#64748B', color: '#94A3B8' },
+  listening:   { label: 'Listening…',            dot: '#7CC49B', color: '#7CC49B' },
+  speaking:    { label: 'Speaking…',             dot: '#A5B4FC', color: '#A5B4FC' },
+  intro:       { label: 'Speaking…',             dot: '#A5B4FC', color: '#A5B4FC' },
+  closing:     { label: 'Wrapping up…',          dot: '#A5B4FC', color: '#A5B4FC' },
+  processing:  { label: 'Thinking…',             dot: '#D9B26A', color: '#D9B26A' },
+  questioning: { label: 'Waiting for response…', dot: '#71717A', color: '#A1A1AA' },
+  waiting:     { label: 'Ready to begin',        dot: '#818CF8', color: '#A5B4FC' },
+  warmup:      { label: 'Take your time…',       dot: '#71717A', color: '#A1A1AA' },
 }
-const FALLBACK = { label: 'Waiting for response…', dot: '#475569', color: '#64748B' }
+const FALLBACK = { label: 'Waiting for response…', dot: '#71717A', color: '#A1A1AA' }
 
 function fmt(secs: number) {
   const m = Math.floor(Math.max(0, secs) / 60)
@@ -67,22 +67,22 @@ export function AIVisualizer({
 
   /* Timer colour */
   const timerColor =
-    timeRemaining === undefined     ? '#A78BFA'
-    : timeRemaining <= 120          ? '#EF4444'
-    : timeRemaining <= 300          ? '#F59E0B'
-    :                                 '#A78BFA'
+    timeRemaining === undefined     ? '#A5B4FC'
+    : timeRemaining <= 120          ? '#EE8E84'
+    : timeRemaining <= 300          ? '#D9B26A'
+    :                                 '#A5B4FC'
 
   return (
     <div style={{
-      background:   '#0F0F1A',
+      background:   '#111113',
       borderRadius: 18,
-      border:       '1px solid rgba(124,58,237,0.28)',
+      border:       '1px solid #27272A',
       padding:      compact ? '12px 14px 12px' : '16px 16px 14px',
       display:      'flex',
       flexDirection: 'column',
       alignItems:   'center',
       gap:          12,
-      boxShadow:    '0 0 56px rgba(124,58,237,0.20), 0 0 0 1px rgba(255,255,255,0.04) inset',
+      boxShadow:    'none',
     }}>
 
       {/* ── Top row: Alex label + timer ─────────────────────── */}
@@ -93,10 +93,10 @@ export function AIVisualizer({
         justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#E2E8F0', letterSpacing: '0.01em' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#FAFAFA', letterSpacing: '0.01em' }}>
             {INTERVIEWER_NAME}
           </div>
-          <div style={{ fontSize: 11, color: '#475569', fontWeight: 500, marginTop: 1 }}>
+          <div style={{ fontSize: 11, color: '#A1A1AA', fontWeight: 500, marginTop: 1 }}>
             AI Interviewer
           </div>
         </div>
@@ -107,7 +107,7 @@ export function AIVisualizer({
             color:        timerColor,
             fontFamily:   'monospace',
             letterSpacing:'0.05em',
-            background:   'rgba(124,58,237,0.12)',
+            background:   'rgba(255,255,255,0.06)',
             padding:      '3px 8px',
             borderRadius: 6,
           }}>
@@ -120,12 +120,12 @@ export function AIVisualizer({
       {!compact && (candidateName || positionTitle) && (
         <div style={{ textAlign: 'center', width: '100%', marginTop: -4 }}>
           {candidateName && (
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#94A3B8', letterSpacing: '0.02em' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#D4D4D8', letterSpacing: '0.02em' }}>
               {candidateName}
             </div>
           )}
           {positionTitle && (
-            <div style={{ fontSize: 11, color: '#334155', marginTop: 1 }}>{positionTitle}</div>
+            <div style={{ fontSize: 11, color: '#A1A1AA', marginTop: 1 }}>{positionTitle}</div>
           )}
         </div>
       )}
@@ -140,7 +140,7 @@ export function AIVisualizer({
           transform:     'translate(-50%, -50%)',
           width:         '160%',
           height:        '160%',
-          background:    'radial-gradient(ellipse at center, rgba(124,58,237,0.24) 0%, rgba(99,102,241,0.08) 40%, transparent 70%)',
+          background:    'radial-gradient(ellipse at center, rgba(99,102,241,0.12) 0%, transparent 65%)',
           pointerEvents: 'none',
           borderRadius:  '50%',
         }} />

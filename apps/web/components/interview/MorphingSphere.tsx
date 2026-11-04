@@ -58,7 +58,7 @@ export function MorphingSphere({ intensity = 0.5 }: Props) {
 
       /* ── Materials ──────────────────────────────────────────────── */
       const wireMat = new THREE.MeshPhongMaterial({
-        color:       0x7C3AED,
+        color:       0x6366F1,
         wireframe:   true,
         transparent: true,
         opacity:     0.82,
