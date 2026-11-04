@@ -181,7 +181,7 @@ export function FeedbackWidget() {
                     boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-brand)' }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
                 />
               </div>
@@ -192,7 +192,7 @@ export function FeedbackWidget() {
                 style={{
                   width: '100%', padding: '10px 0',
                   background: rating
-                    ? 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)'
+                    ? 'var(--lv-gradient-brand)'
                     : 'var(--lv-border)',
                   border:       'none',
                   borderRadius: 8,
@@ -202,7 +202,7 @@ export function FeedbackWidget() {
                   cursor:       rating ? 'pointer' : 'not-allowed',
                   fontFamily:   'var(--font-sans)',
                   transition:   'all 0.15s',
-                  boxShadow:    rating ? '0 2px 8px color-mix(in srgb, var(--lv-accent) 22%, transparent)' : 'none',
+                  boxShadow:    'none',
                 }}
               >
                 {sending ? 'Sending…' : 'Submit Feedback'}
@@ -220,7 +220,7 @@ export function FeedbackWidget() {
           alignItems:   'center',
           gap:          8,
           padding:      '10px 16px',
-          background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
+          background:   'var(--lv-gradient-brand)',
           border:       'none',
           borderRadius: 100,
           color:        '#fff',
@@ -228,15 +228,15 @@ export function FeedbackWidget() {
           fontWeight:   600,
           cursor:       'pointer',
           fontFamily:   'var(--font-sans)',
-          boxShadow:    '0 4px 18px color-mix(in srgb, var(--lv-accent) 35%, transparent)',
+          boxShadow:    'none',
           transition:   'box-shadow 0.18s, transform 0.18s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 6px 24px color-mix(in srgb, var(--lv-accent) 50%, transparent)'
+          e.currentTarget.style.boxShadow = 'none'
           e.currentTarget.style.transform = 'translateY(-1px)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 4px 18px color-mix(in srgb, var(--lv-accent) 35%, transparent)'
+          e.currentTarget.style.boxShadow = 'none'
           e.currentTarget.style.transform = 'translateY(0)'
         }}
       >

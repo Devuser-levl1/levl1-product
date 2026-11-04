@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, CheckCircle2, Zap, Star } from 'lucide-react'
+import { X, CheckCircle2, Star } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import toast from 'react-hot-toast'
 
@@ -39,7 +39,7 @@ const PLANS = [
     ],
     popular: true,
     cta: 'Upgrade to Professional',
-    color: 'var(--lv-accent)',
+    color: 'var(--lv-brand)',
   },
 ]
 
@@ -96,7 +96,7 @@ export default function UpgradeWallModal() {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(15,10,46,0.65)',
+        background: 'var(--lv-overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -120,16 +120,16 @@ export default function UpgradeWallModal() {
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
+            background: 'var(--lv-surface)',
+            borderBottom: '1px solid var(--lv-border)',
             padding: '28px 32px 24px',
             position: 'relative',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <Zap size={20} color="#fff" fill="#fff" />
-            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: '#fff' }}>{title}</span>
+            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>{title}</span>
           </div>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.80)', lineHeight: 1.6 }}>{subtitle}</p>
+          <p style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>{subtitle}</p>
 
           {!isExpired && (
             <button
@@ -138,11 +138,11 @@ export default function UpgradeWallModal() {
                 position: 'absolute',
                 top: 20,
                 right: 20,
-                background: 'rgba(255,255,255,0.15)',
+                background: 'transparent',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 6,
                 cursor: 'pointer',
-                color: '#fff',
+                color: 'var(--lv-text-muted)',
                 display: 'flex',
                 padding: 6,
               }}
@@ -166,11 +166,11 @@ export default function UpgradeWallModal() {
             <div
               key={plan.id}
               style={{
-                border: plan.popular ? '2px solid var(--lv-accent)' : '1px solid var(--lv-border)',
+                border: plan.popular ? '1px solid var(--lv-brand)' : '1px solid var(--lv-border)',
                 borderRadius: 8,
                 padding: '22px 20px',
                 position: 'relative',
-                background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : '#fff',
+                background: plan.popular ? 'var(--lv-surface)' : 'var(--lv-surface)',
               }}
             >
               {plan.popular && (
@@ -180,7 +180,7 @@ export default function UpgradeWallModal() {
                     top: -12,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'var(--lv-accent)',
+                    background: 'var(--lv-brand)',
                     color: '#fff',
                     fontSize: 11,
                     fontWeight: 600,
@@ -220,7 +220,7 @@ export default function UpgradeWallModal() {
                 disabled={loading === plan.id}
                 style={{
                   width: '100%',
-                  background: loading === plan.id ? 'var(--lv-text-muted)' : plan.popular ? 'var(--lv-accent)' : 'var(--lv-brand)',
+                  background: loading === plan.id ? 'var(--lv-text-muted)' : plan.popular ? 'var(--lv-brand)' : 'var(--lv-brand)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 6,
@@ -229,7 +229,7 @@ export default function UpgradeWallModal() {
                   fontWeight: 600,
                   cursor: loading === plan.id ? 'not-allowed' : 'pointer',
                   fontFamily: 'var(--font-sans)',
-                  boxShadow: loading === plan.id ? 'none' : `0 4px 14px color-mix(in srgb, var(--lv-accent) 25%, transparent)`,
+                  boxShadow: loading === plan.id ? 'none' : `0 4px 14px color-mix(in srgb, var(--lv-brand) 25%, transparent)`,
                   transition: 'all 0.2s',
                 }}
               >

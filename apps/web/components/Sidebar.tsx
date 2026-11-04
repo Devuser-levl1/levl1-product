@@ -71,7 +71,7 @@ export default function Sidebar() {
         left: 0,
         height: "100vh",
         background: "var(--lv-sidebar-bg)",
-        borderRight: "1px solid rgba(255,255,255,0.07)",
+        borderRight: "1px solid var(--lv-border)",
         zIndex: 50,
         overflow: "hidden",
         display: "flex",
@@ -86,7 +86,6 @@ export default function Sidebar() {
         onClick={() => { setActiveSection("dashboard"); router.push("/dashboard"); }}
         style={{
           height: 64,
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
           display: "flex",
           alignItems: "center",
           padding: "0 16px",
@@ -105,15 +104,14 @@ export default function Sidebar() {
             width: 32,
             height: 32,
             borderRadius: 6,
-            background: "var(--lv-sidebar-accent)",
+            background: "var(--lv-text)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(124,58,237,0.40)",
           }}
         >
-          <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
+          <Zap size={14} color="var(--lv-surface)" strokeWidth={2.5} fill="var(--lv-surface)" />
         </div>
 
         <AnimatePresence>
@@ -128,9 +126,9 @@ export default function Sidebar() {
               <div
                 style={{
                   fontFamily: "var(--lv-font-sans)",
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: 600,
-                  color: "#FFFFFF",
+                  color: "var(--lv-text)",
                   letterSpacing: "-0.02em",
                   lineHeight: 1,
                 }}
@@ -140,7 +138,7 @@ export default function Sidebar() {
               <div
                 style={{
                   fontSize: 11,
-                  color: "rgba(255,255,255,0.40)",
+                  color: "var(--lv-text-muted)",
                   marginTop: 3,
                   fontFamily: "var(--font-sans)",
                 }}
@@ -161,39 +159,20 @@ export default function Sidebar() {
           overflowX: "hidden",
         }}
       >
-        {/* New Position CTA */}
+        {/* New Position CTA — the one primary action */}
         <button
           data-tour="new-position"
+          className="lv-btn lv-btn--primary lv-btn--full"
           onClick={() => {
             setActiveSection("positions");
             setShowNewPositionFlow(true);
           }}
           title={sidebarCollapsed ? "New Position" : undefined}
           style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
             justifyContent: sidebarCollapsed ? "center" : "flex-start",
-            gap: 8,
-            padding: sidebarCollapsed ? "9px" : "9px 12px",
-            borderRadius: 6,
-            minHeight: 40,
-            background: "#FFFFFF",            /* the primary action on the brand panel */
-            border: "1px solid #FFFFFF",
-            color: "#4338CA",                 /* fixed: white button on the brand panel in both themes */
-            cursor: "pointer",
+            padding: sidebarCollapsed ? 0 : "0 12px",
             fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            boxShadow: "0 2px 8px rgba(15,23,42,0.18)",
-            transition: "all 0.15s",
-            marginBottom: 10,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#EEF2FF";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#FFFFFF";
+            marginBottom: 6,
           }}
         >
           <Plus size={16} style={{ flexShrink: 0 }} />
@@ -208,36 +187,17 @@ export default function Sidebar() {
 
         {/* Upload Candidates CTA */}
         <button
+          className="lv-btn lv-btn--secondary lv-btn--full"
           onClick={() => {
             setActiveSection("candidates");
             setShowUploadFlow(true);
           }}
           title={sidebarCollapsed ? "Upload Candidates" : undefined}
           style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
             justifyContent: sidebarCollapsed ? "center" : "flex-start",
-            gap: 8,
-            padding: sidebarCollapsed ? "9px" : "9px 12px",
-            borderRadius: 8,
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            color: "rgba(255,255,255,0.70)",
-            cursor: "pointer",
+            padding: sidebarCollapsed ? 0 : "0 12px",
             fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            transition: "all 0.15s",
-            marginBottom: 10,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-            e.currentTarget.style.color = "#fff";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.07)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.70)";
+            marginBottom: 14,
           }}
         >
           <Upload size={16} style={{ flexShrink: 0 }} />
@@ -260,11 +220,9 @@ export default function Sidebar() {
               transition={{ duration: 0.12 }}
               style={{
                 fontSize: 11,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.25)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                padding: "4px 12px 8px",
+                fontWeight: 500,
+                color: "var(--lv-text-muted)",
+                padding: "4px 12px 6px",
                 fontFamily: "var(--font-sans)",
               }}
             >
@@ -286,10 +244,10 @@ export default function Sidebar() {
                 style={{
                   justifyContent: sidebarCollapsed ? "center" : "flex-start",
                   padding: sidebarCollapsed ? "9px" : "9px 12px",
-                  minHeight: 38,
+                  minHeight: 34,
                 }}
               >
-                <Icon size={18} style={{ flexShrink: 0 }} strokeWidth={isActive ? 2.25 : 1.75} />
+                <Icon size={16} style={{ flexShrink: 0 }} strokeWidth={isActive ? 2 : 1.75} />
                 <AnimatePresence>
                   {!sidebarCollapsed && (
                     <motion.span
@@ -311,7 +269,7 @@ export default function Sidebar() {
         <div
           style={{
             height: 1,
-            background: "rgba(255,255,255,0.07)",
+            background: "var(--lv-border)",
             margin: "12px 4px",
           }}
         />
@@ -328,10 +286,10 @@ export default function Sidebar() {
                 style={{
                   justifyContent: sidebarCollapsed ? "center" : "flex-start",
                   padding: sidebarCollapsed ? "9px" : "9px 12px",
-                  minHeight: 38,
+                  minHeight: 34,
                 }}
               >
-                <Icon size={18} style={{ flexShrink: 0 }} strokeWidth={isActive ? 2.25 : 1.75} />
+                <Icon size={16} style={{ flexShrink: 0 }} strokeWidth={isActive ? 2 : 1.75} />
                 <AnimatePresence>
                   {!sidebarCollapsed && (
                     <motion.span
@@ -354,7 +312,7 @@ export default function Sidebar() {
       {/* ── Footer ── */}
       <div
         style={{
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          borderTop: "1px solid var(--lv-border)",
           padding: "12px 8px",
           display: "flex",
           flexDirection: "column",
@@ -366,6 +324,7 @@ export default function Sidebar() {
         <AnimatePresence>
           {!sidebarCollapsed && (
             <motion.button
+              className="lv-side-item"
               onClick={() => setActiveSection("settings")}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -377,14 +336,11 @@ export default function Sidebar() {
                 gap: 10,
                 padding: "8px 10px",
                 borderRadius: 6,
-                background: "rgba(255,255,255,0.06)",
                 border: "none",
                 cursor: "pointer",
                 width: "100%",
                 textAlign: "left",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
             >
               <div
                 aria-hidden="true"
@@ -392,13 +348,14 @@ export default function Sidebar() {
                   width: 30,
                   height: 30,
                   borderRadius: "50%",
-                  background: "var(--lv-sidebar-accent)",
+                  background: "var(--lv-surface-muted)",
+                  border: "1px solid var(--lv-border)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
-                  color: "white",
+                  color: "var(--lv-text-body)",
                   flexShrink: 0,
                 }}
               >
@@ -408,8 +365,8 @@ export default function Sidebar() {
                 <div
                   style={{
                     fontSize: 13,
-                    fontWeight: 600,
-                    color: "#fff",
+                    fontWeight: 500,
+                    color: "var(--lv-text)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -421,7 +378,7 @@ export default function Sidebar() {
                 <div
                   style={{
                     fontSize: 11,
-                    color: "rgba(255,255,255,0.72)",
+                    color: "var(--lv-text-muted)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -438,6 +395,7 @@ export default function Sidebar() {
 
         {/* Help & Support */}
         <button
+          className="lv-side-item"
           onClick={() => setSupportOpen(true)}
           title={sidebarCollapsed ? "Help & Support" : undefined}
           style={{
@@ -448,23 +406,14 @@ export default function Sidebar() {
             gap: 8,
             padding: sidebarCollapsed ? "7px" : "7px 10px",
             borderRadius: 8,
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.55)",
+            background: "transparent",
+            border: "none",
             cursor: "pointer",
             fontSize: 12,
             fontWeight: 500,
             fontFamily: "var(--font-sans)",
             transition: "all 0.15s",
             minHeight: 34,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.10)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.85)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.55)";
           }}
         >
           <LifeBuoy size={14} style={{ flexShrink: 0 }} />
@@ -479,6 +428,7 @@ export default function Sidebar() {
 
         {/* Collapse toggle */}
         <button
+          className="lv-side-item"
           onClick={toggleSidebar}
           style={{
             width: "100%",
@@ -488,23 +438,14 @@ export default function Sidebar() {
             gap: 6,
             padding: "7px 10px",
             borderRadius: 8,
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.50)",
+            background: "transparent",
+            border: "none",
             cursor: "pointer",
             fontSize: 12,
             fontWeight: 500,
             fontFamily: "var(--font-sans)",
             transition: "all 0.15s",
             minHeight: 34,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.85)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.50)";
           }}
         >
           {sidebarCollapsed ? (

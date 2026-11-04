@@ -387,7 +387,7 @@ export default function SettingsPage() {
     {
       id: 'professional', name: 'Professional', price: '₹45,000/mo', interviews: 200,
       features: ['200 interviews/month', 'Unlimited positions', 'White-label reports', 'Priority support'],
-      color: 'var(--lv-accent)', popular: true,
+      color: 'var(--lv-brand)', popular: true,
     },
   ];
 
@@ -548,8 +548,8 @@ export default function SettingsPage() {
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 14px", borderRadius: 6,
-                border: `1.5px solid ${voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 35%, transparent)" : "var(--lv-border)"}`,
-                background: voiceAccent === v.key ? "color-mix(in srgb, var(--lv-accent) 5%, transparent)" : "var(--lv-surface-sunken)",
+                border: `1px solid ${voiceAccent === v.key ? "var(--lv-brand)" : "var(--lv-border)"}`,
+                background: voiceAccent === v.key ? "var(--lv-brand-soft)" : "var(--lv-surface)",
                 cursor: "pointer", transition: "all 0.15s",
               }}
               onClick={() => setVoiceAccent(v.key)}
@@ -557,18 +557,18 @@ export default function SettingsPage() {
               {/* Radio */}
               <div style={{
                 width: 18, height: 18, borderRadius: "50%",
-                border: `2px solid ${voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-border-strong)"}`,
+                border: `2px solid ${voiceAccent === v.key ? "var(--lv-brand)" : "var(--lv-border-control)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, transition: "border-color 0.15s",
               }}>
                 {voiceAccent === v.key && (
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--lv-accent)" }} />
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--lv-brand)" }} />
                 )}
               </div>
 
               {/* Name */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-accent)" : "var(--lv-brand)" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-brand-text)" : "var(--lv-text)" }}>
                   {v.accent}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{v.description}</div>
@@ -582,17 +582,17 @@ export default function SettingsPage() {
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "6px 12px", borderRadius: 6,
-                  border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)",
-                  background: "color-mix(in srgb, var(--lv-accent) 7%, transparent)", color: "var(--lv-accent)",
+                  border: "1px solid color-mix(in srgb, var(--lv-brand) 20%, transparent)",
+                  background: "color-mix(in srgb, var(--lv-brand) 7%, transparent)", color: "var(--lv-brand)",
                   fontSize: 12, fontWeight: 600, cursor: previewLoading ? "wait" : "pointer",
                   fontFamily: "var(--lv-font-sans)", flexShrink: 0, transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-accent) 14%, transparent)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-accent) 7%, transparent)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-brand) 14%, transparent)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--lv-brand) 7%, transparent)"; }}
               >
                 {previewLoading === v.key
                   ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-                  : <Play size={12} fill="var(--lv-accent)" />
+                  : <Play size={12} fill="var(--lv-brand)" />
                 }
                 Preview
               </button>
@@ -603,12 +603,12 @@ export default function SettingsPage() {
         {/* Interviewer name display */}
         <div style={{
           marginTop: 4, padding: "12px 16px",
-          background: "color-mix(in srgb, var(--lv-accent) 5%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--lv-accent) 15%, transparent)",
+          background: "color-mix(in srgb, var(--lv-brand) 5%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--lv-brand) 15%, transparent)",
           borderRadius: 8, fontSize: 13, color: "var(--lv-text-body)",
         }}>
           Your AI interviewer will introduce as:{" "}
-          <strong style={{ color: "var(--lv-accent)" }}>{selectedOption.interviewerName}</strong>
+          <strong style={{ color: "var(--lv-brand)" }}>{selectedOption.interviewerName}</strong>
         </div>
 
         <button
@@ -664,7 +664,7 @@ export default function SettingsPage() {
             {teamUsers.map((u) => (
               <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-accent) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-accent)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-brand) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-brand)" }}>
                     {u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -770,7 +770,7 @@ export default function SettingsPage() {
       <Section title="Billing & Plan" description="Manage your subscription and usage">
         {/* Current plan card */}
         <div style={{
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 4%, transparent) 0%, color-mix(in srgb, var(--lv-accent) 6%, transparent) 100%)',
+          background: 'var(--lv-surface-sunken)',
           border: '1px solid color-mix(in srgb, var(--lv-brand) 15%, transparent)',
           borderRadius: 8,
           padding: '16px 20px',
@@ -826,10 +826,10 @@ export default function SettingsPage() {
               <div
                 key={plan.id}
                 style={{
-                  border: plan.popular ? '1.5px solid var(--lv-accent)' : '1px solid var(--lv-border)',
+                  border: plan.popular ? '1px solid var(--lv-brand)' : '1px solid var(--lv-border)',
                   borderRadius: 8, padding: '18px 16px',
                   position: 'relative',
-                  background: plan.popular ? 'color-mix(in srgb, var(--lv-accent) 2%, transparent)' : 'var(--lv-surface)',
+                  background: plan.popular ? 'color-mix(in srgb, var(--lv-brand) 2%, transparent)' : 'var(--lv-surface)',
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 600, color: plan.color, fontFamily: 'var(--lv-font-display)', marginBottom: 2 }}>{plan.name}</div>

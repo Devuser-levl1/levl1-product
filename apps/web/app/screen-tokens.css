@@ -136,9 +136,9 @@
   --lv-z-modal:   90;
   --lv-z-toast:   100;
 
-  /* ── App shell — still the brand panel until pass C makes it neutral ─ */
-  --lv-sidebar-bg:     #4F46E5;
-  --lv-sidebar-accent: #3730A3;
+  /* ── App shell — neutral sidebar (indigo only on the active item) ─── */
+  --lv-sidebar-bg:     var(--lv-surface);
+  --lv-sidebar-accent: var(--lv-brand);   /* legacy name; no longer used by the shell */
 }
 
 /* ── Dark values ──────────────────────────────────────────────────────────
@@ -198,8 +198,8 @@
   --lv-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35);
   --lv-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
 
-  --lv-sidebar-bg:         #1E1D3A;
-  --lv-sidebar-accent:     #34336B;
+  --lv-sidebar-bg:         var(--lv-surface);
+  --lv-sidebar-accent:     var(--lv-brand);
   color-scheme: dark;
 }
 
@@ -255,8 +255,8 @@
     --lv-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35);
     --lv-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
 
-    --lv-sidebar-bg:         #1E1D3A;
-    --lv-sidebar-accent:     #34336B;
+    --lv-sidebar-bg:         var(--lv-surface);
+    --lv-sidebar-accent:     var(--lv-brand);
     color-scheme: dark;
   }
   html[data-lv-app]:not([data-lv-theme="light"]) body { background: var(--lv-bg); color: var(--lv-text); }

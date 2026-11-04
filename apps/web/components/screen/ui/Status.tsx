@@ -44,7 +44,7 @@ export function EmptyState({ icon, title, description, action, plain }: {
 }
 
 export function Spinner({ size = 'md', label = 'Loading' }: { size?: 'md' | 'lg'; label?: string }) {
-  return <span role="status" aria-label={label} style={{ display: 'inline-flex', color: 'var(--lv-brand)' }}><span className={['lv-spinner', size === 'lg' && 'lv-spinner--lg'].filter(Boolean).join(' ')} aria-hidden="true" /></span>
+  return <span role="status" aria-label={label} style={{ display: 'inline-flex', color: 'var(--lv-text-muted)' }}><span className={['lv-spinner', size === 'lg' && 'lv-spinner--lg'].filter(Boolean).join(' ')} aria-hidden="true" /></span>
 }
 
 /** Skeleton block; `lines` renders a paragraph placeholder. */
@@ -61,7 +61,7 @@ export function Skeleton({ width = '100%', height = 14, lines, radius, style }: 
 export function LoadingBlock({ label = 'Loading…' }: { label?: string }) {
   return (
     <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '48px 16px', color: 'var(--lv-text-muted)', fontSize: 14 }}>
-      <span className="lv-spinner" style={{ color: 'var(--lv-brand)' }} aria-hidden="true" /> {label}
+      <span className="lv-spinner" style={{ color: 'var(--lv-text-muted)' }} aria-hidden="true" /> {label}
     </div>
   )
 }

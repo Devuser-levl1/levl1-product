@@ -257,9 +257,9 @@ export default function Header() {
           >
             <div aria-hidden="true" style={{
               width: 30, height: 30, borderRadius: "50%",
-              background: lv.gradientBrand,
+              background: lv.surfaceMuted, border: `1px solid ${lv.border}`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 600, color: "#fff", flexShrink: 0,
+              fontSize: 11, fontWeight: 600, color: lv.textBody, flexShrink: 0,
             }}>
               {userInitials || '?'}
             </div>

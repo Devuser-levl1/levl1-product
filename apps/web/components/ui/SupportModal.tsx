@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, LifeBuoy, Paperclip } from 'lucide-react'
+import { X, Paperclip } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface SupportModalProps {
@@ -82,7 +82,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
         onClick={handleClose}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(15,15,26,0.55)',
+          background: 'var(--lv-overlay)',
           zIndex: 850,
         }}
       />
@@ -108,43 +108,29 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
         {/* Header */}
         <div
           style={{
-            background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
-            padding:      '18px 22px 16px',
+            background:   'var(--lv-surface)',
+            borderBottom: '1px solid var(--lv-border)',
+            padding:      '16px 22px',
             display:      'flex',
             alignItems:   'center',
             gap:          12,
-            borderRadius: '14px 14px 0 0',
+            borderRadius: '8px 8px 0 0',
             flexShrink:   0,
           }}
         >
-          <div
-            style={{
-              width: 34, height: 34, borderRadius: 6,
-              background: 'rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <LifeBuoy size={16} color="white" />
-          </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: 'var(--lv-font-sans)' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', fontFamily: 'var(--lv-font-sans)' }}>
               Submit a Support Ticket
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2 }}>
               We respond within 24 hours
             </div>
           </div>
           <button
             onClick={handleClose}
-            style={{
-              background: 'rgba(255,255,255,0.12)', border: 'none',
-              borderRadius: 6, padding: 6, cursor: 'pointer',
-              color: 'rgba(255,255,255,0.75)', display: 'flex',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
+            aria-label="Close"
+            className="lv-btn lv-btn--ghost lv-btn--icon lv-btn--sm"
+            style={{ flexShrink: 0 }}
           >
             <X size={16} />
           </button>
@@ -169,8 +155,8 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                     cursor:      'pointer',
                     padding:     '8px 10px',
                     borderRadius: 8,
-                    border:      `1px solid ${issueType === type ? 'color-mix(in srgb, var(--lv-accent) 30%, transparent)' : 'var(--lv-border)'}`,
-                    background:  issueType === type ? 'color-mix(in srgb, var(--lv-accent) 6%, transparent)' : 'var(--lv-surface-sunken)',
+                    border:      `1px solid ${issueType === type ? 'color-mix(in srgb, var(--lv-brand) 30%, transparent)' : 'var(--lv-border)'}`,
+                    background:  issueType === type ? 'color-mix(in srgb, var(--lv-brand) 6%, transparent)' : 'var(--lv-surface-sunken)',
                     transition:  'all 0.12s',
                   }}
                 >
@@ -180,9 +166,9 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                     value={type}
                     checked={issueType === type}
                     onChange={() => setIssueType(type)}
-                    style={{ accentColor: 'var(--lv-accent)', flexShrink: 0 }}
+                    style={{ accentColor: 'var(--lv-brand)', flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 13, color: issueType === type ? 'var(--lv-accent)' : 'var(--lv-text-body)', fontWeight: issueType === type ? 600 : 400 }}>
+                  <span style={{ fontSize: 13, color: issueType === type ? 'var(--lv-brand)' : 'var(--lv-text-body)', fontWeight: issueType === type ? 600 : 400 }}>
                     {type}
                   </span>
                 </label>
@@ -201,7 +187,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Brief description of the issue"
               style={INPUT_STYLE}
-              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-brand)' }}
               onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
@@ -217,7 +203,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               placeholder="Describe the issue in detail. Include steps to reproduce if reporting a bug."
               rows={4}
               style={{ ...INPUT_STYLE, resize: 'vertical', minHeight: 90 }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-brand)' }}
               onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
@@ -241,7 +227,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
                 color:        'var(--lv-text-muted)',
                 transition:   'all 0.15s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)'; e.currentTarget.style.color = 'var(--lv-accent)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lv-brand)'; e.currentTarget.style.color = 'var(--lv-brand)' }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lv-border-strong)'; e.currentTarget.style.color = 'var(--lv-text-muted)' }}
             >
               <Paperclip size={14} />
@@ -265,7 +251,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               value={userEmail}
               onChange={(e) => setUserEmail(e.target.value)}
               style={INPUT_STYLE}
-              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-accent)' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--lv-brand)' }}
               onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--lv-border)' }}
             />
           </div>
@@ -277,7 +263,7 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
             style={{
               width:        '100%',
               padding:      '12px 0',
-              background:   'linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%)',
+              background:   'var(--lv-gradient-brand)',
               border:       'none',
               borderRadius: 6,
               color:        '#fff',
@@ -285,12 +271,12 @@ export function SupportModal({ open, onClose, defaultEmail = '' }: SupportModalP
               fontWeight:   600,
               cursor:       sending ? 'wait' : 'pointer',
               fontFamily:   'var(--font-sans)',
-              boxShadow:    '0 2px 10px color-mix(in srgb, var(--lv-accent) 28%, transparent)',
+              boxShadow:    'none',
               transition:   'box-shadow 0.15s',
               marginTop:    4,
             }}
-            onMouseEnter={(e) => { if (!sending) e.currentTarget.style.boxShadow = '0 4px 18px color-mix(in srgb, var(--lv-accent) 42%, transparent)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 10px color-mix(in srgb, var(--lv-accent) 28%, transparent)' }}
+            onMouseEnter={(e) => { if (!sending) e.currentTarget.style.boxShadow = 'none' }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none' }}
           >
             {sending ? 'Submitting…' : 'Submit Ticket'}
           </button>

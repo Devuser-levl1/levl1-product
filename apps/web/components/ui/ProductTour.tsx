@@ -158,21 +158,23 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
     <style>{`
       /* ── Shepherd.js custom styles matching Levl1 design system ── */
       .shepherd-modal-overlay-container path {
-        fill: rgba(15, 15, 26, 0.55) !important;
+        fill: rgba(9, 9, 11, 0.40) !important;
       }
 
       .levl1-tour-step.shepherd-element {
-        border-radius: 12px !important;
-        box-shadow: 0 8px 40px color-mix(in srgb, var(--lv-brand) 18%, transparent), 0 2px 8px rgba(0,0,0,0.12) !important;
-        border: 1.5px solid color-mix(in srgb, var(--lv-accent) 22%, transparent) !important;
+        border-radius: 8px !important;
+        background: var(--lv-surface) !important;
+        box-shadow: var(--lv-shadow-lg) !important;
+        border: 1px solid var(--lv-border) !important;
         max-width: 340px !important;
         font-family: var(--font-sans, system-ui, sans-serif) !important;
       }
 
       .levl1-tour-step .shepherd-header {
-        background: linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%) !important;
-        border-radius: 10px 10px 0 0 !important;
-        padding: 14px 18px 12px !important;
+        background: var(--lv-surface) !important;
+        border-bottom: 1px solid var(--lv-border) !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 12px 18px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
@@ -180,7 +182,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
       }
 
       .levl1-tour-step .shepherd-title {
-        color: #fff !important;
+        color: var(--lv-text) !important;
         font-size: 14px !important;
         font-weight: 600 !important;
         letter-spacing: -0.01em !important;
@@ -190,13 +192,13 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
 
       .levl1-tour-step .shepherd-progress {
         font-size: 11px !important;
-        font-weight: 600 !important;
-        color: rgba(255,255,255,0.55) !important;
+        font-weight: 500 !important;
+        color: var(--lv-text-muted) !important;
         white-space: nowrap !important;
       }
 
       .levl1-tour-step .shepherd-cancel-icon {
-        color: rgba(255,255,255,0.60) !important;
+        color: var(--lv-text-muted) !important;
         font-size: 18px !important;
         line-height: 1 !important;
         padding: 2px !important;
@@ -206,7 +208,7 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
         cursor: pointer !important;
       }
       .levl1-tour-step .shepherd-cancel-icon:hover {
-        color: #fff !important;
+        color: var(--lv-text) !important;
       }
 
       .levl1-tour-step .shepherd-text {
@@ -235,40 +237,39 @@ export function ProductTour({ onOpenNewPosition }: { onOpenNewPosition: () => vo
         text-decoration: underline !important;
         font-family: inherit !important;
       }
-      .shepherd-skip-btn:hover { color: var(--lv-text-muted) !important; }
+      .shepherd-skip-btn:hover { color: var(--lv-text) !important; }
 
       .shepherd-back-btn {
-        background: var(--lv-surface-muted) !important;
-        border: 1px solid var(--lv-border) !important;
-        border-radius: 7px !important;
-        color: var(--lv-text-body) !important;
+        background: var(--lv-surface) !important;
+        border: 1px solid var(--lv-border-strong) !important;
+        border-radius: 6px !important;
+        color: var(--lv-text) !important;
         font-size: 13px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         padding: 7px 14px !important;
         cursor: pointer !important;
         font-family: inherit !important;
         transition: background 0.15s !important;
       }
-      .shepherd-back-btn:hover { background: var(--lv-border) !important; }
+      .shepherd-back-btn:hover { background: var(--lv-surface-muted) !important; }
 
       .shepherd-next-btn {
-        background: linear-gradient(135deg, var(--lv-brand) 0%, var(--lv-accent) 100%) !important;
+        background: var(--lv-gradient-brand) !important;
         border: none !important;
-        border-radius: 7px !important;
+        border-radius: 6px !important;
         color: #fff !important;
         font-size: 13px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         padding: 7px 16px !important;
         cursor: pointer !important;
         font-family: inherit !important;
-        box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-accent) 25%, transparent) !important;
-        transition: box-shadow 0.15s !important;
+        transition: background 0.15s !important;
       }
-      .shepherd-next-btn:hover { box-shadow: 0 4px 14px color-mix(in srgb, var(--lv-accent) 38%, transparent) !important; }
+      .shepherd-next-btn:hover { filter: brightness(0.92); }
 
       .shepherd-arrow::before {
-        background: #fff !important;
-        border: 1.5px solid color-mix(in srgb, var(--lv-accent) 18%, transparent) !important;
+        background: var(--lv-surface) !important;
+        border: 1px solid var(--lv-border) !important;
       }
     `}</style>
   )

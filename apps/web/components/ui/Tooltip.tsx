@@ -185,9 +185,9 @@ export function HelpIcon({ content, position = 'top' }: { content: string; posit
           padding:      0,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--lv-accent)'
-          e.currentTarget.style.color       = 'var(--lv-accent)'
-          e.currentTarget.style.background  = 'color-mix(in srgb, var(--lv-accent) 6%, transparent)'
+          e.currentTarget.style.borderColor = 'var(--lv-brand)'
+          e.currentTarget.style.color       = 'var(--lv-brand)'
+          e.currentTarget.style.background  = 'color-mix(in srgb, var(--lv-brand) 6%, transparent)'
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.borderColor = 'var(--lv-border-strong)'
