@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Mic, Video, Volume2, CheckCircle2, AlertTriangle, Loader2, Zap, Clock } from 'lucide-react'
+import { Mic, Video, Volume2, CheckCircle2, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 interface InterviewMeta {
   candidateName: string
@@ -169,10 +170,7 @@ export default function CandidateInterviewEntry() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Zap size={16} color="white" fill="white" />
-        </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+        <ScreenLogo height={40} tone="auto" />
       </div>
 
       {/* Card */}

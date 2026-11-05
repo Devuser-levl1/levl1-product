@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Zap, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button, Field, Input, Alert, EmptyState, LoadingBlock } from '@/components/screen/ui'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 
 interface InviteInfo {
@@ -91,10 +92,7 @@ export default function AcceptInvitePage() {
       <main className="lv-card" style={{ width: '100%', maxWidth: 440, padding: 'clamp(24px, 6vw, 40px)', boxShadow: 'none' }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={14} color="white" fill="white" />
-          </div>
-          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+          <ScreenLogo height={38} tone="auto" />
         </div>
 
         <h1 className="lv-page-title" style={{ marginBottom: 8 }}>Accept Invitation</h1>

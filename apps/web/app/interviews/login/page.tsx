@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Logo } from '@/components/marketing/logo'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 const INDIGO = 'var(--lv-brand-text)'
 
@@ -50,9 +50,8 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-bg)', fontFamily: 'var(--font-sans)', padding: 24 }}>
       <div style={{ width: 420, maxWidth: '100%', background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: 32, boxShadow: 'none' }}>
-        <Link href="/interviews" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, marginBottom: 22, textDecoration: 'none' }}>
-          <Logo variant="black" height={26} priority />
-          <span style={{ fontSize: 16, fontWeight: 600, color: INDIGO }}>Interviews</span>
+        <Link href="/interviews" aria-label="Screen from Levl1 — home" style={{ display: 'inline-flex', alignItems: 'center', marginBottom: 22, textDecoration: 'none' }}>
+          <ScreenLogo height={40} tone="auto" />
         </Link>
 
         {expired && (

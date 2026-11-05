@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/emailService'
 import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 import crypto from 'crypto'
 import { appUrl } from '@/lib/screen/app-url'
+import { screenEmailLogoHtml } from '@/lib/screen/brand/email-logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,system-ui,sans-serif;">
 <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden">
   <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:28px 32px">
-    <div style="font-size:22px;font-weight:800;color:#fff">Levl1</div>
+    ${screenEmailLogoHtml({ onDark: true, height: 36 })}
     <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px">AI Interview Platform</div>
   </div>
   <div style="padding:32px">

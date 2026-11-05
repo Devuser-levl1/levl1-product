@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendEmail } from '@/lib/emailService'
 import { appUrl } from '@/lib/screen/app-url'
+import { screenEmailLogoHtml } from '@/lib/screen/brand/email-logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,7 +130,8 @@ function approvalEmailHtml(opts: { type: 'tech_lead' | 'hr'; positionTitle: stri
   return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,system-ui,sans-serif;">
 <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;box-shadow:0 4px 20px rgba(79,70,229,0.08)">
   <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:32px">
-    <div style="font-size:22px;font-weight:800;color:#fff">Levl1 · Interview Review</div>
+    ${screenEmailLogoHtml({ onDark: true, height: 34 })}
+    <div style="font-size:15px;font-weight:600;color:#fff;margin-top:10px">Interview review</div>
     <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px">Action required from ${roleLabel}</div>
   </div>
   <div style="padding:32px">

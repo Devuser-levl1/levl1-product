@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { Button } from '@/components/screen/ui'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Zap, ArrowLeft, Download, Sparkles,
+  ArrowLeft, Download, Sparkles,
   AlertTriangle, CheckCircle2, TrendingUp, Users,
   Globe, Flag, ChevronRight, UserCheck, Share2,
 } from 'lucide-react'
 import { useAppStore, PositionReport } from '@/store/appStore'
 import toast from 'react-hot-toast'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 /* ─── Helpers ───────────────────────────────────────────────────── */
 const REC_CFG = {
@@ -185,10 +186,7 @@ export default function PositionRankingPage() {
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.push('/dashboard')}>Dashboard</Button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={14} color="white" fill="white" />
-          </div>
-          <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 14, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
+          <ScreenLogo height={28} tone="auto" />
         </div>
 
         <div style={{ flex: 1 }} />

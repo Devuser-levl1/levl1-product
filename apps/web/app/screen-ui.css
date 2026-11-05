@@ -265,3 +265,14 @@
 .lv-btn--brand:disabled { opacity: 0.5; filter: grayscale(0.4); }
 .lv-slot { min-height: var(--lv-touch); padding: 0 var(--lv-space-4); border-radius: var(--lv-radius-md); font: var(--lv-weight-bold) var(--lv-text-sm) var(--lv-font-sans); cursor: pointer; transition: background var(--lv-dur) var(--lv-ease), border-color var(--lv-dur) var(--lv-ease); }
 .lv-slot:focus-visible { outline: none; box-shadow: var(--lv-focus-ring); }
+
+/* ── Screen wordmark (components/screen/brand/ScreenLogo.tsx) ──────────────
+   tone="auto": black ink on light surfaces, white ink when the Screen dark
+   theme is active — the black mark is never shown on a dark surface. */
+.screen-logo__ink--light { display: none !important; }
+@media screen and (prefers-color-scheme: dark) {
+  html[data-lv-app]:not([data-lv-theme="light"]) .screen-logo__ink--dark { display: none !important; }
+  html[data-lv-app]:not([data-lv-theme="light"]) .screen-logo__ink--light { display: block !important; }
+}
+[data-lv-theme="dark"] .screen-logo__ink--dark { display: none !important; }
+[data-lv-theme="dark"] .screen-logo__ink--light { display: block !important; }

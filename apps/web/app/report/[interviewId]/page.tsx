@@ -14,6 +14,7 @@ import {
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { WorkSamplePanel, type WorkSampleShape } from '@/components/interviews/report/WorkSamplePanel'
 import { Button, ButtonLink, LoadingBlock } from '@/components/screen/ui'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 // Design-System Pass 3 (group 5): colours resolve to the Screen tokens and the
 // controls use the canonical Button. Report data, actions and print rules unchanged.
@@ -181,8 +182,7 @@ export default function ReportPage() {
       <DemoSalesCTA />
       {/* Print header */}
       <div className="print-only" style={{ display: 'none', padding: '0 0 16px', borderBottom: `2px solid ${INDIGO}`, marginBottom: 24, alignItems: 'center', gap: 10 }}>
-        <Zap size={16} />
-        <span style={{ fontSize: 18, fontWeight: 600, color: INDIGO }}>Levl1</span>
+        <ScreenLogo height={32} tone="dark" />
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>Confidential — for internal use only</span>
       </div>
 
@@ -190,8 +190,7 @@ export default function ReportPage() {
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'color-mix(in srgb, var(--lv-surface) 95%, transparent)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 clamp(12px, 3vw, 32px)', minHeight: 56, flexWrap: 'wrap' }}>
         <Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={() => router.back()}>Back</Button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-          <div aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={14} color="white" fill="white" /></div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: INDIGO }}>Levl1</span>
+          <ScreenLogo height={28} tone="auto" />
         </div>
         <div style={{ flex: 1 }} />
         <ButtonLink href={`/playback/${interviewId}`} variant="tertiary" size="sm" leftIcon={<PlayCircle size={14} />}>Replay interview</ButtonLink>

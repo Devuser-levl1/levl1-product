@@ -1,6 +1,7 @@
 'use client'
 
 import { forwardRef } from 'react'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 // ── Candidate-facing shell (Screen design system, Pass 3 · group 7) ────────
 // Candidate pages are white-labelled: the agency's brand colour drives the
@@ -51,8 +52,10 @@ export function CandidateShell({ children, brand, agencyName, logo, width = 560 
 
 export function PoweredBy({ link }: { link?: boolean }) {
   return (
-    <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--lv-text-muted)' }}>
-      Powered by {link ? <a href="https://levl1.io" style={{ color: 'var(--lv-text-body)', fontWeight: 600, textDecoration: 'none' }}>Levl1</a> : 'Levl1'}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, fontSize: 12, color: 'var(--lv-text-muted)' }}>
+      Powered by {link
+        ? <a href="https://levl1.io" aria-label="Screen from Levl1" style={{ display: 'inline-flex' }}><ScreenLogo height={22} tone="dark" /></a>
+        : <ScreenLogo height={22} tone="dark" />}
     </div>
   )
 }

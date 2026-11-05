@@ -4,6 +4,7 @@
  *   RESEND_API_KEY   — Resend API key
  *   FROM_EMAIL       — verified sender address, e.g. "Levl1 <noreply@mail.levl1.io>"
  */
+import { screenEmailLogoHtml } from '@/lib/screen/brand/email-logo'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const DEFAULT_FROM = process.env.FROM_EMAIL ?? 'Levl1 <noreply@mail.levl1.io>'
@@ -91,7 +92,7 @@ export function inviteEmailHtml(opts: {
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,system-ui,sans-serif;">
 <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;box-shadow:0 4px 20px rgba(79,70,229,0.08)">
   <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:32px 32px 28px">
-    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.025em">Levl1</div>
+    ${screenEmailLogoHtml({ onDark: true, height: 36 })}
     <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px">AI Interview Platform</div>
   </div>
   <div style="padding:32px">

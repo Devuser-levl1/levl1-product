@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle2, Zap, Clock, Mail } from 'lucide-react'
+import { CheckCircle2, Clock, Mail } from 'lucide-react'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 export default function InterviewCompletePage() {
   const params    = useParams()
@@ -31,10 +32,7 @@ export default function InterviewCompletePage() {
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 40 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Zap size={16} color="white" fill="white" />
-        </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+        <ScreenLogo height={40} tone="auto" />
       </div>
 
       {/* Card */}

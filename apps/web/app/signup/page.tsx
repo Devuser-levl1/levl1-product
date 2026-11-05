@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button, Field, Input, Alert } from '@/components/screen/ui'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 // Design-System Pass 3 (group 6b): form on canonical fields/buttons; the
 // two-step passwordless signup flow is unchanged.
@@ -72,10 +73,7 @@ export default function SignupPage() {
         <div style={{ maxWidth: 400, width: '100%' }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'none' }}>
-              <Zap size={16} color="white" strokeWidth={2.5} fill="white" />
-            </div>
-            <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+            <ScreenLogo height={40} tone="auto" />
           </Link>
 
           <h1 style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 28, fontWeight: 600, color: 'var(--lv-text)', letterSpacing: '-0.025em', marginBottom: 6 }}>

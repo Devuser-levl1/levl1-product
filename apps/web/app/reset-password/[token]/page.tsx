@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 export default function ResetPasswordPage() {
   const params  = useParams()
@@ -52,10 +53,7 @@ export default function ResetPasswordPage() {
     <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-sans)' }}>
       <div style={{ width: '100%', maxWidth: 400, background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '40px', boxShadow: 'none' }}>
         <Link href="/interviews/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 36 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 6, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={14} color="white" fill="white" />
-          </div>
-          <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+          <ScreenLogo height={38} tone="auto" />
         </Link>
 
         {done ? (

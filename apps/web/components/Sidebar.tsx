@@ -14,7 +14,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Plus,
   Upload,
   LifeBuoy,
@@ -24,6 +23,7 @@ import {
 import { useState } from "react";
 import { SupportModal } from "@/components/ui/SupportModal";
 import { useAccountType } from "@/hooks/useAccountType";
+import { ScreenLogo, ScreenIcon } from "@/components/screen/brand/ScreenLogo";
 
 interface NavItem {
   section: NavSection;
@@ -101,55 +101,22 @@ export default function Sidebar() {
           textAlign: "left",
         }}
       >
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 6,
-            background: "var(--lv-text)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Zap size={14} color="var(--lv-surface)" strokeWidth={2.5} fill="var(--lv-surface)" />
-        </div>
-
-        <AnimatePresence>
-          {!sidebarCollapsed && (
+        {/* Screen brand mark — "SCREEN / From Levl1" (Screen-scoped; Hire keeps its own logo). */}
+        {sidebarCollapsed ? (
+          <ScreenIcon size={32} />
+        ) : (
+          <AnimatePresence>
             <motion.div
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -6 }}
               transition={{ duration: 0.15, delay: 0.05 }}
-              style={{ overflow: "hidden", whiteSpace: "nowrap" }}
+              style={{ overflow: "hidden" }}
             >
-              <div
-                style={{
-                  fontFamily: "var(--lv-font-sans)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "var(--lv-text)",
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1,
-                }}
-              >
-                Levl1
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--lv-text-muted)",
-                  marginTop: 3,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                AI Interview Platform
-              </div>
+              <ScreenLogo height={34} tone="auto" />
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
+        )}
       </button>
 
       {/* ── Navigation ── */}

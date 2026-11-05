@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase, Check } from 'lucide-react'
+import { Building2, FileText, Users, CreditCard, Plus, Trash2, ChevronRight, Briefcase, Check } from 'lucide-react'
 import { ACCOUNT_TYPES, type AccountType } from '@/lib/screen/account-type'
 import { VOICE_OPTIONS, DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
 import { Play, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 
 const TEAM_SIZES = ['1-5', '6-20', '21-50', '50+']
@@ -160,10 +161,7 @@ export default function OnboardingPage() {
     <div style={{ minHeight: '100vh', background: 'var(--lv-bg)', fontFamily: 'var(--lv-font-sans)', display: 'flex', flexDirection: 'column' }}>
       {/* Nav */}
       <header style={{ height: 60, background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', display: 'flex', alignItems: 'center', padding: '0 clamp(16px, 4vw, 32px)', gap: 12, flexShrink: 0 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Zap size={14} color="white" fill="white" />
-        </div>
-        <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)' }}>Levl1</span>
+        <ScreenLogo height={30} tone="auto" />
         <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--lv-text-muted)' }}>· Account Setup</span>
       </header>
 

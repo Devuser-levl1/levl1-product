@@ -25,6 +25,7 @@ import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/Captu
 import { digest, type TimelineEvent } from '@/lib/screen/workspace/timeline'
 import { LANGUAGE_LABEL, WORKSPACE_LANGUAGES, type PublicTask } from '@/lib/screen/workspace/task'
 import { hasWorkspace, isInterviewMode, type InterviewMode } from '@/lib/screen/workspace/modes'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -2553,9 +2554,7 @@ export default function InterviewPage() {
   if (phase === 'waiting') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)', gap: 32 }}>
-        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', letterSpacing: '-0.015em' }}>
-          Levl1
-        </div>
+        <ScreenLogo height={40} tone="auto" />
         <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', boxShadow: 'none' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 20px', background: 'var(--lv-brand-soft)', color: 'var(--lv-brand)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Mic size={24} />
@@ -2634,9 +2633,7 @@ export default function InterviewPage() {
 
       {/* ── Header ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 56, background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)', letterSpacing: '-0.02em' }}>
-          Levl1
-        </div>
+        <ScreenLogo height={32} tone="auto" />
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-muted)', textAlign: 'center' }}>
           {candidate.name} · {position.title}
         </div>

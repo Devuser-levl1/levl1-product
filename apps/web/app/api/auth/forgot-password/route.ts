@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
+import { screenEmailLogoHtml } from '@/lib/screen/brand/email-logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,system-ui,sans-serif;">
 <div style="max-width:480px;margin:40px auto;background:#fff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;box-shadow:0 4px 20px rgba(79,70,229,0.08)">
   <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:28px 32px">
-    <div style="font-size:20px;font-weight:800;color:#fff">Levl1 · Password Reset</div>
+    ${screenEmailLogoHtml({ onDark: true, height: 34 })}
+    <div style="font-size:15px;font-weight:600;color:#fff;margin-top:10px">Password reset</div>
   </div>
   <div style="padding:32px">
     <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px">

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 interface RubricData {
   positionTitle: string
@@ -105,10 +106,7 @@ export default function RubricApprovalPage() {
     <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', fontFamily: 'var(--font-sans)' }}>
       {/* Header */}
       <header style={{ background: 'var(--lv-surface)', borderBottom: '1px solid var(--lv-border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--lv-gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Zap size={14} color="white" fill="white" />
-        </div>
-        <span style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--lv-text)' }}>Levl1</span>
+        <ScreenLogo height={30} tone="auto" />
         <span style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginLeft: 4 }}>· Scoring Rubric Review</span>
       </header>
 
