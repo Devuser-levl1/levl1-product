@@ -179,7 +179,7 @@ declare global {
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260, background: '#1E1E1E', color: '#4EC9B0', fontSize: 13 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260, background: 'var(--lv-surface)', color: 'var(--lv-text-muted)', fontSize: 13 }}>
       Loading editor…
     </div>
   ),
@@ -2402,12 +2402,12 @@ export default function InterviewPage() {
       })()}
 
       {tourActive && (
-        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: '#18181B', color: 'var(--lv-border)', borderRadius: 100, padding: '8px 10px 8px 18px', boxShadow: '0 10px 30px rgba(15,23,42,0.35)', border: '1px solid #3F3F46' }}>
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 80, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--lv-surface)', color: 'var(--lv-text)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '8px 10px 8px 18px', boxShadow: 'var(--lv-shadow-md)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818CF8', animation: 'pulseDot 1.2s ease-in-out infinite' }} />
             Quick interface tour…
           </span>
-          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: 'var(--lv-brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>Skip tour →</button>
+          <button onClick={skipTour} style={{ padding: '6px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: 'var(--lv-brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>Skip tour</button>
         </div>
       )}
 
@@ -2543,7 +2543,7 @@ export default function InterviewPage() {
                   <MonacoEditor
                     height="100%"
                     language={codeLanguage}
-                    theme="vs-dark"
+                    theme="light"
                     value={codeContent}
                     onChange={handleCodeChange}
                     onMount={handleEditorMount}

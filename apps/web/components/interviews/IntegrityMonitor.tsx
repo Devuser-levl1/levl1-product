@@ -75,9 +75,9 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating', on
   const inline = variant === 'inline'
   // Inner self-view tile (identical content; outer wrapper differs by variant).
   const tile = (
-    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: 8, overflow: 'hidden', background: '#111113', boxShadow: 'none', border: '1px solid #27272A' }}>
+    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: 8, overflow: 'hidden', background: 'var(--lv-surface-sunken, #F4F4F5)', boxShadow: 'none', border: '1px solid var(--lv-border, #E4E4E7)' }}>
       <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: camState === 'on' ? 'block' : 'none' }} />
-      {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A1A1AA', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
+      {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--lv-text-muted, #71717A)', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
       <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(17,17,19,0.72)', borderRadius: 4, padding: '2px 8px' }}>
         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: '#7CC49B', animation: 'lv-pulse 2.4s ease-in-out infinite' }} />
         <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>Live monitoring</span>

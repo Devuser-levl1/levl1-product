@@ -225,27 +225,27 @@ export default function Whiteboard({ onExport, onDone }: Props) {
   ]
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: '1px solid #27272A', position: 'relative' }}>
+    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--lv-border)', position: 'relative' }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#18181B' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)' }}>
         <div style={{ display: 'flex', gap: 2 }}>
           {TOOLS.map((t) => (
-            <button key={t.id} title={t.label} onClick={() => setTool(t.id)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tool === t.id ? 'rgba(255,255,255,0.10)' : 'transparent', color: tool === t.id ? '#FAFAFA' : '#A1A1AA', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
+            <button key={t.id} title={t.label} onClick={() => setTool(t.id)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tool === t.id ? 'var(--lv-surface)' : 'transparent', boxShadow: tool === t.id ? 'inset 0 0 0 1px var(--lv-border)' : 'none', color: tool === t.id ? 'var(--lv-text)' : 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
               {t.icon}
             </button>
           ))}
         </div>
-        <div style={{ width: 1, height: 20, background: '#3F3F46', margin: '0 4px' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--lv-border)', margin: '0 4px' }} />
         <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
           {PRESET_COLORS.map((c) => (
-            <button key={c} onClick={() => setColor(c)} style={{ width: 18, height: 18, borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: color === c ? '2px solid #fff' : 'none', boxShadow: color === c ? '0 0 0 1px #64748B' : 'none' }} />
+            <button key={c} onClick={() => setColor(c)} style={{ width: 18, height: 18, borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: color === c ? '2px solid var(--lv-surface)' : 'none', boxShadow: color === c ? '0 0 0 3px var(--lv-border-strong)' : 'none' }} />
           ))}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          <button onClick={undo} disabled={history.length === 0} style={{ padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: 'transparent', color: history.length ? '#A1A1AA' : '#52525B', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+          <button onClick={undo} disabled={history.length === 0} style={{ padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', background: 'transparent', color: history.length ? 'var(--lv-text-muted)' : 'var(--lv-text-disabled, #A1A1AA)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
             <Undo2 size={12} /> Undo
           </button>
-          <button onClick={exportPng} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#D4D4D8', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+          <button onClick={exportPng} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', background: 'var(--lv-surface)', boxShadow: 'inset 0 0 0 1px var(--lv-border)', color: 'var(--lv-text-body)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
             <Download size={12} /> Save
           </button>
         </div>
@@ -265,9 +265,9 @@ export default function Whiteboard({ onExport, onDone }: Props) {
 
       {/* Fix 2: Done button footer */}
       {onDone && (
-        <div style={{ padding: '8px 14px', borderTop: '1px solid #27272A', background: '#111113', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, color: '#A1A1AA' }}>Draw your answer, then click Done</span>
-          <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 6, border: 'none', background: '#4F46E5', color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+        <div style={{ padding: '8px 14px', borderTop: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>Draw your answer, then click Done</span>
+          <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 6, border: 'none', background: 'var(--lv-brand)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--lv-font-sans)' }}>
             <CheckCircle2 size={14} /> Done — Submit Diagram
           </button>
         </div>
