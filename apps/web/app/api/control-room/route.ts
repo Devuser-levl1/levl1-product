@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic'
 //   1. live interviews + their 1:1 live-state row
 //   2. integrity events grouped by (interview, type) — whole session
 //   3. integrity events grouped by (interview, type) — recent window
-// Demo-gallery interviews are excluded from the main list and returned
-// separately (only when ?demo=1) so they never mix with real sessions.
+// Demo-gallery interviews are always excluded (they live under the dedicated
+// demo agency anyway, so an agency-scoped query never sees them).
 
 // A session "in progress" for longer than this is an abandoned tab, not live.
 const MAX_LIVE_AGE_MS = 3 * 60 * 60_000
@@ -24,7 +24,6 @@ const HIGH_TYPES = Array.from(HIGH_CONFIDENCE_TYPES) as string[]
 export async function GET(req: NextRequest) {
   const session = requireControlRoomSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  const includeDemo = new URL(req.url).searchParams.get('demo') === '1'
 
   try {
     const now = Date.now()
@@ -36,7 +35,7 @@ export async function GET(req: NextRequest) {
           ...scope,
           status: 'in_progress',
           startedAt: { gte: new Date(now - MAX_LIVE_AGE_MS) },
-          ...(includeDemo ? {} : { isDemo: false }),
+          isDemo: false,
         },
         select: {
           id: true, isDemo: true, startedAt: true, duration: true,
@@ -115,11 +114,10 @@ export async function GET(req: NextRequest) {
     tiles.sort((a, b) => b.health.severity - a.health.severity
       || new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime())
 
-    const live = tiles.filter((t) => !t.isDemo)
+    const live = tiles  // demo sessions already excluded by the query
     return NextResponse.json({
       serverTime: new Date(now).toISOString(),
       tiles: live,
-      demoTiles: includeDemo ? tiles.filter((t) => t.isDemo) : [],
       counts: {
         live: live.length,
         alert: live.filter((t) => t.health.level === 'alert').length,

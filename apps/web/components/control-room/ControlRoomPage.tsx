@@ -43,7 +43,7 @@ interface Ended {
   terminationReason: string | null; hasRecording: boolean; integrityEvents: number;
 }
 interface RoomData {
-  serverTime: string; tiles: Tile[]; demoTiles: Tile[]; recentlyEnded: Ended[];
+  serverTime: string; tiles: Tile[]; recentlyEnded: Ended[];
   counts: { live: number; alert: number; watch: number; ok: number; humanPresent: number };
 }
 
@@ -62,7 +62,6 @@ function clock(fromIso: string | null, now: number) {
 export function ControlRoomPage() {
   const [data, setData] = useState<RoomData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showDemo, setShowDemo] = useState(false);
   const [sound, setSound] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -75,7 +74,7 @@ export function ControlRoomPage() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch(`/api/control-room${showDemo ? "?demo=1" : ""}`, { cache: "no-store" });
+      const r = await fetch("/api/control-room", { cache: "no-store" });
       if (!r.ok) throw new Error(r.status === 401 ? "Your session expired — sign in again." : "Couldn't load live interviews.");
       const d = (await r.json()) as RoomData;
       setData(d);
@@ -96,7 +95,7 @@ export function ControlRoomPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load live interviews.");
     }
-  }, [showDemo]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -144,9 +143,6 @@ export function ControlRoomPage() {
           </span>
           <ToggleBtn on={sound} onClick={() => setSound((s) => !s)} title={sound ? "Mute alert sound" : "Unmute alert sound"} label="Alert sound">
             {sound ? <Bell size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
-          </ToggleBtn>
-          <ToggleBtn on={showDemo} onClick={() => setShowDemo((s) => !s)} title="Show demo-gallery interviews separately">
-            <span style={{ fontSize: 12, fontWeight: 600 }}>Demo interviews</span>
           </ToggleBtn>
         </div>
       </div>
@@ -196,15 +192,6 @@ export function ControlRoomPage() {
         <Section title="All clear" count={groups.ok.length} tone="green">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 8 }}>
             {groups.ok.map((t) => <MiniTile key={t.id} t={t} now={now} onOpen={setOpenId} />)}
-          </div>
-        </Section>
-      )}
-
-      {/* ── Demo sessions — separated, never counted ── */}
-      {showDemo && (data?.demoTiles.length ?? 0) > 0 && (
-        <Section title="Demo interviews (not counted)" count={data!.demoTiles.length} tone="muted">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 8, opacity: 0.75 }}>
-            {data!.demoTiles.map((t) => <MiniTile key={t.id} t={t} now={now} onOpen={setOpenId} />)}
           </div>
         </Section>
       )}
