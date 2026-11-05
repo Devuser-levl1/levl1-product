@@ -5,6 +5,7 @@ import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { openArray, openText } from '@/lib/screen/privacy/fields'
 import { digest, type TimelineEvent } from './timeline'
 import { sanitizeTask } from './task'
+import { sanitizeRubric, DIMENSION_LABEL } from '@/lib/screen/taskbank/types'
 
 // ── Work-sample judgment scoring (Screen-scoped, server-only) ──────────────
 // SEPARATE axes from the competency score — never blended into it:
@@ -19,6 +20,8 @@ export interface AxisScore { score: number | null; rationale: string; evidence: 
 export interface WorkSampleScores {
   approach: AxisScore; criticalThinking: AxisScore; defense: AxisScore
   correctness: { passed: number; total: number; score: number | null }
+  // Rubric-judged (task bank): one verdict per criterion, evidence-linked.
+  criteria: { id: string; dimension: string; verdict: 'strong' | 'partial' | 'weak' | 'not_evidenced'; note: string; ref: string }[]
   summary: string
   generatedAt: string
 }
@@ -70,6 +73,12 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
   const tl = digest(openArray<TimelineEvent>(row.timeline))
   const defense = defenseExchange(openArray<StoredEntry>(row.interview.transcript), task.title)
 
+  const rubric = sanitizeRubric(task.rubric ?? {})
+  const rubricText = (rubric.criteria.length || rubric.probes.length)
+    ? `\nRUBRIC CRITERIA (judge each):\n${rubric.criteria.map((c) => `[${c.id}] ${DIMENSION_LABEL[c.dimension]} (weight ${c.weight}) — strong: ${c.strong} | weak: ${c.weak}`).join('\n')}\n` +
+      (rubric.probes.length ? `\nEXPECTED PROBE ANSWERS (judge the DEFENSE against these):\n${rubric.probes.map((p) => `- ${p.decision}: strong = ${p.strongAnswer}${p.weakSignals ? `; weak signals = ${p.weakSignals}` : ''}`).join('\n')}\n` : '')
+    : ''
+
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) return null
   const res = await new Anthropic({ apiKey: key }).messages.create({
@@ -85,12 +94,15 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
       content:
         `TASK: ${task.title}\n${task.prompt.slice(0, 1500)}\n` +
         (task.lookFor.length ? `STRONG APPROACH LOOKS LIKE: ${task.lookFor.join('; ')}\n` : '') +
+        rubricText +
         `\nFINAL CODE (${row.language}):\n${code.slice(0, 8000)}\n` +
         `\nTESTS: ${correctness.total ? `${passed}/${correctness.total} passing (incl. hidden)` : 'never run'}\n` +
         `\nTIMELINE (how the work evolved):\n${tl.text}\n` +
         `\nDEFENSE (explanation + follow-ups):\n${defense.length ? defense.map((l, i) => `D${i + 1} ${l}`).join('\n') : '(none captured)'}\n\n` +
         'Return JSON: {"approach":{"score":0,"rationale":"…","evidence":[{"ref":"M2","note":"…"}]},' +
-        '"criticalThinking":{…same…},"defense":{…same…},"summary":"2-3 sentences for the hiring team"}',
+        '"criticalThinking":{…same…},"defense":{…same…},' +
+        (rubric.criteria.length ? '"criteria":[{"id":"c1","verdict":"strong|partial|weak|not_evidenced","note":"…","ref":"M2"}],' : '') +
+        '"summary":"2-3 sentences for the hiring team"}',
     }],
   })
   if (res.stop_reason === 'max_tokens' || res.stop_reason === 'refusal') return null
@@ -99,6 +111,11 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
   const scores: WorkSampleScores = {
     approach: axis(j.approach), criticalThinking: axis(j.criticalThinking), defense: axis(j.defense),
     correctness,
+    criteria: rubric.criteria.flatMap((c) => {
+      const got = (Array.isArray(j.criteria) ? j.criteria : []).find((x) => x && typeof x === 'object' && (x as { id?: unknown }).id === c.id) as Record<string, unknown> | undefined
+      const verdict = ['strong', 'partial', 'weak', 'not_evidenced'].includes(got?.verdict as string) ? got!.verdict as 'strong' | 'partial' | 'weak' | 'not_evidenced' : 'not_evidenced'
+      return [{ id: c.id, dimension: c.dimension, verdict, note: typeof got?.note === 'string' ? got.note.slice(0, 300) : '', ref: typeof got?.ref === 'string' ? got.ref.slice(0, 8) : '' }]
+    }),
     summary: typeof j.summary === 'string' ? j.summary.slice(0, 800) : '',
     generatedAt: new Date().toISOString(),
   }

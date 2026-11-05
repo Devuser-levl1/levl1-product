@@ -433,6 +433,64 @@ model Interview {
   workSample      InterviewWorkSample?
 }
 
+// ── Technical content structure (Screen-scoped) ────────────────────────────
+// Task bank + per-task rubric + role skill maps. agencyId null = platform
+// SAMPLE content (isSample) visible to every agency as an example. Only
+// status "active" tasks (human-reviewed) are ever selected for live use.
+// Shapes: lib/screen/taskbank/*.ts.
+model TaskBankItem {
+  id                String        @id @default(cuid())
+  agencyId          String?
+  title             String
+  prompt            String        @db.Text
+  roles             String[]      // backend | frontend | fullstack | data | devops | mobile | ml
+  skills            String[]      // skill ids, e.g. api-design, sql-optimization, concurrency
+  difficulty        String        @default("mid")   // junior | mid | senior
+  experienceMin     Int           @default(0)
+  experienceMax     Int           @default(40)
+  languages         String[]      // allowed workspace languages
+  starterCode       Json?         // { [language]: code }
+  tests             Json          // [{ id, name, input, expected, hidden }]
+  referenceSolution String?       @db.Text   // never sent to candidates
+  referenceLanguage String        @default("python")
+  minutes           Int           @default(10)
+  status            String        @default("draft")  // draft | reviewed | active | retired
+  isSample          Boolean       @default(false)
+  reviewNote        String?       @db.Text
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  lastVerifiedAt    DateTime?     // reference solution passed every test in Judge0
+  createdBy         String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  rubric            TaskRubric?
+  @@index([agencyId, status])
+}
+
+model TaskRubric {
+  id        String       @id @default(cuid())
+  taskId    String       @unique
+  task      TaskBankItem @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  // [{ id, dimension: correctness|efficiency|edge_cases|code_quality|structure, strong, weak, weight }]
+  criteria  Json
+  // [{ id, decision, question, strongAnswer, weakSignals }] — lets Ananya JUDGE the defense
+  probes    Json
+  updatedAt DateTime     @updatedAt
+}
+
+model RoleSkillMap {
+  id        String   @id @default(cuid())
+  agencyId  String?
+  role      String   // backend | frontend | fullstack | data | devops | mobile | ml
+  title     String
+  // [{ id, name, aliases[], priority 1-3, dependsOn[], deeperProbes[], adjacent[] }]
+  skills    Json
+  isSample  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([agencyId, role])
+}
+
 // ── Observe & Defend work sample (Screen-scoped) ───────────────────────────
 // One row per interview in technical / hybrid mode: the candidate's code
 // (AES-GCM encrypted, autosaved continuously), the work-capture timeline (how

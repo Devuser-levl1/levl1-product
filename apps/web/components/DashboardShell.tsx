@@ -17,6 +17,7 @@ import { AccountTypePrompt } from "./AccountTypePrompt";
 import { ControlRoomPage } from "./control-room/ControlRoomPage";
 import AnalyticsPage from "./analytics/AnalyticsPage";
 import SettingsPage from "./settings/SettingsPage";
+import { TaskBankPage } from "./taskbank/TaskBankPage";
 // Shepherd.js accesses document/window at import time — must be client-only
 const ProductTour = dynamic(
   () => import("./ui/ProductTour").then((m) => ({ default: m.ProductTour })),
@@ -61,6 +62,7 @@ export default function DashboardShell() {
       case "control-room": return <ControlRoomPage />;
       case "reports":    return <ReportsPage />;
       case "analytics":  return <AnalyticsPage />;
+      case "task-bank":  return <TaskBankPage />;
       case "settings":   return <SettingsPage />;
       default:           return <DashboardPage />;
     }

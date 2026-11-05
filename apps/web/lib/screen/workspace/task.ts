@@ -25,6 +25,14 @@ export interface WorkSampleTask {
   // Recruiter-facing guidance for scoring/follow-ups (never sent to the candidate).
   lookFor: string[]         // what a strong approach looks like
   probeAngles: string[]     // decision points worth defending
+  // Technical content structure — provenance + live-use gate + rubric.
+  // NONE of these reach the candidate (publicTask strips them).
+  source: 'bank' | 'generated' | 'manual'
+  bankTaskId: string | null
+  approved: boolean         // only approved tasks are used in live interviews
+  approvedBy: string | null
+  skills: string[]
+  rubric: unknown           // lib/screen/taskbank/types.ts Rubric (sanitizeRubric at use)
 }
 
 /** What the candidate's browser may see. */
@@ -65,6 +73,14 @@ export function sanitizeTask(raw: unknown): WorkSampleTask | null {
     tests,
     lookFor: list(o.lookFor),
     probeAngles: list(o.probeAngles),
+    source: o.source === 'bank' || o.source === 'manual' ? o.source : 'generated',
+    bankTaskId: typeof o.bankTaskId === 'string' ? o.bankTaskId.slice(0, 40) : null,
+    // Bank tasks are human-reviewed before they can be selected; generated
+    // tasks need an explicit recruiter approval. Missing flag = NOT approved.
+    approved: o.approved === true,
+    approvedBy: typeof o.approvedBy === 'string' ? o.approvedBy.slice(0, 120) : null,
+    skills: (Array.isArray(o.skills) ? o.skills : []).filter((x): x is string => typeof x === 'string').slice(0, 12),
+    rubric: o.rubric ?? null,
   }
 }
 

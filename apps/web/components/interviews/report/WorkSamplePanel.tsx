@@ -20,7 +20,7 @@ export interface WorkSampleShape {
     pastes: { count: number; largest: number; total: number }
     moments: { id: string; at: string; kind: string; note: string }[]
   }
-  scores: { approach: Axis; criticalThinking: Axis; defense: Axis; correctness: { passed: number; total: number; score: number | null }; summary: string } | null
+  scores: { approach: Axis; criticalThinking: Axis; defense: Axis; correctness: { passed: number; total: number; score: number | null }; criteria?: { id: string; dimension: string; verdict: string; note: string; ref: string }[]; summary: string } | null
 }
 
 const mmss = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
@@ -90,6 +90,22 @@ export function WorkSamplePanel({ workSample }: { workSample: WorkSampleShape | 
         </div>
       </div>
       {!sc && <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: 0 }}>Judgment scores are generated with the report.</p>}
+
+      {/* Rubric verdicts (task bank) */}
+      {!!sc?.criteria?.length && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Against the task rubric</div>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 4 }}>
+            {sc.criteria.map((c) => (
+              <li key={c.id} style={{ display: 'flex', gap: 10, fontSize: 12, color: 'var(--lv-text-body)', alignItems: 'baseline' }}>
+                <span style={{ width: 110, flexShrink: 0, fontWeight: 600, color: 'var(--lv-text)', textTransform: 'capitalize' }}>{c.dimension.replace('_', ' ')}</span>
+                <span style={{ width: 92, flexShrink: 0, fontWeight: 600, color: c.verdict === 'strong' ? 'var(--lv-success)' : c.verdict === 'weak' ? 'var(--lv-warning)' : 'var(--lv-text-muted)' }}>{c.verdict.replace('_', ' ')}</span>
+                <span>{c.note}{c.ref && <span style={{ fontFamily: 'var(--lv-font-mono)', fontSize: 11, color: 'var(--lv-text-muted)' }}> · {c.ref}</span>}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* How the work evolved */}
       <div>

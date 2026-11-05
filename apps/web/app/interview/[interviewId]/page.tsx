@@ -453,6 +453,7 @@ export default function InterviewPage() {
   const wsDirtyRef = useRef(false)
   const saveInFlightRef = useRef(false)
   const lastTestsSummaryRef = useRef('')
+  const uncoveredKeysRef = useRef<string[]>([])   // must-have skills not yet assessed (adaptive coverage)
   const codeLanguageRef = useRef('javascript')
   codeLanguageRef.current = codeLanguage
   const editorRef = useRef<{ getValue: () => string; getAction: (id: string) => { run: () => Promise<void> } | null } | null>(null)
@@ -1441,9 +1442,16 @@ export default function InterviewPage() {
           recentAiLines:     transcriptRef.current.filter(e => e.speaker === 'ai').slice(-8).map(e => e.text),
           // Observe & Defend: the candidate's actual work grounds the follow-ups.
           ...(q.kind === 'worksample' ? { workContext: buildWorkContext() } : {}),
+          // Technical content structure: server adds rubric probe answers +
+          // role-skill-map coverage guidance (never sent back to the browser).
+          interviewId,
+          coverageAnswers: responsesRef.current.map(r => ({ questionText: `${r.questionText} ${r.questionType}`, score: r.score })),
+          timeLeftSec: timeRemainingRef.current,
         }),
       })
       ev = await res.json()
+      const cov = (ev as unknown as { coverage?: { uncoveredKeys?: unknown } }).coverage
+      if (cov && Array.isArray(cov.uncoveredKeys)) uncoveredKeysRef.current = (cov.uncoveredKeys as unknown[]).filter((k): k is string => typeof k === 'string')
     } catch {}
 
     // ── 8. Relevance / rambling check ────────────────────────────────
@@ -1494,6 +1502,9 @@ export default function InterviewPage() {
     updateSessionScore(avg)
 
     // ── 10. Next action ──────────────────────────────────────────────
+    // Adaptive coverage: if a must-have skill is still unassessed, promote the
+    // first remaining question that targets it so it is reached in time.
+    promoteForCoverage(currentQIdxRef.current + 1)
     const nextIdx = currentQIdxRef.current + 1
     const nextQ   = questionsRef.current[nextIdx]
     const isSectionChange = nextQ && nextQ.section !== q.section
@@ -1923,6 +1934,22 @@ export default function InterviewPage() {
     startListening()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTranscript, speakText, startListening])
+
+  // Between-question adaptation (role skill map coverage from evaluate-response).
+  const promoteForCoverage = (nextIdx: number) => {
+    const keys = uncoveredKeysRef.current
+    const qs = questionsRef.current
+    if (!keys.length || nextIdx >= qs.length) return
+    const hits = (q: LocalQuestion) => { const t = `${q.question} ${q.techTag}`.toLowerCase(); return keys.some((k) => k.length > 2 && t.includes(k)) }
+    if (hits(qs[nextIdx])) return
+    const j = qs.findIndex((q, i) => i > nextIdx && !askedQuestionIdsRef.current.has(q.id) && q.kind !== 'worksample' && hits(q))
+    if (j < 0) return
+    const reordered = [...qs]
+    const [picked] = reordered.splice(j, 1)
+    reordered.splice(nextIdx, 0, picked)
+    questionsRef.current = reordered
+    setQuestions(reordered)
+  }
 
   const buildWorkContext = () => {
     const task = workTaskRef.current

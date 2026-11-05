@@ -28,7 +28,10 @@ export async function loadWorkspaceSession(interviewId: string): Promise<Workspa
   const mode = resolveMode(iv.position)
   const live = iv.status === 'in_progress' || iv.status === 'scheduled'
     || (iv.status === 'completed' && !!iv.completedAt && Date.now() - iv.completedAt.getTime() < GRACE_MS)
-  return { interviewId: iv.id, mode, task: hasWorkspace(mode) ? sanitizeTask(iv.position.workSampleTask) : null, live }
+  // Live-use gate: only APPROVED tasks (reviewed bank task, or a generated
+  // task a recruiter approved) are ever shown to a candidate.
+  const task = hasWorkspace(mode) ? sanitizeTask(iv.position.workSampleTask) : null
+  return { interviewId: iv.id, mode, task: task?.approved ? task : null, live }
 }
 
 export const MAX_CODE_CHARS = 64_000

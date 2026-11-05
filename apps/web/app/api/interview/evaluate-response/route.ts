@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { INTERVIEW_MODEL } from '@/lib/screen/interview/model'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
+import { prisma } from '@/lib/prisma'
+import { sanitizeTask } from '@/lib/screen/workspace/task'
+import { sanitizeRubric } from '@/lib/screen/taskbank/types'
+import { matchSkills } from '@/lib/screen/taskbank/select'
+import { computeCoverage, coverageGuidance, type SkillCoverage } from '@/lib/screen/taskbank/coverage'
+import { skillMapForPosition } from '@/lib/screen/taskbank/store'
+
+// Technical content structure — server-side context the browser never sees:
+//   • the work-sample rubric's EXPECTED probe answers (judge the defense)
+//   • adaptive skill coverage from the role skill map (go deeper / move on /
+//     prioritise unassessed must-haves before time runs out)
+async function contentContext(interviewId: string, isWork: boolean, answers: { questionText: string; score: number }[], currentText: string, timeLeftSec: number | null) {
+  const iv = await prisma.interview.findUnique({
+    where: { id: interviewId },
+    select: { position: { select: { title: true, techStack: true, mustHaves: true, agencyId: true, workSampleTask: true } }, workSample: { select: { task: true } } },
+  })
+  if (!iv) return { block: '', coverage: null as SkillCoverage | null }
+  const parts: string[] = []
+  if (isWork) {
+    const task = sanitizeTask(iv.workSample?.task ?? iv.position.workSampleTask)
+    const rubric = sanitizeRubric(task?.rubric ?? {})
+    if (rubric.probes.length) {
+      parts.push('RUBRIC — EXPECTED ANSWERS TO LIKELY PROBES (interviewer-only; never reveal or hint at them). Pick the probe that best fits what the candidate actually did, ask it in your own words anchored in their code, and JUDGE their answer against the strong answer / weak signals:\n' +
+        rubric.probes.map((p) => `- Decision: ${p.decision}\n  Ask: ${p.question}\n  Strong answer: ${p.strongAnswer}${p.weakSignals ? `\n  Weak signals: ${p.weakSignals}` : ''}`).join('\n'))
+    }
+    if (rubric.criteria.length) parts.push('RUBRIC CRITERIA (strong vs weak):\n' + rubric.criteria.map((c) => `- ${c.dimension}: strong = ${c.strong}; weak = ${c.weak}`).join('\n'))
+  }
+  const { skills } = await skillMapForPosition(iv.position.agencyId, iv.position.title, iv.position.techStack)
+  let coverage: SkillCoverage | null = null
+  if (skills.length) {
+    const must = matchSkills(iv.position.mustHaves, skills)
+    coverage = computeCoverage(skills, answers, must, { workSkills: isWork ? sanitizeTask(iv.workSample?.task ?? iv.position.workSampleTask)?.skills : [] })
+    const g = coverageGuidance(skills, coverage, currentText, timeLeftSec)
+    if (g) parts.push('ADAPTIVE COVERAGE (role skill map):\n' + g)
+  }
+  return { block: parts.length ? '\n\n' + parts.join('\n\n') : '', coverage }
+}
 
 // Hard cap on follow-ups per question (Build I-P0-3, Part 3a). The client enforces
 // this too; we tell the model so it stops drilling and advances gracefully.
@@ -36,6 +73,16 @@ export async function POST(req: NextRequest) {
         `HOW THE WORK EVOLVED (timeline; moments M1…):\n${clip(wc.timeline, 2500)}\n` +
         (clip(wc.probeAngles, 800) ? `DECISION POINTS WORTH DEFENDING (interviewer-only): ${clip(wc.probeAngles, 800)}\n` : '')
       : ''
+
+    // Rubric + coverage context (optional — older clients don't send interviewId).
+    const interviewId = typeof body.interviewId === 'string' ? body.interviewId.slice(0, 40) : ''
+    const coverageAnswers = (Array.isArray(body.coverageAnswers) ? body.coverageAnswers : []).slice(-40)
+      .filter((a: unknown): a is { questionText: string; score: number } => !!a && typeof (a as { questionText?: unknown }).questionText === 'string')
+      .map((a: { questionText: string; score: number }) => ({ questionText: a.questionText.slice(0, 400), score: Math.max(0, Math.min(100, Number(a.score) || 0)) }))
+    const timeLeftSec = Number.isFinite(Number(body.timeLeftSec)) ? Number(body.timeLeftSec) : null
+    const ctx = interviewId
+      ? await contentContext(interviewId, !!wc, coverageAnswers, `${questionText} ${candidateResponse}`.slice(0, 2000), timeLeftSec).catch((e) => { console.warn('[evaluate-response] content context failed:', e instanceof Error ? e.message : e); return { block: '', coverage: null } })
+      : { block: '', coverage: null }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'No API key' }, { status: 500 })
@@ -105,7 +152,7 @@ export async function POST(req: NextRequest) {
           `Expected key points: ${expectedKeyPoints.join(', ')}\n` +
           `Candidate response: "${candidateResponse}"\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
-          `${budgetLine}${prevCtx}${workBlock}` +
+          `${budgetLine}${prevCtx}${workBlock}${ctx.block}` +
           (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
           `\n\n` +
           `Return ONLY this JSON:\n` +
@@ -128,7 +175,12 @@ export async function POST(req: NextRequest) {
     const clean = raw.replace(/```json|```/g, '').trim()
     const result = JSON.parse(clean)
 
-    return NextResponse.json(result, { status: 200 })
+    // Between-question adaptation: the room promotes a question covering an
+    // unassessed must-have. Only skill names/aliases — no rubric content.
+    return NextResponse.json({
+      ...result,
+      ...(ctx.coverage ? { coverage: { uncoveredKeys: ctx.coverage.uncoveredKeys, uncoveredMustHaves: ctx.coverage.uncoveredMustHaves.map((u) => u.name) } } : {}),
+    }, { status: 200 })
   } catch (err: unknown) {
     console.error('evaluate-response error:', err instanceof Error ? err.message : err)
     // Return a safe fallback so the interview doesn't crash
