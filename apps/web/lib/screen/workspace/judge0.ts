@@ -1,16 +1,22 @@
 import type { WorkspaceLanguage } from './task'
 
 // ── Judge0 execution client (Screen-scoped, SERVER-ONLY) ───────────────────
-// Candidate code runs in Judge0's sandbox — NEVER on our servers. This module
-// is the single seam: hosted Judge0 today (RapidAPI), self-hosted later by
-// changing env only.
+// Candidate code runs in Judge0's sandbox — NEVER on our servers.
 //
-//   JUDGE0_API_URL     default https://judge0-ce.p.rapidapi.com
-//   JUDGE0_API_KEY     RapidAPI key (hosted)             → X-RapidAPI-Key
-//   JUDGE0_API_HOST    RapidAPI host header (hosted)     → X-RapidAPI-Host (default from URL)
-//   JUDGE0_AUTH_TOKEN  self-hosted Judge0 AUTHN token    → X-Auth-Token
-// Configured when an API key OR an auth token is present (self-host may need neither
-// if JUDGE0_API_URL points at a private instance — set JUDGE0_AUTH_TOKEN=none then).
+// Provider: Judge0 CE hosted via RapidAPI. Backend-proxied only — the key is
+// read from server env and never exposed to the browser (no NEXT_PUBLIC_*).
+//   JUDGE0_API_KEY   RapidAPI key                 → X-RapidAPI-Key   (required)
+//   JUDGE0_API_HOST  judge0-ce.p.rapidapi.com     → X-RapidAPI-Host  (also the base URL host)
+//
+// Self-host seam (later volume optimisation): set JUDGE0_API_URL to your own
+// Judge0 instance (+ JUDGE0_AUTH_TOKEN if it has AUTHN). No code change.
+
+if (typeof window !== 'undefined') {
+  throw new Error('lib/screen/workspace/judge0 is server-only — call /api/interview/workspace/run instead.')
+}
+
+const RAPIDAPI_HOST = process.env.JUDGE0_API_HOST || 'judge0-ce.p.rapidapi.com'
+const BASE_URL = (process.env.JUDGE0_API_URL || `https://${RAPIDAPI_HOST}`).replace(/\/+$/, '')
 
 // Judge0 CE language ids.
 const LANGUAGE_ID: Record<WorkspaceLanguage, number> = {
@@ -33,18 +39,17 @@ export interface ExecResult {
 }
 
 export function judge0Configured(): boolean {
-  return !!(process.env.JUDGE0_API_KEY || process.env.JUDGE0_AUTH_TOKEN)
+  return !!(process.env.JUDGE0_API_KEY || (process.env.JUDGE0_API_URL && process.env.JUDGE0_AUTH_TOKEN))
 }
 
 const b64 = (s: string) => Buffer.from(s, 'utf8').toString('base64')
 const unb64 = (s: unknown) => (typeof s === 'string' && s ? Buffer.from(s, 'base64').toString('utf8') : '')
 
 function headers(): Record<string, string> {
-  const url = process.env.JUDGE0_API_URL ?? 'https://judge0-ce.p.rapidapi.com'
   const h: Record<string, string> = { 'Content-Type': 'application/json' }
   if (process.env.JUDGE0_API_KEY) {
     h['X-RapidAPI-Key'] = process.env.JUDGE0_API_KEY
-    h['X-RapidAPI-Host'] = process.env.JUDGE0_API_HOST ?? new URL(url).host
+    h['X-RapidAPI-Host'] = RAPIDAPI_HOST
   }
   if (process.env.JUDGE0_AUTH_TOKEN && process.env.JUDGE0_AUTH_TOKEN !== 'none') h['X-Auth-Token'] = process.env.JUDGE0_AUTH_TOKEN
   return h
@@ -52,7 +57,7 @@ function headers(): Record<string, string> {
 
 /** One sandboxed execution (synchronous wait). Limits are conservative for interview tasks. */
 export async function execute(opts: { language: WorkspaceLanguage; source: string; stdin?: string }): Promise<ExecResult> {
-  const base = (process.env.JUDGE0_API_URL ?? 'https://judge0-ce.p.rapidapi.com').replace(/\/+$/, '')
+  const base = BASE_URL
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 20_000)
   try {

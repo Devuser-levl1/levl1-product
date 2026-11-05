@@ -106,6 +106,8 @@ NEXT_PUBLIC_APP_URL  https://levl1.io
 CRON_SECRET          Cron job auth secret
 ELEVENLABS_API_KEY   Voice (Interviews only)
 DEEPGRAM_API_KEY     Transcription (Interviews only)
+JUDGE0_API_KEY       Judge0 CE via RapidAPI (X-RapidAPI-Key) — server-only, never NEXT_PUBLIC_
+JUDGE0_API_HOST      judge0-ce.p.rapidapi.com (X-RapidAPI-Host)
 ```
 
 ## Integration between products
