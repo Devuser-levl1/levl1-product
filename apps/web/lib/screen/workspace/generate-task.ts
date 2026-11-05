@@ -69,7 +69,8 @@ export async function generateWorkSampleTask(p: TaskPositionInput): Promise<{ ta
   const text = res.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
   const raw = outermostJson(text)
   if (!raw) return { task: null, verified: false, note: 'Unparseable task' }
-  const task = sanitizeTask({ ...raw, language: isWorkspaceLanguage(raw.language) ? raw.language : language })
+  // Generated tasks are stdin-based (SQL tasks are authored in the task bank).
+  const task = sanitizeTask({ ...raw, language: isWorkspaceLanguage(raw.language) && raw.language !== 'sql' ? raw.language : language })
   if (!task || task.tests.length < 2) return { task: null, verified: false, note: 'Task had too few tests' }
 
   // Verify tests against the reference solution (sandboxed in Judge0).

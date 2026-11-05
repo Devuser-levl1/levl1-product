@@ -75,6 +75,7 @@ export function sanitizeTaskInput(raw: unknown): { ok: true; task: TaskInput } |
   const expMin = int(o.experienceMin, band.min, 0, 40)
   const expMax = int(o.experienceMax, band.max, 0, 40)
   const languages = list(o.languages).filter(isWorkspaceLanguage) as WorkspaceLanguage[]
+  if (languages.includes('sql') && languages.length > 1) return { ok: false, error: 'SQL tasks are SQL-only: their tests are setup SQL, which other languages can\'t run. Use SQL alone, or remove it.' }
   const starterRaw = (o.starterCode && typeof o.starterCode === 'object' ? o.starterCode : {}) as Record<string, unknown>
   const starterCode: Partial<Record<WorkspaceLanguage, string>> = {}
   for (const [k, v] of Object.entries(starterRaw)) if (isWorkspaceLanguage(k)) starterCode[k] = str(v, 8000)
@@ -87,7 +88,7 @@ export function sanitizeTaskInput(raw: unknown): { ok: true; task: TaskInput } |
       languages: languages.length ? languages : ['python'],
       starterCode, tests: sanitizeTests(o.tests),
       referenceSolution: str(o.referenceSolution, 16000),
-      referenceLanguage: isWorkspaceLanguage(o.referenceLanguage) ? o.referenceLanguage : 'python',
+      referenceLanguage: languages[0] === 'sql' ? 'sql' : isWorkspaceLanguage(o.referenceLanguage) && o.referenceLanguage !== 'sql' ? o.referenceLanguage : 'python',
       minutes: int(o.minutes, 10, 5, 30),
     },
   }

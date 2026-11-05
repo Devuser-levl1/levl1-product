@@ -4,13 +4,23 @@
 // for any supported language. Hidden tests are executed but their input /
 // expected output never reach the browser (see publicTask()).
 
-// SQL is not offered: Judge0 runs SQLite scripts without stdin, so stdin→stdout
-// tests can't apply. SQL-heavy roles get a Python task (pandas-free, stdlib only).
-export const WORKSPACE_LANGUAGES = ['python', 'javascript', 'typescript', 'java', 'cpp', 'go'] as const
+// SQL tasks run on SQLite (Judge0 CE: SQLite 3.27). A SQL test's `input` is
+// SETUP SQL (CREATE TABLE + INSERT); the candidate's query runs after it and
+// stdout (sqlite list mode: "a|b", NULL as empty) is compared. SQL tasks are
+// SQL-only — they can't share tests with stdin-based languages.
+export const WORKSPACE_LANGUAGES = ['python', 'javascript', 'typescript', 'java', 'cpp', 'go', 'sql'] as const
+export const STDIN_LANGUAGES = ['python', 'javascript', 'typescript', 'java', 'cpp', 'go'] as const
 export type WorkspaceLanguage = (typeof WORKSPACE_LANGUAGES)[number]
 
 export const LANGUAGE_LABEL: Record<WorkspaceLanguage, string> = {
-  python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', java: 'Java', cpp: 'C++', go: 'Go',
+  python: 'Python', javascript: 'JavaScript', typescript: 'TypeScript', java: 'Java', cpp: 'C++', go: 'Go', sql: 'SQL (SQLite)',
+}
+
+/** How one execution is assembled for Judge0 (isomorphic; used by run, verify and the room). */
+export function executionPlan(language: WorkspaceLanguage, code: string, testInput: string): { source: string; stdin: string } {
+  return language === 'sql'
+    ? { source: `${testInput.trim()}\n\n-- candidate query\n${code}`, stdin: '' }
+    : { source: code, stdin: testInput }
 }
 
 export interface TaskTest { id: string; name: string; input: string; expected: string; hidden: boolean }
@@ -19,6 +29,7 @@ export interface WorkSampleTask {
   title: string
   prompt: string            // plain text, what to build + input/output format
   language: WorkspaceLanguage
+  languages: WorkspaceLanguage[]   // languages the candidate may use (SQL tasks: ['sql'])
   starterCode: string       // for `language`
   minutes: number           // suggested time box (the interview time-up gate still rules)
   tests: TaskTest[]
@@ -37,7 +48,7 @@ export interface WorkSampleTask {
 
 /** What the candidate's browser may see. */
 export interface PublicTask {
-  title: string; prompt: string; language: WorkspaceLanguage; starterCode: string; minutes: number
+  title: string; prompt: string; language: WorkspaceLanguage; languages: WorkspaceLanguage[]; starterCode: string; minutes: number
   tests: { id: string; name: string; input: string; expected: string }[]   // visible tests only
   hiddenCount: number
 }
@@ -65,9 +76,13 @@ export function sanitizeTask(raw: unknown): WorkSampleTask | null {
   })
   const list = (v: unknown) => (Array.isArray(v) ? v : []).map((x) => str(x, 240).trim()).filter(Boolean).slice(0, 8)
   const minutes = Math.round(Number(o.minutes))
+  const language: WorkspaceLanguage = isWorkspaceLanguage(o.language) ? o.language : 'python'
+  const langs = (Array.isArray(o.languages) ? o.languages : []).filter(isWorkspaceLanguage) as WorkspaceLanguage[]
   return {
     title, prompt,
-    language: isWorkspaceLanguage(o.language) ? o.language : 'python',
+    language,
+    // SQL tasks are SQL-only; other tasks may use any stdin language.
+    languages: language === 'sql' ? ['sql'] : (langs.filter((l) => l !== 'sql').length ? langs.filter((l) => l !== 'sql') : [...STDIN_LANGUAGES]),
     starterCode: str(o.starterCode, 8000),
     minutes: Number.isFinite(minutes) ? Math.min(20, Math.max(5, minutes)) : 10,
     tests,
@@ -87,7 +102,7 @@ export function sanitizeTask(raw: unknown): WorkSampleTask | null {
 export function publicTask(t: WorkSampleTask): PublicTask {
   const visible = t.tests.filter((x) => !x.hidden)
   return {
-    title: t.title, prompt: t.prompt, language: t.language, starterCode: t.starterCode, minutes: t.minutes,
+    title: t.title, prompt: t.prompt, language: t.language, languages: t.languages, starterCode: t.starterCode, minutes: t.minutes,
     tests: visible.map(({ id, name, input, expected }) => ({ id, name, input, expected })),
     hiddenCount: t.tests.length - visible.length,
   }

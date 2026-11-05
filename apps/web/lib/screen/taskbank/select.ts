@@ -98,7 +98,7 @@ export function bankTaskToWorkSample(t: BankTaskLike, opts: { preferLanguage?: s
   const starter = (t.starterCode && typeof t.starterCode === 'object' ? t.starterCode : {}) as Record<string, unknown>
   const rubric = sanitizeRubric(t.rubric ?? {})
   return {
-    title: t.title, prompt: t.prompt, language,
+    title: t.title, prompt: t.prompt, language, languages: langs.length ? langs : [language],
     starterCode: typeof starter[language] === 'string' ? (starter[language] as string) : '',
     minutes: t.minutes,
     tests: Array.isArray(t.tests) ? (t.tests as WorkSampleTask['tests']) : [],

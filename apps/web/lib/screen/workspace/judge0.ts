@@ -26,6 +26,7 @@ const LANGUAGE_ID: Record<WorkspaceLanguage, number> = {
   java: 62,        // OpenJDK 13 (class must be named Main)
   cpp: 54,         // GCC 9.2
   go: 60,          // Go 1.13
+  sql: 82,         // SQLite 3.27 — source = test setup SQL + candidate query (see executionPlan)
 }
 
 export interface ExecResult {

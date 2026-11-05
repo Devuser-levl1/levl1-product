@@ -2865,7 +2865,7 @@ export default function InterviewPage() {
                     <select id="iv-lang" value={codeLanguage} onChange={(e) => { setCodeLanguage(e.target.value); pushEvent({ t: wsT(), k: 'lang', lang: e.target.value }) }}
                       style={{ height: 26, padding: '0 8px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 500, fontFamily: 'var(--lv-font-sans)', cursor: 'pointer' }}>
                       {workTask
-                        ? WORKSPACE_LANGUAGES.map((lang) => <option key={lang} value={lang}>{LANGUAGE_LABEL[lang]}</option>)
+                        ? (workTask.languages?.length ? workTask.languages : WORKSPACE_LANGUAGES).map((lang) => <option key={lang} value={lang}>{LANGUAGE_LABEL[lang]}</option>)
                         : (['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
                           <option key={lang} value={lang}>
                             {lang === 'plaintext' ? 'Plain text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang === 'sql' ? 'SQL' : lang.charAt(0).toUpperCase() + lang.slice(1)}
@@ -2910,13 +2910,13 @@ export default function InterviewPage() {
               {workTask && (
                 <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && wsTab === 'task' ? 'block' : 'none', overflowY: 'auto', padding: '16px 18px' }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 4 }}>{workTask.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 12 }}>Suggested time: about {workTask.minutes} minutes · read from standard input, print to standard output</div>
+                  <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 12 }}>Suggested time: about {workTask.minutes} minutes · {workTask.language === 'sql' ? 'write a SQLite query; each test creates its own tables first' : 'read from standard input, print to standard output'}</div>
                   <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{workTask.prompt}</p>
                   {workTask.tests.map((t) => (
                     <div key={t.id} style={{ marginBottom: 10, border: '1px solid var(--lv-border)', borderRadius: 6, overflow: 'hidden' }}>
                       <div style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600, color: 'var(--lv-text)', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)' }}>Example · {t.name}</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                        <pre style={{ margin: 0, padding: 10, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', borderRight: '1px solid var(--lv-border)' }}>{t.input || '(empty input)'}</pre>
+                        <pre style={{ margin: 0, padding: 10, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', borderRight: '1px solid var(--lv-border)' }}>{workTask.language === 'sql' ? `-- setup\n${t.input}` : (t.input || '(empty input)')}</pre>
                         <pre style={{ margin: 0, padding: 10, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap' }}>{t.expected}</pre>
                       </div>
                     </div>
@@ -2958,7 +2958,7 @@ export default function InterviewPage() {
               {workTask && (
                 <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && wsTab === 'output' ? 'flex' : 'none', flexDirection: 'column', padding: '12px 14px', gap: 8, overflowY: 'auto' }}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)' }}>
-                    Input for Run <span style={{ fontWeight: 400 }}>(defaults to the first example)</span>
+                    {workTask.language === 'sql' ? 'Setup SQL for Run' : 'Input for Run'} <span style={{ fontWeight: 400 }}>(defaults to the first example)</span>
                     <textarea value={customStdin ?? workTask.tests[0]?.input ?? ''} onChange={(e) => setCustomStdin(e.target.value)} rows={3}
                       style={{ display: 'block', width: '100%', marginTop: 4, padding: 8, borderRadius: 6, border: '1px solid var(--lv-border)', fontFamily: 'var(--lv-font-mono)', fontSize: 12, resize: 'vertical', background: 'var(--lv-surface)', color: 'var(--lv-text)' }} />
                   </label>

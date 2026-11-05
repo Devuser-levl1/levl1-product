@@ -26,6 +26,7 @@ interface FullTask {
   tests: TaskTest[]; referenceSolution: string | null; referenceLanguage: string; minutes: number
   status: string; isSample: boolean; reviewNote: string | null; reviewedBy: string | null; reviewedAt: string | null; lastVerifiedAt: string | null
   rubric: { criteria: RubricCriterion[]; probes: RubricProbe[] } | null
+  qaEvidence?: { independentSolutions: string[]; testsAgree: number; mutants: { name: string; caughtBy: string[] }[]; checkedOn: string } | null
 }
 interface SkillMapRow { id: string; role: string; title: string; skills: SkillNode[]; isSample: boolean }
 
@@ -60,9 +61,9 @@ export function TaskBankPage() {
       const r = await fetch('/api/task-bank/samples', { method: 'POST' })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error)
-      toast.success(d.tasks || d.maps ? `Added ${d.tasks} sample task${d.tasks === 1 ? '' : 's'} and ${d.maps} skill map${d.maps === 1 ? '' : 's'} as drafts` : 'Samples are already loaded')
+      toast.success(`Starter content loaded: ${d.created} new draft task${d.created === 1 ? '' : 's'}, ${d.updated} updated, ${d.skipped} reviewed task${d.skipped === 1 ? '' : 's'} left untouched; ${d.mapsCreated} skill map${d.mapsCreated === 1 ? '' : 's'} added, ${d.mapsUpdated} updated`)
       void load()
-    } catch { toast.error('Couldn\'t load the samples. Please try again.') } finally { setLoadingSamples(false) }
+    } catch { toast.error('Couldn\'t load the starter content. Please try again.') } finally { setLoadingSamples(false) }
   }
 
   if (editing) return <TaskEditor id={editing} onClose={() => { setEditing(null); void load() }} />
@@ -71,11 +72,11 @@ export function TaskBankPage() {
     <Page>
       <PageHeader title="Task bank" description="Practical work-sample tasks, their rubrics, and the skill maps that steer what Ananya covers."
         actions={<>
-          <Button variant="secondary" leftIcon={<BookOpen size={16} />} loading={loadingSamples} onClick={loadSamples}>Load sample tasks</Button>
+          <Button variant="secondary" leftIcon={<BookOpen size={16} />} loading={loadingSamples} onClick={loadSamples}>Load Levl1 starter content</Button>
           <Button leftIcon={<Plus size={16} />} onClick={() => setEditing('new')}>New task</Button>
         </>} />
       <Alert tone="info" title="Human review is required before a task goes live" style={{ marginBottom: 16 }}>
-        Technical tasks, test cases and rubrics must be reviewed by someone who hires for that role before they are marked active. Auto-generated or sample content has subtle errors that real engineers will catch. Only <strong>active</strong> tasks are ever selected for live interviews.
+        Technical tasks, test cases and rubrics must be reviewed by someone who hires for that role before they are marked active. Levl1 starter content is machine-checked (independent solution + deliberately wrong solutions) but that is not a substitute for a hiring engineer&apos;s judgement on realism and the expected probe answers. Only <strong>active</strong> tasks are ever selected for live interviews.
       </Alert>
       <Tabs label="Task bank sections" value={tab} onChange={setTab} idPrefix="tb"
         items={[{ key: 'tasks', label: 'Tasks', count: rows?.length }, { key: 'maps', label: 'Role skill maps', count: maps?.length }]} />
@@ -83,7 +84,7 @@ export function TaskBankPage() {
         {tab === 'tasks' && (
           <TabPanel tabKey="tasks" idPrefix="tb">
             {!rows ? <LoadingBlock /> : rows.length === 0 ? (
-              <EmptyState title="No tasks yet" description="Load the sample tasks to see the structure, or create your first task." action={<Button size="sm" onClick={() => setEditing('new')}>New task</Button>} />
+              <EmptyState title="No tasks yet" description="Load the Levl1 starter content (11 draft tasks across 7 roles), or create your first task." action={<Button size="sm" onClick={() => setEditing('new')}>New task</Button>} />
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {rows.map((r) => (
@@ -98,7 +99,7 @@ export function TaskBankPage() {
                         {r.testCount} tests · {r.criteriaCount} criteria · {r.probeCount} probe answers{r.lastVerifiedAt ? ' · verified in Judge0' : ''}{r.reviewedBy ? ` · reviewed by ${r.reviewedBy}` : ''}
                       </div>
                     </div>
-                    {r.isSample && <Badge tone="warning">Sample</Badge>}
+                    {r.isSample && <Badge tone="info">Levl1 content</Badge>}
                     <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>{r.status}</Badge>
                   </button>
                 ))}
@@ -182,7 +183,7 @@ function TaskEditor({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Page>
       <div style={{ marginBottom: 12 }}><Button variant="tertiary" size="sm" leftIcon={<ArrowLeft size={14} />} onClick={onClose}>Task bank</Button></div>
-      <PageHeader title={id === 'new' ? 'New task' : draft.title || 'Task'} eyebrow={task ? <span style={{ display: 'inline-flex', gap: 6 }}><Badge tone={STATUS_TONE[status]}>{status}</Badge>{task.isSample && <Badge tone="warning">Sample — review before use</Badge>}</span> : undefined}
+      <PageHeader title={id === 'new' ? 'New task' : draft.title || 'Task'} eyebrow={task ? <span style={{ display: 'inline-flex', gap: 6 }}><Badge tone={STATUS_TONE[status]}>{status}</Badge>{task.isSample && <Badge tone="info">Levl1 content — review before use</Badge>}</span> : undefined}
         actions={<>
           {id !== 'new' && <Button variant="ghost" iconOnly aria-label="Delete task" onClick={del}><Trash2 size={16} /></Button>}
           <Button loading={saving} onClick={save}>Save</Button>
@@ -194,6 +195,15 @@ function TaskEditor({ id, onClose }: { id: string; onClose: () => void }) {
           <Card title="Review" subtitle="Draft → reviewed (by someone who hires for this role) → active. Editing the content of a reviewed task returns it to draft.">
             <div style={{ display: 'grid', gap: 10 }}>
               {task?.reviewedBy && <div style={{ fontSize: 12, color: 'var(--lv-text-body)' }}>Reviewed by <strong>{task.reviewedBy}</strong>{task.reviewedAt ? ` on ${new Date(task.reviewedAt).toLocaleDateString()}` : ''}{task.reviewNote ? ` — “${task.reviewNote}”` : ''}</div>}
+              {task?.qaEvidence && (
+                <div style={{ fontSize: 12, color: 'var(--lv-text-body)', border: '1px solid var(--lv-border)', borderRadius: 6, padding: '8px 10px', background: 'var(--lv-surface-sunken)' }}>
+                  <strong>Levl1 content QA</strong> (machine-checked on {task.qaEvidence.checkedOn} — not a human review): an independent {task.qaEvidence.independentSolutions.join(' + ')} solution agrees on all {task.qaEvidence.testsAgree} tests, and each deliberately wrong solution is caught:
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                    {task.qaEvidence.mutants.map((m) => <li key={m.name}>{m.name} — caught by {m.caughtBy.length} test{m.caughtBy.length === 1 ? '' : 's'} ({m.caughtBy.join(', ')})</li>)}
+                  </ul>
+                  <div style={{ marginTop: 4, color: 'var(--lv-text-muted)' }}>Your reviewer checks what a machine can&apos;t: is the task realistic for this level, and are the expected probe answers what a strong hire would actually say?</div>
+                </div>
+              )}
               <div style={{ fontSize: 12, color: task?.lastVerifiedAt ? 'var(--lv-success)' : 'var(--lv-text-muted)' }}>{task?.lastVerifiedAt ? `Reference solution verified in Judge0 on ${new Date(task.lastVerifiedAt).toLocaleString()}` : 'Not yet verified in Judge0'}</div>
               {status === 'draft' && (
                 <>
@@ -364,9 +374,10 @@ function SkillMaps({ maps, onChanged }: { maps: SkillMapRow[] | null; onChanged:
         <select value={newRole} onChange={(e) => setNewRole(e.target.value as RoleKey)} style={{ ...input, width: 'auto' }}>{ROLE_KEYS.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
         <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />} onClick={create}>New skill map</Button>
       </div>
-      {maps.length === 0 && <EmptyState title="No skill maps yet" description="Load the sample tasks to add example Backend and Data maps, or create one." />}
+      <UnmatchedSkills onChanged={onChanged} />
+      {maps.length === 0 && <EmptyState title="No skill maps yet" description="Load the Levl1 starter content to add maps for all seven roles, or create one." />}
       {maps.map((m) => (
-        <Card key={m.id} title={<span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>{m.title}{m.isSample && <Badge tone="warning">Sample</Badge>}</span>}
+        <Card key={m.id} title={<span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>{m.title}{m.isSample && <Badge tone="info">Levl1 content</Badge>}</span>}
           subtitle={`${ROLE_LABEL[m.role as RoleKey] ?? m.role} · ${m.skills.length} skills`}
           actions={open === m.id ? <><Button variant="tertiary" size="sm" onClick={() => setOpen(null)}>Cancel</Button><Button size="sm" onClick={() => save(m.id)}>Save</Button></> : <Button variant="secondary" size="sm" onClick={() => startEdit(m)}>Edit</Button>}>
           {open !== m.id ? (
@@ -395,5 +406,60 @@ function SkillMaps({ maps, onChanged }: { maps: SkillMapRow[] | null; onChanged:
         </Card>
       ))}
     </div>
+  )
+}
+
+/* ── Unrecognised JD skills → grow aliases from real JDs ─────────────────── */
+interface UnmatchedRole { role: string; mapId: string | null; skills: { id: string; name: string }[]; terms: { term: string; positions: number; examples: string[] }[] }
+function UnmatchedSkills({ onChanged }: { onChanged: () => void }) {
+  const [data, setData] = useState<{ roles: UnmatchedRole[]; positionsWithoutRole: { id: string; title: string }[] } | null>(null)
+  const [pick, setPick] = useState<Record<string, string>>({})
+  const load = useCallback(() => { fetch('/api/skill-maps/unmatched').then((r) => (r.ok ? r.json() : null)).then(setData).catch(() => setData(null)) }, [])
+  useEffect(() => { load() }, [load])
+  const apply = async (role: UnmatchedRole, term: string, mode: 'alias' | 'skill') => {
+    if (!role.mapId) return
+    const full = await fetch('/api/skill-maps').then((r) => r.json()) as SkillMapRow[]
+    const map = full.find((m) => m.id === role.mapId)
+    if (!map) return
+    const target = pick[`${role.role}:${term}`] ?? role.skills[0]?.id
+    const skills = mode === 'skill'
+      ? [...map.skills, { id: '', name: term, aliases: [term.toLowerCase()], priority: 2, dependsOn: [], deeperProbes: [], adjacent: [] }]
+      : map.skills.map((s) => (s.id === target ? { ...s, aliases: Array.from(new Set([...s.aliases, term.toLowerCase()])) } : s))
+    const r = await fetch(`/api/skill-maps/${role.mapId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ skills }) })
+    if (r.ok) { toast.success(mode === 'skill' ? `Added "${term}" as a new skill` : `"${term}" now matches ${role.skills.find((x) => x.id === target)?.name ?? target}`); load(); onChanged() }
+    else toast.error('Couldn\'t update the skill map.')
+  }
+  if (!data) return null
+  const total = data.roles.reduce((n, r) => n + r.terms.length, 0)
+  return (
+    <Card title="Unrecognised JD skills" subtitle={total ? `${total} skill term${total === 1 ? '' : 's'} from your positions' JDs and must-haves don't match any skill yet. Map them so selection and coverage understand your JDs.` : 'Every skill in your positions\' JDs and must-haves matches a skill map entry.'}>
+      <div style={{ display: 'grid', gap: 14 }}>
+        {data.roles.map((role) => (
+          <div key={role.role}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>{ROLE_LABEL[role.role as RoleKey] ?? role.role}{!role.mapId && ' — no skill map yet (create one below)'}</div>
+            <div style={{ display: 'grid', gap: 6 }}>
+              {role.terms.map((t) => (
+                <div key={t.term} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', border: '1px solid var(--lv-border)', borderRadius: 6, padding: '6px 10px' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>{t.term}</span>
+                  <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>{t.positions} position{t.positions === 1 ? '' : 's'} · e.g. {t.examples.join(', ')}</span>
+                  {role.mapId && (
+                    <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <select aria-label={`Skill to map "${t.term}" to`} value={pick[`${role.role}:${t.term}`] ?? role.skills[0]?.id ?? ''} onChange={(e) => setPick((p) => ({ ...p, [`${role.role}:${t.term}`]: e.target.value }))} style={{ ...input, width: 'auto', padding: '3px 6px' }}>
+                        {role.skills.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                      <Button size="sm" variant="secondary" onClick={() => apply(role, t.term, 'alias')}>Add as alias</Button>
+                      <Button size="sm" variant="tertiary" onClick={() => apply(role, t.term, 'skill')}>New skill</Button>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {data.positionsWithoutRole.length > 0 && (
+          <p style={{ ...hint, margin: 0 }}>No technical role could be inferred for: {data.positionsWithoutRole.map((p) => p.title).join(', ')}. That&apos;s expected for non-technical roles; for technical ones, a clearer title (e.g. &quot;Backend Engineer&quot;) helps.</p>
+        )}
+      </div>
+    </Card>
   )
 }

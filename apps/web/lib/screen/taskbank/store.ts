@@ -2,10 +2,10 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { sanitizeRubric, sanitizeSkillMap, type SkillNode } from './types'
 import { inferRole } from './select'
-import { SAMPLE_SKILL_MAPS, SAMPLE_TASKS } from './samples'
+import { STARTER_SKILL_MAPS, STARTER_TASKS } from './content'
 
 // ── Task bank data access (Screen-scoped, server-only) ─────────────────────
-// Every row is agency-scoped (no cross-tenant content). Sample content is
+// Every row is agency-scoped (no cross-tenant content). Levl1 starter content is
 // copied INTO the agency as draft + isSample, so it is reviewed like any task.
 
 export const TASK_WITH_RUBRIC = { rubric: { select: { criteria: true, probes: true } } } satisfies Prisma.TaskBankItemInclude
@@ -18,29 +18,65 @@ export async function skillMapForPosition(agencyId: string | null | undefined, t
   return { role, skills: map ? sanitizeSkillMap(map.skills) : [] }
 }
 
-/** Idempotently copy the sample tasks + skill maps into an agency (as drafts). */
-export async function loadSamples(agencyId: string, createdBy: string) {
-  let tasks = 0, maps = 0
-  for (const t of SAMPLE_TASKS) {
-    const exists = await prisma.taskBankItem.findFirst({ where: { agencyId, isSample: true, title: t.title }, select: { id: true } })
-    if (exists) continue
-    await prisma.taskBankItem.create({
-      data: {
-        agencyId, isSample: true, status: 'draft', createdBy,
-        title: t.title, prompt: t.prompt, roles: t.roles, skills: t.skills, difficulty: t.difficulty,
-        experienceMin: t.experienceMin, experienceMax: t.experienceMax, languages: t.languages,
-        starterCode: t.starterCode as Prisma.InputJsonValue, tests: t.tests as unknown as Prisma.InputJsonValue,
-        referenceSolution: t.referenceSolution, referenceLanguage: t.referenceLanguage, minutes: t.minutes,
-        rubric: { create: { criteria: sanitizeRubric(t.rubric).criteria as unknown as Prisma.InputJsonValue, probes: sanitizeRubric(t.rubric).probes as unknown as Prisma.InputJsonValue } },
-      },
+/**
+ * Load / upgrade Levl1 starter content into an agency. Idempotent and safe:
+ *  • tasks: an unreviewed Levl1 draft (incl. legacy "(SAMPLE)" rows) is updated
+ *    in place; reviewed / active / retired tasks are NEVER touched; else created as draft.
+ *  • skill maps: an untouched Levl1 map is refreshed; an agency-edited map only
+ *    GAINS aliases (and missing skills) — nothing is removed; missing roles are created.
+ */
+export async function loadStarterContent(agencyId: string, createdBy: string) {
+  let created = 0, updated = 0, skipped = 0, mapsCreated = 0, mapsUpdated = 0
+  for (const t of STARTER_TASKS) {
+    const existing = await prisma.taskBankItem.findFirst({
+      where: { agencyId, OR: [{ contentKey: t.key }, ...(t.legacyTitle ? [{ isSample: true, title: t.legacyTitle }] : [])] },
+      select: { id: true, status: true, isSample: true },
     })
-    tasks++
+    const rubric = sanitizeRubric(t.rubric)
+    const data = {
+      title: t.title, prompt: t.prompt, roles: t.roles, skills: t.skills, difficulty: t.difficulty,
+      experienceMin: t.experienceMin, experienceMax: t.experienceMax, languages: t.languages,
+      starterCode: t.starterCode as Prisma.InputJsonValue, tests: t.tests as unknown as Prisma.InputJsonValue,
+      referenceSolution: t.referenceSolution, referenceLanguage: t.referenceLanguage, minutes: t.minutes,
+      contentKey: t.key, isSample: true, qaEvidence: t.qa as unknown as Prisma.InputJsonValue,
+    }
+    const rubricData = { criteria: rubric.criteria as unknown as Prisma.InputJsonValue, probes: rubric.probes as unknown as Prisma.InputJsonValue }
+    if (existing) {
+      if (existing.status !== 'draft' || !existing.isSample) { skipped++; continue }
+      await prisma.taskBankItem.update({ where: { id: existing.id }, data: { ...data, lastVerifiedAt: null, rubric: { upsert: { create: rubricData, update: rubricData } } } })
+      updated++
+    } else {
+      await prisma.taskBankItem.create({ data: { ...data, agencyId, status: 'draft', createdBy, rubric: { create: rubricData } } })
+      created++
+    }
   }
-  for (const m of SAMPLE_SKILL_MAPS) {
-    const exists = await prisma.roleSkillMap.findFirst({ where: { agencyId, role: m.role }, select: { id: true } })
-    if (exists) continue
-    await prisma.roleSkillMap.create({ data: { agencyId, isSample: true, role: m.role, title: m.title, skills: sanitizeSkillMap(m.skills) as unknown as Prisma.InputJsonValue } })
-    maps++
+  for (const m of STARTER_SKILL_MAPS) {
+    const fresh = sanitizeSkillMap(m.skills)
+    const existing = await prisma.roleSkillMap.findFirst({ where: { agencyId, role: m.role }, orderBy: { updatedAt: 'desc' }, select: { id: true, isSample: true, skills: true } })
+    if (!existing) {
+      await prisma.roleSkillMap.create({ data: { agencyId, isSample: true, role: m.role, title: m.title, skills: fresh as unknown as Prisma.InputJsonValue } })
+      mapsCreated++
+    } else if (existing.isSample) {
+      await prisma.roleSkillMap.update({ where: { id: existing.id }, data: { title: m.title, skills: fresh as unknown as Prisma.InputJsonValue } })
+      mapsUpdated++
+    } else {
+      const merged = mergeSkillMaps(sanitizeSkillMap(existing.skills), fresh)
+      await prisma.roleSkillMap.update({ where: { id: existing.id }, data: { skills: merged as unknown as Prisma.InputJsonValue } })
+      mapsUpdated++
+    }
   }
-  return { tasks, maps }
+  return { created, updated, skipped, mapsCreated, mapsUpdated }
+}
+
+/** Additive merge: keep every agency edit, add missing aliases / probes / skills from Levl1 content. */
+export function mergeSkillMaps(mine: SkillNode[], theirs: SkillNode[]): SkillNode[] {
+  const out = mine.map((s) => ({ ...s }))
+  for (const t of theirs) {
+    const m = out.find((s) => s.id === t.id)
+    if (!m) { out.push(t); continue }
+    m.aliases = Array.from(new Set([...m.aliases, ...t.aliases]))
+    if (!m.deeperProbes.length) m.deeperProbes = t.deeperProbes
+    if (!m.adjacent.length) m.adjacent = t.adjacent
+  }
+  return out
 }

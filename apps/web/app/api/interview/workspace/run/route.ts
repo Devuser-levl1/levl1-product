@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { loadWorkspaceSession, MAX_CODE_CHARS, MAX_EXECUTIONS } from '@/lib/screen/workspace/session'
 import { execute, judge0Configured, type ExecResult } from '@/lib/screen/workspace/judge0'
-import { isWorkspaceLanguage, outputsMatch } from '@/lib/screen/workspace/task'
+import { executionPlan, isWorkspaceLanguage, outputsMatch } from '@/lib/screen/workspace/task'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const code = typeof body.code === 'string' ? body.code : ''
     if (!code.trim()) return NextResponse.json({ error: 'empty', message: 'Write some code first.' }, { status: 400 })
     if (code.length > MAX_CODE_CHARS) return NextResponse.json({ error: 'code_too_large' }, { status: 413 })
-    const language = isWorkspaceLanguage(body.language) ? body.language : s.task.language
+    const language = isWorkspaceLanguage(body.language) && s.task.languages.includes(body.language) ? body.language : s.task.language
     const kind = body.kind === 'tests' ? 'tests' : 'run'
     const tests = s.task.tests
     const need = kind === 'tests' ? tests.length : 1
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     if (kind === 'run') {
       const stdin = typeof body.stdin === 'string' ? body.stdin.slice(0, 8000) : (tests.find((t) => !t.hidden)?.input ?? '')
-      const r = await execute({ language, source: code, stdin })
+      const r = await execute({ language, ...executionPlan(language, code, stdin) })
       response = { kind, ...briefOutput(r) }
       record = { at: new Date().toISOString(), kind, status: r.status, ms: r.timeSec != null ? Math.round(r.timeSec * 1000) : null }
     } else {
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       const results: { id: string; name: string; hidden: boolean; passed: boolean; status: string; actual?: string; expected?: string; input?: string; stderr?: string }[] = []
       for (let i = 0; i < tests.length; i += 3) {
         const batch = tests.slice(i, i + 3)
-        const outs = await Promise.all(batch.map((t) => execute({ language, source: code, stdin: t.input })))
+        const outs = await Promise.all(batch.map((t) => execute({ language, ...executionPlan(language, code, t.input) })))
         batch.forEach((t, j) => {
           const r = outs[j]
           const passed = r.status === 'ok' && outputsMatch(r.stdout, t.expected)

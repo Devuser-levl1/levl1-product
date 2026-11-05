@@ -455,7 +455,9 @@ model TaskBankItem {
   referenceLanguage String        @default("python")
   minutes           Int           @default(10)
   status            String        @default("draft")  // draft | reviewed | active | retired
-  isSample          Boolean       @default(false)
+  isSample          Boolean       @default(false)   // Levl1-provided starter content (must still be reviewed)
+  contentKey        String?       // stable id of Levl1 starter content (in-place upgrades of unreviewed drafts)
+  qaEvidence        Json?         // Levl1 content QA: independent solution agreement + mutants each test catches
   reviewNote        String?       @db.Text
   reviewedBy        String?
   reviewedAt        DateTime?

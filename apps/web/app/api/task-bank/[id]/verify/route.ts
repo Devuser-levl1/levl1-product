@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { execute, judge0Configured } from '@/lib/screen/workspace/judge0'
-import { isWorkspaceLanguage, outputsMatch } from '@/lib/screen/workspace/task'
+import { executionPlan, isWorkspaceLanguage, outputsMatch } from '@/lib/screen/workspace/task'
 import { sanitizeTests } from '@/lib/screen/taskbank/types'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!tests.length) return NextResponse.json({ error: 'Add test cases first.' }, { status: 400 })
   const results = []
   for (const test of tests) {
-    const r = await execute({ language, source: t.referenceSolution, stdin: test.input })
+    const r = await execute({ language, ...executionPlan(language, t.referenceSolution, test.input) })
     results.push({ id: test.id, name: test.name, passed: r.status === 'ok' && outputsMatch(r.stdout, test.expected), status: r.status, actual: r.stdout.slice(0, 2000), stderr: (r.compileOutput || r.stderr).slice(0, 1000) })
   }
   const allPass = results.every((r) => r.passed)
