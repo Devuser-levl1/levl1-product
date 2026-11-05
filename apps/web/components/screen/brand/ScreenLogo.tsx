@@ -41,8 +41,11 @@ export function ScreenIcon({ size = 28 }: { size?: number }) {
   return <img src="/brand/screen/screen-icon.png" alt="Screen from Levl1" width={size} height={size} draggable={false} style={{ width: size, height: size, display: 'block', borderRadius: 6 }} />
 }
 
-/** Route metadata icons for Screen pages (favicon / apple icon), Screen-scoped. */
+/** Route metadata icons for Screen pages. Uses the single Levl1 site icon
+ *  (app/favicon.ico, app/apple-icon.png, public/icons) so every page and
+ *  product shares one favicon. */
 export const SCREEN_ICONS = {
-  icon: [{ url: '/brand/screen/screen-icon.png', type: 'image/png', sizes: '256x256' }],
-  apple: [{ url: '/brand/screen/screen-icon.png', sizes: '256x256' }],
+  // /favicon.ico is added automatically from app/favicon.ico.
+  icon: [{ url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' }],
+  apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
 }
