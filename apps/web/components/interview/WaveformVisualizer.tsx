@@ -40,13 +40,7 @@ export function WaveformVisualizer({ audioLevel = 0, height = 120 }: Props) {
 
       ctx.clearRect(0, 0, W, H)
 
-      /* Soft radial glow */
-      const grd = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, W * 0.52)
-      grd.addColorStop(0,   'rgba(99,102,241,0.10)')
-      grd.addColorStop(0.5, 'rgba(99,102,241,0.05)')
-      grd.addColorStop(1,   'rgba(99,102,241,0)')
-      ctx.fillStyle = grd
-      ctx.fillRect(0, 0, W, H)
+      /* Flat background (minimalist system) — no radial glow. */
 
       /* Amplitude multiplier: 1.0 idle → 3.2 at full audio */
       const boost = 1 + audioRef.current * 2.2

@@ -40,7 +40,7 @@ interface Props {
    - Waveform (Canvas) for listening / waiting / processing / questioning
    - Morphing Sphere (Three.js) for speaking / intro / closing
    - Crossfade 300 ms between states
-   - Dark card with purple glow
+   - Quiet dark stage panel (flat, hairline border) — matches the candidate video tile
 ═══════════════════════════════════════════════════════════════ */
 export function AIVisualizer({
   phase,
@@ -75,7 +75,7 @@ export function AIVisualizer({
   return (
     <div style={{
       background:   '#111113',
-      borderRadius: 18,
+      borderRadius: 8,
       border:       '1px solid #27272A',
       padding:      compact ? '12px 14px 12px' : '16px 16px 14px',
       display:      'flex',
@@ -105,7 +105,8 @@ export function AIVisualizer({
             fontSize:     13,
             fontWeight:   600,
             color:        timerColor,
-            fontFamily:   'monospace',
+            fontFamily:   'var(--lv-font-mono)',
+            fontVariantNumeric: 'tabular-nums',
             letterSpacing:'0.05em',
             background:   'rgba(255,255,255,0.06)',
             padding:      '3px 8px',
@@ -132,18 +133,6 @@ export function AIVisualizer({
 
       {/* ── Visualizer container (modest height in compact mode) ─────────── */}
       <div style={{ position: 'relative', width: '100%', height: compact ? 110 : 200 }}>
-
-        {/* Soft purple radial glow behind both visualizers */}
-        <div style={{
-          position:      'absolute',
-          top: '50%', left: '50%',
-          transform:     'translate(-50%, -50%)',
-          width:         '160%',
-          height:        '160%',
-          background:    'radial-gradient(ellipse at center, rgba(99,102,241,0.12) 0%, transparent 65%)',
-          pointerEvents: 'none',
-          borderRadius:  '50%',
-        }} />
 
         {/* Waveform — listening / waiting / processing */}
         <div style={{

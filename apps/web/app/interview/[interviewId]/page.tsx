@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp } from 'lucide-react'
 import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
 import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -262,6 +262,12 @@ function buildQuestions(pos: Position): LocalQuestion[] {
 }
 
 /* ── Section meta ───────────────────────────────────────────────── */
+// Display-only: strip emoji / pictographic markers from question text shown to
+// the candidate (stored question sets may still carry them). The spoken text
+// and every stored value are untouched.
+const PICTOGRAPHIC = new RegExp('[\\p{Extended_Pictographic}\\uFE0F\\u200D]', 'gu')  // constructor: tsconfig targets ES5
+const displayText = (t: string) => t.replace(PICTOGRAPHIC, '').replace(/\s{2,}/g, ' ').trim()
+
 const SECTION_LABEL: Record<string, string> = {
   technical: 'Technical', behavioral: 'Behavioral',
   scenario: 'Scenario', eq: 'Values', whiteboard: 'System Design',
@@ -2377,19 +2383,19 @@ export default function InterviewPage() {
               position: 'fixed', top: tourRect.top - 5, left: tourRect.left - 5,
               width: tourRect.width + 10, height: tourRect.height + 10,
               borderRadius: 8, border: '2px solid var(--lv-brand)', pointerEvents: 'none', zIndex: 75,
-              boxShadow: '0 0 0 4px color-mix(in srgb, var(--lv-brand) 22%, transparent), 0 0 28px color-mix(in srgb, var(--lv-brand) 50%, transparent)',
+              boxShadow: '0 0 0 4px color-mix(in srgb, var(--lv-brand) 14%, transparent)',
               transition: 'top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease',
               animation: 'tourRing 1.4s ease-in-out infinite',
             }} />
             <div style={{
               position: 'fixed', top: arrowTop, left: arrowLeft, transform: 'translateX(-50%)',
               zIndex: 76, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
-              background: 'var(--lv-gradient-brand)', color: '#fff', borderRadius: 100, padding: '6px 14px',
+              background: 'var(--lv-brand)', color: '#fff', borderRadius: 6, padding: '6px 12px',
               fontSize: 13, fontWeight: 600, letterSpacing: '0.01em', whiteSpace: 'nowrap',
-              boxShadow: 'var(--lv-shadow-md)',
+              boxShadow: 'var(--lv-shadow-sm)',
               animation: 'tourBounce 1s ease-in-out infinite',
             }}>
-              {above ? <>Look here <span style={{ fontSize: 14 }}>↓</span></> : <><span style={{ fontSize: 14 }}>↑</span> Look here</>}
+              {above ? <>Look here <ArrowDown size={14} aria-hidden="true" /></> : <><ArrowUp size={14} aria-hidden="true" /> Look here</>}
             </div>
           </>
         )
@@ -2457,15 +2463,12 @@ export default function InterviewPage() {
           {currentQ ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 100, background: `${SECTION_COLOR[currentQ.section]}15`, border: `1px solid ${SECTION_COLOR[currentQ.section]}30`, color: SECTION_COLOR[currentQ.section], letterSpacing: '0.06em' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'var(--lv-surface-muted)', border: '1px solid var(--lv-border)', color: 'var(--lv-text-muted)', letterSpacing: '0.06em' }}>
                     {SECTION_LABEL[currentQ.section]?.toUpperCase()}
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', background: 'var(--lv-surface-muted)', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em' }}>
-                    {currentQ.isPreset ? 'PRESET' : 'DYNAMIC'}
-                  </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-brand)', lineHeight: 1.6, margin: 0 }}>{currentQ.question}</p>
+                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', lineHeight: 1.6, margin: 0 }}>{displayText(currentQ.question)}</p>
                 {currentQ.section === 'whiteboard' && (
                   <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Use the Whiteboard tab below to sketch your answer</div>
                 )}
@@ -2696,11 +2699,9 @@ export default function InterviewPage() {
                   padding: '9px 20px', borderRadius: 6, border: 'none',
                   background: 'var(--lv-gradient-brand)',
                   color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13,
-                  boxShadow: 'none', transition: 'all 0.15s',
+                  boxShadow: 'none', transition: 'background 0.15s',
                   letterSpacing: '-0.01em',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px color-mix(in srgb, var(--lv-brand) 45%, transparent)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--lv-brand) 35%, transparent)'; e.currentTarget.style.transform = 'none' }}
               >
                 End &amp; Report →
               </button>
@@ -2727,12 +2728,12 @@ export default function InterviewPage() {
           to { transform: rotate(360deg); }
         }
         @keyframes tourRing {
-          0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv-brand) 22%, transparent), 0 0 24px color-mix(in srgb, var(--lv-brand) 45%, transparent); }
-          50%      { box-shadow: 0 0 0 7px color-mix(in srgb, var(--lv-brand) 10%, transparent), 0 0 40px color-mix(in srgb, var(--lv-brand) 65%, transparent); }
+          0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv-brand) 14%, transparent); }
+          50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--lv-brand) 8%, transparent); }
         }
         @keyframes tourBounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
-          50%      { transform: translateX(-50%) translateY(-5px); }
+          50%      { transform: translateX(-50%) translateY(-3px); }
         }
 
         /* AI window fills its (equal-sized) box so it matches the candidate video. */

@@ -220,8 +220,7 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
           </ol>
         </section>
 
-        <BrandButton brand={brand} onClick={startInterview} disabled={!allDone} loading={starting}
-          style={{ boxShadow: allDone ? `0 6px 20px ${brand}40` : 'none' }}>
+        <BrandButton brand={brand} onClick={startInterview} disabled={!allDone} loading={starting}>
           {allDone ? 'Start Interview →' : 'Complete verification to begin'}
         </BrandButton>
 

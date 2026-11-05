@@ -5,7 +5,7 @@ import { Pen, Square, Circle, Minus, Type, Eraser, Undo2, Download, CheckCircle2
 
 type Tool = 'pen' | 'rect' | 'circle' | 'arrow' | 'text' | 'eraser'
 
-const PRESET_COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#DC2626']
+const PRESET_COLORS = ['#4F46E5', '#18181B', '#10B981', '#F59E0B', '#DC2626']
 const CANVAS_W = 1400
 const CANVAS_H = 480
 

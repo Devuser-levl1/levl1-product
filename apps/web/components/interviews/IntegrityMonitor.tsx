@@ -75,11 +75,11 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating', on
   const inline = variant === 'inline'
   // Inner self-view tile (identical content; outer wrapper differs by variant).
   const tile = (
-    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: inline ? 8 : 8, overflow: 'hidden', background: '#0F172A', boxShadow: inline ? 'none' : '0 6px 20px rgba(15,23,42,0.25)', border: `1.5px solid ${INDIGO}` }}>
+    <div style={{ position: 'relative', width: inline ? '100%' : 132, height: inline ? '100%' : 99, borderRadius: 8, overflow: 'hidden', background: '#111113', boxShadow: 'none', border: '1px solid #27272A' }}>
       <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: camState === 'on' ? 'block' : 'none' }} />
-      {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
-      <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(15,23,42,0.6)', borderRadius: 100, padding: '2px 8px' }}>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 0 0 rgba(34,197,94,0.7)', animation: 'lv-pulse 2s infinite' }} />
+      {camState !== 'on' && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A1A1AA', fontSize: 11, textAlign: 'center', padding: 8 }}>Camera off — activity still monitored</div>}
+      <div style={{ position: 'absolute', top: 6, left: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(17,17,19,0.72)', borderRadius: 4, padding: '2px 8px' }}>
+        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: '#7CC49B', animation: 'lv-pulse 2.4s ease-in-out infinite' }} />
         <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>Live monitoring</span>
       </div>
     </div>
@@ -95,12 +95,12 @@ export function IntegrityMonitor({ interviewId, active, variant = 'floating', on
 
       {/* Transient, professional "noted for review" notice */}
       {notice && (
-        <div key={notice.id} style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: '#fff', border: `1px solid ${INDIGO}33`, borderLeft: `3px solid ${INDIGO}`, borderRadius: 6, padding: '10px 16px', boxShadow: '0 8px 24px rgba(79,70,229,0.16)', fontSize: 13, color: '#334155', maxWidth: 420 }}>
+        <div key={notice.id} style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: 'var(--lv-surface, #fff)', border: '1px solid var(--lv-border, #E4E4E7)', borderLeft: `2px solid ${INDIGO}`, borderRadius: 6, padding: '10px 16px', boxShadow: 'var(--lv-shadow-sm, none)', fontSize: 13, color: 'var(--lv-text-body, #3F3F46)', maxWidth: 420 }}>
           <span style={{ fontWeight: 600, color: INDIGO }}>Integrity:</span> {notice.text}
         </div>
       )}
 
-      <style>{`@keyframes lv-pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); } 70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }`}</style>
+      <style>{`@keyframes lv-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } } @media (prefers-reduced-motion: reduce) { [style*="lv-pulse"] { animation: none !important; } }`}</style>
     </>
   )
 }
