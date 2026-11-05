@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { sanitizeHeartbeat } from '@/lib/screen/control-room/live'
+import { sealJson, sealText } from '@/lib/screen/privacy/fields'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +34,13 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date()
-    const { state, transcript } = sanitizeHeartbeat(body, now)
+    const { state: plainState, transcript } = sanitizeHeartbeat(body, now)
+    // Captured-data privacy: candidate speech is encrypted before it is stored.
+    const state = {
+      ...plainState,
+      interim: sealText(plainState.interim),
+      ...('transcriptTail' in plainState ? { transcriptTail: sealJson(plainState.transcriptTail) } : {}),
+    }
     const phaseChanged = state.phase !== undefined && state.phase !== interview.liveState?.phase
     const data = { ...state, ...(phaseChanged ? { phaseSince: now } : {}) }
 
@@ -47,7 +53,7 @@ export async function POST(req: NextRequest) {
       // Full transcript (only sent when it grew) → the existing Interview.transcript
       // column, so session playback has the complete timestamped conversation.
       ...(transcript && transcript.length
-        ? [prisma.interview.update({ where: { id: interviewId }, data: { transcript: transcript as unknown as Prisma.InputJsonValue } })]
+        ? [prisma.interview.update({ where: { id: interviewId }, data: { transcript: sealJson(transcript) } })]
         : []),
     ])
     return NextResponse.json({ ok: true })

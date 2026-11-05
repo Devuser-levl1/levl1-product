@@ -151,6 +151,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
             `It takes approximately ${data.duration} minutes.`,
             'It covers technical and behavioral questions.',
             'Your responses will be recorded and evaluated.',
+            'Before the interview starts you’ll see exactly what is captured (a photo, an audio recording and camera monitoring), why, and for how long, and you’ll be asked to agree to that separately.',
           ].map((line, i) => (
             <li key={i} style={{ display: 'flex', gap: 10, fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.5 }}>
               <CheckCircle2 size={16} color={brand} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />

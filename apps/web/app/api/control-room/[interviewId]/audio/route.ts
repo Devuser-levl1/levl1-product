@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { decryptBytes } from '@/lib/screen/privacy/crypto'
 import { findScopedInterview, requireControlRoomSession } from '@/lib/screen/control-room/access'
 
 export const dynamic = 'force-dynamic'
@@ -16,8 +17,11 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
 
   const rec = await prisma.interviewRecording.findUnique({ where: { interviewId: interview.id }, select: { data: true, mimeType: true, expiresAt: true } })
   if (!rec || rec.expiresAt.getTime() < Date.now()) return NextResponse.json({ error: 'No recording' }, { status: 404 })
+  // Stored AES-256-GCM encrypted (legacy plaintext rows pass through).
+  const audio = decryptBytes(rec.data)
+  if (!audio) return NextResponse.json({ error: 'Recording unavailable' }, { status: 500 })
 
-  const total = rec.data.byteLength
+  const total = audio.byteLength
   const headers: Record<string, string> = {
     'Content-Type': rec.mimeType, 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store',
   }
@@ -27,10 +31,10 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
     let end = range[1] && range[2] ? Number(range[2]) : total - 1
     start = Math.max(0, start); end = Math.min(end, total - 1)
     if (start > end) return new NextResponse(null, { status: 416, headers: { 'Content-Range': `bytes */${total}` } })
-    return new NextResponse(Buffer.from(rec.data.subarray(start, end + 1)), {
+    return new NextResponse(new Uint8Array(audio.subarray(start, end + 1)), {
       status: 206,
       headers: { ...headers, 'Content-Range': `bytes ${start}-${end}/${total}`, 'Content-Length': String(end - start + 1) },
     })
   }
-  return new NextResponse(Buffer.from(rec.data), { status: 200, headers: { ...headers, 'Content-Length': String(total) } })
+  return new NextResponse(new Uint8Array(audio), { status: 200, headers: { ...headers, 'Content-Length': String(total) } })
 }

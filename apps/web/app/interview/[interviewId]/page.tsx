@@ -21,6 +21,7 @@ import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { logisticsIntro, LOGISTICS_MAX_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
+import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/CaptureNotice'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -329,6 +330,8 @@ export default function InterviewPage() {
         isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
         if (data.interviewer?.name) setInterviewer({ name: data.interviewer.name, voiceKey: data.interviewer.voiceKey ?? null })
         setConsentOk(!!data.consentGiven || !!data.isDemo)  // I-P0-1 soft consent gate
+        setMediaOk(!!data.mediaConsentGiven || !!data.isDemo)
+        if (data.privacy) setPrivacy({ orgName: data.position?.agency?.name ?? 'The hiring team', mediaRetentionDays: data.privacy.mediaRetentionDays, transcriptRetentionDays: data.privacy.transcriptRetentionDays })
         const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
         if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
 
@@ -469,6 +472,11 @@ export default function InterviewPage() {
   const [consentChecked, setConsentChecked] = useState(false)
   const [consentSaving, setConsentSaving] = useState(false)
   const [consentError, setConsentError] = useState<string | null>(null)
+  // Captured-data privacy: the SEPARATE photo/recording/camera consent. Audio
+  // recording, camera CV and the session start are all gated on it (the
+  // server also refuses the start + any capture upload without it).
+  const [mediaOk, setMediaOk] = useState(false)
+  const [privacy, setPrivacy] = useState<{ orgName: string; mediaRetentionDays: number; transcriptRetentionDays: number } | null>(null)
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -1946,6 +1954,7 @@ export default function InterviewPage() {
   /* ── Start interview ──────────────────────────────────────── */
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
+    if (!consentOk || !mediaOk) return  // no capture without both consents
     startFraudRecording()  // begin the interview-long recording for fraud diarization
     if (BARGE_IN_CONFIG.enabled && !bargeInRef.current) {
       bargeInRef.current = new BargeInDetector()
@@ -2036,7 +2045,7 @@ export default function InterviewPage() {
     // It flows into moveToQuestion(0) itself.
     await runWarmup()
   }, [
-    candidate, position, interview, interviewId,
+    candidate, position, interview, interviewId, consentOk, mediaOk,
     setActiveSession, updateInterview, setPhase,
     addTranscript, speakText, runWarmup, runTour,
   ])
@@ -2275,7 +2284,7 @@ export default function InterviewPage() {
                   if (!checked || consentOk) return
                   setConsentChecked(true); setConsentSaving(true); setConsentError(null)
                   try {
-                    const r = await fetch(`/api/schedule/${interviewId}/consent`, { method: 'POST' })
+                    const r = await fetch(`/api/schedule/${interviewId}/consent`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'interview', surface: 'room' }) })
                     if (!r.ok) throw new Error()
                     setConsentOk(true)
                   } catch {
@@ -2288,14 +2297,26 @@ export default function InterviewPage() {
               {consentError && <div role="alert" style={{ marginTop: 8, fontSize: 13, color: 'var(--lv-danger)', fontWeight: 600, textAlign: 'left' }}>{consentError}</div>}
             </div>
           )}
+          {/* Captured-data notice + the SEPARATE media consent (privacy build).
+              Shown when it wasn't already given on the join page. */}
+          {!mediaOk && (
+            <div style={{ marginBottom: 14 }}>
+              {privacy && (
+                <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--lv-surface-sunken)', borderRadius: 6 }}>
+                  <CaptureNotice orgName={privacy.orgName} mediaRetentionDays={privacy.mediaRetentionDays} transcriptRetentionDays={privacy.transcriptRetentionDays} />
+                </div>
+              )}
+              <MediaConsent interviewId={interviewId} surface="room" consented={mediaOk} onConsented={() => setMediaOk(true)} />
+            </div>
+          )}
           <button
             onClick={startInterview}
-            disabled={!consentOk}
-            style={{ width: '100%', padding: '14px 0', background: consentOk ? 'var(--lv-gradient-brand)' : 'var(--lv-border-strong)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: consentOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
+            disabled={!consentOk || !mediaOk}
+            style={{ width: '100%', padding: '14px 0', background: consentOk && mediaOk ? 'var(--lv-gradient-brand)' : 'var(--lv-border-strong)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: consentOk && mediaOk ? 'pointer' : 'not-allowed', letterSpacing: '-0.01em' }}
           >
             Start Interview →
           </button>
-          <div style={{ marginTop: 14, fontSize: 12, color: 'var(--lv-text-muted)' }}>{consentOk ? 'Consent acknowledged. You can begin when ready.' : 'Acknowledge the consent notice above to begin.'}</div>
+          <div style={{ marginTop: 14, fontSize: 12, color: 'var(--lv-text-muted)' }}>{consentOk && mediaOk ? 'Consent acknowledged. You can begin when ready.' : 'Acknowledge both consent items above to begin.'}</div>
         </div>
       </div>
     )

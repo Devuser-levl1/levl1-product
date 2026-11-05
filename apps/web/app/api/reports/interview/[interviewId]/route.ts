@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 import { getSessionFromRequest } from '@/lib/auth'
+import { revealEvents } from '@/lib/screen/privacy/fields'
 
 export async function GET(
   req: NextRequest,
@@ -90,7 +91,10 @@ export async function GET(
         emailVerified:   !!v.otpVerifiedAt,
         nameConfirmed:   v.nameConfirmed,
         photoCaptured:   !!v.photoCapturedAt,
-        photoUrl:        v.photoUrl,
+        // The photo itself is never embedded in the report payload — it is
+        // served (decrypted, no-store, agency-gated, until media retention
+        // ends) by /api/control-room/[id]/photo.
+        photoAvailable:  !!v.photoUrl,
         tabSwitchCount:  v.tabSwitchCount,
         faceMissingMs:   v.faceMissingMs,
         multipleFaces:   v.multipleFaces,
@@ -99,7 +103,7 @@ export async function GET(
       } : null,
       // Tier-1 proctoring summary (Build 01-A) — evidence-linked, human-review
       // routed, SEPARATE from the competency score. Build 04 styles this panel.
-      integrity: summarizeIntegrity(interview.integrityEvents),
+      integrity: summarizeIntegrity(revealEvents(interview.integrityEvents)),
       // Culture/values fit (Build 08) — SEPARATE axis, never blended into competency.
       cultureFit: interview.cultureFit
         ? { fitScore: interview.cultureFit.fitScore, summary: interview.cultureFit.summary, responses: interview.cultureFit.responses }

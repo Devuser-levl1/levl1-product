@@ -5,6 +5,10 @@ import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { getSessionFromRequest } from '@/lib/auth'
 import { TERMINATION_REASONS } from '@/lib/screen/session/lifecycle'
 import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
+import { sealJson } from '@/lib/screen/privacy/fields'
+import { purgeMediaFor } from '@/lib/screen/privacy/retention'
+import { logWithdrawal } from '@/lib/screen/privacy/consent'
+import { readCapturePolicy } from '@/lib/screen/privacy/policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +23,7 @@ export const dynamic = 'force-dynamic'
 const PUBLIC_SELECT = {
   id: true, candidateId: true, positionId: true, status: true, isDemo: true,
   scheduledAt: true, startedAt: true, completedAt: true, duration: true,
-  agentOnline: true, candidateJoined: true, consentGiven: true, createdAt: true,
+  agentOnline: true, candidateJoined: true, consentGiven: true, mediaConsentGiven: true, createdAt: true,
   candidate: { select: { id: true, name: true, email: true, status: true, topSkills: true, uploadedAt: true } },
   position: {
     select: {
@@ -64,11 +68,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 // The interview room's timer + start screen read these — serve the length the
 // session will actually run (production envelope; demos keep their own).
-function withEffectiveDuration<T extends { isDemo: boolean; duration: number; position: { interviewDuration: number; voiceAccent: string | null; agency: { voiceAccent: string } | null } }>(iv: T): T & { interviewer: { name: string; voiceKey: string | null } } {
+function withEffectiveDuration<T extends { isDemo: boolean; duration: number; position: { interviewDuration: number; voiceAccent: string | null; agency: { voiceAccent: string } | null } }>(iv: T): T & { interviewer: { name: string; voiceKey: string | null }; privacy: { mediaRetentionDays: number; transcriptRetentionDays: number } } {
   const minutes = effectiveInterviewMinutes({ isDemo: iv.isDemo, interviewDuration: iv.position.interviewDuration })
   // Voice + matching name the room should use (position override → account → env default).
   const v = resolveInterviewerVoice(iv.position.voiceAccent, iv.position.agency?.voiceAccent)
-  return { ...iv, duration: minutes, position: { ...iv.position, interviewDuration: minutes }, interviewer: { name: v.name, voiceKey: v.key } }
+  // Captured-data notice: retention periods come from the same policy the purge enforces.
+  const policy = readCapturePolicy()
+  return { ...iv, duration: minutes, position: { ...iv.position, interviewDuration: minutes }, interviewer: { name: v.name, voiceKey: v.key },
+    privacy: { mediaRetentionDays: policy.mediaRetentionDays, transcriptRetentionDays: policy.transcriptRetentionDays } }
 }
 
 const TERMINATIONS = new Set<string>(Object.values(TERMINATION_REASONS))
@@ -83,7 +90,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const current = await prisma.interview.findUnique({
       where: { id: params.id },
-      select: { status: true, position: { select: { agencyId: true } } },
+      select: { status: true, isDemo: true, consentGiven: true, mediaConsentGiven: true, consentWithdrawnAt: true, position: { select: { agencyId: true } } },
     })
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isRecruiter = !!session && current.position.agencyId === session.agencyId
@@ -91,6 +98,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // Lifecycle fields the candidate's interview room writes.
     const data: Prisma.InterviewUpdateInput = {}
     if (typeof body.status === 'string') {
+      // Captured-data privacy: a session can't START (and so can't capture
+      // audio / camera signals) without BOTH consents. Demo runs carry their
+      // own consent from the demo gate.
+      if (!isRecruiter && body.status === 'in_progress' && current.status !== 'in_progress'
+        && !current.isDemo && !(current.consentGiven && current.mediaConsentGiven)) {
+        return NextResponse.json({ error: 'consent_required' }, { status: 403 })
+      }
       if (isRecruiter ? RECRUITER_STATUSES.has(body.status) : candidateTransitionOk(current.status, body.status)) {
         data.status = body.status
       } else {
@@ -104,7 +118,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof body.candidateJoined === 'boolean') data.candidateJoined = body.candidateJoined
     // Fixpack 6 #3: the room persists per-question responses at the end so the
     // report can be (re)generated server-side without the candidate's tab.
-    if (Array.isArray(body.questionResponses)) data.questionResponses = body.questionResponses.slice(0, 200) as Prisma.InputJsonValue
+    // Encrypted at rest (candidate answers are transcript-class data).
+    if (Array.isArray(body.questionResponses)) data.questionResponses = sealJson(body.questionResponses.slice(0, 200))
 
     // Recruiter-only fields.
     if (isRecruiter) {
@@ -118,6 +133,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data,
       select: { id: true, status: true, startedAt: true, completedAt: true, terminationReason: true },
     })
+    // Consent withdrawn → captured media is deleted now, not at the next purge.
+    if (data.consentWithdrawnAt && !current.consentWithdrawnAt) {
+      await purgeMediaFor(params.id).catch((e) => console.error('[interviews/patch] media purge on withdrawal failed:', e instanceof Error ? e.message : e))
+      await logWithdrawal(params.id, req.headers.get('user-agent'))
+    }
     return NextResponse.json(interview)
   } catch (err) {
     console.error('PATCH /api/interviews/[id] error:', err)

@@ -396,6 +396,15 @@ model Interview {
   // one-shot wrap-up guard so the closing can never double-fire.
   terminationReason   String?   // COMPLETED | TERMINATED_BY_CANDIDATE | CONSENT_WITHDRAWN | ABANDONED
   consentWithdrawnAt  DateTime?
+  // Captured-data consent (privacy build): a SEPARATE, specific agreement to the
+  // photo + audio recording + camera monitoring, on top of consentGiven. Every
+  // acknowledgement is also appended to InterviewConsentEvent (audit trail).
+  mediaConsentGiven    Boolean   @default(false)
+  mediaConsentAt       DateTime?
+  consentNoticeVersion String?   // CAPTURE_NOTICE_VERSION the candidate agreed to
+  // Retention purge markers (lib/screen/privacy/retention.ts).
+  mediaPurgedAt        DateTime? // photo + audio deleted
+  transcriptPurgedAt   DateTime? // transcript / responses / snippets deleted
   wrapUpAt            DateTime? // set once when wrap-up runs — idempotency marker
   // Report pipeline state (Fixpack 6 #3) — a completed interview must never
   // silently produce nothing. null = not attempted yet; generating | ready | failed.
@@ -413,6 +422,23 @@ model Interview {
   liveState       InterviewLiveState?
   recording       InterviewRecording?
   logistics       InterviewLogistics?
+  consentEvents   InterviewConsentEvent[]
+}
+
+// ── Consent audit trail (Screen-scoped, append-only) ───────────────────────
+// One row per acknowledgement or withdrawal, with the notice version shown.
+// Interview.consentGiven / mediaConsentGiven are the fast flags; this is the
+// auditable record. No IP address is stored (data minimisation).
+model InterviewConsentEvent {
+  id            String    @id @default(cuid())
+  interviewId   String
+  interview     Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  kind          String    // interview | media | withdrawn
+  noticeVersion String
+  surface       String    // schedule | join | room
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  @@index([interviewId])
 }
 
 // ── Likert culture/values-fit (Build 08) — Screen-scoped ───────────────────
@@ -506,9 +532,10 @@ model InterviewLiveState {
   updatedAt       DateTime  @updatedAt
 }
 
-// Retained session audio for recruiter playback. Covered by the existing
-// candidate consent ("recorded and monitored"). Postgres bytea (no object
-// storage yet) → audio-only, low bitrate, size-capped, auto-expiring.
+// Retained session audio for recruiter playback. Requires the candidate's
+// media consent. Postgres bytea (no object storage yet) → audio-only, low
+// bitrate, size-capped, AES-256-GCM encrypted (lib/screen/privacy/crypto.ts),
+// auto-expiring (lib/screen/privacy/retention.ts).
 model InterviewRecording {
   id          String    @id @default(cuid())
   interviewId String    @unique
@@ -530,7 +557,7 @@ model InterviewVerification {
   otpCode         String?
   otpExpiresAt    DateTime?
   otpVerifiedAt   DateTime?
-  photoUrl        String?   @db.Text
+  photoUrl        String?   @db.Text // AES-256-GCM encrypted JPEG data URL; purged after media retention
   photoCapturedAt DateTime?
   nameConfirmed   String?
   nameConfirmedAt DateTime?

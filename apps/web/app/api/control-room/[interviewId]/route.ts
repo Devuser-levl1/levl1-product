@@ -1,3 +1,4 @@
+import { openArray, openText, revealEvents } from '@/lib/screen/privacy/fields'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { findScopedInterview, requireControlRoomSession } from '@/lib/screen/control-room/access'
@@ -22,8 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
     prisma.interviewLiveState.findUnique({ where: { interviewId: interview.id } }),
     prisma.interviewIntegrityEvent.findMany({
       where: { interviewId: interview.id }, orderBy: { occurredAt: 'desc' }, take: 40,
-      select: { id: true, type: true, occurredAt: true, confidence: true, detail: true, durationMs: true },
-    }),
+      select: { id: true, type: true, occurredAt: true, confidence: true, detail: true, durationMs: true, meta: true },
+    }).then(revealEvents),
     prisma.interviewRecording.findUnique({ where: { interviewId: interview.id }, select: { id: true } }),
   ])
 
@@ -51,11 +52,13 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
       questionIndex: live.questionIndex, questionCount: live.questionCount, questionText: live.questionText,
       camState: live.camState, faceCount: live.faceCount, sttMode: live.sttMode, micOk: live.micOk,
       sttWarning: live.sttWarning, lastSpeechAt: live.lastSpeechAt, tabHidden: live.tabHidden,
-      transcriptTail: live.transcriptTail ?? [], interim: live.interim,
+      transcriptTail: openArray(live.transcriptTail), interim: openText(live.interim),
     },
     health,
+    // meta only feeds revealEvents (second-voice quote → detail); not sent as-is.
     events: events.map((e) => ({
-      ...e, label: INTEGRITY_LABELS[e.type as IntegrityEventType] ?? e.type,
+      id: e.id, type: e.type, occurredAt: e.occurredAt, confidence: e.confidence, detail: e.detail, durationMs: e.durationMs,
+      label: INTEGRITY_LABELS[e.type as IntegrityEventType] ?? e.type,
       high: HIGH_CONFIDENCE_TYPES.has(e.type as IntegrityEventType),
     })),
   })

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { TERMINATION_REASONS } from '@/lib/screen/session/lifecycle'
+import { openArray } from '@/lib/screen/privacy/fields'
 
 // ── Report pipeline guard (Fixpack 6 #3) — Screen-scoped ───────────────────
 // A completed interview must reliably produce a report, or be visibly flagged.
@@ -53,10 +54,10 @@ export async function serverReportInput(interviewId: string) {
     },
   })
   if (!iv) return null
-  const transcript = (Array.isArray(iv.transcript) ? (iv.transcript as unknown as StoredEntry[]) : [])
+  const transcript = openArray<StoredEntry>(iv.transcript)  // decrypted; legacy plaintext accepted
     .filter((e) => e && (e.speaker === 'ai' || e.speaker === 'candidate') && typeof e.text === 'string' && e.segment !== 'logistics')
     .map((e) => ({ speaker: e.speaker as string, text: e.text as string }))
-  const questionResponses = Array.isArray(iv.questionResponses) ? iv.questionResponses : []
+  const questionResponses = openArray(iv.questionResponses)
   const candidateSpoke = transcript.some((e) => e.speaker === 'candidate' && e.text.trim().length > 0)
   return {
     interviewId: iv.id,

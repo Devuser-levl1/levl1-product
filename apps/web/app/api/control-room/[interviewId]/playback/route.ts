@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { findScopedInterview, requireControlRoomSession } from '@/lib/screen/control-room/access'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
+import { openArray, revealEvents } from '@/lib/screen/privacy/fields'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,10 +22,10 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
     prisma.interviewRecording.findUnique({
       where: { interviewId: interview.id },
       select: { mimeType: true, sizeBytes: true, startedAt: true, durationMs: true, expiresAt: true },
-    }),
+    }).then((r) => (r && r.expiresAt.getTime() > Date.now() ? r : null)),
     prisma.interviewIntegrityEvent.findMany({ where: { interviewId: interview.id }, orderBy: { occurredAt: 'asc' } }),
   ])
-  const summary = summarizeIntegrity(events)
+  const summary = summarizeIntegrity(revealEvents(events))
 
   return NextResponse.json({
     interview: {
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
       terminationReason: interview.terminationReason, candidate: interview.candidate, position: interview.position,
     },
     recording,
-    transcript: Array.isArray(interview.transcript) ? interview.transcript : [],
+    transcript: openArray(interview.transcript),  // decrypted (legacy plaintext accepted)
     integrity: {
       reviewStatus: summary.reviewStatus, totalFlags: summary.totalFlags,
       events: summary.events.map((e, i) => ({ ...e, id: `ev_${i}` })),

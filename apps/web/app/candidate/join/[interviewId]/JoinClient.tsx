@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Mic, CheckCircle2, Camera, ShieldCheck, Mail } from 'lucide-react'
 import type { CandidatePortalData } from '@/lib/candidatePortal'
 import { BrandButton, PoweredBy, onBrand } from '@/components/screen/candidate/CandidateShell'
+import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/CaptureNotice'
 
 // Design-System Pass 3 (group 7): white-label portal on tokens + canonical
 // controls; the OTP / identity / photo / mic checks are unchanged.
+// Captured-data privacy: the capture notice + the SEPARATE media consent come
+// first — the photo can't be taken (client AND server) until it is given.
 
 type StepStatus = 'idle' | 'busy' | 'done' | 'fail'
 
@@ -27,9 +30,10 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
   const [photoStatus, setPhotoStatus] = useState<StepStatus>('idle')
   const [micStatus, setMicStatus] = useState<StepStatus>('idle')
   const [starting, setStarting] = useState(false)
+  const [mediaOk, setMediaOk] = useState(data.mediaConsentGiven)
 
   const allDone =
-    otpStatus === 'done' && nameStatus === 'done' && photoStatus === 'done' && micStatus === 'done'
+    mediaOk && otpStatus === 'done' && nameStatus === 'done' && photoStatus === 'done' && micStatus === 'done'
 
   async function record(payload: Record<string, unknown>) {
     return fetch('/api/interview/verification', {
@@ -91,7 +95,8 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
       canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
       const photoUrl = canvas.toDataURL('image/jpeg', 0.6)
       stream.getTracks().forEach((t) => t.stop())
-      await record({ photoUrl })
+      const res = await record({ photoUrl })
+      if (!res || !res.ok) throw new Error('photo not stored')
       setPhotoStatus('done')
     } catch {
       setPhotoStatus('fail')
@@ -152,6 +157,15 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
           )}
         </section>
 
+        {/* Captured-data notice + specific consent — BEFORE any capture */}
+        <section className="lv-card" aria-labelledby="join-privacy" style={card}>
+          <h2 id="join-privacy" className="lv-eyebrow" style={{ marginBottom: 12 }}>Your data</h2>
+          <CaptureNotice orgName={data.agencyName} mediaRetentionDays={data.privacy.mediaRetentionDays} transcriptRetentionDays={data.privacy.transcriptRetentionDays} />
+          <div style={{ marginTop: 14 }}>
+            <MediaConsent interviewId={data.interviewId} surface="join" consented={mediaOk} onConsented={() => setMediaOk(true)} />
+          </div>
+        </section>
+
         {/* Verification */}
         <section className="lv-card" aria-labelledby="join-verify" style={card}>
           <h2 id="join-verify" className="lv-eyebrow" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -195,8 +209,8 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
           </Row></li>
 
           {/* Step 3 — photo */}
-          <li><Row icon={<Camera size={16} />} title="Take a verification photo" sub="A single still is captured for integrity" status={photoStatus} borderBottom failHint="Camera access denied — enable it and retry.">
-            {photoStatus !== 'done' && <ActionBtn brand={brand} busy={photoStatus === 'busy'} onClick={capturePhoto} disabled={nameStatus !== 'done'}>{photoStatus === 'fail' ? 'Retry' : 'Capture'}</ActionBtn>}
+          <li><Row icon={<Camera size={16} />} title="Take a verification photo" sub={mediaOk ? 'A single still, stored encrypted, for identity verification' : 'Agree to the photo and recording above first'} status={photoStatus} borderBottom failHint="Couldn’t take the photo — allow camera access and retry.">
+            {photoStatus !== 'done' && <ActionBtn brand={brand} busy={photoStatus === 'busy'} onClick={capturePhoto} disabled={nameStatus !== 'done' || !mediaOk}>{photoStatus === 'fail' ? 'Retry' : 'Capture'}</ActionBtn>}
           </Row></li>
 
           {/* Step 4 — mic */}

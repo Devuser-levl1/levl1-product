@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { analyzeDiarization, type ScribeBatchWord } from '@/lib/screen/integrity/diarization'
+import { encryptString } from '@/lib/screen/privacy/crypto'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120  // batch STT on a full interview can take a while
@@ -15,8 +16,12 @@ export const maxDuration = 120  // batch STT on a full interview can take a whil
 //
 // Validated by interviewId (like the integrity-ingest route) so anonymous demo
 // sessions work; abuse is bounded by the interview existing + audio size cap.
+// Captured-data privacy: needs the candidate's media consent (demo runs have
+// their own gate), is refused after consent withdrawal or outside the live
+// window, and what the second voice said is stored encrypted (meta.transcriptEnc).
 
 const MAX_BYTES = 60 * 1024 * 1024  // 60 MB ceiling
+const UPLOAD_GRACE_MS = 15 * 60_000
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,8 +31,17 @@ export async function POST(req: NextRequest) {
     const key = process.env.ELEVENLABS_API_KEY
     if (!key) return NextResponse.json({ error: 'stt_unconfigured' }, { status: 503 })
 
-    const interview = await prisma.interview.findUnique({ where: { id: interviewId }, select: { id: true } })
+    const interview = await prisma.interview.findUnique({
+      where: { id: interviewId },
+      select: { id: true, isDemo: true, status: true, completedAt: true, mediaConsentGiven: true, consentWithdrawnAt: true },
+    })
     if (!interview) return NextResponse.json({ error: 'interview not found' }, { status: 404 })
+    if (!interview.isDemo && (!interview.mediaConsentGiven || interview.consentWithdrawnAt)) {
+      return NextResponse.json({ error: 'no_consent' }, { status: 403 })
+    }
+    const live = interview.status === 'in_progress'
+      || (interview.status === 'completed' && (!interview.completedAt || Date.now() - interview.completedAt.getTime() < UPLOAD_GRACE_MS))
+    if (!live) return NextResponse.json({ error: 'not_live' }, { status: 409 })
 
     const buf = await req.arrayBuffer()
     if (!buf.byteLength) return NextResponse.json({ error: 'no audio' }, { status: 400 })
@@ -66,8 +80,9 @@ export async function POST(req: NextRequest) {
           occurredAt: now,
           durationMs: Math.round((s.endSec - s.startSec) * 1000),
           confidence: s.confidence,
-          detail: `Second voice (${s.speakerId}) ${s.startSec}s–${s.endSec}s: "${s.transcript}"`,
-          meta: { speakerId: s.speakerId, startSec: s.startSec, endSec: s.endSec, wordCount: s.wordCount, transcript: s.transcript, source: 'scribe_v2_batch' },
+          // The quote is re-attached for recruiter views by revealEvent() (lib/screen/privacy/fields.ts).
+          detail: `Second voice (${s.speakerId}) ${s.startSec}s–${s.endSec}s`,
+          meta: { speakerId: s.speakerId, startSec: s.startSec, endSec: s.endSec, wordCount: s.wordCount, transcriptEnc: encryptString(s.transcript), source: 'scribe_v2_batch' },
         })),
       })
     }

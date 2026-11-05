@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { readCapturePolicy } from '@/lib/screen/privacy/policy'
 
 /**
  * Candidate-safe view of an interview. ONLY the fields a candidate is allowed
@@ -10,6 +11,10 @@ export interface CandidatePortalData {
   status: string
   scheduledAt: string | null
   consentGiven: boolean
+  // Captured-data privacy: the specific photo/recording/camera consent + the
+  // retention periods the candidate notice states (same values the purge uses).
+  mediaConsentGiven: boolean
+  privacy: { mediaRetentionDays: number; transcriptRetentionDays: number }
   duration: number
   candidateFirstName: string
   candidateName: string
@@ -46,6 +51,7 @@ export async function loadCandidateInterview(interviewId: string): Promise<Porta
   }
 
   const agency = interview.position.agency
+  const policy = readCapturePolicy()
   return {
     ok: true,
     data: {
@@ -53,6 +59,8 @@ export async function loadCandidateInterview(interviewId: string): Promise<Porta
       status: interview.status,
       scheduledAt: interview.scheduledAt ? interview.scheduledAt.toISOString() : null,
       consentGiven: interview.consentGiven,
+      mediaConsentGiven: interview.mediaConsentGiven,
+      privacy: { mediaRetentionDays: policy.mediaRetentionDays, transcriptRetentionDays: policy.transcriptRetentionDays },
       duration: interview.duration ?? 30,
       candidateFirstName: interview.candidate.name.split(' ')[0] || interview.candidate.name,
       candidateName: interview.candidate.name,
