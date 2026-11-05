@@ -1,3 +1,5 @@
+import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+
 export interface HelpStep {
   title: string
   body:  string
@@ -26,7 +28,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     id:    'ai-interviews',
     title: 'How AI interviews work',
     steps: [
-      { title: 'Voice-based interview', body: 'The AI interviewer conducts a structured 30-minute voice interview. The candidate speaks naturally through their microphone — no typing required.' },
+      { title: 'Voice-based interview', body: `The AI interviewer conducts a structured ${PRODUCTION_INTERVIEW_MINUTES}-minute voice interview. The candidate speaks naturally through their microphone — no typing required.` },
       { title: 'Fixed question structure', body: '6 technical, 3 scenario, 3 behavioral, and 2 EQ questions — calibrated to the role and experience level from your approved question set.' },
       { title: 'Dynamic follow-up questions', body: 'If a candidate gives a vague or partial answer, the AI automatically generates a contextual follow-up question to probe deeper.' },
       { title: 'Real-time evaluation', body: 'Every response is scored against expected key points in real time. You can monitor the transcript and running score from the Interviews tab.' },

@@ -8,6 +8,7 @@ import { SchedulingOverview, TodayInterviews } from "../candidates/SchedulingAge
 import StartInterviewModal from "@/components/interview/StartInterviewModal";
 import { Page, PageHeader, Button, Badge, Card, EmptyState, Table, Eyebrow, type Column } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+import { PRODUCTION_INTERVIEW_MINUTES } from "@/lib/screen/session/duration";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { MONITORING_HELP } from "@/components/control-room/monitoring-help";
 
@@ -161,7 +162,7 @@ export default function InterviewsPage() {
       const dt = c.scheduledAt ? formatDateTime(c.scheduledAt) : null;
       return <span className="font-mono" style={{ fontSize: text.xs, color: lv.textBody }}>{dt ? `${dt.date} · ${dt.time}` : "—"}</span>;
     } },
-    { key: "duration", header: "Duration", width: 100, render: () => <span className="font-mono" style={{ fontSize: text.xs, color: lv.textMuted }}>30 min</span> },
+    { key: "duration", header: "Duration", width: 100, render: () => <span className="font-mono" style={{ fontSize: text.xs, color: lv.textMuted }}>{PRODUCTION_INTERVIEW_MINUTES} min</span> },
     { key: "status", header: "Status", width: 110, render: () => <Badge tone="danger">No Show</Badge> },
   ];
 

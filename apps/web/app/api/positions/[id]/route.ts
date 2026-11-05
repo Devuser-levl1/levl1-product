@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED.has(k)) safe[k] = v
     }
-    // Production interviews are fixed at 30 min (Build 06) — never let an update
+    // Production interview length is platform config (PRODUCTION_INTERVIEW_MINUTES) — never let an update
     // set 20/45/60.
     if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
     if ('mustHaves' in safe) safe.mustHaves = sanitizeMustHaves(safe.mustHaves)

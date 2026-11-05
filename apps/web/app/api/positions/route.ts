@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED.has(k)) data[k] = v
     }
-    // Production interviews are FIXED at 30 min (Build 06) — ignore any client
+    // Production interview length is platform config (PRODUCTION_INTERVIEW_MINUTES) — ignore any client
     // value (20/45/60 are gone). Demo durations use a separate route and are
     // unaffected.
     data.interviewDuration = PRODUCTION_INTERVIEW_MINUTES

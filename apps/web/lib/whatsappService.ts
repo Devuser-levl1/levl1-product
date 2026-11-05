@@ -11,6 +11,7 @@
  *   TWILIO_AUTH_TOKEN
  *   TWILIO_WHATSAPP_NUMBER  (e.g. "whatsapp:+14155238886" — Twilio sandbox)
  */
+import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
 import twilio from 'twilio'
 
 type TwilioClient = ReturnType<typeof twilio>
@@ -98,7 +99,7 @@ export async function sendWhatsAppInvite({
 
 You've been invited to interview for *${positionTitle}* at *${company}* by ${agencyName}.
 
-*Please note:* This is an L1 technical interview conducted by an *AI interviewer* (not a human). It takes about 30 minutes, covers *technical and behavioral* questions, and your responses will be *recorded and evaluated*.
+*Please note:* This is an L1 technical interview conducted by an *AI interviewer* (not a human). It takes about ${PRODUCTION_INTERVIEW_MINUTES} minutes, covers *technical and behavioral* questions, and your responses will be *recorded and evaluated*.
 
 You'll be asked to confirm your consent on the scheduling page before picking a time. Open it here: ${schedulingUrl}
 
@@ -137,7 +138,7 @@ Hi ${candidateName}, your interview for *${positionTitle}* is confirmed.
 
 *Date:* ${dateStr}
 *Time:* ${timeStr} IST
-*Duration:* 30 minutes
+*Duration:* ${PRODUCTION_INTERVIEW_MINUTES} minutes
 
 Join here when it's time:
 ${interviewUrl}

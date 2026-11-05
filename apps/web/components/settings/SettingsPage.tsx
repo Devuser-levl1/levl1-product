@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
+import { PRODUCTION_INTERVIEW_MINUTES } from "@/lib/screen/session/duration";
 import { Field as FormField, PageHeader, Alert } from "@/components/screen/ui";
 
 // Design-System Pass 3 (group 6): local helpers render the canonical Screen
@@ -638,10 +639,10 @@ export default function SettingsPage() {
       <Section title="Interview Defaults" description="Default settings applied to new interviews">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 16 }}>
           <Field label="Interview Duration">
-            {/* Build 06: production interviews are fixed at 30 minutes — no
-                selectable options, to reduce config surface. */}
+            {/* Production interview length is platform config
+                (lib/screen/session/duration.ts) — shown read-only. */}
             <div className="lv-input" aria-readonly="true" style={{ display: 'flex', alignItems: 'center', color: 'var(--lv-text-body)', background: 'var(--lv-surface-sunken)', cursor: 'default' }}>
-              30 minutes <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)' }}>· fixed</span>
+              {PRODUCTION_INTERVIEW_MINUTES} minutes <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)' }}>· fixed</span>
             </div>
           </Field>
         </div>

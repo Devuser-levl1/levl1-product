@@ -1,18 +1,23 @@
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { LogisticsConfig, constraintsForModel, workAuthQuestion } from './config'
 import type { KnockoutQuestion } from '@/lib/screen/position-config'
+import { LOGISTICS_SEGMENT_MINUTES } from '@/lib/screen/session/duration'
 
 // ── Logistics segment prompts (Screen-scoped) ──────────────────────────────
 // THE home for the logistics persona. The model never receives the comp band:
 // it only sees constraintsForModel(), which omits it.
 
 export const LOGISTICS_MAX_CANDIDATE_TURNS = 7   // hard cap on candidate replies
-export const LOGISTICS_MAX_MS = 150_000          // ~2.5 min wall clock
+// Wall-clock budget comes from the segment split in lib/screen/session/duration.ts
+// (default 4 min); knockouts add a little each, hard-capped at +1 min so the
+// segment stays ~4–5 min and Q&A keeps its time.
+export const LOGISTICS_MAX_MS = Math.round(LOGISTICS_SEGMENT_MINUTES * 60_000)
 export const KNOCKOUT_EXTRA_MS = 25_000          // per recruiter knockout question
+export const LOGISTICS_HARD_CAP_MS = LOGISTICS_MAX_MS + 60_000
 
 /** Wall-clock + reply caps for this segment (knockouts get their own time). */
 export function logisticsBudget(knockouts: number): { maxMs: number; maxReplies: number } {
-  return { maxMs: LOGISTICS_MAX_MS + knockouts * KNOCKOUT_EXTRA_MS, maxReplies: LOGISTICS_MAX_CANDIDATE_TURNS + knockouts }
+  return { maxMs: Math.min(LOGISTICS_HARD_CAP_MS, LOGISTICS_MAX_MS + knockouts * KNOCKOUT_EXTRA_MS), maxReplies: LOGISTICS_MAX_CANDIDATE_TURNS + knockouts }
 }
 
 // `topic` (AI turns) is the logistics topic that turn asked — tracked so no

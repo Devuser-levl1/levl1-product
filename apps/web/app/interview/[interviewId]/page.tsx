@@ -17,9 +17,9 @@ import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
 import { BargeInDetector, BARGE_IN_CONFIG } from '@/lib/screen/interview/barge-in'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
-import { PRODUCTION_INTERVIEW_MINUTES } from '@/lib/screen/session/duration'
+import { PRODUCTION_INTERVIEW_MINUTES, CULTURE_FIT_RESERVE_SEC, MIN_QUESTION_SEC } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
-import { logisticsIntro, LOGISTICS_MAX_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
+import { logisticsIntro, LOGISTICS_MAX_MS, LOGISTICS_HARD_CAP_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/CaptureNotice'
 
@@ -408,6 +408,8 @@ export default function InterviewPage() {
   const [sttWarning, setSttWarning]  = useState<string | null>(null)  // bugfix: "I can't hear you" banner
   const [textInputValue, setTextInputValue] = useState('')
   const [timeRemaining, setTimeRemaining]   = useState(0)
+  const timeRemainingRef = useRef(0)  // read by moveToQuestion's culture-fit reserve
+  useEffect(() => { timeRemainingRef.current = timeRemaining }, [timeRemaining])
   const [, setQuestionResponses]     = useState<QuestionResponse[]>([])
   const [runningScore, setRunningScore] = useState(0)
   // Permanent editor pane: which tab is active. Both tabs stay mounted so work is
@@ -1405,6 +1407,13 @@ export default function InterviewPage() {
     // Fixpack 6 #4: duplicate / stale advance → ignore; an already-asked
     // question (e.g. re-inserted) → skip it.
     if (idx <= lastAskedIdxRef.current) return
+    // Segment balance (30-min envelope): once at least one question is done,
+    // don't START another if it would eat the culture-fit reserve — hand over
+    // to the Likert segment instead. The time-up gate still wins if it fires.
+    if (!isDemoRef.current && !cultureFitDoneRef.current && askedQuestionIdsRef.current.size > 0
+      && timeRemainingRef.current > 0 && timeRemainingRef.current < CULTURE_FIT_RESERVE_SEC + MIN_QUESTION_SEC) {
+      await beginCultureFit(); return
+    }
     if (qs[idx]?.id && askedQuestionIdsRef.current.has(qs[idx].id)) { lastAskedIdxRef.current = idx; await moveToQuestion(idx + 1); return }
     lastAskedIdxRef.current = idx
     if (qs[idx]?.id) askedQuestionIdsRef.current.add(qs[idx].id)
@@ -1797,7 +1806,7 @@ export default function InterviewPage() {
         })
         if (r.ok) next = await r.json()
       } catch { /* fall through — never block the interview */ }
-      if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, 5 * 60_000)
+      if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, LOGISTICS_HARD_CAP_MS)
       if (wrapUpFiredRef.current) break
       if (!next.say) break
       await say(next.say, !(next.done || wrapNow), next.topic)   // the closing line isn't interruptible
