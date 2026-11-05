@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { isAccountType } from '@/lib/screen/account-type'
 
 export const dynamic = 'force-dynamic'
@@ -22,8 +23,10 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    // Workspace settings are admin-only (Screen RBAC).
+    const access = recruiterAccess(req, { admin: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const session = access.session
 
     const body = await req.json()
     const ALLOWED = ['name', 'website', 'senderName', 'senderEmail', 'brandColor', 'logoUrl'] as const

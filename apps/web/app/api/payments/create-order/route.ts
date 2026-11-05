@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Cashfree, CFEnvironment } from 'cashfree-pg'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { PLANS } from '@/lib/plans'
 import { appUrl } from '@/lib/screen/app-url'
 
@@ -18,7 +18,10 @@ function getCashfree() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = getSessionFromRequest(req)
+    // Billing is admin-only (Screen RBAC).
+    const access = recruiterAccess(req, { admin: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const session = access.session
     if (!session) {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
     }

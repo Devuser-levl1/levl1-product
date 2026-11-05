@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { applySessionGuard } from '@/lib/screen/auth/session-guard'
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'levl1-dev-secret-change-in-production-please'
@@ -101,5 +102,7 @@ export function getSessionFromRequest(req: Request): SessionPayload | null {
   const ent = (payload as unknown as { ent?: { interviews?: boolean } }).ent
   if (ent && ent.interviews === false) return null
   if (!payload.agencyId) return null
-  return payload
+  // Screen session guard (token format unchanged): live Screen role, removed
+  // members, and "sign out other devices" (lib/screen/auth/session-guard.ts).
+  return applySessionGuard(payload as SessionPayload & { iat?: number })
 }

@@ -187,6 +187,7 @@ model TeamMember {
   role        String    @default("recruiter") // admin | recruiter | viewer
   status      String    @default("invited")   // invited | active
   inviteToken String?   @unique
+  invitedAt   DateTime? // last (re)send — invite links expire 7 days after this
   joinedAt    DateTime?
   createdAt   DateTime  @default(now())
 }
@@ -219,9 +220,15 @@ model User {
   passwordHash       String?
   emailVerified      Boolean   @default(false)
   emailVerifyToken   String?
-  resetPasswordToken  String?
+  resetPasswordToken  String?   // legacy — password sign-in is retired (OTP only)
   resetPasswordExpiry DateTime?
   lastLoginAt         DateTime?
+  // Screen session management + RBAC (lib/screen/auth/session-guard.ts):
+  // sessions issued before sessionsValidAfter are rejected ("sign out other
+  // devices"); disabledAt = removed from the workspace (cannot sign in).
+  sessionsValidAfter  DateTime?
+  disabledAt          DateTime?
+  emailReverifiedAt   DateTime?
   createdAt          DateTime  @default(now())
 }
 

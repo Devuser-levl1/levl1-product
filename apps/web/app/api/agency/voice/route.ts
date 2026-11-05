@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 /** PATCH { voiceAccent } — set this account's default interviewer voice */
 export async function PATCH(req: NextRequest) {
-  const access = recruiterAccess(req, { edit: true })
+  const access = recruiterAccess(req, { admin: true })   // workspace default voice — admin-only
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
   try {
     const { voiceAccent } = await req.json().catch(() => ({}))

@@ -1,48 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
-import { linkInterviewsLogin, unifiedPayloadFor, signLevlSession, buildSessionCookie } from '@/lib/levl-sso'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
-  try {
-    const { token, password } = await req.json()
-    if (!token || !password) {
-      return NextResponse.json({ error: 'Token and password are required' }, { status: 400 })
-    }
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
-    }
-
-    const user = await prisma.user.findFirst({
-      where: {
-        resetPasswordToken:  token,
-        resetPasswordExpiry: { gt: new Date() },
-      },
-      include: { agency: true },
-    })
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid or expired reset link. Please request a new one.' }, { status: 400 })
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12)
-    await prisma.user.update({
-      where: { id: user.id },
-      data:  { passwordHash, resetPasswordToken: null, resetPasswordExpiry: null },
-    })
-
-    // Auto-login after successful reset
-    // Unified SSO session + account link (see auth/signup for why).
-    const account = await linkInterviewsLogin(user.email, user.id, user.agencyId)
-    const jwtToken = signLevlSession(await unifiedPayloadFor(account, user.name))
-
-    const res = NextResponse.json({ success: true })
-    res.headers.set('Set-Cookie', buildSessionCookie(jwtToken))
-    return res
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed'
-    console.error('[reset-password] error:', msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
-  }
+// Screen password reset has been RETIRED with password sign-in: accounts sign in
+// with an email one-time code (/api/auth/otp/request → /api/auth/otp/verify).
+// (Hire's password flow lives at /api/hire/auth/* and is unaffected.)
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Screen uses email login codes — there is no password to reset. Request a code to sign in.', useOtp: true },
+    { status: 410 },
+  )
 }

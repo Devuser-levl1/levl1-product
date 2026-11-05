@@ -20,13 +20,13 @@ export async function GET(req: NextRequest) {
     subject: isCustom ? agency!.inviteEmailSubject : DEFAULT_INVITE_SUBJECT,
     body: isCustom ? agency!.inviteEmailBody : DEFAULT_INVITE_BODY,
     isCustom,
-    canEdit: access.canEdit,
+    canEdit: access.isAdmin,   // workspace template: admins only
     default: { subject: DEFAULT_INVITE_SUBJECT, body: DEFAULT_INVITE_BODY },
   })
 }
 
 export async function PUT(req: NextRequest) {
-  const access = recruiterAccess(req, { edit: true })
+  const access = recruiterAccess(req, { admin: true })   // workspace-wide template — admin-only
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
   const body = await req.json().catch(() => ({})) as { subject?: unknown; body?: unknown; reset?: unknown }
 

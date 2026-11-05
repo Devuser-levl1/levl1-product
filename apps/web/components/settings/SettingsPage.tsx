@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, isValidElement } from "react";
-import { Play, Loader2, TrendingUp, CheckCircle2, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Play, Loader2, TrendingUp, CheckCircle2 } from "lucide-react";
 import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
 import { ACCOUNT_TYPES, isAccountType, type AccountType } from "@/lib/screen/account-type";
 import toast from "react-hot-toast";
@@ -10,6 +10,8 @@ import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
 import { PRODUCTION_INTERVIEW_MINUTES } from "@/lib/screen/session/duration";
 import { Field as FormField, PageHeader, Alert } from "@/components/screen/ui";
+import { AccountSecurity, TeamManagement, ReadOnlySettingsNotice } from "@/components/settings/TeamAndAccess";
+import type { ScreenRole } from "@/lib/screen/auth/rbac";
 
 // Design-System Pass 3 (group 6): local helpers render the canonical Screen
 // components; settings state, saves and team/billing calls are unchanged.
@@ -54,35 +56,15 @@ function ToggleRow({ label, sub, checked, onChange }: { label: string; sub?: str
   );
 }
 
-interface TeamMemberRecord { id: string; name: string; email: string; role: string; status: string; inviteToken?: string | null }
-interface UserRecord { id: string; name: string; email: string; role: string; lastLoginAt?: string | null }
-
 export default function SettingsPage() {
   const { agencyPlan, setShowUpgradeWall, setAgencyPlan } = useAppStore();
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
 
-  // Team members state
-  const [teamMembers,   setTeamMembers]   = useState<TeamMemberRecord[]>([]);
-  const [teamUsers,     setTeamUsers]     = useState<UserRecord[]>([]);
-  const [teamLoading,   setTeamLoading]   = useState(true);
-  const [inviteEmail,   setInviteEmail]   = useState('');
-  const [inviteRole,    setInviteRole]    = useState<'recruiter' | 'admin' | 'viewer'>('recruiter');
-  const [invitingNew,   setInvitingNew]   = useState(false);
-  const [showInviteRow, setShowInviteRow] = useState(false);
+  // Screen RBAC: filled in by <TeamManagement>. Workspace settings are
+  // admin-only (the API enforces it); non-admins get a read-only view.
+  const [access, setAccess] = useState<{ canManage: boolean; role: ScreenRole | null } | null>(null);
+  const readOnly = access !== null && !access.canManage;
   const [savingProfile, setSavingProfile] = useState(false);
-
-  const loadTeam = useCallback(async () => {
-    setTeamLoading(true);
-    try {
-      const res = await fetch('/api/agency/team');
-      const d = await res.json();
-      if (d.members) setTeamMembers(d.members);
-      if (d.users)   setTeamUsers(d.users);
-    } catch { /* ignore */ }
-    finally { setTeamLoading(false); }
-  }, []);
-
-  useEffect(() => { loadTeam(); }, [loadTeam]);
 
   const [agencyName,    setAgencyName]    = useState("Levl1 Agency");
   // Read-only: the signed-in user's email (the Agency model has no contact-email
@@ -403,6 +385,7 @@ export default function SettingsPage() {
           The fields below may show defaults. Reload before saving so you don&apos;t overwrite your profile.
         </Alert>
       )}
+      {readOnly && <ReadOnlySettingsNotice role={access?.role ?? null} />}
 
       {/* Agency Profile */}
       <Section title="Agency Profile" description="Your agency's public identity on the platform">
@@ -419,7 +402,7 @@ export default function SettingsPage() {
           <input className="lv-input" value={agencyWebsite} onChange={(e) => setAgencyWebsite(e.target.value)} />
         </Field>
         <Field label="Account type">
-          <select className="lv-select" aria-label="Account type" value={accountType ?? ""} disabled={savingType} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
+          <select className="lv-select" aria-label="Account type" value={accountType ?? ""} disabled={savingType || readOnly} onChange={(e) => { if (isAccountType(e.target.value)) void saveAccountType(e.target.value) }}>
             {accountType === null && <option value="">Not set — position setup asks for client details</option>}
             {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} — {t.desc.toLowerCase()}</option>)}
           </select>
@@ -441,7 +424,7 @@ export default function SettingsPage() {
             await handleSaveSettings();
             setSavingProfile(false);
           }}
-          disabled={savingProfile}
+          disabled={savingProfile || readOnly}
           className="lv-btn lv-btn--primary"
           style={{ alignSelf: "flex-start", fontSize: 13 }}
         >
@@ -653,119 +636,9 @@ export default function SettingsPage() {
         </div>
       </Section>
 
-      {/* Team Members */}
-      <Section title="Team Members" description="Manage who has access to this dashboard">
-        {teamLoading ? (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <Loader2 size={20} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
-          </div>
-        ) : (
-          <>
-            {/* Active users */}
-            {teamUsers.map((u) => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-brand-soft)", border: "1px solid color-mix(in srgb, var(--lv-brand) 20%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-brand)" }}>
-                    {u.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--lv-brand)" }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{u.email}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span className="lv-badge lv-badge--success" style={{ textTransform: "capitalize" }}>{u.role}</span>
-                  <span style={{ fontSize: 11, color: "var(--lv-text-muted)" }}>Active</span>
-                </div>
-              </div>
-            ))}
-
-            {/* Invited (pending) members */}
-            {teamMembers.filter(m => m.status === 'invited').map((m) => (
-              <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--lv-surface-muted)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--lv-surface-muted)", border: "1px solid var(--lv-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "var(--lv-text-muted)" }}>
-                    {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--lv-text-muted)" }}>{m.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{m.email}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="lv-badge lv-badge--warning">Invited</span>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/agency/team', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
-                        if (res.ok) { toast.success('Invite resent'); }
-                        else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                      } catch { toast.error('Couldn\'t resend the invite. Please try again.'); }
-                    }}
-                    className="lv-btn lv-btn--secondary lv-btn--sm" aria-label={`Resend invite to ${m.email}`}
-                  >
-                    <RefreshCw size={14} aria-hidden="true" /> Resend
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/agency/team', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: m.id }) });
-                        if (res.ok) { toast.success('Member removed'); loadTeam(); }
-                        else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                      } catch { toast.error('Couldn\'t remove the member. Please try again.'); }
-                    }}
-                    className="lv-btn lv-btn--ghost lv-btn--sm lv-btn--icon" aria-label={`Remove ${m.email}`} title="Remove" style={{ color: "var(--lv-danger)" }}
-                  >
-                    <Trash2 size={14} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* Invite new row */}
-            {showInviteRow && (
-              <div role="group" aria-label="Invite a team member" style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 0", flexWrap: "wrap" }}>
-                <input
-                  className="lv-input" type="email" placeholder="colleague@company.com" aria-label="Colleague's email"
-                  value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                  style={{ flex: "2 1 200px", minWidth: 0 }}
-                />
-                <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'recruiter' | 'admin' | 'viewer')} className="lv-select" aria-label="Role"
-                  style={{ flex: "1 1 120px", minWidth: 0, width: "auto" }}>
-                  <option value="recruiter">Recruiter</option>
-                  <option value="admin">Admin</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-                <button
-                  disabled={invitingNew || !inviteEmail.trim()}
-                  onClick={async () => {
-                    if (!inviteEmail.trim()) return;
-                    setInvitingNew(true);
-                    try {
-                      const res = await fetch('/api/agency/invite-team', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ members: [{ name: inviteEmail.split('@')[0], email: inviteEmail, role: inviteRole }] }),
-                      });
-                      if (res.ok) { toast.success('Invite sent!'); setInviteEmail(''); setShowInviteRow(false); loadTeam(); }
-                      else { const d = await res.json(); toast.error(d.error ?? 'Failed'); }
-                    } catch { toast.error('Couldn\'t send the invite. Please try again.'); }
-                    finally { setInvitingNew(false); }
-                  }}
-                  className="lv-btn lv-btn--primary"
-                  style={{ fontSize: 13, whiteSpace: "nowrap" }}
-                >
-                  {invitingNew ? "Sending…" : "Send Invite"}
-                </button>
-                <button type="button" onClick={() => setShowInviteRow(false)} className="lv-btn lv-btn--ghost lv-btn--icon" aria-label="Cancel invite">✕</button>
-              </div>
-            )}
-
-            <button className="lv-btn lv-btn--secondary" style={{ alignSelf: "flex-start" }} onClick={() => setShowInviteRow(true)}>
-              <Plus size={14} aria-hidden="true" /> Invite Team Member
-            </button>
-          </>
-        )}
-      </Section>
+      {/* Your account + Team & roles (Screen RBAC) */}
+      <AccountSecurity email={accountEmail} />
+      <TeamManagement onAccess={setAccess} />
 
       {/* Billing */}
       <Section title="Billing & Plan" description="Manage your subscription and usage">
@@ -869,10 +742,10 @@ export default function SettingsPage() {
             Restart product tour
           </button>
         </div>
-        <button type="button" className="lv-btn lv-btn--secondary" onClick={() => toast("Changes discarded")}>
+        <button type="button" className="lv-btn lv-btn--secondary" disabled={readOnly} onClick={() => toast("Changes discarded")}>
           Discard
         </button>
-        <button type="button" className="lv-btn lv-btn--primary" onClick={handleSaveSettings}>
+        <button type="button" className="lv-btn lv-btn--primary" disabled={readOnly} title={readOnly ? "Only workspace admins can change settings" : undefined} onClick={handleSaveSettings}>
           Save Changes
         </button>
       </div>

@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
     if (emailErr) return NextResponse.json({ error: emailErr }, { status: 400 })
 
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null
-    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true } })
+    const found = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true, disabledAt: true } })
+    // Removed members get no code (same response, no enumeration).
+    const user = found && !found.disabledAt ? found : null
 
     // Always create + send only for real accounts, but respond identically
     // either way so we don't leak which emails are registered.

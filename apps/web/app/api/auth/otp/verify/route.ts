@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({ where: { email }, include: { agency: true } })
     if (!user) return NextResponse.json({ error: 'Account not found.' }, { status: 404 })
+    // Removed from the workspace (Screen team management) → no sign-in.
+    if (user.disabledAt) return NextResponse.json({ error: 'Your access to this workspace was removed. Ask a workspace admin to invite you again.' }, { status: 403 })
 
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), emailVerified: true } })
 

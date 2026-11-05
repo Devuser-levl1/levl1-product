@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,8 +8,10 @@ const MAX_BYTES = 512 * 1024 // 512KB — keep base64 payloads reasonable
 
 export async function POST(req: NextRequest) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    // Branding is a workspace setting — admin-only.
+    const access = recruiterAccess(req, { admin: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const session = access.session
 
     const form = await req.formData()
     const file = form.get('logo')

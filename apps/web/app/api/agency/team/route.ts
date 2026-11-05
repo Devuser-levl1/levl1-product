@@ -1,94 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
-import { sendEmail } from '@/lib/emailService'
-import crypto from 'crypto'
-import { appUrl } from '@/lib/screen/app-url'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
+import { changeRole, removeMember, resendInvite, INVITE_TTL_MS } from '@/lib/screen/team/team'
+import { normalizeRole } from '@/lib/screen/auth/rbac'
 
 export const dynamic = 'force-dynamic'
 
+// ── Team (Screen-scoped) ────────────────────────────────────────────────────
+// GET    — members + pending invites (any signed-in member can view)
+// PATCH  — { memberId }             resend an invite          (ADMIN)
+//          { userId, role }         change a member's role    (ADMIN)
+// DELETE — { memberId }             revoke a pending invite   (ADMIN)
+//          { userId }               remove an active member   (ADMIN)
+
 export async function GET(req: NextRequest) {
-  try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+  const access = recruiterAccess(req)
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+  const agencyId = access.session.agencyId
+  const [users, invites] = await Promise.all([
+    prisma.user.findMany({
+      where: { agencyId, disabledAt: null },
+      select: { id: true, name: true, email: true, role: true, lastLoginAt: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.teamMember.findMany({
+      where: { agencyId, status: 'invited' },
+      select: { id: true, name: true, email: true, role: true, invitedAt: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ])
+  const now = Date.now()
+  return NextResponse.json({
+    canManage: access.isAdmin,
+    me: access.session.userId,
+    users: users.map((u) => ({ ...u, role: normalizeRole(u.role) })),
+    invites: invites.map((i) => ({ ...i, role: normalizeRole(i.role), expired: now - (i.invitedAt ?? i.createdAt).getTime() > INVITE_TTL_MS })),
+    // Back-compat for older clients that read `members`.
+    members: invites.map((i) => ({ ...i, status: 'invited' })),
+  })
+}
 
-    const [members, users] = await Promise.all([
-      prisma.teamMember.findMany({
-        where:   { agencyId: session.agencyId },
-        orderBy: { createdAt: 'asc' },
-      }),
-      prisma.user.findMany({
-        where:   { agencyId: session.agencyId },
-        select:  { id: true, name: true, email: true, role: true, lastLoginAt: true, createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-    ])
-
-    return NextResponse.json({ members, users })
-  } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 500 })
+export async function PATCH(req: NextRequest) {
+  const access = recruiterAccess(req, { admin: true })
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+  const body = await req.json().catch(() => ({})) as { memberId?: unknown; userId?: unknown; role?: unknown }
+  const agencyId = access.session.agencyId
+  if (typeof body.userId === 'string') {
+    const r = await changeRole({ agencyId, actorId: access.session.userId, userId: body.userId, role: body.role })
+    return r.ok ? NextResponse.json(r) : NextResponse.json({ error: r.error }, { status: r.status })
   }
+  if (typeof body.memberId === 'string') {
+    const r = await resendInvite({ agencyId, inviterName: access.session.name, memberId: body.memberId })
+    return r.ok ? NextResponse.json({ success: true }) : NextResponse.json({ error: r.error }, { status: r.status })
+  }
+  return NextResponse.json({ error: 'userId or memberId required' }, { status: 400 })
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-
-    const { memberId } = await req.json()
-    if (!memberId) return NextResponse.json({ error: 'memberId required' }, { status: 400 })
-
-    const member = await prisma.teamMember.findUnique({ where: { id: memberId } })
-    if (!member || member.agencyId !== session.agencyId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
-
-    await prisma.teamMember.delete({ where: { id: memberId } })
-    return NextResponse.json({ success: true })
-  } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 500 })
+  const access = recruiterAccess(req, { admin: true })
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+  const body = await req.json().catch(() => ({})) as { memberId?: unknown; userId?: unknown }
+  const agencyId = access.session.agencyId
+  if (typeof body.userId === 'string') {
+    const r = await removeMember({ agencyId, actorId: access.session.userId, userId: body.userId })
+    return r.ok ? NextResponse.json({ success: true }) : NextResponse.json({ error: r.error }, { status: r.status })
   }
-}
-
-// Resend invite
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-
-    const { memberId } = await req.json()
-    if (!memberId) return NextResponse.json({ error: 'memberId required' }, { status: 400 })
-
-    const member = await prisma.teamMember.findUnique({
-      where:   { id: memberId },
-      include: { agency: true },
-    })
-    if (!member || member.agencyId !== session.agencyId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
-    if (member.status === 'active') {
-      return NextResponse.json({ error: 'Member already active' }, { status: 400 })
-    }
-
-    const newToken = crypto.randomBytes(32).toString('hex')
-    await prisma.teamMember.update({
-      where: { id: memberId },
-      data:  { inviteToken: newToken, status: 'invited' },
-    })
-
-    const baseUrl = appUrl()
-    if (process.env.RESEND_API_KEY) {
-      await sendEmail({
-        to:      member.email,
-        subject: `Reminder: You've been invited to join ${member.agency.name} on Levl1`,
-        html: `<p>${session.name} has resent your invitation to join <strong>${member.agency.name}</strong> on Levl1.</p>
-<a href="${baseUrl}/accept-invite/${newToken}" style="display:inline-block;background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Accept Invitation →</a>
-<p style="color:#94A3B8;font-size:12px;margin-top:16px">This link expires in 7 days.</p>`,
-      }).catch(console.error)
-    }
-
+  if (typeof body.memberId === 'string') {
+    const m = await prisma.teamMember.findFirst({ where: { id: body.memberId, agencyId, status: 'invited' }, select: { id: true } })
+    if (!m) return NextResponse.json({ error: 'Invite not found.' }, { status: 404 })
+    await prisma.teamMember.delete({ where: { id: m.id } })
     return NextResponse.json({ success: true })
-  } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 500 })
   }
+  return NextResponse.json({ error: 'userId or memberId required' }, { status: 400 })
 }
