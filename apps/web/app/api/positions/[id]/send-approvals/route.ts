@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sendEmail } from '@/lib/emailService'
 import { appUrl } from '@/lib/screen/app-url'
-import { screenEmailLogoHtml } from '@/lib/screen/brand/email-logo'
+import { approvalEmailHtml, approvalEmailSubject } from '@/lib/screen/approvals/approval-email'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,11 +31,13 @@ async function issueToken(positionId: string, type: ApproverType, email: string,
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const access = recruiterAccess(req, { edit: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const session = access.session
 
-    const position = await prisma.position.findUnique({
-      where:   { id: params.id },
+    // Scoped to the caller's workspace (was an unscoped findUnique by id).
+    const position = await prisma.position.findFirst({
+      where:   { id: params.id, agencyId: session.agencyId },
       include: { questionSet: true },
     })
     if (!position) return NextResponse.json({ error: 'Position not found' }, { status: 404 })
@@ -44,8 +46,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     console.log('[send-approvals] positionId:', params.id)
-    console.log('[send-approvals] techLeadEmail:', position.techLeadEmail)
-    console.log('[send-approvals] hrEmail:', position.hrEmail)
     console.log('[send-approvals] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
 
     const agency  = await prisma.agency.findUnique({ where: { id: session.agencyId } })
@@ -56,50 +56,49 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const failed: string[] = []
     const alreadyApproved: string[] = []
 
-    // ── Tech lead — independent try/catch ────────────────────────────
-    try {
-      if (position.techLeadEmail) {
-        const techToken = await issueToken(position.id, 'tech_lead', position.techLeadEmail, expires)
-        if (techToken.status === 'already_approved') { alreadyApproved.push('tech_lead') }
-        else if (process.env.RESEND_API_KEY) {
-          await sendEmail({
-            to:      position.techLeadEmail,
-            subject: `Action Required: Review interview questions for ${position.title}`,
-            html:    approvalEmailHtml({ type: 'tech_lead', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${baseUrl}/approve/${techToken.token}` }),
-          })
-          console.log('[send-approvals] Tech lead email sent to:', position.techLeadEmail)
-        }
-        if (techToken.status !== 'already_approved') sent.push('tech_lead')
-      } else {
-        console.warn('[send-approvals] No tech lead email on position')
+    // 1) Issue / reuse a token per configured approver (independent failures).
+    const approvers: { role: ApproverType; email: string }[] = []
+    if (position.techLeadEmail) approvers.push({ role: 'tech_lead', email: position.techLeadEmail })
+    else console.warn('[send-approvals] No tech lead email on position')
+    if (position.hrEmail) approvers.push({ role: 'hr', email: position.hrEmail })
+    else console.warn('[send-approvals] No HR email on position')
+
+    const due: { role: ApproverType; email: string; url: string }[] = []
+    for (const a of approvers) {
+      try {
+        const t = await issueToken(position.id, a.role, a.email, expires)
+        if (t.status === 'already_approved') alreadyApproved.push(a.role)
+        else due.push({ ...a, url: `${baseUrl}/approve/${t.token}` })
+      } catch (e) {
+        console.error(`[send-approvals] ${a.role} token failed:`, e instanceof Error ? e.message : e)
+        failed.push(a.role)
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.error('[send-approvals] Tech lead email failed:', msg)
-      failed.push('tech_lead')
     }
 
-    // ── HR — independent try/catch ────────────────────────────────────
-    try {
-      if (position.hrEmail) {
-        const hrToken = await issueToken(position.id, 'hr', position.hrEmail, expires)
-        if (hrToken.status === 'already_approved') { alreadyApproved.push('hr') }
-        else if (process.env.RESEND_API_KEY) {
-          await sendEmail({
-            to:      position.hrEmail,
-            subject: `Action Required: Review interview questions for ${position.title}`,
-            html:    approvalEmailHtml({ type: 'hr', positionTitle: position.title, company: position.company, agencyName: agency?.name ?? 'Your recruiter', approvalUrl: `${baseUrl}/approve/${hrToken.token}` }),
-          })
-          console.log('[send-approvals] HR email sent to:', position.hrEmail)
+    // 2) One email per recipient — when the tech lead and HR are the same
+    //    person they get ONE email carrying both review links (Fixpack 7 #3).
+    const byRecipient = new Map<string, typeof due>()
+    for (const d of due) {
+      const k = d.email.trim().toLowerCase()
+      byRecipient.set(k, [...(byRecipient.get(k) ?? []), d])
+    }
+    for (const group of Array.from(byRecipient.values())) {
+      const roles = group.map((g) => g.role)
+      try {
+        if (process.env.RESEND_API_KEY) {
+          const input = {
+            positionTitle: position.title, company: position.company,
+            agencyName: agency?.name ?? 'Your recruiter',
+            links: group.map((g) => ({ role: g.role, url: g.url })),
+          }
+          await sendEmail({ to: group[0].email, subject: approvalEmailSubject(input), html: approvalEmailHtml(input) })
+          console.log('[send-approvals] approval email sent:', roles.join('+'))
         }
-        if (hrToken.status !== 'already_approved') sent.push('hr')
-      } else {
-        console.warn('[send-approvals] No HR email on position')
+        sent.push(...roles)
+      } catch (e) {
+        console.error(`[send-approvals] ${roles.join('+')} email failed:`, e instanceof Error ? e.message : e)
+        failed.push(...roles)
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.error('[send-approvals] HR email failed:', msg)
-      failed.push('hr')
     }
 
     // Only (re)enter pending_approval when an approval is actually outstanding —
@@ -121,24 +120,4 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     console.error('[send-approvals] Error:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
-
-function approvalEmailHtml(opts: { type: 'tech_lead' | 'hr'; positionTitle: string; company: string; agencyName: string; approvalUrl: string }) {
-  const isTech    = opts.type === 'tech_lead'
-  const roleLabel = isTech ? 'Technical Lead' : 'HR Manager'
-  const qTypes    = isTech ? 'technical, scenario, and whiteboard questions' : 'behavioral and EQ questions'
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,system-ui,sans-serif;">
-<div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;box-shadow:0 4px 20px rgba(79,70,229,0.08)">
-  <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:32px">
-    ${screenEmailLogoHtml({ onDark: true, height: 34 })}
-    <div style="font-size:15px;font-weight:600;color:#fff;margin-top:10px">Interview review</div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px">Action required from ${roleLabel}</div>
-  </div>
-  <div style="padding:32px">
-    <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#1E293B">Questions ready for your review</h2>
-    <p style="color:#64748B;font-size:14px;line-height:1.6;margin:0 0 20px"><strong>${opts.agencyName}</strong> has generated interview questions for the <strong>${opts.positionTitle}</strong> role at <strong>${opts.company}</strong> and needs your review of the ${qTypes} before interviews begin.</p>
-    <a href="${opts.approvalUrl}" style="display:block;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Review Questions &rarr;</a>
-    <p style="font-size:12px;color:#94A3B8;margin-top:20px">This link expires in 7 days. No login required.</p>
-  </div>
-</div></body></html>`
 }

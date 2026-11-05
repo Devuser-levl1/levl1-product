@@ -4,7 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
-import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
+import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix, sanitizeContactEmails } from '@/lib/screen/position-config'
 import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
 import { ensureWorkSampleTask } from '@/lib/screen/workspace/ensure-task'
@@ -98,6 +98,9 @@ export async function POST(req: NextRequest) {
       data.experienceMin = exp.min; data.experienceMax = exp.max
       data.experienceLevel = formatExperience(exp)
     }
+    // Fixpack 7 #1 — per-job approver emails: validated + normalised.
+    const contactErr = sanitizeContactEmails(data)
+    if (contactErr) return NextResponse.json({ error: contactErr }, { status: 400 })
     if ('questionMix' in data) data.questionMix = sanitizeMix(data.questionMix)
     if ('conceptRubric' in data) data.conceptRubric = sanitizeConceptRubric(data.conceptRubric)
     if ('knockoutQuestions' in data) data.knockoutQuestions = sanitizeKnockouts(data.knockoutQuestions)

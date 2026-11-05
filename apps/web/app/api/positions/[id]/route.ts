@@ -6,7 +6,7 @@ import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/s
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
-import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
+import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix, sanitizeContactEmails } from '@/lib/screen/position-config'
 import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
 import { ensureWorkSampleTask } from '@/lib/screen/workspace/ensure-task'
@@ -69,6 +69,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       safe.experienceMin = exp.min; safe.experienceMax = exp.max
       safe.experienceLevel = formatExperience(exp)
     }
+    // Fixpack 7 #1 — per-job approver emails: validated + normalised.
+    const contactErr = sanitizeContactEmails(safe)
+    if (contactErr) return NextResponse.json({ error: contactErr }, { status: 400 })
     if ('questionMix' in safe) safe.questionMix = sanitizeMix(safe.questionMix)
     if ('conceptRubric' in safe) safe.conceptRubric = sanitizeConceptRubric(safe.conceptRubric)
     if ('knockoutQuestions' in safe) safe.knockoutQuestions = sanitizeKnockouts(safe.knockoutQuestions)

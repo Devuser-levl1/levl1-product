@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Sparkles, Trash2, ShieldAlert } from "lucide-react";
+import { Minus, Plus, Sparkles, Trash2, ShieldAlert, CircleCheck, CircleX } from "lucide-react";
 import {
   EXP_MAX_YEARS, MIX_KEYS, MIX_LABEL, MIX_MAX_PER_TYPE, MIX_MAX_TOTAL, mixTotal,
   RUBRIC_MAX, KNOCKOUT_MAX,
@@ -90,17 +90,42 @@ export function ConceptRubricEditor({ value, onChange, onGenerate, generating, c
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
         {value.map((c, i) => (
-          <div key={c.id} style={{ border: `1px solid ${lv.border}`, borderRadius: radius.md, padding: space[3], display: "flex", flexWrap: "wrap", gap: space[2], alignItems: "flex-start", background: lv.surfaceSunken }}>
-            <Input aria-label="Concept" placeholder="Concept, e.g. Kafka consumer groups" value={c.concept} onChange={(e) => update(i, { concept: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0 }} />
-            <Textarea aria-label="Strong answer" placeholder="Strong answer shows…" value={c.strong} onChange={(e) => update(i, { strong: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 64, resize: "vertical" }} />
-            <Textarea aria-label="Weak answer" placeholder="Weak answer looks like…" value={c.weak} onChange={(e) => update(i, { weak: e.target.value })} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 64, resize: "vertical" }} />
-            <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${c.concept || "concept"}`} onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={16} /></Button>
+          <div key={c.id} role="group" aria-label={`Concept ${i + 1}${c.concept ? `: ${c.concept}` : ""}`}
+            style={{ border: `1px solid ${lv.border}`, borderRadius: radius.md, padding: space[3], display: "flex", flexWrap: "wrap", gap: space[3], alignItems: "flex-start", background: lv.surfaceSunken }}>
+            <RubricCol id={`${c.id}-concept`} label="Concept" sub="What the candidate must know">
+              <Input id={`${c.id}-concept`} placeholder="e.g. Kafka consumer groups" value={c.concept} onChange={(e) => update(i, { concept: e.target.value })} />
+            </RubricCol>
+            <RubricCol id={`${c.id}-strong`} tone="strong" label="Strong answer" sub="What good looks like">
+              <Textarea id={`${c.id}-strong`} placeholder="e.g. Explains partition assignment and rebalancing…" value={c.strong} onChange={(e) => update(i, { strong: e.target.value })} style={{ minHeight: 72, resize: "vertical" }} />
+            </RubricCol>
+            <RubricCol id={`${c.id}-weak`} tone="weak" label="Weak answer" sub="What weak looks like">
+              <Textarea id={`${c.id}-weak`} placeholder="e.g. Only knows the term; can't say what happens when a consumer dies…" value={c.weak} onChange={(e) => update(i, { weak: e.target.value })} style={{ minHeight: 72, resize: "vertical" }} />
+            </RubricCol>
+            <Button variant="ghost" size="sm" iconOnly aria-label={`Remove ${c.concept || "concept"}`} onClick={() => onChange(value.filter((_, j) => j !== i))} style={{ marginTop: 22 }}><Trash2 size={16} /></Button>
           </div>
         ))}
       </div>
       <Button variant="tertiary" size="sm" leftIcon={<Plus size={14} />} onClick={add} disabled={value.length >= RUBRIC_MAX} style={{ marginTop: space[3] }}>
         Add concept {value.length ? `(${value.length}/${RUBRIC_MAX})` : ""}
       </Button>
+    </div>
+  );
+}
+
+/** One labelled rubric column. The label stays visible once the field is filled
+ *  (placeholders alone made strong vs weak ambiguous — Fixpack 7 #2). */
+function RubricCol({ id, label, sub, tone, children }: { id: string; label: string; sub: string; tone?: "strong" | "weak"; children: React.ReactNode }) {
+  const Icon = tone === "strong" ? CircleCheck : tone === "weak" ? CircleX : null;
+  const color = tone === "strong" ? lv.success : tone === "weak" ? lv.danger : lv.textMuted;
+  return (
+    <div style={{ flex: "1 1 180px", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <label htmlFor={id} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: text.xs, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: tone ? color : lv.textBody }}>
+          {Icon && <Icon size={13} color={color} aria-hidden="true" style={{ flexShrink: 0 }} />}{label}
+        </span>
+        <span style={{ fontSize: text.xs, color: lv.textMuted }}>{sub}</span>
+      </label>
+      {children}
     </div>
   );
 }

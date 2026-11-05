@@ -16,6 +16,7 @@ import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/Setu
 import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
+import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
 import { useAccountType } from '@/hooks/useAccountType'
 import {
   Button, ButtonLink, Card, Eyebrow, Badge, Alert, EmptyState, LoadingBlock, Modal, ActionBar,
@@ -735,8 +736,10 @@ export default function PositionDetailPage() {
                   </div>
                 ))}
                 {!position.techLeadEmail && !position.hrEmail && (
-                  <p style={muted}>No approvers configured — edit the position to add Tech Lead and HR emails.</p>
+                  <p style={muted}>No approvers yet — add this job&apos;s technical lead and HR emails to send questions for approval.</p>
                 )}
+                <ApproverEmailsEditor key={`${position.techLeadEmail ?? ''}|${position.hrEmail ?? ''}`} positionId={id} techLeadEmail={position.techLeadEmail} hrEmail={position.hrEmail}
+                  onSaved={(patch) => setPosition(p => p ? { ...p, techLeadEmail: patch.techLeadEmail ?? undefined, hrEmail: patch.hrEmail ?? undefined } : p)} />
               </div>
             </Card>
 

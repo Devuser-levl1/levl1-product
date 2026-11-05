@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MustHaveEditor } from "./MustHaveEditor";
 import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
-import { DEFAULT_MIX, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
+import { DEFAULT_MIX, contactEmailError, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
 import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
 import { InterviewModeField } from "./InterviewModeField";
 import { suggestMode, type InterviewMode } from "@/lib/screen/workspace/modes";
@@ -274,7 +274,13 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // In-house: the hiring company IS the account — fill it, don't ask.
   useEffect(() => { if (isCompany && acct.orgName) setCompany(acct.orgName); }, [isCompany, acct.orgName]);
   // In-house: one hiring contact handles every approval (JD, rubric, questions).
-  const setHiringContact = (v: string) => { setTechLeadEmail(v); setHrEmail(v); setClientManagerEmail(v); };
+  // In-house: the hiring contact pre-fills the tech-lead + HR approvers while
+  // they still mirror it; once edited they stay independent (per-job values).
+  const setHiringContact = (v: string) => {
+    setTechLeadEmail((t) => (t === "" || t === clientManagerEmail ? v : t));
+    setHrEmail((h) => (h === "" || h === clientManagerEmail ? v : h));
+    setClientManagerEmail(v);
+  };
   const [department,              setDepartment]              = useState("");
   const [roleType,                setRoleType]                = useState("Individual Contributor");
   // #4 — experience is a min–max range; experienceLevel is the derived display string.
@@ -363,9 +369,17 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // Rubric total
   const rubricTotal = scoringRubric.technical + scoringRubric.problemSolving + scoringRubric.behavioral + scoringRubric.eq;
 
+  // Fixpack 7 #1 — per-job approver emails (validated before Continue + on the API).
+  const emailErr = {
+    techLeadEmail: contactEmailError(techLeadEmail),
+    hrEmail: contactEmailError(hrEmail),
+    clientManagerEmail: contactEmailError(clientManagerEmail),
+  };
+  const contactEmailsOk = !emailErr.techLeadEmail && !emailErr.hrEmail && !emailErr.clientManagerEmail;
+
   // ── Canary ────────────────────────────────────────────────────────────
   const canContinue = () => {
-    if (step === 0) return positionTitle.trim() !== "" && company.trim() !== "" && expOk;
+    if (step === 0) return positionTitle.trim() !== "" && company.trim() !== "" && expOk && contactEmailsOk;
     if (step === 1) return finalJD.trim().length > 50;
     if (step === 2) return expOk;
     if (step === 3) return true;
@@ -381,6 +395,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   };
 
   const next = () => {
+    if (step === 0 && !contactEmailsOk) { toast.error("Fix the highlighted email address to continue."); return; }
     if (step === 5 && !questions) { generateQuestions(); return; }
     // Skip JD Approval step entirely when not required
     if (step === 3 && !requiresJDApproval) { setStep(5); return; }
@@ -812,28 +827,29 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                 <Toggle label="Hiring responsibility" checked={hasHiringResponsibility} onChange={setHasHiringResponsibility} />
               </div>
 
-              {/* Contact emails — differ by account type */}
+              {/* Per-job contacts + approvers — these vary job to job, so they live on the position. */}
               <div style={{ display: "flex", flexDirection: "column", gap: space[3], paddingTop: space[2] }}>
-                <Eyebrow>{isCompany ? "Hiring Contact" : "Client Contacts"}</Eyebrow>
-                {isCompany ? (
-                  <div style={twoCol}>
-                    <FormField label="Hiring contact email" hint="Approves the JD, rubric and interview questions">
-                      <Input type="email" placeholder="hiring.manager@yourcompany.com" value={clientManagerEmail} onChange={(e) => setHiringContact(e.target.value)} />
+                <Eyebrow>{isCompany ? "Hiring contact & approvers" : "Client contacts & approvers"}</Eyebrow>
+                <div className="lv-hint" style={{ marginTop: -4 }}>
+                  For this position only. The technical lead and HR receive the question-approval emails and updates for this job.
+                </div>
+                <div style={twoCol}>
+                  {isCompany ? (
+                    <FormField label="Hiring contact email" hint="Approves the JD and rubric" error={emailErr.clientManagerEmail}>
+                      <Input type="email" autoComplete="off" placeholder="hiring.manager@yourcompany.com" value={clientManagerEmail} onChange={(e) => setHiringContact(e.target.value)} />
                     </FormField>
-                  </div>
-                ) : (
-                  <div style={twoCol}>
-                    <FormField label="Client hiring manager email" hint="Approves the JD and rubric">
-                      <Input type="email" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
+                  ) : (
+                    <FormField label="Client hiring manager email" hint="Approves the JD and rubric" error={emailErr.clientManagerEmail}>
+                      <Input type="email" autoComplete="off" placeholder="manager@client.com" value={clientManagerEmail} onChange={(e) => setClientManagerEmail(e.target.value)} />
                     </FormField>
-                    <FormField label="Client tech lead email" hint="Approves technical questions">
-                      <Input type="email" placeholder="techlead@client.com" value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
-                    </FormField>
-                    <FormField label="Client HR email" hint="Approves behavioral questions">
-                      <Input type="email" placeholder="hr@client.com" value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
-                    </FormField>
-                  </div>
-                )}
+                  )}
+                  <FormField label="Technical lead email" hint="Approves technical, scenario and whiteboard questions" error={emailErr.techLeadEmail}>
+                    <Input type="email" autoComplete="off" placeholder={isCompany ? "techlead@yourcompany.com" : "techlead@client.com"} value={techLeadEmail} onChange={(e) => setTechLeadEmail(e.target.value)} />
+                  </FormField>
+                  <FormField label="HR email" hint="Approves behavioural and EQ questions" error={emailErr.hrEmail}>
+                    <Input type="email" autoComplete="off" placeholder={isCompany ? "hr@yourcompany.com" : "hr@client.com"} value={hrEmail} onChange={(e) => setHrEmail(e.target.value)} />
+                  </FormField>
+                </div>
               </div>
 
               {/* Voice accent */}

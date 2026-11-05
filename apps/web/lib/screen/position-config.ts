@@ -146,3 +146,36 @@ export function sanitizeKnockouts(raw: unknown): KnockoutQuestion[] {
 
 export type KnockoutVerdict = 'met' | 'not_met' | 'unclear' | 'not_asked'
 export interface KnockoutResult { id: string; question: string; requiredAnswer: string; answer: string | null; verdict: KnockoutVerdict }
+
+/* ── Fixpack 7 #1 — per-job approver / contact emails ─────────────────────
+ * Stored on the Position (techLeadEmail, hrEmail, clientManagerEmail) — they
+ * differ job to job, so they are never fixed at org onboarding. Format check
+ * only: client HR / tech leads may legitimately use any provider. */
+export const CONTACT_EMAIL_FIELDS = ['techLeadEmail', 'hrEmail', 'clientManagerEmail'] as const
+export type ContactEmailField = (typeof CONTACT_EMAIL_FIELDS)[number]
+const CONTACT_EMAIL_RE = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]{2,}$/
+
+/** null when empty or valid; otherwise a user-facing message. */
+export function contactEmailError(v: unknown): string | null {
+  const s = typeof v === 'string' ? v.trim() : ''
+  if (!s) return null
+  if (s.length > 254 || !CONTACT_EMAIL_RE.test(s)) return 'Enter a valid email address, e.g. name@company.com.'
+  return null
+}
+
+const CONTACT_LABEL: Record<ContactEmailField, string> = { techLeadEmail: 'Technical lead email', hrEmail: 'HR email', clientManagerEmail: 'Hiring contact email' }
+
+/** Normalise the contact-email fields present in `data` in place (trim +
+ *  lowercase, blank → null). Returns an error message for the first invalid one. */
+export function sanitizeContactEmails(data: Record<string, unknown>): string | null {
+  for (const f of CONTACT_EMAIL_FIELDS) {
+    if (!(f in data)) continue
+    const v = data[f]
+    if (v === null || v === undefined || (typeof v === 'string' && !v.trim())) { data[f] = null; continue }
+    if (typeof v !== 'string') return `${CONTACT_LABEL[f]} must be text.`
+    const err = contactEmailError(v)
+    if (err) return `${CONTACT_LABEL[f]}: ${err}`
+    data[f] = v.trim().toLowerCase()
+  }
+  return null
+}
