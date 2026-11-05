@@ -22,6 +22,20 @@ export async function POST(req: NextRequest) {
     const recentAiLines: string[] = Array.isArray(body.recentAiLines)
       ? body.recentAiLines.filter((l: unknown): l is string => typeof l === 'string').slice(-8).map((l: string) => l.slice(0, 200))
       : []
+    // Observe & Defend: the candidate's ACTUAL work on a hands-on task (code,
+    // test results, how the solution evolved). Present only for work-sample
+    // questions; grounds the follow-ups — same budget, same engine.
+    const wc = (body.workContext && typeof body.workContext === 'object' ? body.workContext : null) as Record<string, unknown> | null
+    const clip = (v: unknown, n: number) => (typeof v === 'string' ? v.slice(0, n) : '')
+    const workBlock = wc
+      ? `\n\nWORK SAMPLE — the candidate just did this hands-on task; ground follow-ups in it:\n` +
+        `TASK: ${clip(wc.task, 1500)}\n` +
+        `LANGUAGE: ${clip(wc.language, 20)}\n` +
+        `THEIR FINAL CODE:\n${clip(wc.code, 6000)}\n` +
+        `TEST RESULTS: ${clip(wc.tests, 400) || 'not run'}\n` +
+        `HOW THE WORK EVOLVED (timeline; moments M1…):\n${clip(wc.timeline, 2500)}\n` +
+        (clip(wc.probeAngles, 800) ? `DECISION POINTS WORTH DEFENDING (interviewer-only): ${clip(wc.probeAngles, 800)}\n` : '')
+      : ''
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'No API key' }, { status: 500 })
@@ -67,6 +81,11 @@ export async function POST(req: NextRequest) {
         '- Off-topic → acknowledge briefly and steer back to the specific aspect of the question.\n' +
         '- Candidate struggled → ease off gently (one simpler angle at most), never stack angles.\n' +
         '- VARY YOUR WORDING. Write each follow-up fresh, anchored in the candidate\'s actual words. Do NOT reuse openers or stock phrases that appear in the RECENT INTERVIEWER LINES below (e.g. if "walk me through" or "can you get more concrete" was used recently, phrase it differently). Variety of phrasing only — this does NOT change how many follow-ups you ask.\n\n' +
+        'WORK-SAMPLE MODE (only when a WORK SAMPLE block is present):\n' +
+        '- The candidate is explaining work they actually did. Every follow-up MUST be about THEIR code and process — never generic theory.\n' +
+        '- Anchor in specifics: name a function/variable/line they wrote, a test that failed, or a moment from the timeline (e.g. "around 4:10 you rewrote most of it — what made you change approach?").\n' +
+        '- Highest-signal targets: a design decision (data structure, complexity, edge-case policy), an edge case their code mishandles or a failing test, a mid-way approach change, a large paste (ask them to explain that block line by line), what they would change with more time.\n' +
+        '- You are testing judgment, critical thinking and how well they DEFEND decisions. Same budget rules apply.\n\n' +
         'CONFIRM-BACK (active mirroring):\n' +
         '- When the answer is SUBSTANTIVE (concrete content — a real example, design, decision, or reasoning; not a one-liner, "I don\'t know", or small talk), briefly restate its core in ONE natural sentence so the candidate feels heard, e.g. "So you sharded by tenant and moved hot keys to a separate cache — got it."\n' +
         '- If you ARE asking a follow-up, open followUpQuestion with that one-sentence restatement, then ask.\n' +
@@ -86,7 +105,7 @@ export async function POST(req: NextRequest) {
           `Expected key points: ${expectedKeyPoints.join(', ')}\n` +
           `Candidate response: "${candidateResponse}"\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
-          `${budgetLine}${prevCtx}` +
+          `${budgetLine}${prevCtx}${workBlock}` +
           (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
           `\n\n` +
           `Return ONLY this JSON:\n` +

@@ -12,6 +12,7 @@ import {
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
+import { WorkSamplePanel, type WorkSampleShape } from '@/components/interviews/report/WorkSamplePanel'
 import { Button, ButtonLink, LoadingBlock } from '@/components/screen/ui'
 
 // Design-System Pass 3 (group 5): colours resolve to the Screen tokens and the
@@ -42,6 +43,7 @@ interface ReportPayload {
   transcriptHighlights: { quote: string; context: string }[]
   integrity: IntegritySummaryShape | null
   cultureFit: CultureFitShape | null
+  workSample?: WorkSampleShape | null
   mustHaveAssessment?: MustHaveShape[] | null
   conceptAssessment?: ConceptAssessmentShape[] | null
   terminationReason: string | null
@@ -230,6 +232,9 @@ export default function ReportPage() {
 
         {/* R1c — JD-based concept rubric ratings */}
         <ConceptRubricPanel items={R.conceptAssessment} />
+
+        {/* R1d — Observe & Defend work sample (separate judgment axes) */}
+        <WorkSamplePanel workSample={R.workSample} />
 
         {/* R2 — Two-axis scoring (visually distinct) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }} className="report-grid2">

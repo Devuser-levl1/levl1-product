@@ -15,6 +15,7 @@ import { readLogisticsConfig, type LogisticsConfig } from '@/lib/screen/logistic
 import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/SetupFields'
 import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
+import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { useAccountType } from '@/hooks/useAccountType'
 import {
   Button, ButtonLink, Card, Eyebrow, Badge, Alert, EmptyState, LoadingBlock, Modal, ActionBar,
@@ -71,6 +72,8 @@ interface Position {
   logistics?: LogisticsConfig | null
   conceptRubric?: ConceptRubricItem[] | null
   knockoutQuestions?: KnockoutQuestion[] | null
+  interviewMode?: string | null
+  workSampleTask?: unknown
   jdText?: string
   status: string
   techLeadApproved: boolean
@@ -629,6 +632,9 @@ export default function PositionDetailPage() {
             <Card title="Knockout questions" actions={koDraft && draftActions(() => setKoDraft(null), () => savePositionField('ko'), cfgSaving === 'ko')}>
               <KnockoutEditor value={koDraft ?? sanitizeKnockouts(position.knockoutQuestions)} onChange={setKoDraft} />
             </Card>
+
+            {/* Observe & Defend — interview mode + work-sample task */}
+            <WorkSampleCard position={position} onUpdated={(patch) => setPosition(p => p ? { ...p, ...patch } : p)} />
 
             {/* Interview settings */}
             <Card title="Interview settings">

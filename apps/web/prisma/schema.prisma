@@ -297,6 +297,13 @@ model Position {
   knockoutQuestions  Json?     // [{ id, question, requiredAnswer }] — surfaced in report, never auto-reject
   voiceAccent        String?
   softSkillWeightage Json?
+  // Observe & Defend (Screen): conversational | technical | hybrid. null = use the
+  // JD-suggested default (lib/screen/workspace/modes.ts). The coding workspace
+  // only appears in technical / hybrid.
+  interviewMode      String?
+  // Work-sample task (shape: lib/screen/workspace/task.ts) — prompt + stdin/stdout
+  // test cases executed in Judge0. Hidden tests' expected output never reaches the browser.
+  workSampleTask     Json?
   agencyId           String?
   agency             Agency?   @relation(fields: [agencyId], references: [id])
   clientId           String?
@@ -423,6 +430,29 @@ model Interview {
   recording       InterviewRecording?
   logistics       InterviewLogistics?
   consentEvents   InterviewConsentEvent[]
+  workSample      InterviewWorkSample?
+}
+
+// ── Observe & Defend work sample (Screen-scoped) ───────────────────────────
+// One row per interview in technical / hybrid mode: the candidate's code
+// (AES-GCM encrypted, autosaved continuously), the work-capture timeline (how
+// the solution evolved), Judge0 run history + latest test results, and the
+// judgment scores computed at report time. Code never executes on our servers.
+model InterviewWorkSample {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  task        Json      // snapshot of Position.workSampleTask at start
+  language    String    @default("python")
+  code        String?   @db.Text   // encrypted (lib/screen/privacy/crypto.ts)
+  timeline    Json?     // encrypted JSON string: TimelineEvent[] (lib/screen/workspace/timeline.ts)
+  runs        Json?     // [{ at, kind, status, passed, total, ms }] — no code/output bodies
+  lastTests   Json?     // latest test results [{ id, name, hidden, passed, status }]
+  execCount   Int       @default(0)  // Judge0 submissions used (rate cap + cost)
+  submittedAt DateTime?
+  scores      Json?     // judgment axes (lib/screen/workspace/scoring.ts)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // ── Consent audit trail (Screen-scoped, append-only) ───────────────────────

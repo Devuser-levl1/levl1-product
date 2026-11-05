@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
 import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
+import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
+import { sanitizeTask } from '@/lib/screen/workspace/task'
+import { ensureWorkSampleTask } from '@/lib/screen/workspace/ensure-task'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
       'dynamicIntensity', 'voiceAccent', 'wonCandidateId', 'wonNotes',
       'lostReason', 'lostNotes', 'closedAt', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
+      'interviewMode', 'workSampleTask',
     ])
     const safe: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
@@ -67,11 +72,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if ('questionMix' in safe) safe.questionMix = sanitizeMix(safe.questionMix)
     if ('conceptRubric' in safe) safe.conceptRubric = sanitizeConceptRubric(safe.conceptRubric)
     if ('knockoutQuestions' in safe) safe.knockoutQuestions = sanitizeKnockouts(safe.knockoutQuestions)
+    if ('interviewMode' in safe) safe.interviewMode = isInterviewMode(safe.interviewMode) ? safe.interviewMode : null
+    if ('workSampleTask' in safe) {
+      if (safe.workSampleTask === null) safe.workSampleTask = Prisma.DbNull
+      else {
+        const t = sanitizeTask(safe.workSampleTask)
+        if (!t) return NextResponse.json({ error: 'Work-sample task needs a title, a prompt and at least one test.' }, { status: 400 })
+        safe.workSampleTask = t as unknown as Prisma.InputJsonValue
+      }
+    }
 
     const position = await prisma.position.update({
       where: { id: params.id },
       data:  safe,
     })
+    // Switched to technical / hybrid with no task yet → draft one in the background.
+    if ('interviewMode' in safe && hasWorkspace(resolveMode(position)) && !position.workSampleTask) void ensureWorkSampleTask(position.id)
     return NextResponse.json(position)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)

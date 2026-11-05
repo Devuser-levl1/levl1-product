@@ -7,6 +7,8 @@ import { LogisticsEditor } from "./LogisticsEditor";
 import type { LogisticsConfig } from "@/lib/screen/logistics/config";
 import { DEFAULT_MIX, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
 import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
+import { InterviewModeField } from "./InterviewModeField";
+import { suggestMode, type InterviewMode } from "@/lib/screen/workspace/modes";
 import { useAppStore } from "@/store/appStore";
 import {
   X, ChevronRight, ChevronLeft, Check, Plus, Trash2,
@@ -286,6 +288,8 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [conceptRubric, setConceptRubric] = useState<ConceptRubricItem[]>([]);
   const [rubricGenerating, setRubricGenerating] = useState(false);
   const [knockouts, setKnockouts] = useState<KnockoutQuestion[]>([]);
+  // Observe & Defend — null follows the JD-suggested mode (HR can override).
+  const [interviewMode, setInterviewMode] = useState<InterviewMode | null>(null);
   const [teamSize,                setTeamSize]                = useState("2–5");
   const [hasBudgetOwnership,      setHasBudgetOwnership]      = useState(false);
   const [hasHiringResponsibility, setHasHiringResponsibility] = useState(false);
@@ -571,7 +575,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: positionTitle, company, department, experienceLevel, roleType,
-            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
             domainContext, workMode, interviewDuration: 30,
             dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
@@ -628,7 +632,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: positionTitle, company, department, experienceLevel, roleType,
-          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts),
+          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
           domainContext, workMode, interviewDuration: 30,
           dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
           jdText: finalJD,
@@ -1065,6 +1069,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
 
               <Field label="Interview Style">
                 <RadioGroup label="Interview style" options={["Conversational","Structured","Pressure test"]} value={interviewStyle} onChange={setInterviewStyle} />
+              </Field>
+
+              {/* Observe & Defend — interview mode (JD suggests; HR overrides) */}
+              <Field label="Interview mode" hint="Technical and hybrid add a hands-on coding task the candidate then defends; a task is drafted from your JD">
+                <InterviewModeField value={interviewMode} suggested={suggestMode({ title: positionTitle, jdText: finalJD, techStack: mustHaveTech, roleType })} onChange={setInterviewMode} />
               </Field>
 
               {/* #15 — question mix */}

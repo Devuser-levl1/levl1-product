@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp, Maximize2, Minimize2, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp, Maximize2, Minimize2, ChevronDown, ChevronUp, ShieldCheck, Play, ListChecks, Wand2, CheckCircle2, XCircle, EyeOff } from 'lucide-react'
 import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
 import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -22,6 +22,9 @@ import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { logisticsIntro, LOGISTICS_MAX_MS, LOGISTICS_HARD_CAP_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/CaptureNotice'
+import { digest, type TimelineEvent } from '@/lib/screen/workspace/timeline'
+import { LANGUAGE_LABEL, WORKSPACE_LANGUAGES, type PublicTask } from '@/lib/screen/workspace/task'
+import { hasWorkspace, isInterviewMode, type InterviewMode } from '@/lib/screen/workspace/modes'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 function pick<T>(arr: readonly T[]): T {
@@ -194,7 +197,13 @@ interface LocalQuestion {
   techTag: string
   estimatedMinutes: number
   isPreset: boolean
+  kind?: 'worksample'   // Observe & Defend hands-on task (technical / hybrid modes)
 }
+
+// Observe & Defend workspace result shapes (from /api/interview/workspace/run).
+interface RunOutputShape { status: string; statusText: string; stdout: string; stderr: string; compileOutput: string; timeSec: number | null }
+interface TestResultShape { passed: number; total: number; results: { id: string; name: string; hidden: boolean; passed: boolean; status: string; actual?: string; expected?: string; input?: string; stderr?: string }[] }
+const WS_QUESTION_ID = 'ws-task'
 interface EvalResult {
   score: number
   relevanceScore: number
@@ -418,6 +427,36 @@ export default function InterviewPage() {
   const [waitingWhiteboard, setWaitingWhiteboard] = useState(false) // Fix 2
   const [codeContent, setCodeContent] = useState('')
   const [codeLanguage, setCodeLanguage] = useState('javascript')
+  // ── Observe & Defend workspace (technical / hybrid only) ──
+  const [workMode, setWorkMode] = useState<InterviewMode>('technical')
+  const workModeRef = useRef<InterviewMode>('technical')
+  workModeRef.current = workMode
+  const [workTask, setWorkTask] = useState<PublicTask | null>(null)
+  const workTaskRef = useRef<PublicTask | null>(null)
+  const [waitingWorkSample, setWaitingWorkSample] = useState(false)
+  const waitingWorkSampleRef = useRef(false)
+  const [wsStarted, setWsStarted] = useState(false)
+  const [wsTab, setWsTab] = useState<'task' | 'code' | 'tests' | 'output'>('code')
+  const [runBusy, setRunBusy] = useState<null | 'run' | 'tests'>(null)
+  const [runOutput, setRunOutput] = useState<RunOutputShape | null>(null)
+  const [testResults, setTestResults] = useState<TestResultShape | null>(null)
+  const [execNote, setExecNote] = useState<string | null>(null)
+  const [customStdin, setCustomStdin] = useState<string | null>(null)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'offline'>('idle')
+  const wsActiveRef = useRef(false)              // timeline + autosave only while the task is the current question
+  const wsStartRef = useRef<number | null>(null)
+  const wsResumeMsRef = useRef(0)                // continue the timeline clock after a refresh
+  const timelineRef = useRef<TimelineEvent[]>([])
+  const pendingEventsRef = useRef<TimelineEvent[]>([])
+  const editWindowRef = useRef<{ start: number; n: number; d: number } | null>(null)
+  const lastSnapRef = useRef<{ t: number; len: number }>({ t: 0, len: 0 })
+  const wsDirtyRef = useRef(false)
+  const saveInFlightRef = useRef(false)
+  const lastTestsSummaryRef = useRef('')
+  const codeLanguageRef = useRef('javascript')
+  codeLanguageRef.current = codeLanguage
+  const editorRef = useRef<{ getValue: () => string; getAction: (id: string) => { run: () => Promise<void> } | null } | null>(null)
+  const saveWorkspaceRef = useRef<((submitted?: boolean) => Promise<void>) | null>(null)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [isMobile, setIsMobile]      = useState(false)
   const [messageFromRecruiter, setMessageFromRecruiter] = useState<string | null>(null)
@@ -581,6 +620,96 @@ export default function InterviewPage() {
       }
       if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
     }
+  }, [phase])
+
+  /* ── Observe & Defend: work-capture timeline ─────────────── */
+  const wsT = () => (wsStartRef.current ? Date.now() - wsStartRef.current : 0)
+  const pushEvent = (e: TimelineEvent) => {
+    if (!wsActiveRef.current) return
+    timelineRef.current.push(e); pendingEventsRef.current.push(e)
+  }
+  const editorValue = () => { try { return editorRef.current?.getValue() ?? codeContentRef.current } catch { return codeContentRef.current } }
+  const flushEditWindow = () => {
+    const w = editWindowRef.current
+    if (w && (w.n || w.d)) pushEvent({ t: w.start, k: 'edit', n: w.n, d: w.d })
+    editWindowRef.current = null
+  }
+  const maybeSnapshot = (force = false) => {
+    if (!wsActiveRef.current) return
+    const code = editorValue(); const now = wsT(); const last = lastSnapRef.current
+    if (force || Math.abs(code.length - last.len) > 80 || (now - last.t > 45_000 && code.length !== last.len)) {
+      pushEvent({ t: now, k: 'snapshot', code: code.slice(0, 12_000) })
+      lastSnapRef.current = { t: now, len: code.length }
+    }
+  }
+
+  // Load mode + task + any saved work (refresh / network-drop recovery).
+  useEffect(() => {
+    if (!interviewId) return
+    let alive = true
+    fetch(`/api/interview/workspace?interviewId=${encodeURIComponent(interviewId)}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return
+        const mode: InterviewMode = isInterviewMode(d.mode) ? d.mode : 'technical'
+        setWorkMode(mode)
+        if (!hasWorkspace(mode)) { setCodeLanguage('plaintext'); return }
+        if (!d.task) return
+        const task = d.task as PublicTask
+        setWorkTask(task); workTaskRef.current = task
+        let code: string = d.saved?.code ?? ''
+        let lang: string = d.saved?.language ?? task.language
+        const serverAt = d.saved?.savedAt ? Date.parse(d.saved.savedAt) : 0
+        try {
+          const local = JSON.parse(localStorage.getItem(`lv_ws_${interviewId}`) ?? 'null') as { code?: string; language?: string; savedAt?: number } | null
+          if (local?.code && (local.savedAt ?? 0) > serverAt) { code = local.code; lang = local.language ?? lang }
+        } catch { /* storage blocked */ }
+        setCodeLanguage(lang)
+        if (code) { setCodeContent(code); codeContentRef.current = code }
+        if (typeof d.resumeMs === 'number') wsResumeMsRef.current = d.resumeMs
+      })
+      .catch(() => { /* workspace optional — the interview still runs */ })
+    return () => { alive = false }
+  }, [interviewId])
+
+  // Continuous autosave (server, serialized) + local mirror; retries after a drop.
+  useEffect(() => {
+    if (!workTask) return
+    const save = async (submitted = false) => {
+      if (!wsStartRef.current || saveInFlightRef.current) return
+      const w = editWindowRef.current
+      if (w && wsT() - w.start > 4000) flushEditWindow()
+      maybeSnapshot()
+      const events = pendingEventsRef.current.splice(0)
+      if (!wsDirtyRef.current && !events.length && !submitted) return
+      const code = editorValue()
+      try { localStorage.setItem(`lv_ws_${interviewId}`, JSON.stringify({ code, language: codeLanguageRef.current, savedAt: Date.now() })) } catch { /* ignore */ }
+      saveInFlightRef.current = true; wsDirtyRef.current = false; setSaveState('saving')
+      try {
+        const r = await fetch('/api/interview/workspace', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ interviewId, code, language: codeLanguageRef.current, events, ...(submitted ? { submitted: true } : {}) }),
+        })
+        if (!r.ok) throw new Error(String(r.status))
+        setSaveState('saved'); setDraftSavedAt(Date.now())
+      } catch {
+        pendingEventsRef.current.unshift(...events); wsDirtyRef.current = true; setSaveState('offline')
+      } finally { saveInFlightRef.current = false }
+    }
+    saveWorkspaceRef.current = save
+    const iv = setInterval(() => { void save() }, 4000)
+    const onHide = () => { if (document.visibilityState === 'hidden') void save() }
+    const onOnline = () => { void save() }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('online', onOnline)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onHide); window.removeEventListener('online', onOnline) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workTask, interviewId])
+
+  // Final flush when the session wraps (time-up / end) — never lose the work.
+  useEffect(() => {
+    if ((phase === 'closing' || phase === 'completed') && wsActiveRef.current) { flushEditWindow(); maybeSnapshot(true); void saveWorkspaceRef.current?.() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
   /* ── localStorage backup every 30 s ──────────────────────── */
@@ -1310,6 +1439,8 @@ export default function InterviewPage() {
           // Recent interviewer lines → the brain varies its phrasing instead of
           // repeating stock follow-ups (does not change the follow-up budget).
           recentAiLines:     transcriptRef.current.filter(e => e.speaker === 'ai').slice(-8).map(e => e.text),
+          // Observe & Defend: the candidate's actual work grounds the follow-ups.
+          ...(q.kind === 'worksample' ? { workContext: buildWorkContext() } : {}),
         }),
       })
       ev = await res.json()
@@ -1443,8 +1574,29 @@ export default function InterviewPage() {
     const q    = qs[idx]
     const prevQ = idx > 0 ? qs[idx - 1] : null
 
+    // Observe & Defend: the work-capture timeline + autosave are live only while
+    // the task is the current question (its follow-ups included).
+    if (q.kind === 'worksample') {
+      setEditorTab('code'); setWsTab('task')
+      codeContentRef.current = editorValue()
+      const task = workTaskRef.current
+      if (task && !codeContentRef.current.trim() && task.starterCode) {
+        setCodeContent(task.starterCode); codeContentRef.current = task.starterCode; setCodeLanguage(task.language)
+      }
+      wsActiveRef.current = true
+      if (!wsStartRef.current) wsStartRef.current = Date.now() - wsResumeMsRef.current
+      setWsStarted(true)
+      pushEvent({ t: wsT(), k: 'open', lang: codeLanguageRef.current })
+      maybeSnapshot(true)
+    } else if (wsActiveRef.current) {
+      flushEditWindow(); maybeSnapshot(true)
+      void saveWorkspaceRef.current?.()
+      wsActiveRef.current = false
+    }
+
     // Auto-focus the relevant editor tab (the pane is always present now).
-    if (q.section === 'whiteboard') setEditorTab('whiteboard')
+    if (q.kind === 'worksample') { /* handled above */ }
+    else if (q.section === 'whiteboard') setEditorTab('whiteboard')
     else if (q.section === 'technical' || q.section === 'scenario') setEditorTab('code')
 
     const isFirstCodeTrigger = (q.section === 'technical' || q.section === 'scenario') && !codeTriggerShownRef.current
@@ -1461,8 +1613,20 @@ export default function InterviewPage() {
     // Speak the question itself
     addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
     // Barge-in allowed except on whiteboard questions (they need the board first).
-    if ((await speakText(q.question, { bargeIn: q.section !== 'whiteboard' })) === 'interrupted') {
+    if ((await speakText(q.question, { bargeIn: q.section !== 'whiteboard' && q.kind !== 'worksample' })) === 'interrupted') {
       startListening()
+      return
+    }
+
+    // Observe & Defend: pause the conversation while they work; Submit resumes it.
+    if (q.kind === 'worksample') {
+      codeTriggerShownRef.current = true
+      const cue = 'Write your solution in the Code tab. You can run it and check the tests as often as you like. Press Submit solution when you are done, and then I will ask you to walk me through it.'
+      addTranscript({ speaker: 'ai', text: cue, type: 'transition' })
+      await speakText(cue)
+      setWsTab('code')
+      waitingWorkSampleRef.current = true
+      setWaitingWorkSample(true)
       return
     }
 
@@ -1743,6 +1907,65 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTranscript, speakText, startListening])
 
+  // Observe & Defend: Submit solution → save → ask them to walk through it.
+  // From here the EXISTING adaptive brain runs (≤3 follow-ups), grounded in the work.
+  const handleWorkSampleDone = useCallback(async () => {
+    if (!waitingWorkSampleRef.current) return
+    waitingWorkSampleRef.current = false
+    setWaitingWorkSample(false)
+    flushEditWindow(); maybeSnapshot(true)
+    pushEvent({ t: wsT(), k: 'submit' })
+    await saveWorkspaceRef.current?.(true)
+    setWsTab('code')
+    const transition = 'Thank you, I can see your solution. Walk me through your approach: how you structured it, and why you made the choices you did.'
+    addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
+    if ((await speakText(transition, { bargeIn: true })) !== 'interrupted') await delay(600)
+    startListening()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addTranscript, speakText, startListening])
+
+  const buildWorkContext = () => {
+    const task = workTaskRef.current
+    if (!task) return undefined
+    return {
+      task: `${task.title}. ${task.prompt}`,
+      language: codeLanguageRef.current,
+      code: editorValue(),
+      tests: lastTestsSummaryRef.current,
+      timeline: digest(timelineRef.current).text,
+    }
+  }
+
+  const runWorkspace = async (kind: 'run' | 'tests') => {
+    if (!workTaskRef.current || runBusy) return
+    setRunBusy(kind); setExecNote(null)
+    flushEditWindow(); maybeSnapshot(true)
+    const t = wsT()
+    try {
+      const r = await fetch('/api/interview/workspace/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId, code: editorValue(), language: codeLanguageRef.current, kind, ...(kind === 'run' && customStdin !== null ? { stdin: customStdin } : {}) }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) {
+        setExecNote(d.message ?? 'Couldn\'t run your code. Please try again.')
+        pushEvent({ t, k: kind, ok: false })
+        return
+      }
+      if (kind === 'run') {
+        setRunOutput(d as RunOutputShape); setWsTab('output')
+        pushEvent({ t, k: 'run', ok: d.status === 'ok' })
+      } else {
+        setTestResults(d as TestResultShape); setWsTab('tests')
+        lastTestsSummaryRef.current = `${d.passed}/${d.total} passing (incl. ${(d.results as TestResultShape['results']).filter((x) => x.hidden).length} hidden)`
+        pushEvent({ t, k: 'tests', ok: true, passed: d.passed, total: d.total })
+      }
+      if (typeof d.executionsLeft === 'number' && d.executionsLeft <= 5) setExecNote(`${d.executionsLeft} runs left for this interview`)
+    } catch {
+      setExecNote('Couldn\'t reach the code runner. Check your connection and try again.')
+    } finally { setRunBusy(null) }
+  }
+
   /* ── Warm-up arc (Build 03) ───────────────────────────────── */
   // Listen for one brief warm-up reply (or resolve '' on a short timeout so a
   // silent candidate still progresses). Routes capture via warmupCaptureRef.
@@ -2020,6 +2243,18 @@ export default function InterviewPage() {
       qs = buildQuestions(position)
     }
 
+    // Observe & Defend: one hands-on task in technical (first) / hybrid (after two questions).
+    const wsTask = workTaskRef.current
+    if (wsTask && !qs.some((x) => x.id === WS_QUESTION_ID)) {
+      const wsQ: LocalQuestion = {
+        id: WS_QUESTION_ID, kind: 'worksample', section: 'technical', isPreset: true,
+        question: `For this part, a hands-on task: ${wsTask.title}. The details are in the Task tab of your workspace.`,
+        expectedKeyPoints: [], techTag: wsTask.title, estimatedMinutes: wsTask.minutes,
+      }
+      const at = workModeRef.current === 'hybrid' ? Math.min(2, qs.length) : 0
+      qs = [...qs.slice(0, at), wsQ, ...qs.slice(at)]
+    }
+
     setQuestions(qs)
     questionsRef.current = qs
 
@@ -2121,6 +2356,14 @@ export default function InterviewPage() {
     if (delta > 0 && delta < 20) pasteStatsRef.current.typed += delta  // small positive deltas = typing
     codeContentRef.current = v
     setCodeContent(v)
+    if (wsActiveRef.current) {   // Observe & Defend: coalesce edits into ~5 s windows
+      const now = wsT()
+      const w = editWindowRef.current ?? (editWindowRef.current = { start: now, n: 0, d: 0 })
+      if (delta > 0) w.n += delta; else w.d += -delta
+      if (now - w.start > 5000) flushEditWindow()
+      maybeSnapshot()
+      wsDirtyRef.current = true
+    }
     if (codeDebounceRef.current) clearTimeout(codeDebounceRef.current)
     codeDebounceRef.current = setTimeout(() => {
       updateSessionCode(v, codeLanguage)
@@ -2137,7 +2380,9 @@ export default function InterviewPage() {
         const size = text.length
         const s = pasteStatsRef.current
         s.count += 1; s.total += size; s.largest = Math.max(s.largest, size)
+        pushEvent({ t: wsT(), k: 'paste', n: size })   // Observe & Defend timeline
       })
+      editorRef.current = editor as typeof editorRef.current
     } catch { /* editor API shape differs — non-critical */ }
   }, [])
 
@@ -2181,11 +2426,13 @@ export default function InterviewPage() {
       captureResponse('(Answer provided on the whiteboard — diagram attached.)')
       return
     }
+    if (waitingWorkSampleRef.current) { void handleWorkSampleDone(); return }
     submitCodeAnswer()
   }
   // Whether the base Submit is actionable right now (per active tab).
   const canSubmit = editorTab === 'whiteboard'
     ? (waitingWhiteboard || phase === 'listening')
+    : waitingWorkSample ? codeContent.trim().length > 0
     : (phase === 'listening' && codeContent.trim().length > 0)
 
   /* ═══════════════════════════════════════════════════════════
@@ -2502,7 +2749,7 @@ export default function InterviewPage() {
           <div className="iv-left" style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
             <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1.35, minHeight: 0, display: 'flex', borderRadius: 8, outline: tourHighlight === 'ai' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <AIVisualizer
-                phase={phase}
+                phase={waitingWorkSample || waitingWhiteboard ? 'questioning' : phase /* display only: they're working, not listening */}
                 isWarmingUp={isWarmingUp}
                 liveTranscriptLength={liveTranscript.length}
                 candidateName={candidate.name}
@@ -2550,36 +2797,75 @@ export default function InterviewPage() {
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
           <div data-tour="editor" className="iv-editor" style={{ ...(editorExpanded ? { position: 'fixed', inset: 16, zIndex: 70, boxShadow: 'var(--lv-shadow-lg)' } : { flex: 1.7 }), minHeight: 0, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s, border-color 0.15s' }}>
-            {/* tab strip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderBottom: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', flexShrink: 0 }}>
-              <button onClick={() => setEditorTab('code')} aria-pressed={editorTab === 'code'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${editorTab === 'code' ? 'var(--lv-border-strong)' : 'transparent'}`, cursor: 'pointer', background: editorTab === 'code' ? 'var(--lv-surface)' : 'transparent', color: editorTab === 'code' ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
-                <Code2 size={14} /> Code / Text
-              </button>
-              <button onClick={() => setEditorTab('whiteboard')} aria-pressed={editorTab === 'whiteboard'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${editorTab === 'whiteboard' ? 'var(--lv-border-strong)' : 'transparent'}`, cursor: 'pointer', background: editorTab === 'whiteboard' ? 'var(--lv-surface)' : 'transparent', color: editorTab === 'whiteboard' ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
-                <PenLine size={14} /> Whiteboard
-              </button>
-              {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
-              <button type="button" onClick={() => setEditorExpanded((x) => !x)} title={editorExpanded ? 'Exit full screen (Esc)' : 'Expand editor'} aria-label={editorExpanded ? 'Exit full screen' : 'Expand editor'}
-                style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', padding: 6, borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-muted)', cursor: 'pointer' }}>
-                {editorExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              </button>
-            </div>
-
-            {/* tab content — BOTH stay mounted, toggled via display so work is retained when switching */}
-            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-              {/* Code / Text */}
-              <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
-                <div style={{ padding: '6px 12px', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
-                  <label htmlFor="iv-lang" style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Language</label>
-                  <select id="iv-lang" value={codeLanguage} onChange={(e) => setCodeLanguage(e.target.value as typeof codeLanguage)}
-                    style={{ height: 26, padding: '0 8px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 500, fontFamily: 'var(--lv-font-sans)', cursor: 'pointer' }}>
-                    {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
-                      <option key={lang} value={lang}>
-                        {lang === 'plaintext' ? 'Plain text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang === 'sql' ? 'SQL' : lang.charAt(0).toUpperCase() + lang.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+            {/* tab strip — technical/hybrid with a task: Task · Code · Tests · Output · Whiteboard;
+                conversational: Notes · Whiteboard (no coding workspace). */}
+            {(() => {
+              const tabBtn = (active: boolean): React.CSSProperties => ({ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${active ? 'var(--lv-border-strong)' : 'transparent'}`, cursor: 'pointer', background: active ? 'var(--lv-surface)' : 'transparent', color: active ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' })
+              const wsOn = (k: typeof wsTab) => editorTab === 'code' && (workTask ? wsTab === k : k === 'code')
+              return (
+                <div role="tablist" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderBottom: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', flexShrink: 0, flexWrap: 'wrap' }}>
+                  {workTask && (
+                    <button role="tab" aria-selected={wsOn('task')} onClick={() => { setEditorTab('code'); setWsTab('task') }} style={tabBtn(wsOn('task'))}><ListChecks size={14} /> Task</button>
+                  )}
+                  <button role="tab" aria-selected={wsOn('code')} onClick={() => { setEditorTab('code'); setWsTab('code') }} style={tabBtn(wsOn('code'))}>
+                    <Code2 size={14} /> {workTask ? 'Code' : hasWorkspace(workMode) ? 'Code / Text' : 'Notes'}
+                  </button>
+                  {workTask && (<>
+                    <button role="tab" aria-selected={wsOn('tests')} onClick={() => { setEditorTab('code'); setWsTab('tests') }} style={tabBtn(wsOn('tests'))}>
+                      Tests{testResults ? ` ${testResults.passed}/${testResults.total}` : ''}
+                    </button>
+                    <button role="tab" aria-selected={wsOn('output')} onClick={() => { setEditorTab('code'); setWsTab('output') }} style={tabBtn(wsOn('output'))}>Output</button>
+                  </>)}
+                  <button role="tab" aria-selected={editorTab === 'whiteboard'} onClick={() => setEditorTab('whiteboard')} style={tabBtn(editorTab === 'whiteboard')}>
+                    <PenLine size={14} /> Whiteboard
+                  </button>
+                  {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
+                  <button type="button" onClick={() => setEditorExpanded((x) => !x)} title={editorExpanded ? 'Exit full screen (Esc)' : 'Expand editor'} aria-label={editorExpanded ? 'Exit full screen' : 'Expand editor'}
+                    style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', padding: 6, borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-muted)', cursor: 'pointer' }}>
+                    {editorExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  </button>
                 </div>
+              )
+            })()}
+
+            {/* tab content — everything stays mounted (display toggles) so work is never lost when switching */}
+            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+              {/* Code / Notes — Monaco */}
+              <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && (!workTask || wsTab === 'code') ? 'flex' : 'none', flexDirection: 'column' }}>
+                {hasWorkspace(workMode) && (
+                  <div style={{ padding: '6px 12px', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+                    <label htmlFor="iv-lang" style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Language</label>
+                    <select id="iv-lang" value={codeLanguage} onChange={(e) => { setCodeLanguage(e.target.value); pushEvent({ t: wsT(), k: 'lang', lang: e.target.value }) }}
+                      style={{ height: 26, padding: '0 8px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 500, fontFamily: 'var(--lv-font-sans)', cursor: 'pointer' }}>
+                      {workTask
+                        ? WORKSPACE_LANGUAGES.map((lang) => <option key={lang} value={lang}>{LANGUAGE_LABEL[lang]}</option>)
+                        : (['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
+                          <option key={lang} value={lang}>
+                            {lang === 'plaintext' ? 'Plain text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang === 'sql' ? 'SQL' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                          </option>
+                        ))}
+                    </select>
+                    {(codeLanguage === 'javascript' || codeLanguage === 'typescript') && (
+                      <button type="button" title="Format code" onClick={() => { void editorRef.current?.getAction('editor.action.formatDocument')?.run(); pushEvent({ t: wsT(), k: 'format' }) }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 26, padding: '0 8px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-body)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        <Wand2 size={12} aria-hidden="true" /> Format
+                      </button>
+                    )}
+                    {workTask && (
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                        <button type="button" onClick={() => void runWorkspace('run')} disabled={!wsStarted || !!runBusy}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 26, padding: '0 10px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 600, cursor: wsStarted && !runBusy ? 'pointer' : 'not-allowed', opacity: wsStarted ? 1 : 0.55 }}>
+                          {runBusy === 'run' ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={12} aria-hidden="true" />} Run
+                        </button>
+                        <button type="button" onClick={() => void runWorkspace('tests')} disabled={!wsStarted || !!runBusy}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 26, padding: '0 10px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 600, cursor: wsStarted && !runBusy ? 'pointer' : 'not-allowed', opacity: wsStarted ? 1 : 0.55 }}>
+                          {runBusy === 'tests' ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <ListChecks size={12} aria-hidden="true" />} Run tests
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {execNote && <div role="status" style={{ padding: '6px 12px', fontSize: 12, color: 'var(--lv-warning)', background: 'var(--lv-warning-soft, var(--lv-surface-sunken))', borderBottom: '1px solid var(--lv-border)' }}>{execNote}</div>}
                 <div className="interview-monaco-wrapper" style={{ flex: 1, minHeight: 0 }}>
                   <MonacoEditor
                     height="100%"
@@ -2588,31 +2874,107 @@ export default function InterviewPage() {
                     value={codeContent}
                     onChange={handleCodeChange}
                     onMount={handleEditorMount}
-                    options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 } }}
+                    options={{ minimap: { enabled: false }, fontSize: 13, lineNumbers: hasWorkspace(workMode) ? 'on' : 'off', scrollBeyondLastLine: false, automaticLayout: true, wordWrap: 'on', padding: { top: 12, bottom: 12 }, tabSize: 4, autoIndent: 'full', formatOnPaste: true, quickSuggestions: hasWorkspace(workMode), bracketPairColorization: { enabled: true } }}
                   />
                 </div>
               </div>
+
+              {/* Task */}
+              {workTask && (
+                <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && wsTab === 'task' ? 'block' : 'none', overflowY: 'auto', padding: '16px 18px' }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 4 }}>{workTask.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginBottom: 12 }}>Suggested time: about {workTask.minutes} minutes · read from standard input, print to standard output</div>
+                  <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{workTask.prompt}</p>
+                  {workTask.tests.map((t) => (
+                    <div key={t.id} style={{ marginBottom: 10, border: '1px solid var(--lv-border)', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600, color: 'var(--lv-text)', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)' }}>Example · {t.name}</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                        <pre style={{ margin: 0, padding: 10, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', borderRight: '1px solid var(--lv-border)' }}>{t.input || '(empty input)'}</pre>
+                        <pre style={{ margin: 0, padding: 10, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap' }}>{t.expected}</pre>
+                      </div>
+                    </div>
+                  ))}
+                  {workTask.hiddenCount > 0 && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}><EyeOff size={12} aria-hidden="true" /> Plus {workTask.hiddenCount} hidden test{workTask.hiddenCount === 1 ? '' : 's'} with edge cases.</div>}
+                  {!wsStarted && <div style={{ marginTop: 14, fontSize: 12, color: 'var(--lv-text-muted)' }}>{interviewer.name} will introduce this task when it&apos;s time.</div>}
+                </div>
+              )}
+
+              {/* Tests */}
+              {workTask && (
+                <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && wsTab === 'tests' ? 'block' : 'none', overflowY: 'auto', padding: '12px 14px' }}>
+                  {!testResults ? (
+                    <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>Run the tests from the Code tab to see results here.</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: testResults.passed === testResults.total ? 'var(--lv-success)' : 'var(--lv-text)', marginBottom: 10 }}>{testResults.passed} of {testResults.total} tests passing</div>
+                      {testResults.results.map((t) => (
+                        <div key={t.id} style={{ marginBottom: 8, border: '1px solid var(--lv-border)', borderRadius: 6, padding: '8px 10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--lv-text)' }}>
+                            {t.passed ? <CheckCircle2 size={14} color="var(--lv-success)" aria-label="passed" /> : <XCircle size={14} color="var(--lv-danger)" aria-label="failed" />}
+                            {t.name}{t.hidden && <span style={{ fontWeight: 400, color: 'var(--lv-text-muted)' }}> · hidden</span>}
+                            {t.status !== 'ok' && <span style={{ fontWeight: 400, color: 'var(--lv-warning)' }}> · {t.status.replace('_', ' ')}</span>}
+                          </div>
+                          {!t.hidden && !t.passed && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                              <div><div style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>Expected</div><pre style={{ margin: 0, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap' }}>{t.expected}</pre></div>
+                              <div><div style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>Your output</div><pre style={{ margin: 0, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap' }}>{t.actual || t.stderr || '(no output)'}</pre></div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Output */}
+              {workTask && (
+                <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' && wsTab === 'output' ? 'flex' : 'none', flexDirection: 'column', padding: '12px 14px', gap: 8, overflowY: 'auto' }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)' }}>
+                    Input for Run <span style={{ fontWeight: 400 }}>(defaults to the first example)</span>
+                    <textarea value={customStdin ?? workTask.tests[0]?.input ?? ''} onChange={(e) => setCustomStdin(e.target.value)} rows={3}
+                      style={{ display: 'block', width: '100%', marginTop: 4, padding: 8, borderRadius: 6, border: '1px solid var(--lv-border)', fontFamily: 'var(--lv-font-mono)', fontSize: 12, resize: 'vertical', background: 'var(--lv-surface)', color: 'var(--lv-text)' }} />
+                  </label>
+                  {!runOutput ? (
+                    <div style={{ fontSize: 13, color: 'var(--lv-text-muted)' }}>Press Run in the Code tab to see your program&apos;s output.</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: runOutput.status === 'ok' ? 'var(--lv-success)' : 'var(--lv-warning)' }}>
+                        {runOutput.statusText}{runOutput.timeSec != null ? ` · ${runOutput.timeSec.toFixed(2)}s` : ''}
+                      </div>
+                      <pre style={{ margin: 0, padding: 10, borderRadius: 6, background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--lv-text)' }}>{runOutput.stdout || '(no output)'}</pre>
+                      {(runOutput.compileOutput || runOutput.stderr) && (
+                        <pre style={{ margin: 0, padding: 10, borderRadius: 6, background: 'var(--lv-danger-soft, var(--lv-surface-sunken))', border: '1px solid var(--lv-border)', fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--lv-danger)' }}>{runOutput.compileOutput || runOutput.stderr}</pre>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Whiteboard */}
               <div style={{ position: 'absolute', inset: 0, display: editorTab === 'whiteboard' ? 'block' : 'none', overflow: 'hidden' }}>
                 <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} />
               </div>
             </div>
 
-            {/* footer — autosave status, Save draft (secondary), Submit answer (primary) */}
+            {/* footer — save status, Save draft (secondary), Submit (primary) */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: '1px solid var(--lv-border)', flexShrink: 0 }}>
-              <span aria-live="polite" style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--lv-text-muted)' }}>
-                {editorTab === 'code'
-                  ? (draftSavedAt ? <><Check size={12} aria-hidden="true" /> Draft auto-saved · {new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</> : 'Drafts save automatically as you type')
-                  : 'Your sketch stays here until you submit'}
+              <span aria-live="polite" style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: saveState === 'offline' ? 'var(--lv-warning)' : 'var(--lv-text-muted)' }}>
+                {editorTab !== 'code' ? 'Your sketch stays here until you submit'
+                  : workTask && wsStarted
+                    ? (saveState === 'offline' ? 'Offline: your work is kept on this device and will sync when you reconnect'
+                      : saveState === 'saving' ? 'Saving…'
+                      : draftSavedAt ? <><Check size={12} aria-hidden="true" /> Saved · {new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</> : 'Your work saves automatically')
+                  : (draftSavedAt ? <><Check size={12} aria-hidden="true" /> Draft auto-saved · {new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</> : 'Drafts save automatically as you type')}
               </span>
               {editorTab === 'code' && (
-                <button type="button" onClick={() => { updateSessionCode(codeContentRef.current, codeLanguage); setDraftSavedAt(Date.now()) }}
+                <button type="button" onClick={() => { updateSessionCode(editorValue(), codeLanguage); wsDirtyRef.current = true; void saveWorkspaceRef.current?.(); setDraftSavedAt(Date.now()) }}
                   style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-body)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   Save draft
                 </button>
               )}
-              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer for this question' : 'Wait for your turn to answer'} style={{ padding: '7px 18px', borderRadius: 6, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? 'var(--lv-brand)' : 'var(--lv-border)', color: canSubmit ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600, transition: 'background 0.15s' }}>
-                Submit answer
+              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? (waitingWorkSample ? 'Submit your solution and explain it' : 'Submit your answer for this question') : 'Wait for your turn to answer'} style={{ padding: '7px 18px', borderRadius: 6, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? 'var(--lv-brand)' : 'var(--lv-border)', color: canSubmit ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600, transition: 'background 0.15s' }}>
+                {waitingWorkSample ? 'Submit solution' : 'Submit answer'}
               </button>
             </div>
           </div>

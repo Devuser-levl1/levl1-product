@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 import { getSessionFromRequest } from '@/lib/auth'
-import { revealEvents } from '@/lib/screen/privacy/fields'
+import { openArray, openText, revealEvents } from '@/lib/screen/privacy/fields'
+import { digest, type TimelineEvent } from '@/lib/screen/workspace/timeline'
+import { sanitizeTask } from '@/lib/screen/workspace/task'
 
 export async function GET(
   req: NextRequest,
@@ -21,6 +23,7 @@ export async function GET(
         verification: true,
         integrityEvents: { orderBy: { occurredAt: 'asc' } },
         cultureFit: true,
+        workSample: true,
         candidate: {
           include: {
             report:   true,
@@ -108,6 +111,24 @@ export async function GET(
       cultureFit: interview.cultureFit
         ? { fitScore: interview.cultureFit.fitScore, summary: interview.cultureFit.summary, responses: interview.cultureFit.responses }
         : null,
+      // Observe & Defend work sample — task, solution, tests, how it evolved,
+      // and the SEPARATE judgment axes (never blended into the competency score).
+      workSample: (() => {
+        const w = interview.workSample
+        const task = w ? sanitizeTask(w.task) : null
+        if (!w || !task) return null
+        const tl = digest(openArray<TimelineEvent>(w.timeline))
+        return {
+          task: { title: task.title, prompt: task.prompt, minutes: task.minutes, testCount: task.tests.length },
+          language: w.language,
+          code: openText(w.code) ?? '',
+          submitted: !!w.submittedAt,
+          tests: w.lastTests ?? [],
+          executions: w.execCount,
+          timeline: { durationMs: tl.durationMs, runs: tl.runs, testRuns: tl.testRuns, pastes: tl.pastes, rewrites: tl.rewrites, firstAllPassAt: tl.firstAllPassAt, moments: tl.moments },
+          scores: w.scores ?? null,
+        }
+      })(),
       // How the session ended (Build 01-B) — distinguishes a real completion
       // from an early/consent-withdrawn stop.
       terminationReason: interview.terminationReason ?? null,

@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
+import { scoreWorkSample } from '@/lib/screen/workspace/scoring'
 import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { reconcileConcepts, sanitizeConceptRubric } from '@/lib/screen/position-config'
@@ -502,6 +503,11 @@ export async function POST(req: NextRequest) {
       return fail(interviewId, 'No candidate linked to this interview — report not saved')
     }
     await markReport(interviewId, 'ready')
+    // Observe & Defend: judgment axes for the work sample (separate from the
+    // competency score). Non-fatal — the report is already saved.
+    if (typeof interviewId === 'string' && interviewId) {
+      await scoreWorkSample(interviewId).catch((e) => console.warn('[generate-report] work-sample scoring failed:', e instanceof Error ? e.message : e))
+    }
 
     return NextResponse.json({
       ...report,

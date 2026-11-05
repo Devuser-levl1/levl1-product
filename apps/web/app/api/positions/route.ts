@@ -5,6 +5,9 @@ import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/s
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
 import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix } from '@/lib/screen/position-config'
+import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
+import { sanitizeTask } from '@/lib/screen/workspace/task'
+import { ensureWorkSampleTask } from '@/lib/screen/workspace/ensure-task'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +79,7 @@ export async function POST(req: NextRequest) {
       'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
       'softSkillWeightage', 'clientId', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
+      'interviewMode', 'workSampleTask',
     ])
     const data: Record<string, unknown> = { agencyId }
     for (const [k, v] of Object.entries(body)) {
@@ -97,8 +101,13 @@ export async function POST(req: NextRequest) {
     if ('questionMix' in data) data.questionMix = sanitizeMix(data.questionMix)
     if ('conceptRubric' in data) data.conceptRubric = sanitizeConceptRubric(data.conceptRubric)
     if ('knockoutQuestions' in data) data.knockoutQuestions = sanitizeKnockouts(data.knockoutQuestions)
+    // Observe & Defend: explicit mode (or null = JD-suggested) + optional task.
+    if ('interviewMode' in data) data.interviewMode = isInterviewMode(data.interviewMode) ? data.interviewMode : null
+    if ('workSampleTask' in data) data.workSampleTask = sanitizeTask(data.workSampleTask) ?? undefined
 
     const position = await prisma.position.create({ data: data as never })
+    // Technical / hybrid → draft (and Judge0-verify) a work-sample task in the background.
+    if (hasWorkspace(resolveMode(position)) && !position.workSampleTask) void ensureWorkSampleTask(position.id)
     return NextResponse.json(position, { status: 201 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
