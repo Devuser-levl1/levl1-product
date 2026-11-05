@@ -1,21 +1,37 @@
 'use client'
 
+import { Mic, Volume2, Loader2, Hourglass } from 'lucide-react'
 import { VoiceOrb } from './VoiceOrb'
 import type { InterviewPhase } from '@/store/appStore'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
 /* ── Status config (design-system tokens) ───────────────────── */
-const STATUS: Partial<Record<string, { label: string; color: string }>> = {
-  listening:   { label: 'Listening…',            color: 'var(--lv-success)' },
-  speaking:    { label: 'Speaking…',             color: 'var(--lv-brand)' },
-  intro:       { label: 'Speaking…',             color: 'var(--lv-brand)' },
-  closing:     { label: 'Wrapping up…',          color: 'var(--lv-brand)' },
-  processing:  { label: 'Thinking…',             color: 'var(--lv-warning)' },
-  questioning: { label: 'Waiting for response…', color: 'var(--lv-text-muted)' },
-  waiting:     { label: 'Ready to begin',        color: 'var(--lv-text-muted)' },
-  warmup:      { label: 'Take your time…',       color: 'var(--lv-text-muted)' },
+// Three distinct speaker states (plus quiet idle ones), each with its own
+// icon + tone so "who has the floor" is obvious at a glance.
+type Kind = 'speaking' | 'listening' | 'thinking' | 'idle'
+const STATUS: Partial<Record<string, { label: string; kind: Kind }>> = {
+  listening:   { label: 'Listening',             kind: 'listening' },
+  speaking:    { label: 'Speaking',              kind: 'speaking' },
+  intro:       { label: 'Speaking',              kind: 'speaking' },
+  closing:     { label: 'Wrapping up',           kind: 'speaking' },
+  processing:  { label: 'Thinking',              kind: 'thinking' },
+  questioning: { label: 'Waiting for your answer', kind: 'idle' },
+  waiting:     { label: 'Ready to begin',        kind: 'idle' },
+  warmup:      { label: 'Take your time',        kind: 'listening' },
 }
-const FALLBACK = { label: 'Waiting for response…', color: 'var(--lv-text-muted)' }
+const FALLBACK = { label: 'Waiting for your answer', kind: 'idle' as Kind }
+const TONE: Record<Kind, { fg: string; bg: string; border: string }> = {
+  speaking:  { fg: 'var(--lv-brand-text, var(--lv-brand))', bg: 'var(--lv-brand-soft)',   border: 'var(--lv-brand-soft-border, var(--lv-border))' },
+  listening: { fg: 'var(--lv-success)',                     bg: 'var(--lv-success-soft)', border: 'var(--lv-success-border, var(--lv-border))' },
+  thinking:  { fg: 'var(--lv-warning)',                     bg: 'var(--lv-warning-soft, var(--lv-surface-sunken))', border: 'var(--lv-warning-border, var(--lv-border))' },
+  idle:      { fg: 'var(--lv-text-muted)',                  bg: 'var(--lv-surface-sunken)', border: 'var(--lv-border)' },
+}
+function StateIcon({ kind }: { kind: Kind }) {
+  if (kind === 'speaking')  return <Volume2 size={13} aria-hidden="true" />
+  if (kind === 'listening') return <Mic size={13} aria-hidden="true" />
+  if (kind === 'thinking')  return <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 1.1s linear infinite' }} />
+  return <Hourglass size={13} aria-hidden="true" />
+}
 
 function fmt(secs: number) {
   const m = Math.floor(Math.max(0, secs) / 60)
@@ -102,16 +118,17 @@ export function AIVisualizer({
 
       {/* ── Voice orb ── */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <VoiceOrb energy={energy} size={compact ? 120 : 190} label={`${INTERVIEWER_NAME} — ${st.label}`} />
+        <VoiceOrb energy={energy} size={compact ? 150 : 190} label={`${INTERVIEWER_NAME} — ${st.label}`} />
       </div>
 
-      {/* ── Status ── */}
-      <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-        <span aria-hidden="true" style={{
-          width: 6, height: 6, borderRadius: '50%', background: st.color, flexShrink: 0,
-          animation: 'pulseDot 1.4s ease-in-out infinite',
-        }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color: st.color, whiteSpace: 'nowrap' }}>{st.label}</span>
+      {/* ── Speaker state ── */}
+      <div aria-live="polite" style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999,
+        background: TONE[st.kind].bg, border: `1px solid ${TONE[st.kind].border}`, color: TONE[st.kind].fg,
+        fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'background 0.2s, color 0.2s',
+      }}>
+        <StateIcon kind={st.kind} />
+        {st.label}
       </div>
     </div>
   )

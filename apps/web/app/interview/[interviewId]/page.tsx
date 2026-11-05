@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp, Maximize2, Minimize2, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react'
 import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
 import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -272,12 +272,6 @@ const SECTION_LABEL: Record<string, string> = {
   technical: 'Technical', behavioral: 'Behavioral',
   scenario: 'Scenario', eq: 'Values', whiteboard: 'System Design',
 }
-// Minimalist pass D3: one neutral hue for every section (chips + progress
-// strip). Kept as hex because callers append alpha suffixes (`color-mix(in srgb, ${c} 8%, transparent)`).
-const SECTION_COLOR: Record<string, string> = {
-  technical: '#52525B', behavioral: '#52525B',
-  scenario: '#52525B', eq: '#52525B', whiteboard: '#52525B',
-}
 function fmt(secs: number) {
   const m = Math.floor(Math.max(0, secs) / 60)
   const s = Math.max(0, secs) % 60
@@ -485,6 +479,17 @@ export default function InterviewPage() {
   // server also refuses the start + any capture upload without it).
   const [mediaOk, setMediaOk] = useState(false)
   const [privacy, setPrivacy] = useState<{ orgName: string; mediaRetentionDays: number; transcriptRetentionDays: number } | null>(null)
+  // Room polish — presentation-only UI state (no pipeline involvement).
+  const [editorExpanded, setEditorExpanded] = useState(false)
+  const [transcriptCollapsed, setTranscriptCollapsed] = useState(false)
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null)
+  const [privacyOpen, setPrivacyOpen] = useState(false)
+  useEffect(() => {
+    if (!editorExpanded) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setEditorExpanded(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [editorExpanded])
   // ── T2 content-analysis capture (Build 02) — per-question answer telemetry ──
   const codeContentRef = useRef('')
   const questionStartRef = useRef<number>(Date.now())  // when current question was shown
@@ -1943,7 +1948,7 @@ export default function InterviewPage() {
     const steps: { area: string; line: string }[] = [
       { area: 'question',   line: "Before we begin, a quick tour. Across the top you'll always see your current question." },
       { area: 'ai',         line: `On the left is me, ${interviewerRef.current.name} — this panel lights up when I'm speaking or listening.` },
-      { area: 'video',      line: "Just below me is your camera, with a live-monitoring indicator. Keep your face comfortably in view." },
+      { area: 'video',      line: "Just below me is your camera. Camera checks run in your browser and no video is recorded; your audio is recorded for this interview. Keep your face comfortably in view." },
       { area: 'editor',     line: "On the right is your workspace — a Code or Text editor with a language picker, plus a Whiteboard tab. When you've written or sketched your answer, press Submit." },
       { area: 'transcript', line: "And below the editor is the live transcript of our conversation. It scrolls as we talk, and you can scroll back any time. That's it — let's get started." },
     ]
@@ -2119,6 +2124,7 @@ export default function InterviewPage() {
     if (codeDebounceRef.current) clearTimeout(codeDebounceRef.current)
     codeDebounceRef.current = setTimeout(() => {
       updateSessionCode(v, codeLanguage)
+      setDraftSavedAt(Date.now())   // visible "Draft saved" indicator
     }, 1000)
   }
 
@@ -2339,7 +2345,10 @@ export default function InterviewPage() {
 
   /* ── Active interview UI ───────────────────────────────────── */
   const currentQ   = questions[currentQIdx]
-  const timerColor = timeRemaining <= 120 ? 'var(--lv-danger)' : timeRemaining <= 300 ? 'var(--lv-warning)' : 'var(--lv-brand)'
+  const timerColor = timeRemaining <= 120 ? 'var(--lv-danger)' : timeRemaining <= 300 ? 'var(--lv-warning)' : 'var(--lv-text)'
+  const fmtClock = (iso: string) => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+  const lastAiIdx = (() => { for (let i = transcript.length - 1; i >= 0; i--) if (transcript[i].speaker === 'ai') return i; return -1 })()
+  const qPct = questions.length ? Math.round((Math.min(currentQIdx + (currentQ ? 1 : 0), questions.length) / questions.length) * 100) : 0
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--lv-bg)', overflow: 'hidden' }}>
@@ -2359,8 +2368,8 @@ export default function InterviewPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Clock size={14} color={timerColor} />
-            <span className="font-mono" style={{ fontSize: 16, fontWeight: 600, color: timerColor, letterSpacing: '0.05em' }}>{fmt(timeRemaining)}</span>
+            <Clock size={14} color={timerColor} aria-hidden="true" />
+            <span className="font-mono" aria-label={`Time remaining ${fmt(timeRemaining)}`} style={{ fontSize: 15, fontWeight: 600, color: timerColor, letterSpacing: '0.04em', fontVariantNumeric: 'tabular-nums' }}>{fmt(timeRemaining)}</span>
           </div>
           <button
             onClick={handleEndInterviewRequest}
@@ -2458,56 +2467,81 @@ export default function InterviewPage() {
           </div>
         )}
 
-        {/* ════ Question Display — FULL WIDTH across the top ════ */}
-        <div data-tour="question" style={{ background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, outline: tourHighlight === 'question' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-          {currentQ ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'var(--lv-surface-muted)', border: '1px solid var(--lv-border)', color: 'var(--lv-text-muted)', letterSpacing: '0.06em' }}>
-                    {SECTION_LABEL[currentQ.section]?.toUpperCase()}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Question {currentQIdx + 1} of {questions.length}</span>
-                </div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--lv-text)', lineHeight: 1.6, margin: 0 }}>{displayText(currentQ.question)}</p>
-                {currentQ.section === 'whiteboard' && (
-                  <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Use the Whiteboard tab below to sketch your answer</div>
-                )}
-              </>
-            ) : (
-              <div style={{ fontSize: 16, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
-                {phase === 'intro' ? 'Your interview is starting…' : 'Preparing next question…'}
+        {/* ════ Question Display — FULL WIDTH across the top (compact) ════ */}
+        <div data-tour="question" style={{ background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, outline: tourHighlight === 'question' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          {/* compact metadata + slim progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', letterSpacing: '0.04em' }}>
+            {currentQ && <span style={{ textTransform: 'uppercase' }}>{SECTION_LABEL[currentQ.section]}</span>}
+            {currentQ && <span aria-hidden="true">·</span>}
+            {questions.length > 0 && <span>Question {Math.min(currentQIdx + 1, questions.length)} of {questions.length}</span>}
+            {questions.length > 0 && (
+              <div role="progressbar" aria-label="Interview progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={qPct}
+                style={{ marginLeft: 'auto', width: 140, height: 3, borderRadius: 2, background: 'var(--lv-border)', overflow: 'hidden' }}>
+                <div style={{ width: `${qPct}%`, height: '100%', background: 'var(--lv-brand)', transition: 'width 0.4s ease' }} />
               </div>
             )}
-            {/* slim progress strip */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
-              {questions.map((q, idx) => {
-                const done = idx < currentQIdx; const current = idx === currentQIdx; const color = SECTION_COLOR[q.section]
-                return <div key={q.id} title={SECTION_LABEL[q.section]} style={{ flex: 1, height: 4, borderRadius: 2, background: done ? color : current ? `color-mix(in srgb, ${color} 33%, transparent)` : 'var(--lv-border)', transition: 'all 0.4s ease' }} />
-              })}
-            </div>
           </div>
+          {currentQ ? (
+            <>
+              <p style={{ fontSize: 17, fontWeight: 500, color: 'var(--lv-text)', lineHeight: 1.5, margin: 0 }}>{displayText(currentQ.question)}</p>
+              {currentQ.section === 'whiteboard' && (
+                <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>Use the Whiteboard tab to sketch your answer.</div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: 15, color: 'var(--lv-text-muted)', lineHeight: 1.5 }}>
+              {phase === 'intro' ? 'Your interview is starting…' : 'Preparing next question…'}
+            </div>
+          )}
+        </div>
 
         {/* ════ TWO COLUMNS ════ */}
         <div className="iv-cols" style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16 }}>
 
           {/* ──── LEFT: AI window (top) + candidate video (below) — stacked & EQUAL ──── */}
-          <div className="iv-left" style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-            <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1, minHeight: 0, display: 'flex', borderRadius: 8, outline: tourHighlight === 'ai' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div className="iv-left" style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+            <div data-tour="ai" className="iv-ai-fill" style={{ flex: 1.35, minHeight: 0, display: 'flex', borderRadius: 8, outline: tourHighlight === 'ai' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
               <AIVisualizer
                 phase={phase}
                 isWarmingUp={isWarmingUp}
                 liveTranscriptLength={liveTranscript.length}
-                timeRemaining={timeRemaining}
                 candidateName={candidate.name}
                 positionTitle={position.title}
                 compact
               />
             </div>
-            {/* Candidate video — same IntegrityMonitor feed/CV (inline variant).
-                Equal-sized box with normal proportions; objectFit:cover keeps the
-                face naturally framed (no stretch/letterbox). */}
-            <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--lv-border)', background: 'var(--lv-text)', outline: tourHighlight === 'video' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
-              <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" onPresence={handlePresence} />
+            {/* Candidate video — same IntegrityMonitor feed/CV (inline variant),
+                unchanged. Only the surrounding frame + status bar are presentation. */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div data-tour="video" style={{ flex: 1, minHeight: 0, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', outline: tourHighlight === 'video' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+                <IntegrityMonitor interviewId={interviewId} active={true} variant="inline" onPresence={handlePresence} />
+              </div>
+              {/* mic + privacy status */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: micFailed ? 'var(--lv-warning)' : 'var(--lv-text-muted)' }}>
+                  {micFailed ? <MicOff size={12} aria-hidden="true" /> : <Mic size={12} aria-hidden="true" />}
+                  {micFailed ? 'Mic unavailable' : isListening ? 'Mic on · listening' : 'Mic on'}
+                </span>
+                <button type="button" onClick={() => setPrivacyOpen((o) => !o)} aria-expanded={privacyOpen}
+                  style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-body)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                  <ShieldCheck size={12} aria-hidden="true" /> What&apos;s recorded
+                </button>
+                {privacyOpen && (
+                  <div role="dialog" aria-label="What this interview records" style={{ position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, width: 300, zIndex: 40, background: 'var(--lv-surface)', border: '1px solid var(--lv-border)', borderRadius: 8, boxShadow: 'var(--lv-shadow-md)', padding: '12px 14px', fontSize: 12, fontWeight: 400, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <strong style={{ fontSize: 12, color: 'var(--lv-text)' }}>What this interview records</strong>
+                      <button type="button" onClick={() => setPrivacyOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--lv-text-muted)', padding: 0, display: 'flex' }}><X size={14} /></button>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 16, display: 'grid', gap: 4 }}>
+                      <li><strong>Audio</strong> of this interview is recorded and transcribed to evaluate your answers.</li>
+                      <li><strong>Camera</strong> checks (face in view, one person) run inside your browser. No video is recorded or uploaded.</li>
+                      <li>Tab and window switches are noted for review. Flags are reviewed by a person and never reject you automatically.</li>
+                      {privacy && <li>Audio and photo are deleted after {privacy.mediaRetentionDays} days; the transcript after {privacy.transcriptRetentionDays} days. Only {privacy.orgName}&apos;s hiring team can access them.</li>}
+                      <li>Say &ldquo;I withdraw my consent&rdquo; at any time to stop.</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -2515,16 +2549,20 @@ export default function InterviewPage() {
           <div className="iv-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div data-tour="editor" style={{ flex: 1.7, minHeight: 0, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="editor" className="iv-editor" style={{ ...(editorExpanded ? { position: 'fixed', inset: 16, zIndex: 70, boxShadow: 'var(--lv-shadow-lg)' } : { flex: 1.7 }), minHeight: 0, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s, border-color 0.15s' }}>
             {/* tab strip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 10px', borderBottom: '1px solid var(--lv-border)', flexShrink: 0 }}>
-              <button onClick={() => setEditorTab('code')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'code' ? 'var(--lv-brand)' : 'var(--lv-surface-muted)', color: editorTab === 'code' ? '#fff' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderBottom: '1px solid var(--lv-border)', background: 'var(--lv-surface-sunken)', flexShrink: 0 }}>
+              <button onClick={() => setEditorTab('code')} aria-pressed={editorTab === 'code'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${editorTab === 'code' ? 'var(--lv-border-strong)' : 'transparent'}`, cursor: 'pointer', background: editorTab === 'code' ? 'var(--lv-surface)' : 'transparent', color: editorTab === 'code' ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <Code2 size={14} /> Code / Text
               </button>
-              <button onClick={() => setEditorTab('whiteboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: editorTab === 'whiteboard' ? 'var(--lv-brand)' : 'var(--lv-surface-muted)', color: editorTab === 'whiteboard' ? '#fff' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
+              <button onClick={() => setEditorTab('whiteboard')} aria-pressed={editorTab === 'whiteboard'} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${editorTab === 'whiteboard' ? 'var(--lv-border-strong)' : 'transparent'}`, cursor: 'pointer', background: editorTab === 'whiteboard' ? 'var(--lv-surface)' : 'transparent', color: editorTab === 'whiteboard' ? 'var(--lv-text)' : 'var(--lv-text-muted)', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' }}>
                 <PenLine size={14} /> Whiteboard
               </button>
               {waitingWhiteboard && editorTab === 'whiteboard' && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Sketch your answer, then Submit when ready</span>}
+              <button type="button" onClick={() => setEditorExpanded((x) => !x)} title={editorExpanded ? 'Exit full screen (Esc)' : 'Expand editor'} aria-label={editorExpanded ? 'Exit full screen' : 'Expand editor'}
+                style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', padding: 6, borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-muted)', cursor: 'pointer' }}>
+                {editorExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
             </div>
 
             {/* tab content — BOTH stay mounted, toggled via display so work is retained when switching */}
@@ -2532,12 +2570,15 @@ export default function InterviewPage() {
               {/* Code / Text */}
               <div style={{ position: 'absolute', inset: 0, display: editorTab === 'code' ? 'flex' : 'none', flexDirection: 'column' }}>
                 <div style={{ padding: '6px 12px', background: 'var(--lv-surface-sunken)', borderBottom: '1px solid var(--lv-border)', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Language:</span>
-                  {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
-                    <button key={lang} onClick={() => setCodeLanguage(lang)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: codeLanguage === lang ? 'var(--lv-brand)' : 'transparent', color: codeLanguage === lang ? '#fff' : 'var(--lv-text-muted)' }}>
-                      {lang === 'plaintext' ? 'Plain Text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
-                    </button>
-                  ))}
+                  <label htmlFor="iv-lang" style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 600 }}>Language</label>
+                  <select id="iv-lang" value={codeLanguage} onChange={(e) => setCodeLanguage(e.target.value as typeof codeLanguage)}
+                    style={{ height: 26, padding: '0 8px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text)', fontSize: 12, fontWeight: 500, fontFamily: 'var(--lv-font-sans)', cursor: 'pointer' }}>
+                    {(['plaintext', 'javascript', 'typescript', 'python', 'java', 'sql', 'go', 'cpp'] as const).map(lang => (
+                      <option key={lang} value={lang}>
+                        {lang === 'plaintext' ? 'Plain text' : lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JavaScript' : lang === 'typescript' ? 'TypeScript' : lang === 'sql' ? 'SQL' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="interview-monaco-wrapper" style={{ flex: 1, minHeight: 0 }}>
                   <MonacoEditor
@@ -2557,27 +2598,40 @@ export default function InterviewPage() {
               </div>
             </div>
 
-            {/* base Submit — submits the ACTIVE tab's answer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: '1px solid var(--lv-border)', flexShrink: 0 }}>
-              <span style={{ marginRight: 'auto', fontSize: 11, color: 'var(--lv-text-muted)' }}>{editorTab === 'code' ? 'Submit your written answer for this question' : 'Submit your whiteboard answer for this question'}</span>
-              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer' : 'Wait for your turn to answer'} style={{ padding: '8px 22px', borderRadius: 8, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? 'var(--lv-brand)' : 'var(--lv-border)', color: canSubmit ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}>
-                Submit Answer
+            {/* footer — autosave status, Save draft (secondary), Submit answer (primary) */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: '1px solid var(--lv-border)', flexShrink: 0 }}>
+              <span aria-live="polite" style={{ marginRight: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--lv-text-muted)' }}>
+                {editorTab === 'code'
+                  ? (draftSavedAt ? <><Check size={12} aria-hidden="true" /> Draft auto-saved · {new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</> : 'Drafts save automatically as you type')
+                  : 'Your sketch stays here until you submit'}
+              </span>
+              {editorTab === 'code' && (
+                <button type="button" onClick={() => { updateSessionCode(codeContentRef.current, codeLanguage); setDraftSavedAt(Date.now()) }}
+                  style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--lv-border)', background: 'var(--lv-surface)', color: 'var(--lv-text-body)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Save draft
+                </button>
+              )}
+              <button onClick={submitActiveTab} disabled={!canSubmit} title={canSubmit ? 'Submit your answer for this question' : 'Wait for your turn to answer'} style={{ padding: '7px 18px', borderRadius: 6, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', background: canSubmit ? 'var(--lv-brand)' : 'var(--lv-border)', color: canSubmit ? '#fff' : 'var(--lv-text-muted)', fontSize: 13, fontWeight: 600, transition: 'background 0.15s' }}>
+                Submit answer
               </button>
             </div>
           </div>
 
           {/* Transcript — BELOW the editor in the right column. Live, auto-scroll, scrollable back. */}
-          <div data-tour="transcript" className="iv-transcript" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
+          <div data-tour="transcript" className="iv-transcript" style={{ flex: transcriptCollapsed ? 'none' : 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', overflow: 'hidden', outline: tourHighlight === 'transcript' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s' }}>
           {/* header + live status */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--lv-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-brand)', fontFamily: 'var(--lv-font-sans)' }}>Transcript</span>
+          <div style={{ padding: '8px 12px 8px 16px', borderBottom: transcriptCollapsed ? 'none' : '1px solid var(--lv-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <button type="button" onClick={() => setTranscriptCollapsed((c) => !c)} aria-expanded={!transcriptCollapsed}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--lv-text)', fontFamily: 'var(--lv-font-sans)' }}>
+                {transcriptCollapsed ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />} Transcript
+              </button>
               {isWarmingUp ? (
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', fontStyle: 'italic' }}>Take your time…</span>
               ) : isListening ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--lv-danger)' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--lv-danger)', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
-                  Recording…
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--lv-danger)', animation: 'pulseDot 1.2s ease-in-out infinite', display: 'inline-block' }} />
+                  Listening…
                 </span>
               ) : (
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2594,16 +2648,23 @@ export default function InterviewPage() {
           </div>
 
           {/* full live transcript (Scribe v2 Realtime), auto-scroll, scrollable back */}
-          <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {transcript.map(entry => (
-              <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: entry.speaker === 'ai' ? 'var(--lv-brand-text)' : 'var(--lv-text-muted)', letterSpacing: '0.04em' }}>{entry.speaker === 'ai' ? interviewer.name.toUpperCase() : 'YOU'}</span>
-                <span style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>{entry.text}</span>
-              </div>
-            ))}
+          <div ref={transcriptBoxRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 12px', display: transcriptCollapsed ? 'none' : 'flex', flexDirection: 'column', gap: 6 }}>
+            {transcript.map((entry, i) => {
+              const ai = entry.speaker === 'ai'
+              const current = ai && i === lastAiIdx && phase === 'speaking' && !liveTranscript
+              return (
+                <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 10px', borderRadius: 6, background: ai ? 'var(--lv-surface-sunken)' : 'transparent', boxShadow: current ? 'inset 2px 0 0 var(--lv-brand)' : 'none' }}>
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 11, fontWeight: 600, color: ai ? 'var(--lv-text)' : 'var(--lv-text-muted)' }}>
+                    {ai ? interviewer.name : 'You'}
+                    <span style={{ fontWeight: 400, color: 'var(--lv-text-muted)', fontVariantNumeric: 'tabular-nums' }}>{fmtClock(entry.timestamp)}</span>
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>{entry.text}</span>
+                </div>
+              )
+            })}
             {liveTranscript && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-success)', letterSpacing: '0.04em' }}>YOU</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 10px', borderRadius: 6, boxShadow: 'inset 2px 0 0 var(--lv-success)' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-success)' }}>You · speaking</span>
                 <span style={{ fontSize: 13, color: 'var(--lv-text-muted)', fontStyle: 'italic', lineHeight: 1.55 }}>{liveTranscript}</span>
               </div>
             )}
@@ -2736,7 +2797,10 @@ export default function InterviewPage() {
           50%      { transform: translateX(-50%) translateY(-3px); }
         }
 
-        /* AI window fills its (equal-sized) box so it matches the candidate video. */
+        /* Editor: subtle active state (no glow). */
+        .iv-editor:focus-within { border-color: var(--lv-border-strong) !important; }
+
+        /* AI window fills its box. */
         .iv-ai-fill > div { flex: 1; height: 100%; justify-content: center; }
 
         /* ── Narrower widths: stack the two columns; keep the editor present.
