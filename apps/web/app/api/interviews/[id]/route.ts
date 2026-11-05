@@ -5,7 +5,7 @@ import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { getSessionFromRequest } from '@/lib/auth'
 import { TERMINATION_REASONS } from '@/lib/screen/session/lifecycle'
 import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
-import { sealJson } from '@/lib/screen/privacy/fields'
+import { openArray, sealJson } from '@/lib/screen/privacy/fields'
 import { purgeMediaFor } from '@/lib/screen/privacy/retention'
 import { logWithdrawal } from '@/lib/screen/privacy/consent'
 import { readCapturePolicy } from '@/lib/screen/privacy/policy'
@@ -53,7 +53,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
           },
         },
       })
-      if (interview) return NextResponse.json(withEffectiveDuration(interview))
+      // Captured data is stored encrypted — hand recruiters the decrypted arrays
+      // (the Candidates "Generate report" action posts these straight back).
+      if (interview) return NextResponse.json(withEffectiveDuration({
+        ...interview,
+        transcript: openArray(interview.transcript),
+        questionResponses: openArray(interview.questionResponses),
+      }))
       // Signed-in users can also be candidates opening their own link (or a
       // demo run) — fall through to the public projection.
     }

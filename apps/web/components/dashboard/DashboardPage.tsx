@@ -27,6 +27,11 @@ function StatCard({ label, value, sub, loading, onClick }: {
   );
 }
 
+// A missing / invalid date renders "—", never "Invalid Date".
+const validDate = (v: unknown) => { const d = new Date(v as string); return isNaN(d.getTime()) ? null : d; };
+const fmtDay  = (v: unknown) => validDate(v)?.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) ?? "—";
+const fmtTime = (v: unknown) => validDate(v)?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) ?? "";
+
 const REC_CONFIG: Record<string, { label: string; tone: Tone }> = {
   strong_yes: { label: "Strong Yes", tone: "success" },
   yes:        { label: "Yes",        tone: "success" },
@@ -52,10 +57,25 @@ const rowStyle: React.CSSProperties = {
 const nameStyle: React.CSSProperties = { fontSize: text.base, fontWeight: 600, color: lv.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 const metaStyle: React.CSSProperties = { fontSize: text.xs, color: lv.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
+// Robustness: every list the dashboard reads is coerced to an array, so a
+// missing / failed / mis-shaped data source renders an empty state instead
+// of throwing during render (which also cascaded into hydration errors).
+const asArray = <T,>(v: T[] | null | undefined): T[] => (Array.isArray(v) ? v : []);
+const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { positions, candidates, interviews, setActiveSection, setShowNewPositionFlow, setShowUploadFlow } = useAppStore();
+  const store = useAppStore();
+  const { setActiveSection, setShowNewPositionFlow, setShowUploadFlow } = store;
+  const positions  = asArray(store.positions);
+  const candidates = asArray(store.candidates);
+  const interviews = asArray(store.interviews);
   const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
+  // Time-of-day text depends on the viewer's clock + timezone. Render it only
+  // after mount: the server (UTC on Render) and the browser (IST) disagree on
+  // the hour, which produced the React #425/#418/#423 hydration cluster.
+  const [clock, setClock] = useState<Date | null>(null);
+  useEffect(() => { setClock(new Date()); }, []);
 
   const [stats, setStats] = useState<{
     activePositions?: number
@@ -73,7 +93,9 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch('/api/dashboard/stats')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setStats(data) })
+      // Only accept a real stats object (an { error } body leaves the
+      // store-derived fallbacks in place).
+      .then(data => { if (data && typeof data === 'object' && !('error' in data)) setStats(data) })
       .catch(() => {})
       .finally(() => setStatsLoading(false))
   }, [])
@@ -87,20 +109,19 @@ export default function DashboardPage() {
       ? Math.round(scoredCandidates.reduce((a, c) => a + (c.score ?? 0), 0) / scoredCandidates.length)
       : 0;
 
-  const activePositions    = stats?.activePositions  ?? positions.filter(p => p.status === 'active').length
-  const totalCandidates    = stats?.totalCandidates  ?? candidates.length
-  const scheduledCount     = stats?.scheduledInterviews ?? upcomingInterviews.length
-  const displayAvgScore    = stats?.avgScore ?? avgScore
-  const displayScoredCount = stats?.scoredCount ?? scoredCandidates.length
+  const activePositions    = num(stats?.activePositions)  ?? positions.filter(p => p.status === 'active').length
+  const totalCandidates    = num(stats?.totalCandidates)  ?? candidates.length
+  const scheduledCount     = num(stats?.scheduledInterviews) ?? upcomingInterviews.length
+  const displayAvgScore    = num(stats?.avgScore) ?? avgScore
+  const displayScoredCount = num(stats?.scoredCount) ?? scoredCandidates.length
 
   const topCandidates = [...candidates]
     .filter((c) => c.status === "completed" && c.score !== undefined)
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  const now    = new Date();
-  const hour   = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr  = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const hour     = clock?.getHours();
+  const greeting = hour === undefined ? "Welcome back" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const dateStr  = clock ? clock.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "\u00A0";
 
   const modalPosition = modalCandidate
     ? positions.find((p) => p.id === modalCandidate.positionId)
@@ -137,7 +158,7 @@ export default function DashboardPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: space[6] }}>
         {/* Stat cards */}
         <div className="dash-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: space[4] }}>
-          <StatCard label="Active Positions" value={activePositions} loading={statsLoading} sub={`${stats?.totalPositions ?? positions.length} total positions`} onClick={() => setActiveSection("positions")} />
+          <StatCard label="Active Positions" value={activePositions} loading={statsLoading} sub={`${num(stats?.totalPositions) ?? positions.length} total positions`} onClick={() => setActiveSection("positions")} />
           <StatCard label="Candidates"       value={totalCandidates} loading={statsLoading} sub={`${topCandidates.length} interviews completed`} onClick={() => setActiveSection("candidates")} />
           <StatCard label="Upcoming"         value={scheduledCount}  loading={statsLoading} sub="Interviews scheduled" onClick={() => setActiveSection("interviews")} />
           <StatCard label="Avg Score"        value={displayScoredCount > 0 ? displayAvgScore : "—"} loading={statsLoading} sub={`Across ${displayScoredCount} reports`} onClick={() => setActiveSection("reports")} />
@@ -168,10 +189,10 @@ export default function DashboardPage() {
                         </div>
                         <div style={{ textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
                           <div style={{ fontSize: text.sm, color: lv.text, fontWeight: 600 }}>
-                            {new Date(iv.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                            {fmtDay(iv.scheduledAt)}
                           </div>
                           <div style={{ fontSize: text.xs, color: lv.textMuted, marginTop: 2 }}>
-                            {new Date(iv.scheduledAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                            {fmtTime(iv.scheduledAt)}
                           </div>
                         </div>
                         <span title={iv.agentOnline ? "Interviewer online" : "Interviewer offline"} aria-label={iv.agentOnline ? "Interviewer online" : "Interviewer offline"}
@@ -203,7 +224,7 @@ export default function DashboardPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
                 {topCandidates.map((c, idx) => {
                   const rec = REC_CONFIG[c.recommendation as string];
-                  const initials = c.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+                  const initials = (c.name ?? "").split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
                   const open = () => c.interviewId && router.push(`/report/${c.interviewId}`);
                   return (
                     <div key={c.id} role={c.interviewId ? "button" : undefined} tabIndex={c.interviewId ? 0 : undefined}
@@ -247,7 +268,7 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
               {positions.map((pos) => {
                 const cfg   = STATUS_CONFIG[pos.status as string];
-                const total = pos.interviewsScheduled + pos.interviewsCompleted;
+                const total = (pos.interviewsScheduled ?? 0) + (pos.interviewsCompleted ?? 0);
                 const pct   = total > 0 ? Math.round((pos.interviewsCompleted / total) * 100) : 0;
                 return (
                   <div key={pos.id} role="button" tabIndex={0} onClick={() => setActiveSection("positions")}

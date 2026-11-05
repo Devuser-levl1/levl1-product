@@ -19,6 +19,9 @@ import { markReport, serverReportInput } from '@/lib/screen/report/pipeline'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function withServerFallback(raw: any): Promise<any> {
   const empty = (v: unknown) => !Array.isArray(v) || v.length === 0
+  // A non-array (e.g. a stored, still-encrypted value) is never passed through.
+  if (!Array.isArray(raw.transcript)) raw.transcript = []
+  if (!Array.isArray(raw.questionResponses)) raw.questionResponses = []
   if (typeof raw.interviewId !== 'string' || !empty(raw.transcript) || !empty(raw.questionResponses)) return raw
   const srv = await serverReportInput(raw.interviewId).catch(() => null)
   if (!srv || (srv.transcript.length === 0 && srv.questionResponses.length === 0)) return raw

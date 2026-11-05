@@ -292,9 +292,10 @@ export const useAppStore = create<AppStore>((set) => ({
   interviews: [],            // populated by useDataLoader from DB
   reports: {},               // populated on-demand when report page loads
   positionReports: {},       // populated on-demand
-  setPositions: (positions) => set({ positions }),
-  setCandidates: (candidates) => set({ candidates }),
-  setInterviews: (interviews) => set({ interviews }),
+  // Never let a non-array into a list slice — every page maps / reads .length on these.
+  setPositions: (positions) => set({ positions: Array.isArray(positions) ? positions : [] }),
+  setCandidates: (candidates) => set({ candidates: Array.isArray(candidates) ? candidates : [] }),
+  setInterviews: (interviews) => set({ interviews: Array.isArray(interviews) ? interviews : [] }),
   addPosition: (p) => set((state) => ({ positions: [p, ...state.positions] })),
   addCandidates: (newCandidates) => set((state) => ({ candidates: [...newCandidates, ...state.candidates] })),
   updateCandidate: (id, updates) => set((state) => ({

@@ -3,6 +3,11 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store/appStore'
 
+// Normalisers: API rows → store rows with every list/string field present, so
+// no page ever reads .length / .split / .map on undefined.
+const arr = <T = unknown>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
+const str = (v: unknown, d = ''): string => (typeof v === 'string' ? v : d)
+
 export function useDataLoader() {
   const { setPositions, setCandidates, setInterviews } = useAppStore()
 
@@ -31,18 +36,16 @@ export function useDataLoader() {
       .then((data) => {
         if (data && Array.isArray(data)) {
           setPositions(
-            data.map((p: any) => ({
+            data.filter((row: unknown) => !!row && typeof row === "object").map((p: any) => ({
               id: p.id,
-              title: p.title,
-              company: p.company,
+              title: str(p.title, 'Untitled position'),
+              company: str(p.company),
               department: p.department || '',
               experienceLevel: p.experienceLevel,
-              techStack: p.techStack || [],
+              techStack: arr<string>(p.techStack),
               status: p.status,
-              interviewsScheduled:
-                p.candidates?.filter((c: any) => c.status === 'scheduled').length || 0,
-              interviewsCompleted:
-                p.candidates?.filter((c: any) => c.status === 'completed').length || 0,
+              interviewsScheduled: arr<{ status?: string } | null>(p.candidates).filter((c) => c?.status === 'scheduled').length,
+              interviewsCompleted: arr<{ status?: string } | null>(p.candidates).filter((c) => c?.status === 'completed').length,
               createdAt: p.createdAt,
               approvals: {
                 techLead: p.techLeadApproved,
@@ -62,16 +65,16 @@ export function useDataLoader() {
       .then((data) => {
         if (data && Array.isArray(data)) {
           setCandidates(
-            data.map((c: any) => ({
+            data.filter((row: unknown) => !!row && typeof row === "object").map((c: any) => ({
               id: c.id,
-              name: c.name,
-              email: c.email,
+              name: str(c.name, 'Unnamed candidate'),
+              email: str(c.email),
               phone: c.phone,
               linkedIn: c.linkedIn,
               currentTitle: c.currentTitle,
               currentCompany: c.currentCompany,
               totalYearsExperience: c.totalYears,
-              topSkills: c.topSkills || [],
+              topSkills: arr<string>(c.topSkills),
               educationSummary: c.educationSummary,
               positionId: c.positionId,
               positionTitle: c.position?.title || '',
@@ -95,7 +98,7 @@ export function useDataLoader() {
       .then((data) => {
         if (data && Array.isArray(data)) {
           setInterviews(
-            data.map((i: any) => ({
+            data.filter((row: unknown) => !!row && typeof row === "object").map((i: any) => ({
               id: i.id,
               candidateId: i.candidateId,
               candidateName: i.candidate?.name || '',
