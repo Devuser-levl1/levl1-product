@@ -13,7 +13,8 @@ import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/liv
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
-import { ScribeStt, DEFAULT_KEYTERMS } from '@/lib/screen/interview/scribe-stt'
+import { ScribeStt, DEFAULT_KEYTERMS, prefetchScribeToken } from '@/lib/screen/interview/scribe-stt'
+import { sttKeyterms, normalizeSpokenTech } from '@/lib/screen/tech-terms'
 import { BargeInDetector, BARGE_IN_CONFIG } from '@/lib/screen/interview/barge-in'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
@@ -472,6 +473,7 @@ export default function InterviewPage() {
   const responsesRef      = useRef<QuestionResponse[]>([])
   const recognitionRef    = useRef<ISpeechRecognition | null>(null)
   const dgSttRef          = useRef<ScribeStt | null>(null)  // ElevenLabs Scribe v2 Realtime STT
+  const lastSpokenRef     = useRef('')  // interviewer's last line → Scribe previous_text context (Fixpack 8)
   const sttPreferWebSpeechRef = useRef(false)    // once Scribe fails, skip it for the session
   // Interview-long mic recording for post-interview fraud diarization (Scribe batch).
   const fraudRecorderRef  = useRef<MediaRecorder | null>(null)
@@ -858,6 +860,8 @@ export default function InterviewPage() {
       return 'done'
     }
     console.log('[speakText] Speaking:', cleanText.slice(0, 80))
+    lastSpokenRef.current = cleanText
+    if (!sttPreferWebSpeechRef.current) prefetchScribeToken()  // next listen opens faster
 
     if (!isMountedRef.current) return 'done'
     setPhase('speaking')
@@ -1004,7 +1008,8 @@ export default function InterviewPage() {
     if (!bargedIn) playChime()  // soft chime → mic is live (skipped when they're already talking)
 
     // Shared end-of-turn capture. During the warm-up arc, route to its handler.
-    const captureNow = (text: string) => {
+    const captureNow = (rawText: string) => {
+      const text = normalizeSpokenTech(rawText)   // idempotent; covers the Web Speech path too
       // Echo guard: drop anything captured while Alex is speaking — it's his own
       // TTS bleeding into the mic, never candidate intent. This is what stops the
       // false-termination loop (his "…end the interview…" being re-heard as a request).
@@ -1059,7 +1064,9 @@ export default function InterviewPage() {
       // ── ElevenLabs Scribe v2 Realtime (primary) ──
       //   VAD commit handles endpointing (tuned NOT to cut off mid-sentence);
       //   committed_transcript → onUtteranceEnd. Keyterms bias control + tech words.
-      const keyterms = [...DEFAULT_KEYTERMS, ...((position?.techStack ?? []) as string[])]
+      // Fixpack 8 #5: control words + the position's skills (canonical + spoken
+      // forms, e.g. "C#" + "C sharp") + a base tech glossary.
+      const keyterms = sttKeyterms(DEFAULT_KEYTERMS, [...((position?.techStack ?? []) as string[]), ...(((position as { mustHaves?: string[] } | null)?.mustHaves ?? []) as string[])])
       const dg = new ScribeStt({
         onInterim: (text) => {
           if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
@@ -1068,10 +1075,22 @@ export default function InterviewPage() {
           if (text) { hasSpokenRef.current = true; if (speechStartedAtRef.current === null) speechStartedAtRef.current = Date.now(); setListeningHint(''); clearSilenceTimers() }
         },
         onUtteranceEnd: (text) => captureNow(text),
+        // A socket/auth/quota failure before the candidate was heard → Web Speech
+        // for the rest of the session instead of a silent, dead mic.
+        onError: (reason) => {
+          const fatal = ['auth_error', 'socket_error', 'quota_exceeded', 'rate_limited', 'resource_exhausted'].includes(reason)
+          if (!fatal || dgSttRef.current !== dg || capturedRef.current || hasSpokenRef.current || phaseRef.current !== 'listening') return
+          sttPreferWebSpeechRef.current = true
+          try { dg.stop() } catch {}
+          dgSttRef.current = null
+          runWebSpeech()
+        },
       }, {
         languageCode: process.env.NEXT_PUBLIC_SCRIBE_LANGUAGE ?? 'en',
         keyterms,
-        vadSilenceSecs: Number(process.env.NEXT_PUBLIC_SCRIBE_VAD_SILENCE_SECS) || 2.0,
+        // Timings: SCRIBE_DEFAULTS (env NEXT_PUBLIC_SCRIBE_VAD_SILENCE_SECS / _COMMIT_GRACE_MS).
+        previousText: lastSpokenRef.current,
+        normalize: normalizeSpokenTech,   // "see sharp" → "C#", "dot net" → ".NET"
         preroll: takeBargeInAudio,
       })
       dgSttRef.current = dg

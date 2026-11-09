@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getVoiceId } from '@/lib/voiceOptions'
 import { DEFAULT_INTERVIEWER_VOICE_ID } from '@/lib/screen/interviewer'
 import { isVoiceKey } from '@/lib/screen/interviewer-voice'
+import { speakableTech } from '@/lib/screen/tech-terms'
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
           'xi-api-key': apiKey,
         },
         body: JSON.stringify({
-          text: text || '',
+          // Fixpack 8 #5 — say tech terms correctly (C# → "C sharp", .NET → "dot net").
+          text: speakableTech(typeof text === 'string' ? text : ''),
           model_id: 'eleven_turbo_v2_5',
           language_code: 'en', // Fix 4: force English, prevents gibberish
           voice_settings: {

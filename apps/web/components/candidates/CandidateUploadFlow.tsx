@@ -8,6 +8,7 @@ import { X, Upload, Clipboard, UserPlus, CheckCircle2, AlertCircle, Trash2, Chev
 import toast from "react-hot-toast";
 import { Button, Badge, Alert, Field, Input, Select, Textarea, type Tone } from "@/components/screen/ui";
 import { lv, space, text, radius } from "@/lib/screen/ui/tokens";
+import type { RoleFit } from "@/lib/screen/resume/role-fit";
 
 // Design-System Pass 3 (group 3): presentation on the Screen design system.
 // Extraction, duplicate checks and the save payload are unchanged.
@@ -46,6 +47,9 @@ interface ExtractedCandidate {
   duplicateInfo?: string;
   rawText?: string;
   rawTextOpen?: boolean;
+  // Fixpack 8 #4 — fit against the ASSIGNED position (not parse quality).
+  fit?: RoleFit | null;
+  fitFor?: string;   // signature the fit was computed for
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -55,21 +59,53 @@ function fmtSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function ConfidenceBadge({ level }: { level: "high" | "medium" | "low" }) {
-  const cfg: Record<"high" | "medium" | "low", { tone: Tone; label: string }> = {
-    high:   { tone: "success", label: "High"   },
-    medium: { tone: "warning", label: "Medium" },
-    low:    { tone: "danger",  label: "Low"    },
+/** Role fit vs the assigned position (Fixpack 8 #4). Parse quality is shown separately. */
+function FitBadge({ fit, pending }: { fit?: RoleFit | null; pending: boolean }) {
+  if (pending && fit === undefined) return <span style={{ fontSize: 11, color: lv.textMuted }}>Scoring…</span>;
+  if (!fit) return <span style={{ fontSize: 11, color: lv.textMuted }} title="Couldn't score fit for this position">—</span>;
+  const cfg: Record<RoleFit["level"], { tone: Tone; label: string }> = {
+    high: { tone: "success", label: "High" }, medium: { tone: "warning", label: "Medium" },
+    low: { tone: "danger", label: "Low" }, unknown: { tone: "neutral", label: "N/A" },
   };
-  const c = cfg[level];
-  return <Badge tone={c.tone} title={`${c.label} extraction confidence`}>{c.label}</Badge>;
+  const c = cfg[fit.level];
+  return <Badge tone={c.tone} title={`Role fit ${fit.level === "unknown" ? "unavailable" : `${fit.score}/100`} — ${fit.reasons.join(" ")}`}>{c.label}</Badge>;
 }
+
+/** Signature of everything the fit depends on — re-score only when it changes. */
+const fitSig = (e: { assignedPositionId: string; currentTitle: string | null; topSkills: string[]; totalYearsExperience: number | null; rawText?: string }) =>
+  [e.assignedPositionId, e.currentTitle ?? "", e.topSkills.join("|"), e.totalYearsExperience ?? "", (e.rawText ?? "").length].join("§");
 
 // Compact in-table controls: canonical input styling at table density.
 const CELL: React.CSSProperties = { height: 32, fontSize: text.xs, padding: "0 8px" };
 
 // Grid template shared between header + rows
 const COLS = "32px 1.8fr 1.3fr 0.75fr 0.9fr 1.1fr 68px 1.4fr 60px";
+
+function FitBreakdown({ fit, positionTitle }: { fit: RoleFit; positionTitle?: string }) {
+  const chip = (s: string, ok: boolean) => (
+    <span key={s} style={{ fontSize: 11, fontFamily: lv.fontMono, padding: "1px 6px", borderRadius: radius.sm, border: `1px solid ${ok ? lv.successBorder : lv.border}`, background: ok ? lv.successSoft : lv.surface, color: ok ? lv.text : lv.textMuted, textDecoration: ok ? "none" : "line-through" }}>{s}</span>
+  );
+  return (
+    <div style={{ marginTop: space[3], display: "flex", flexDirection: "column", gap: 6 }}>
+      <div className="lv-eyebrow">Role fit{positionTitle ? ` · ${positionTitle}` : ""}{fit.level !== "unknown" ? ` · ${fit.score}/100` : ""}</div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: text.xs, color: lv.textBody, display: "grid", gap: 2 }}>
+        {fit.reasons.map((r) => <li key={r}>{r}</li>)}
+      </ul>
+      {fit.skills.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: lv.textMuted, marginRight: 2 }}>Required:</span>
+          {fit.skills.map((s) => chip(s.status === "mentioned" ? `${s.skill} (mentioned)` : s.skill, s.status !== "missing"))}
+        </div>
+      )}
+      {(fit.niceToHave.present.length + fit.niceToHave.missing.length) > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: lv.textMuted, marginRight: 2 }}>Nice to have:</span>
+          {fit.niceToHave.present.map((s) => chip(s, true))}{fit.niceToHave.missing.map((s) => chip(s, false))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded }: {
@@ -103,6 +139,34 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
 
   // Extraction results
   const [extracted, setExtracted] = useState<ExtractedCandidate[]>([]);
+
+  // Fixpack 8 #4 — score each row against its assigned position (server-side:
+  // the position's must-haves / nice-to-haves / experience aren't in the store).
+  useEffect(() => {
+    const due = extracted.filter((e) => e.assignedPositionId && e.fitFor !== fitSig(e));
+    if (!due.length) return;
+    const sigs = new Map(due.map((e) => [e.tempId, fitSig(e)]));
+    setExtracted((prev) => prev.map((x) => (sigs.has(x.tempId) ? { ...x, fitFor: sigs.get(x.tempId), fit: undefined } : x)));
+    const byPos = new Map<string, ExtractedCandidate[]>();
+    for (const e of due) byPos.set(e.assignedPositionId, [...(byPos.get(e.assignedPositionId) ?? []), e]);
+    byPos.forEach(async (rows, positionId) => {
+      try {
+        const res = await fetch(`/api/positions/${positionId}/resume-fit`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates: rows.map((r) => ({ currentTitle: r.currentTitle, topSkills: r.topSkills, totalYears: r.totalYearsExperience, resumeText: r.rawText })) }),
+        });
+        if (!res.ok) throw new Error();
+        const { results } = (await res.json()) as { results: RoleFit[] };
+        // Apply only if the row still wants this exact signature (no stale overwrite).
+        setExtracted((prev) => prev.map((x) => {
+          const i = rows.findIndex((r) => r.tempId === x.tempId);
+          return i >= 0 && x.fitFor === sigs.get(x.tempId) ? { ...x, fit: results[i] ?? null } : x;
+        }));
+      } catch {
+        setExtracted((prev) => prev.map((x) => (rows.some((r) => r.tempId === x.tempId) && x.fitFor === sigs.get(x.tempId) ? { ...x, fit: null } : x)));
+      }
+    });
+  }, [extracted]);
   const [bulkPos,   setBulkPos]   = useState(defaultPositionId);
   const [saving,    setSaving]    = useState(false);
 
@@ -549,7 +613,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                 <div role="table" aria-labelledby="cuf-results" style={{ minWidth: 960 }}>
                 {/* Table header */}
                 <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, padding: `${space[2]}px ${space[4]}px`, background: lv.surfaceSunken, borderBottom: `1px solid ${lv.border}` }}>
-                  {["Select", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Conf.", "Position", "Actions"].map((h, i) => (
+                  {["Select", "Name / Email", "Current Role", "Exp", "Phone", "Skills", "Role fit", "Position", "Actions"].map((h, i) => (
                     <div key={i} role="columnheader" className="lv-eyebrow" style={{ fontSize: 11 }}>
                       {i === 0 || i === 8 ? <span className="lv-sr-only">{h}</span> : h}
                     </div>
@@ -661,8 +725,11 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                           {e.topSkills.length > 3 && <span style={{ fontSize: 11, color: lv.textMuted }}>+{e.topSkills.length - 3}</span>}
                         </div>
 
-                        {/* Confidence */}
-                        <div role="cell" style={{ paddingTop: 5 }}><ConfidenceBadge level={e.extractionConfidence} /></div>
+                        {/* Role fit vs the assigned position (parse quality is the row tint + note) */}
+                        <div role="cell" style={{ paddingTop: 5, display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-start" }}>
+                          <FitBadge fit={e.fit} pending={e.fitFor === fitSig(e)} />
+                          {e.extractionConfidence !== "high" && <span style={{ fontSize: 10, color: lv.textMuted }} title="The resume was hard to read — check the extracted fields">Check fields</span>}
+                        </div>
 
                         {/* Position — hidden when pre-set from position detail */}
                         <div role="cell">
@@ -691,8 +758,8 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                           {/* Toggle raw text */}
                           <Button variant="secondary" size="sm" iconOnly
                             aria-expanded={!!e.rawTextOpen}
-                            aria-label={e.rawTextOpen ? `Hide extracted text for ${who}` : `View extracted text for ${who}`}
-                            title={e.rawTextOpen ? "Hide extracted text" : "View extracted text"}
+                            aria-label={e.rawTextOpen ? `Hide details for ${who}` : `Show role fit and extracted text for ${who}`}
+                            title={e.rawTextOpen ? "Hide details" : "Why this fit? + extracted text"}
                             onClick={() => updateField(e.tempId, "rawTextOpen", !e.rawTextOpen)}>
                             {e.rawTextOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </Button>
@@ -707,6 +774,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
                       {/* ── Collapsible raw text ── */}
                       {e.rawTextOpen && (
                         <div style={{ padding: `0 ${space[4]}px ${space[3]}px`, borderTop: `1px solid ${lv.border}`, background: lv.surfaceSunken }}>
+                          {e.fit && <FitBreakdown fit={e.fit} positionTitle={pos?.title} />}
                           <div className="lv-eyebrow" style={{ marginBottom: 6, marginTop: space[3], display: "flex", alignItems: "center", gap: 6 }}>
                             Extracted text sent to Claude
                             <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({(e.rawText ?? "").length} chars · {e.fileName})</span>
@@ -734,7 +802,7 @@ export default function CandidateUploadFlow({ onClose, presetPositionId, onAdded
               )}
               {extracted.some((e) => e.extractionConfidence === "low" && !e.isDuplicate) && (
                 <Alert tone="warning">
-                  Some candidates have low confidence — verify fields above before adding
+                  Some resumes were hard to read — check the extracted fields above before adding
                 </Alert>
               )}
             </section>
