@@ -142,11 +142,9 @@ export async function staleReportInterviews(opts: { agencyId?: string; minAgeMs?
       ...(opts.agencyId ? { position: { agencyId: opts.agencyId } } : {}),
       isDemo: false, status: 'completed',
       completedAt: { not: null, ...(opts.minAgeMs ? { lt: new Date(now - opts.minAgeMs) } : {}) },
-      // SQL "<>" never matches NULL, so "never attempted" (null) must be listed explicitly.
-      AND: [
-        { OR: [{ terminationReason: null }, { terminationReason: { not: TERMINATION_REASONS.CONSENT_WITHDRAWN } }] },
-        { OR: [{ reportStatus: null }, { reportStatus: { not: 'ready' } }] },
-      ],
+      // reportStatus is NOT trusted here: a retake started before the reset existed
+      // still says "ready" from the previous attempt. The timestamps decide.
+      OR: [{ terminationReason: null }, { terminationReason: { not: TERMINATION_REASONS.CONSENT_WITHDRAWN } }],
       ...(opts.maxAttempts ? { reportAttempts: { lt: opts.maxAttempts } } : {}),
       candidate: { report: { isNot: null } },
     },
@@ -154,5 +152,10 @@ export async function staleReportInterviews(opts: { agencyId?: string; minAgeMs?
     orderBy: { completedAt: 'desc' },
     take: opts.take ?? 100,
   })
-  return rows.filter((r) => r.completedAt && r.candidate.report && r.candidate.report.generatedAt < r.completedAt)
+  // The room completes the interview BEFORE generating, so a current report is
+  // always newer than completedAt. A margin keeps clock skew / slow saves from
+  // ever triggering a needless (paid) regeneration.
+  return rows.filter((r) => r.completedAt && r.candidate.report && r.candidate.report.generatedAt.getTime() < r.completedAt.getTime() - STALE_MARGIN_MS)
 }
+/** A report must be this much older than the latest completion to count as stale. */
+const STALE_MARGIN_MS = 10 * 60_000
