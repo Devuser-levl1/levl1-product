@@ -14,21 +14,44 @@ built and owned by Abhijit Majumdar (Avyoma Labs).
 - Frontend:    Next.js 14 (App Router), TailwindCSS
 - Backend:     Next.js API routes
 - Database:    PostgreSQL on Render, Prisma ORM
-- AI:          Anthropic Claude via @anthropic-ai/sdk. Hire/shared features use
-               `CLAUDE_MODEL` (lib/ai/model.ts). The live-interview BRAIN
-               (evaluate-response, generate-dynamic-question) uses
-               `INTERVIEW_MODEL` = claude-opus-4-8 (lib/screen/interview/model.ts).
-- Voice:       ElevenLabs — TTS (eleven_turbo) AND STT (Scribe), single-vendor.
-- Transcription: ElevenLabs Scribe v2 (Interviews product only).
-               • LIVE: Scribe v2 Realtime over WebSocket. Browser captures 16 kHz
-                 PCM and streams it; auth is a single-use token minted server-side
-                 (/api/elevenlabs/stt-token → POST /v1/single-use-token/realtime_scribe,
-                 reusing ELEVENLABS_API_KEY). VAD commit drives turn-taking; keyterm
-                 prompting biases control/tech words. Falls back to Web Speech if the
-                 token/mic fails. (Replaced Deepgram.)
-               • FRAUD: Scribe v2 batch with diarization runs post-interview on the
-                 recorded audio (/api/interview/fraud-diarize) to detect a second/
-                 whispering voice → `second_voice` integrity events (review-only).
+- AI:          Anthropic Claude via @anthropic-ai/sdk. See "AI usage" for which
+               model each feature uses.
+- Voice:       ElevenLabs only (Interviews product) — TTS AND STT, one account.
+               ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID are SHARED; each call's
+               MODEL is its own env var, read at request time (switch on Render,
+               no rebuild). Config: lib/screen/interview/voice-config.ts.
+               The key is SERVER-ONLY — never a NEXT_PUBLIC_ copy.
+               Pre-flight: GET /api/interview/voice-check[?latency=1] (admin).
+- TTS:         ELEVENLABS_TTS_MODEL (default eleven_v4_turbo; A/B eleven_v4).
+               • Room → POST /api/interview/generate-speech with a voice token
+                 (x-voice-token, minted by /api/interview/voice-session, live
+                 interviews only; recruiter previews use the session, ≤400 chars).
+                 Per-interview char budget (VOICE_MAX_CHARS_PER_HOUR).
+               • STREAMED raw PCM (ElevenLabs /stream, pcm_24000) played as it
+                 arrives via Web Audio (lib/screen/interview/tts-stream.ts) — first
+                 audio ~1s. Pronunciation map applied server-side (C# → "C sharp",
+                 lib/screen/tech-terms.ts).
+               • NO browser speechSynthesis fallback, ever: retry once → "voice
+                 reconnecting" → line stays on screen. Failures go to /api/interview/
+                 voice-event (logs + InterviewLiveState.voiceWarning → Control Room).
+               • Optional delivery tags ([warmly]…) on v3/v4 models when
+                 ELEVENLABS_TTS_AUDIO_TAGS=1 — voice-only, never in transcript/report.
+- Transcription: ElevenLabs Scribe v3.
+               • LIVE: ELEVENLABS_STT_MODEL (default scribe_v3_live) over WebSocket.
+                 Browser streams 16 kHz PCM (lib/screen/interview/scribe-stt.ts);
+                 auth is a single-use token from /api/elevenlabs/stt-token, which
+                 also returns the model + endpointing config. Turn-taking:
+                 ELEVENLABS_STT_COMMIT_STRATEGY (turn_prediction on v3, VAD backstop)
+                 + a merge-on-resume grace so pauses don't cut answers. Keyterms from
+                 the position's skills + tech glossary (Scribe limits: ≤50 terms,
+                 ≤20 chars). Falls back to Web Speech on a Scribe failure — logged
+                 as stt_error and flagged in the Control Room, never silent.
+               • FRAUD: ELEVENLABS_STT_BATCH_MODEL (default scribe_v3) batch with
+                 diarization runs post-interview on the recorded audio
+                 (/api/interview/fraud-diarize) to detect a second/whispering voice
+                 → `second_voice` integrity events (review-only).
+               • No silent model fallback: rejected models log voice_model_rejected /
+                 stt_model_rejected.
 - Email:       Resend
 - Auth:        JWT (access token), bcrypt — NO Google OAuth
 - File storage: PostgreSQL text fields for MVP (no Cloudinary yet)
@@ -87,7 +110,18 @@ levl1/                       (repo root; the Next.js app lives in apps/web)
 - Tenant type: AGENCY (staffing firms) or CORPORATE (in-house HR teams).
 
 ## AI usage
-- Model: claude-sonnet-4-20250514 for all AI features.
+- Models (never hardcode a new one — use these constants):
+  - Hire + shared features: `CLAUDE_MODEL` = claude-sonnet-4-5 (lib/ai/model.ts).
+    (claude-sonnet-4-20250514 reached end-of-life on 2026-06-15 and returns 404.)
+  - Screen live-interview brain (evaluate-response, generate-dynamic-question):
+    `LIVE_INTERVIEW_MODEL` (alias `INTERVIEW_MODEL`) = claude-sonnet-4-6, fast so
+    the candidate isn't kept waiting. Env override: SCREEN_LIVE_MODEL.
+  - Screen final scoring / report / work-sample scoring / concept rubric:
+    `SCORING_MODEL` = claude-opus-4-8. Env override: SCREEN_SCORING_MODEL.
+    (Both in lib/screen/interview/model.ts.)
+  - Known drift: some Screen routes still hardcode ids — extract-resume,
+    generate-candidate-summary, generate-more-questions, generate-position-summary
+    (claude-sonnet-4-6) and positions/parse-jd (claude-opus-4-7).
 - Keep prompts in lib/hire/prompts.ts — never inline in route handlers.
 - All AI calls are async and queued via pg-boss — never block the request.
 - Return structured JSON from Claude using XML tags in the prompt.
@@ -104,8 +138,15 @@ CASHFREE_SECRET_KEY  Cashfree payments
 CASHFREE_ENV         TEST or PROD
 NEXT_PUBLIC_APP_URL  https://levl1.io
 CRON_SECRET          Cron job auth secret
-ELEVENLABS_API_KEY   Voice (Interviews only)
-DEEPGRAM_API_KEY     Transcription (Interviews only)
+ELEVENLABS_API_KEY   Voice TTS + STT (Interviews only) — server-side only
+ELEVENLABS_VOICE_ID  Shared fallback voice (built-in default: Ananya f0JpDwzbGK384Dd1WH2s)
+ELEVENLABS_TTS_MODEL           eleven_v4_turbo (A/B: eleven_v4)
+ELEVENLABS_STT_MODEL           scribe_v3_live
+ELEVENLABS_STT_BATCH_MODEL     scribe_v3 (fraud diarization)
+ELEVENLABS_STT_COMMIT_STRATEGY turn_prediction | vad
+ELEVENLABS_STT_VAD_SILENCE_SECS / ELEVENLABS_STT_COMMIT_GRACE_MS   endpointing overrides (1.4 / 900)
+ELEVENLABS_TTS_AUDIO_TAGS      1 = allow light delivery tags (default off)
+VOICE_TOKEN_SECRET   Signs interview voice tokens (falls back to JWT_SECRET)
 JUDGE0_API_KEY       Judge0 CE via RapidAPI (X-RapidAPI-Key) — server-only, never NEXT_PUBLIC_
 JUDGE0_API_HOST      judge0-ce.p.rapidapi.com (X-RapidAPI-Host)
 ```
