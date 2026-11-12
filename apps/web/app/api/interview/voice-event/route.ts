@@ -15,11 +15,14 @@ const WARNING: Record<string, string | null> = {
   reconnecting: 'Interviewer voice reconnecting',
   gave_up: 'Interviewer voice unavailable — candidate reading questions on screen',
   blocked: 'Interviewer audio blocked by the browser — waiting for the candidate to tap',
+  brain_unavailable: 'AI evaluator unavailable — answers are not being evaluated live (check Anthropic billing/status)',
   recovered: null,
 }
 // stt_error = live transcription (Scribe) failed — logged as an error; the room
 // falls back to browser recognition and the Control Room flags 'webspeech'.
-const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked', 'stt_error'])
+// brain_unavailable = evaluate-response degraded (e.g. Anthropic out of credits) — alert.
+// barge_in = the candidate interrupted the interviewer (telemetry, info only).
+const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked', 'stt_error', 'brain_unavailable', 'barge_in'])
 
 export async function POST(req: NextRequest) {
   const interviewId = verifyVoiceToken(req.headers.get('x-voice-token'))
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
   const attempt = typeof body.attempt === 'number' ? body.attempt : null
 
   const log = JSON.stringify({ evt: 'voice_event', kind, detail, attempt, interviewId })
-  if (kind === 'recovered') console.info(log); else if (kind === 'stt_error' || kind === 'gave_up') console.error(log); else console.warn(log)
+  if (kind === 'recovered' || kind === 'barge_in') console.info(log); else if (kind === 'stt_error' || kind === 'gave_up' || kind === 'brain_unavailable') console.error(log); else console.warn(log)
 
   const now = new Date()
   const data = {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { ttsModel, sttLiveModel, sttBatchModel, sttClientConfig, TTS_DEFAULT } from '@/lib/screen/interview/voice-config'
 import { DEFAULT_INTERVIEWER_VOICE_ID } from '@/lib/screen/interviewer'
+import Anthropic from '@anthropic-ai/sdk'
+import { LIVE_INTERVIEW_MODEL, SCORING_MODEL } from '@/lib/screen/interview/model'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -61,6 +63,20 @@ async function sttLiveCheck(key: string): Promise<Record<string, unknown>> {
   })
 }
 
+// The interview BRAIN (Claude) — a 1-token call per model. Catches an out-of-
+// credits / revoked Anthropic key BEFORE an interview silently degrades.
+async function brainCheck(): Promise<{ model: string; ok: boolean; detail?: string }[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return [{ model: 'anthropic', ok: false, detail: 'ANTHROPIC_API_KEY is not set' }]
+  const client = new Anthropic({ apiKey })
+  return Promise.all(Array.from(new Set([LIVE_INTERVIEW_MODEL, SCORING_MODEL])).map(async (model) => {
+    try {
+      await client.messages.create({ model, max_tokens: 1, messages: [{ role: 'user', content: 'ok' }] })
+      return { model, ok: true }
+    } catch (e) { return { model, ok: false, detail: (e instanceof Error ? e.message : String(e)).slice(0, 240) } }
+  }))
+}
+
 export async function GET(req: NextRequest) {
   const access = recruiterAccess(req, { admin: true })
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
@@ -94,8 +110,9 @@ export async function GET(req: NextRequest) {
     ? await Promise.all([ttfb(key, TTS_DEFAULT, voice), ttfb(key, 'eleven_v4', voice)])
     : undefined
   const sttLive = await sttLiveCheck(key)
+  const brain = await brainCheck()
 
-  const ok = tts.ok === true && sttLive.ok !== false
+  const ok = tts.ok === true && sttLive.ok !== false && brain.every((b) => b.ok)
   console.info(JSON.stringify({ evt: 'voice_check', ok, tts: tts.ok, sttLive: sttLive.ok, models: config }))
-  return NextResponse.json({ ok, config, tts, latency, sttLive, sttBatch: { model: config.sttBatchModel, note: 'Verified on the first diarization; a rejected model is logged as stt_model_rejected.' } })
+  return NextResponse.json({ ok, config, brain, tts, latency, sttLive, sttBatch: { model: config.sttBatchModel, note: 'Verified on the first diarization; a rejected model is logged as stt_model_rejected.' } })
 }

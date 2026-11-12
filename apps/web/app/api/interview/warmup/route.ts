@@ -24,9 +24,20 @@ export async function POST(req: NextRequest) {
   // Name that matches the account's interviewer voice (resolved by the room).
   const name = typeof body.interviewerName === 'string' && /^[A-Za-z][A-Za-z .'-]{0,30}$/.test(body.interviewerName.trim()) ? body.interviewerName.trim() : INTERVIEWER_NAME
 
+  // Fallbacks ROTATE so an AI outage never makes every interview open identically.
+  const pickOne = <T,>(xs: readonly T[]) => xs[Math.floor(Math.random() * xs.length)]
+  const when = part ? `this ${part}` : 'today'
   const fallback = isOpener
-    ? `Hi ${firstName}, thanks for making time this ${part || 'today'}. I'm ${name}, your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`
-    : (reply ? `Thanks for sharing that. Glad you're here.` : `No worries at all — glad you could make it.`)
+    ? pickOne([
+        `Hi ${firstName}, thanks for making time ${when}. I'm ${name}, your AI interviewer for this screen — before we dive in, how's your ${day || 'day'} going so far?`,
+        `Hello ${firstName}, I'm ${name}. Thanks for joining ${when}. Before we get into the role, how has your ${day || 'day'} been?`,
+        `Hi ${firstName} — ${name} here, I'll be running your interview. Good to meet you. Anything keeping you busy ${when}?`,
+        `Welcome, ${firstName}. I'm ${name}, your AI interviewer. Before the questions, how are you doing ${when}?`,
+        `Hi ${firstName}, thanks for being here. I'm ${name}. Quick one before we start — how's the ${day || 'week'} treating you?`,
+      ] as const)
+    : reply
+      ? pickOne(['Thanks for sharing that. Glad you\'re here.', 'Good to hear, thank you.', 'Thanks — appreciate you taking the time.', 'Understood, thanks for that.'] as const)
+      : pickOne(['No worries at all — glad you could make it.', 'That\'s fine — let\'s get started.', 'No problem at all.'] as const)
 
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ line: fallback })
   try {
@@ -48,7 +59,8 @@ export async function POST(req: NextRequest) {
     const line = resp.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('').trim()
     return NextResponse.json({ line: line || fallback })
   } catch (e) {
-    console.error('[interview/warmup] failed:', e instanceof Error ? e.message : e)
+    // LOUD: a failing warm-up usually means the brain is down for the whole interview.
+    console.error(JSON.stringify({ evt: 'brain_unavailable', route: 'warmup', detail: (e instanceof Error ? e.message : String(e)).slice(0, 300) }))
     return NextResponse.json({ line: fallback })
   }
 }

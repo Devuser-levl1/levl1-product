@@ -30,6 +30,7 @@ import { hasWorkspace, isInterviewMode, type InterviewMode } from '@/lib/screen/
 import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
+const wordCount0 = (t: string) => t.trim().split(/\s+/).filter(Boolean).length
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
@@ -75,6 +76,30 @@ const REDIRECT_TRIGGERS = [
   'do you think i', 'will i get', 'have i been selected', 'am i hired',
   'my chances', 'did i do well', 'did i do good',
 ] as const
+
+// Candidate checking the line ("can you hear me?") — a meta-question, never an
+// answer: confirm and keep listening on the SAME question.
+const AUDIO_CHECK_TRIGGERS = [
+  'can you hear me', 'can u hear me', 'do you hear me', 'are you able to hear',
+  'are you there', 'is this working', 'am i audible', 'is my mic', 'is my microphone',
+  'can you hear what i', 'hello can you', 'hello are you',
+] as const
+
+// When the brain is unavailable, a trivial answer is PROBED, never silently accepted.
+const DEGRADED_PROBES = [
+  'Could you walk me through your reasoning in a bit more detail?',
+  'Can you take that a level deeper — how would it actually work here?',
+  'Talk me through your approach step by step, please.',
+] as const
+const LOW_SCORE_PROBES = [
+  "That doesn't quite address the question yet. Could you walk me through how you would actually solve it?",
+  "I don't think that answers what I asked. Take a moment — how would you approach this problem?",
+] as const
+const isTrivialAnswer = (text: string) => {
+  const t = text.trim()
+  const words = t.split(/\s+/).filter(Boolean).length
+  return t.length < 60 || words < 8 || /^\s*print\s*\(\s*["']hello/i.test(t)
+}
 
 // Candidate asking to repeat/clarify the question
 const REPEAT_TRIGGERS = [
@@ -219,6 +244,8 @@ interface EvalResult {
   suggestedTransition: string
   confirmBack?: string   // one-sentence restatement of a substantive answer (active mirroring)
   speech?: { followUpQuestion?: string; confirmBack?: string }   // same lines + optional delivery tags (voice only)
+  degraded?: boolean        // the brain was unavailable — this is NOT a real evaluation
+  degradedReason?: string
 }
 
 /* ── Question bank ──────────────────────────────────────────────── */
@@ -563,6 +590,10 @@ export default function InterviewPage() {
   const speakGenRef       = useRef(0)                 // bumps per line; a stale retry loop exits
   const voiceTokenRef     = useRef<{ token: string; exp: number } | null>(null)
   const voiceUnblockRef   = useRef<(() => void) | null>(null)
+  const brainDownReportedRef = useRef(false)          // report a degraded brain once per session
+  const whiteboardHasInkRef  = useRef(false)          // has the candidate drawn anything?
+  const whiteboardEmptyNudgedRef = useRef(false)
+  const lastTestedCodeRef    = useRef<string | null>(null)  // code the last test run used
   const [voiceStatus, setVoiceStatusState] = useState<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
   const voiceStatusRef    = useRef<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
   const setVoiceStatus = useCallback((v: 'ok' | 'reconnecting' | 'unavailable' | 'blocked') => { voiceStatusRef.current = v; setVoiceStatusState(v) }, [])
@@ -871,7 +902,7 @@ export default function InterviewPage() {
   }, [interviewId])
 
   // Voice trouble is reported server-side (ops logs + Control Room), never just console.
-  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked' | 'stt_error', detail?: string, attempt?: number) => {
+  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked' | 'stt_error' | 'brain_unavailable' | 'barge_in', detail?: string, attempt?: number) => {
     const token = voiceTokenRef.current?.token
     console.warn('[voice]', kind, detail ?? '', attempt ?? '')
     if (!token) return
@@ -917,6 +948,7 @@ export default function InterviewPage() {
         interrupted = true
         bargeInPendingRef.current = true
         aiSpeakingRef.current = false   // what follows is the candidate, not echo
+        reportVoice('barge_in')         // telemetry: proves barge-in fires in real interviews
         stop()
       })
     }
@@ -1282,6 +1314,16 @@ export default function InterviewPage() {
       return
     }
 
+    // ── 0b. "Can you hear me?" — answer it, keep listening on the same question.
+    if (wordCount0(lower) <= 10 && AUDIO_CHECK_TRIGGERS.some((w) => lower.includes(w))) {
+      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+      const resp = pick(['Yes, I can hear you clearly. Take your time with the question.', 'Yes, I can hear you fine. Go ahead whenever you are ready.', 'I can hear you clearly — please go ahead.'] as const)
+      addTranscript({ speaker: 'ai', text: resp, type: 'transition' })
+      if ((await speakText(resp, { bargeIn: true })) !== 'interrupted') await delay(600)
+      startListening()
+      return
+    }
+
     // ── T2 content-analysis (Build 02) — fire-and-forget on a substantive answer.
     // Prefer the code editor answer (paste/latency live there); else a long spoken one.
     const t2Answer = codeContentRef.current.trim() || responseText
@@ -1480,7 +1522,25 @@ export default function InterviewPage() {
       ev = await res.json()
       const cov = (ev as unknown as { coverage?: { uncoveredKeys?: unknown } }).coverage
       if (cov && Array.isArray(cov.uncoveredKeys)) uncoveredKeysRef.current = (cov.uncoveredKeys as unknown[]).filter((k): k is string => typeof k === 'string')
-    } catch {}
+    } catch {
+      ev = { ...ev, degraded: true, degradedReason: 'network', evaluatorNote: 'Not evaluated live — the AI evaluator was unreachable.' }
+    }
+
+    // ── 7b. Brain unavailable → never silently accept ─────────────────
+    // (An out-of-credits AI account once made every answer "score 5, move on".)
+    // Report it once (ops log + Control Room), and PROBE a trivial answer —
+    // "print('hello world')", one-liners, an empty-ish reply — instead of accepting it.
+    if (ev.degraded) {
+      if (!brainDownReportedRef.current) { brainDownReportedRef.current = true; reportVoice('brain_unavailable', ev.degradedReason ?? 'unknown') }
+      if (isTrivialAnswer(responseText) && !ev.shouldAskFollowUp) {
+        ev = { ...ev, shouldAskFollowUp: true, followUpQuestion: pick(DEGRADED_PROBES) }
+      }
+    }
+    // A trivial non-answer that scored very low ("print('hello world')" to a real
+    // coding question) gets ONE honest probe before moving on — never a silent pass.
+    else if (!ev.shouldAskFollowUp && followUpCountRef.current === 0 && (ev.score ?? 5) <= 2 && isTrivialAnswer(responseText)) {
+      ev = { ...ev, shouldAskFollowUp: true, followUpQuestion: pick(LOW_SCORE_PROBES) }
+    }
 
     // ── 8. Relevance / rambling check ────────────────────────────────
     // Fix 5: only redirect ONCE per question, and not for long/engaged answers (>20 words)
@@ -1939,8 +1999,19 @@ export default function InterviewPage() {
 
   // Fix 2: Whiteboard Done handler — resume AI flow after candidate submits diagram
   const handleWhiteboardDone = useCallback(async () => {
+    // An EMPTY board is never accepted silently: nudge once; on a second Done,
+    // let them explain verbally instead.
+    if (!whiteboardHasInkRef.current && !whiteboardEmptyNudgedRef.current) {
+      whiteboardEmptyNudgedRef.current = true
+      const nudge = 'The whiteboard still looks empty. Sketch your design first — or press Done again and just talk me through it.'
+      addTranscript({ speaker: 'ai', text: nudge, type: 'transition' })
+      await speakText(nudge)
+      return
+    }
     setWaitingWhiteboard(false)
-    const transition = 'Thank you. I can see your diagram. Walk me through your thinking.'
+    const transition = whiteboardHasInkRef.current
+      ? 'Thank you. I can see your diagram. Walk me through your thinking.'
+      : 'No problem — talk me through your design out loud.'
     addTranscript({ speaker: 'ai', text: transition, type: 'transition' })
     if ((await speakText(transition, { bargeIn: true })) !== 'interrupted') await delay(800)
     startListening()
@@ -1954,6 +2025,10 @@ export default function InterviewPage() {
     waitingWorkSampleRef.current = false
     setWaitingWorkSample(false)
     flushEditWindow(); maybeSnapshot(true)
+    // Run the tests on what they're submitting (unless they just did): the brain
+    // must judge the code by real results, not "TEST RESULTS: not run".
+    const submitted = editorValue()
+    if (submitted.trim() && submitted !== lastTestedCodeRef.current) await runWorkspace('tests')
     pushEvent({ t: wsT(), k: 'submit' })
     await saveWorkspaceRef.current?.(true)
     setWsTab('code')
@@ -1997,10 +2072,11 @@ export default function InterviewPage() {
     setRunBusy(kind); setExecNote(null)
     flushEditWindow(); maybeSnapshot(true)
     const t = wsT()
+    const sentCode = editorValue()
     try {
       const r = await fetch('/api/interview/workspace/run', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interviewId, code: editorValue(), language: codeLanguageRef.current, kind, ...(kind === 'run' && customStdin !== null ? { stdin: customStdin } : {}) }),
+        body: JSON.stringify({ interviewId, code: sentCode, language: codeLanguageRef.current, kind, ...(kind === 'run' && customStdin !== null ? { stdin: customStdin } : {}) }),
       })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) {
@@ -2014,6 +2090,7 @@ export default function InterviewPage() {
       } else {
         setTestResults(d as TestResultShape); setWsTab('tests')
         lastTestsSummaryRef.current = `${d.passed}/${d.total} passing (incl. ${(d.results as TestResultShape['results']).filter((x) => x.hidden).length} hidden)`
+        lastTestedCodeRef.current = sentCode
         pushEvent({ t, k: 'tests', ok: true, passed: d.passed, total: d.total })
       }
       if (typeof d.executionsLeft === 'number' && d.executionsLeft <= 5) setExecNote(`${d.executionsLeft} runs left for this interview`)
@@ -2478,9 +2555,18 @@ export default function InterviewPage() {
       // While the flow is paused on a whiteboard question, Submit = "Done sketching".
       if (waitingWhiteboard) { void handleWhiteboardDone(); return }
       if (phaseRef.current !== 'listening' || capturedRef.current) return
-      capturedRef.current = true
-      candidateSpokeRef.current = true
-      captureResponse('(Answer provided on the whiteboard — diagram attached.)')
+      // The brain can't see the canvas, so a placeholder "diagram attached" was
+      // being evaluated as the answer (an EMPTY board passed too). Instead:
+      // empty → nudge; drawn → ask them to walk through it (their words are the answer).
+      void (async () => {
+        stopListening()
+        const line = whiteboardHasInkRef.current
+          ? 'Thank you, I can see your sketch. Walk me through it.'
+          : 'The whiteboard looks empty. Sketch it first, or just talk me through your answer.'
+        addTranscript({ speaker: 'ai', text: line, type: 'transition' })
+        if ((await speakText(line, { bargeIn: true })) !== 'interrupted') await delay(500)
+        startListening()
+      })()
       return
     }
     if (waitingWorkSampleRef.current) { void handleWorkSampleDone(); return }
@@ -2849,7 +2935,7 @@ export default function InterviewPage() {
           <div className="iv-right" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
           {/* Editor pane — PERMANENT, tab strip + content + base Submit */}
-          <div data-tour="editor" className="iv-editor" style={{ ...(editorExpanded ? { position: 'fixed', inset: 16, zIndex: 70, boxShadow: 'var(--lv-shadow-lg)' } : { flex: 1.7 }), minHeight: 0, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s, border-color 0.15s' }}>
+          <div data-tour="editor" className="iv-editor" style={{ ...(editorExpanded ? { position: 'fixed', inset: 16, zIndex: 70, boxShadow: 'var(--lv-shadow-lg)' } : { flex: 1.7 }), minHeight: editorExpanded ? 0 : 300, background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', outline: tourHighlight === 'editor' ? '2px solid var(--lv-brand)' : 'none', outlineOffset: 2, transition: 'outline 0.2s, border-color 0.15s' }}>
             {/* tab strip — technical/hybrid with a task: Task · Code · Tests · Output · Whiteboard;
                 conversational: Notes · Whiteboard (no coding workspace). */}
             {(() => {
@@ -2919,7 +3005,12 @@ export default function InterviewPage() {
                   </div>
                 )}
                 {execNote && <div role="status" style={{ padding: '6px 12px', fontSize: 12, color: 'var(--lv-warning)', background: 'var(--lv-warning-soft, var(--lv-surface-sunken))', borderBottom: '1px solid var(--lv-border)' }}>{execNote}</div>}
-                <div className="interview-monaco-wrapper" style={{ flex: 1, minHeight: 0 }}>
+                <div className="interview-monaco-wrapper" style={{ flex: 1, minHeight: 200, position: 'relative' }}>
+                  {!codeContent && !workTask && (
+                    <div aria-hidden="true" style={{ position: 'absolute', top: 12, left: 16, zIndex: 1, pointerEvents: 'none', fontSize: 13, color: 'var(--lv-text-muted)' }}>
+                      Type your answer here, then press Submit answer.
+                    </div>
+                  )}
                   <MonacoEditor
                     height="100%"
                     language={codeLanguage}
@@ -3006,7 +3097,7 @@ export default function InterviewPage() {
 
               {/* Whiteboard */}
               <div style={{ position: 'absolute', inset: 0, display: editorTab === 'whiteboard' ? 'block' : 'none', overflow: 'hidden' }}>
-                <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} />
+                <Whiteboard onExport={handleWhiteboardExport} onDone={waitingWhiteboard ? handleWhiteboardDone : undefined} onContentChange={(has) => { whiteboardHasInkRef.current = has }} />
               </div>
             </div>
 
@@ -3236,6 +3327,9 @@ export default function InterviewPage() {
           .iv-left { width: 100% !important; }
           .iv-left > div { min-height: 200px; }
           .iv-transcript { min-height: 240px; }
+          /* Stacked columns have no fixed height: give the editor a real one so the
+             typing area can't collapse to zero (the "no text box" bug). */
+          .iv-editor { flex: none !important; height: 420px; }
         }
       `}</style>
     </div>

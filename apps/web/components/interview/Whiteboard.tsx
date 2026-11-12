@@ -12,15 +12,19 @@ const CANVAS_H = 480
 interface Props {
   onExport?: (dataUrl: string) => void
   onDone?:   () => void   // Fix 2: signal interview engine that whiteboard is done
+  /** true once anything is drawn (false again if every stroke is undone) — lets the room refuse an empty board */
+  onContentChange?: (hasContent: boolean) => void
 }
 
-export default function Whiteboard({ onExport, onDone }: Props) {
+export default function Whiteboard({ onExport, onDone, onContentChange }: Props) {
   const canvasRef          = useRef<HTMLCanvasElement>(null)
   const containerRef       = useRef<HTMLDivElement>(null)
   const [tool, setTool]    = useState<Tool>('pen')
   const [color, setColor]  = useState(PRESET_COLORS[0])
   const [isDrawing, setIsDrawing] = useState(false)
   const [history, setHistory]     = useState<ImageData[]>([])
+  // Every stroke pushes an undo snapshot first, so a non-empty history = something was drawn.
+  useEffect(() => { onContentChange?.(history.length > 0) }, [history.length, onContentChange])
   const startPos  = useRef({ x: 0, y: 0 })
   const snapRef   = useRef<ImageData | null>(null)
 

@@ -62,6 +62,20 @@ async function contentContext(interviewId: string, isWork: boolean, answers: { q
 // this too; we tell the model so it stops drilling and advances gracefully.
 const MAX_FOLLOWUPS = 3
 
+// Brain failures must be LOUD, never a silent "score 5, move on" (that hid an
+// out-of-credits Anthropic account for a whole interview). Transient errors get
+// one retry; anything else is reported as degraded so the room can probe instead
+// of accepting the answer, and the Control Room shows it.
+function classifyBrainError(err: unknown): { reason: string; retryable: boolean; status: number | null } {
+  const status = typeof (err as { status?: unknown })?.status === 'number' ? (err as { status: number }).status : null
+  const msg = err instanceof Error ? err.message : String(err)
+  if (/credit balance is too low|billing/i.test(msg)) return { reason: 'billing', retryable: false, status }
+  if (status === 401 || status === 403) return { reason: 'auth', retryable: false, status }
+  if (status === 429 || status === 529 || (status !== null && status >= 500) || /overloaded|timeout|ECONNRESET|fetch failed/i.test(msg)) return { reason: 'transient', retryable: true, status }
+  if (err instanceof SyntaxError) return { reason: 'bad_json', retryable: true, status }
+  return { reason: 'error', retryable: false, status }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -119,7 +133,7 @@ export async function POST(req: NextRequest) {
       ? `FOLLOW-UP BUDGET: EXHAUSTED. You have already asked ${followUpCount} follow-ups on this question (cap is ${MAX_FOLLOWUPS}). You MUST set shouldAskFollowUp=false now and move on gracefully, even if the answer is unsatisfactory — record what is missing in keyPointsMissed and do NOT drill further.`
       : `FOLLOW-UP BUDGET: ${followUpsLeft} of ${MAX_FOLLOWUPS} follow-ups remain on this question. Only ask one if it is genuinely high-signal; otherwise advance. Never exceed the cap.`
 
-    const res = await client.messages.create({
+    const callBrain = () => client.messages.create({
       model: INTERVIEW_MODEL,
       max_tokens: 700,
       // NOTE: Opus 4.8 rejects temperature/top_p/top_k. Low effort keeps this
@@ -190,16 +204,28 @@ export async function POST(req: NextRequest) {
       }],
     })
 
-    const raw   = res.content[0].type === 'text' ? res.content[0].text : '{}'
-    const clean = raw.replace(/```json|```/g, '').trim()
-    const result = JSON.parse(clean)
+    let result: Record<string, unknown> | null = null
+    for (let attempt = 1; attempt <= 2 && !result; attempt++) {
+      try {
+        const res = await callBrain()
+        const raw   = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
+        const clean = raw.replace(/```json|```/g, '').trim()
+        result = JSON.parse(clean) as Record<string, unknown>
+      } catch (e) {
+        const c = classifyBrainError(e)
+        if (attempt === 1 && c.retryable) { await new Promise((r) => setTimeout(r, 600)); continue }
+        throw e
+      }
+    }
+    if (!result) throw new Error('brain returned no result')
     // Delivery tags never reach the transcript/report: the fields stay clean and
     // a tagged copy (≤1 tag) goes in `speech` for the voice only.
     const speech: Record<string, string> = {}
     for (const f of ['followUpQuestion', 'confirmBack'] as const) {
-      if (typeof result[f] !== 'string') continue
-      if (audioTagsOn()) speech[f] = limitAudioTags(result[f], 1)
-      result[f] = stripAudioTags(result[f])
+      const v = result[f]
+      if (typeof v !== 'string') continue
+      if (audioTagsOn()) speech[f] = limitAudioTags(v, 1)
+      result[f] = stripAudioTags(v)
     }
 
     // Between-question adaptation: the room promotes a question covering an
@@ -210,14 +236,20 @@ export async function POST(req: NextRequest) {
       ...(ctx.coverage ? { coverage: { uncoveredKeys: ctx.coverage.uncoveredKeys, uncoveredMustHaves: ctx.coverage.uncoveredMustHaves.map((u) => u.name) } } : {}),
     }, { status: 200 })
   } catch (err: unknown) {
-    console.error('evaluate-response error:', err instanceof Error ? err.message : err)
-    // Return a safe fallback so the interview doesn't crash
+    const c = classifyBrainError(err)
+    // LOUD: one structured line ops can alert on (e.g. evt=brain_unavailable reason=billing).
+    console.error(JSON.stringify({ evt: 'brain_unavailable', route: 'evaluate-response', reason: c.reason, status: c.status, model: INTERVIEW_MODEL, detail: (err instanceof Error ? err.message : String(err)).slice(0, 300) }))
+    // Still 200 so the interview doesn't crash — but flagged `degraded`, so the
+    // room probes trivial answers instead of accepting them and the Control Room
+    // shows that answers are not being evaluated.
     return NextResponse.json({
+      degraded: true,
+      degradedReason: c.reason,
       score: 5,
       relevanceScore: 5,
       keyPointsCovered: [],
       keyPointsMissed: [],
-      evaluatorNote: 'Evaluation unavailable.',
+      evaluatorNote: 'Not evaluated live — the AI evaluator was unavailable.',
       shouldAskFollowUp: false,
       generateDynamic: false,
       suggestedTransition: 'Thank you.',
