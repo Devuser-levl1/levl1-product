@@ -19,6 +19,7 @@ import {
   LifeBuoy,
   Radar,
   Library,
+  ListChecks,
 } from "lucide-react";
 import { useState } from "react";
 import { SupportModal } from "@/components/ui/SupportModal";
@@ -41,6 +42,7 @@ const NAV_MAIN: NavItem[] = [
   { section: "reports",    icon: BarChart2,        label: "Reports"    },
   { section: "analytics",  icon: LineChart,        label: "Analytics"  },
   { section: "task-bank",  icon: Library,          label: "Task bank"  },
+  { section: "rubric-library", icon: ListChecks,  label: "Rubric library" },
 ];
 
 const NAV_BOTTOM: NavItem[] = [

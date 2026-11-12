@@ -4,6 +4,8 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
+import { sanitizeSelectionRequest } from '@/lib/screen/rubrics/types'
+import { buildSelection } from '@/lib/screen/rubrics/store'
 import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix, sanitizeContactEmails } from '@/lib/screen/position-config'
 import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
       'techLeadEmail', 'hrEmail', 'clientManagerEmail', 'l2ScoreThreshold',
       'rubricApproved', 'scoringRubric', 'dynamicIntensity', 'voiceAccent',
       'softSkillWeightage', 'clientId', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
-      'interviewMode', 'workSampleTask',
+      'interviewMode', 'workSampleTask', 'rubricSelection',
     ])
     const data: Record<string, unknown> = { agencyId }
     for (const [k, v] of Object.entries(body)) {
@@ -100,6 +102,12 @@ export async function POST(req: NextRequest) {
     }
     // Fixpack 7 #1 — per-job approver emails: validated + normalised.
     const contactErr = sanitizeContactEmails(data)
+    // Rubric library selection: ids + tiers in, server-built snapshots out (active rubrics only).
+    if ('rubricSelection' in data) {
+      const sel = await buildSelection(agencyId as string, sanitizeSelectionRequest(data.rubricSelection))
+      if (!sel.ok) return NextResponse.json({ error: sel.error }, { status: 400 })
+      data.rubricSelection = sel.selection
+    }
     if (contactErr) return NextResponse.json({ error: contactErr }, { status: 400 })
     if ('questionMix' in data) data.questionMix = sanitizeMix(data.questionMix)
     if ('conceptRubric' in data) data.conceptRubric = sanitizeConceptRubric(data.conceptRubric)

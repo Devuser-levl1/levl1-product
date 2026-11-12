@@ -8,6 +8,8 @@ import type { LogisticsConfig } from "@/lib/screen/logistics/config";
 import { DEFAULT_MIX, contactEmailError, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
 import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
 import { InterviewModeField } from "./InterviewModeField";
+import { RubricSelector } from "@/components/rubrics/RubricSelector";
+import type { SelectedRubric } from "@/lib/screen/rubrics/types";
 import { suggestMode, type InterviewMode } from "@/lib/screen/workspace/modes";
 import { useAppStore } from "@/store/appStore";
 import {
@@ -292,6 +294,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   // #15 question mix · #13 JD concept rubric · #14 knockout questions
   const [questionMix, setQuestionMix] = useState<QuestionMix>(DEFAULT_MIX);
   const [conceptRubric, setConceptRubric] = useState<ConceptRubricItem[]>([]);
+  // Rubric library selection, tiered Must / Good / Add-on (drives scoring).
+  const [rubricSelection, setRubricSelection] = useState<SelectedRubric[]>([]);
+  const rubricSelectionPayload = rubricSelection.map((r) => ({ rubricId: r.rubricId, tier: r.tier, source: r.source }));
   const [rubricGenerating, setRubricGenerating] = useState(false);
   const [knockouts, setKnockouts] = useState<KnockoutQuestion[]>([]);
   // Observe & Defend — null follows the JD-suggested mode (HR can override).
@@ -492,7 +497,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           positionTitle, company, experienceLevel, roleType,
           primaryDomain, mustHaveTech, niceToHaveTech, domainContext,
-          workMode, weights, interviewStyle, ...expPayload, questionMix, conceptRubric,
+          workMode, weights, interviewStyle, ...expPayload, questionMix, conceptRubric, rubricSelection,
           interviewDuration: 30, redFlags, approvedJD: finalJD, mustHaves,
         }),
       });
@@ -590,7 +595,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: positionTitle, company, department, experienceLevel, roleType,
-            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
+            primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, rubricSelection: rubricSelectionPayload, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
             domainContext, workMode, interviewDuration: 30,
             dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
             jdText: finalJD, techLeadEmail, hrEmail, clientManagerEmail,
@@ -647,7 +652,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: positionTitle, company, department, experienceLevel, roleType,
-          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
+          primaryDomain, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, logistics, ...expPayload, questionMix, conceptRubric, rubricSelection: rubricSelectionPayload, knockoutQuestions: sanitizeKnockouts(knockouts), interviewMode,
           domainContext, workMode, interviewDuration: 30,
           dynamicIntensity, voiceAccent: voiceAccent ?? null,  // null = use the account default voice
           jdText: finalJD,
@@ -1095,6 +1100,12 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               {/* #15 — question mix */}
               <Field label="Question mix" hint="Basic-concept checks test fundamentals; applied & scenario questions test reasoning">
                 <QuestionMixEditor value={questionMix} onChange={setQuestionMix} />
+              </Field>
+
+              {/* Rubric library — select + tier (Must / Good / Add-on); tiers drive scoring */}
+              <Field label="Role rubrics" hint="Pick reviewed rubrics from your library and tier them. Must-haves gate the verdict; good-to-haves add to the score; add-ons are informational">
+                <RubricSelector value={rubricSelection} onChange={setRubricSelection}
+                  context={{ title: positionTitle, techStack: mustHaveTech, goodToHave: niceToHaveTech, mustHaves, jdText: finalJD }} />
               </Field>
 
               {/* #13 — JD-based concept rubric */}

@@ -52,7 +52,10 @@ export function matchSkills(texts: string[], map: SkillNode[]): Set<string> {
   const hay = texts.map(norm)
   for (const s of map) {
     const keys = [s.id.replace(/-/g, ' '), norm(s.name), ...s.aliases.map(norm)].filter((k) => k.length >= 2)
-    if (hay.some((h) => keys.some((k) => h === k || h.includes(k) || (k.length > 3 && k.includes(h) && h.length > 3)))) out.add(s.id)
+    // Short keys ("net", "go", "c#") need word boundaries — a bare substring
+    // match made ".NET" hit "internet"/"network". Longer phrases stay tolerant.
+    const contains = (h: string, k: string) => (k.length < 5 ? ` ${h} `.includes(` ${k} `) : h.includes(k))
+    if (hay.some((h) => keys.some((k) => h === k || contains(h, k) || (k.length > 3 && k.includes(h) && h.length > 3)))) out.add(s.id)
   }
   return out
 }

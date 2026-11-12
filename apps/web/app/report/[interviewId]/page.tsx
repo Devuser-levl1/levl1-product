@@ -11,6 +11,8 @@ import {
   ConceptRubricPanel, ConceptAssessmentShape, KnockoutPanel,
   Dimension, Communication, EvidenceQuestion, IntegritySummaryShape,
 } from '@/components/interviews/report/report-visuals'
+import { TierRubricPanel } from '@/components/interviews/report/TierRubricPanel'
+import type { RubricAssessment } from '@/lib/screen/rubrics/scoring'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
 import { WorkSamplePanel, type WorkSampleShape } from '@/components/interviews/report/WorkSamplePanel'
 import { Button, ButtonLink, LoadingBlock } from '@/components/screen/ui'
@@ -47,6 +49,7 @@ interface ReportPayload {
   workSample?: WorkSampleShape | null
   mustHaveAssessment?: MustHaveShape[] | null
   conceptAssessment?: ConceptAssessmentShape[] | null
+  rubricAssessment?: RubricAssessment | null
   terminationReason: string | null
   isDemo?: boolean
   candidateName?: string; positionTitle?: string; company?: string; interviewDate?: string; duration?: number
@@ -225,6 +228,9 @@ export default function ReportPage() {
 
         {/* R1a2 — Recruiter knockout questions: surfaced for review, never auto-reject */}
         <KnockoutPanel items={logistics?.knockouts} />
+
+        {/* R1a3 — Rubric library: selected rubrics by tier (must-haves gate the verdict) */}
+        <TierRubricPanel data={R.rubricAssessment} />
 
         {/* R1b — Must-have requirements: the pass/fail lens on non-negotiables */}
         <MustHavePanel items={R.mustHaveAssessment} />

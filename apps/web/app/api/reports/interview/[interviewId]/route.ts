@@ -74,6 +74,8 @@ export async function GET(
       mustHaveAssessment:     r.mustHaveAssessment ?? null,
       // JD-based concept rubric ratings (#13)
       conceptAssessment:      r.conceptAssessment ?? null,
+      // Rubric library — results by tier + the verdict gate
+      rubricAssessment:       r.rubricAssessment ?? null,
       // Metadata
       interviewId,
       candidateId:    candidate.id,

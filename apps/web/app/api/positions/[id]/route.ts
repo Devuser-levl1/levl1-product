@@ -6,6 +6,8 @@ import { PRODUCTION_INTERVIEW_MINUTES, effectiveInterviewMinutes } from '@/lib/s
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
+import { readSelection, sanitizeSelectionRequest } from '@/lib/screen/rubrics/types'
+import { buildSelection } from '@/lib/screen/rubrics/store'
 import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix, sanitizeContactEmails } from '@/lib/screen/position-config'
 import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
@@ -38,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const access = recruiterAccess(req, { edit: true })
     if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
-    const owned = await prisma.position.findFirst({ where: { id: params.id, agencyId: access.session.agencyId }, select: { id: true } })
+    const owned = await prisma.position.findFirst({ where: { id: params.id, agencyId: access.session.agencyId }, select: { id: true, rubricSelection: true } })
     if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const body = await req.json()
@@ -51,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
       'dynamicIntensity', 'voiceAccent', 'wonCandidateId', 'wonNotes',
       'lostReason', 'lostNotes', 'closedAt', 'mustHaves', 'logistics', 'experienceMin', 'experienceMax', 'questionMix', 'conceptRubric', 'knockoutQuestions',
-      'interviewMode', 'workSampleTask',
+      'interviewMode', 'workSampleTask', 'rubricSelection',
     ])
     const safe: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(body)) {
@@ -71,6 +73,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Fixpack 7 #1 — per-job approver emails: validated + normalised.
     const contactErr = sanitizeContactEmails(safe)
+    if ('rubricSelection' in safe) {
+      const sel = await buildSelection(access.session.agencyId, sanitizeSelectionRequest(safe.rubricSelection), readSelection(owned.rubricSelection))
+      if (!sel.ok) return NextResponse.json({ error: sel.error }, { status: 400 })
+      safe.rubricSelection = sel.selection
+    }
     if (contactErr) return NextResponse.json({ error: contactErr }, { status: 400 })
     if ('questionMix' in safe) safe.questionMix = sanitizeMix(safe.questionMix)
     if ('conceptRubric' in safe) safe.conceptRubric = sanitizeConceptRubric(safe.conceptRubric)

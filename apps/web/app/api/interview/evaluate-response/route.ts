@@ -8,6 +8,8 @@ import { sanitizeRubric } from '@/lib/screen/taskbank/types'
 import { matchSkills } from '@/lib/screen/taskbank/select'
 import { computeCoverage, coverageGuidance, type SkillCoverage } from '@/lib/screen/taskbank/coverage'
 import { skillMapForPosition } from '@/lib/screen/taskbank/store'
+import { readSelection } from '@/lib/screen/rubrics/types'
+import { mustRubricIds, rubricSkillNodes, rubricTierGuidance } from '@/lib/screen/rubrics/coverage'
 import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-config'
 import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
 
@@ -26,7 +28,7 @@ const TAG_GUIDANCE =
 async function contentContext(interviewId: string, isWork: boolean, answers: { questionText: string; score: number }[], currentText: string, timeLeftSec: number | null) {
   const iv = await prisma.interview.findUnique({
     where: { id: interviewId },
-    select: { position: { select: { title: true, techStack: true, mustHaves: true, agencyId: true, workSampleTask: true } }, workSample: { select: { task: true } } },
+    select: { position: { select: { title: true, techStack: true, mustHaves: true, agencyId: true, workSampleTask: true, rubricSelection: true } }, workSample: { select: { task: true } } },
   })
   if (!iv) return { block: '', coverage: null as SkillCoverage | null }
   const parts: string[] = []
@@ -39,13 +41,19 @@ async function contentContext(interviewId: string, isWork: boolean, answers: { q
     }
     if (rubric.criteria.length) parts.push('RUBRIC CRITERIA (strong vs weak):\n' + rubric.criteria.map((c) => `- ${c.dimension}: strong = ${c.strong}; weak = ${c.weak}`).join('\n'))
   }
-  const { skills } = await skillMapForPosition(iv.position.agencyId, iv.position.title, iv.position.techStack)
+  const { skills: roleSkills } = await skillMapForPosition(iv.position.agencyId, iv.position.title, iv.position.techStack)
+  // Rubric library selection joins the coverage engine: must-have rubrics are
+  // must-haves (assess before time runs out); good-to-haves next; add-ons last.
+  const rubricSel = readSelection(iv.position.rubricSelection)
+  const skills = [...roleSkills, ...rubricSkillNodes(rubricSel)]
   let coverage: SkillCoverage | null = null
   if (skills.length) {
-    const must = matchSkills(iv.position.mustHaves, skills)
+    const must = new Set([...Array.from(matchSkills(iv.position.mustHaves, roleSkills)), ...Array.from(mustRubricIds(rubricSel))])
     coverage = computeCoverage(skills, answers, must, { workSkills: isWork ? sanitizeTask(iv.workSample?.task ?? iv.position.workSampleTask)?.skills : [] })
     const g = coverageGuidance(skills, coverage, currentText, timeLeftSec)
-    if (g) parts.push('ADAPTIVE COVERAGE (role skill map):\n' + g)
+    if (g) parts.push('ADAPTIVE COVERAGE (role skill map + selected rubrics):\n' + g)
+    const t = rubricSel.length ? rubricTierGuidance(rubricSel, coverage, timeLeftSec) : ''
+    if (t) parts.push('RUBRIC TIERS (recruiter-selected):\n' + t)
   }
   return { block: parts.length ? '\n\n' + parts.join('\n\n') : '', coverage }
 }

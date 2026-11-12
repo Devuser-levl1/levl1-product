@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type NavSection = 'dashboard' | 'positions' | 'clients' | 'candidates' | 'interviews' | 'control-room' | 'reports' | 'analytics' | 'task-bank' | 'settings'
+export type NavSection = 'dashboard' | 'positions' | 'clients' | 'candidates' | 'interviews' | 'control-room' | 'reports' | 'analytics' | 'task-bank' | 'rubric-library' | 'settings'
 
 export interface Position {
   id: string

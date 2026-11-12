@@ -301,6 +301,7 @@ model Position {
   experienceMax      Int?
   questionMix        Json?     // { concept, technical, scenario, behavioral, eq } counts
   conceptRubric      Json?     // [{ id, concept, strong, weak }] — JD-derived, recruiter-editable
+  rubricSelection    Json?     // [{ rubricId, tier: must|good|addon, source, snapshot… }] — lib/screen/rubrics/types.ts
   knockoutQuestions  Json?     // [{ id, question, requiredAnswer }] — surfaced in report, never auto-reject
   voiceAccent        String?
   softSkillWeightage Json?
@@ -498,6 +499,36 @@ model RoleSkillMap {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([agencyId, role])
+}
+
+// ── Rubric library (Screen-scoped) ─────────────────────────────────────────
+// Curated proficiency rubrics, browsable by area → sub-skill. Selected per
+// position and tiered Must-have / Good-to-have / Add-on (Position.rubricSelection).
+// Statement template: "proficient in X, able to Y, by following Z".
+// draft → reviewed (reviewer note) → active (selectable) → retired.
+model RubricLibraryItem {
+  id           String    @id @default(cuid())
+  agencyId     String
+  area         String    // role / technology group, e.g. "Oracle E-Business Suite"
+  subSkill     String    // rubric name, e.g. "Oracle Integration Development"
+  proficientIn String    @db.Text   // X
+  ableTo       String    @db.Text   // Y
+  practices    String    @db.Text   // Z
+  strong       String    @db.Text @default("")
+  weak         String    @db.Text @default("")
+  keywords     String[]  // JD + live-answer matching
+  probes       Json?     // [{ question, strongAnswer, weakSignals }]
+  status       String    @default("draft")  // draft | reviewed | active | retired
+  isSample     Boolean   @default(false)    // Levl1 sample content — must still be reviewed
+  contentKey   String?   // stable id of Levl1 sample content
+  reviewNote   String?   @db.Text
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  @@index([agencyId, status])
+  @@index([agencyId, area])
 }
 
 // ── Observe & Defend work sample (Screen-scoped) ───────────────────────────
@@ -760,6 +791,7 @@ model Report {
   // [{ concept, rating: strong|adequate|weak|not_assessed, evidence }] — one per
   // Position.conceptRubric entry at generation time.
   conceptAssessment      Json?
+  rubricAssessment       Json?     // { items: [{ rubricId, tier, rating, evidence }], gate } — tiered rubric results
   generatedAt            DateTime  @default(now())
 }
 

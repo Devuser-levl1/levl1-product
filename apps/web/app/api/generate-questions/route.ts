@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { sanitizeMustHaves } from "@/lib/screen/recruiter/must-haves";
+import { readSelection, TIER_INFO } from "@/lib/screen/rubrics/types";
 import { formatExperience, isJuniorExperience, isSeniorExperience, parseExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeMix } from "@/lib/screen/position-config";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
     const conceptRubric = sanitizeConceptRubric(body.conceptRubric);
     // Recruiter-marked non-negotiables — every one must be directly assessed.
     const mustHaves = sanitizeMustHaves(body.mustHaves);
+    // Rubric library selection (tiered) — must-haves first, add-ons only if room.
+    const rubricSel = readSelection(body.rubricSelection);
+    const tierOf = (t: "must" | "good" | "addon") => rubricSel.filter((r) => r.tier === t);
 
     const isSenior    = isSeniorExperience(exp);
     const isJunior    = isJuniorExperience(exp);
@@ -141,6 +145,11 @@ MUST-HAVE REQUIREMENTS (non-negotiable — the recruiter will judge each one as 
 ${mustHaves.map((m, i) => `${i + 1}. ${m}`).join("\n")}
 Every must-have MUST be directly assessed by at least one question: its expectedKeyPoints must include concrete evidence that would show the requirement is met, and set "mustHaves" on that question to the exact requirement text(s) it assesses. Prefer folding several must-haves into one deep question over adding questions. Questions not tied to a must-have use "mustHaves": [].
 ` : ""}
+${rubricSel.length ? `
+SELECTED ROLE RUBRICS (chosen by the recruiter from the rubric library; each is a proficiency standard the interview must assess):
+${(["must", "good", "addon"] as const).filter((t) => tierOf(t).length).map((t) => `${TIER_INFO[t].label.toUpperCase()}:\n` + tierOf(t).map((r) => `- ${r.subSkill}: ${r.statement}\n  strong: ${r.strong || "—"}\n  weak: ${r.weak || "—"}${r.probes[0] ? `\n  example probe: ${r.probes[0].question}` : ""}`).join("\n")).join("\n")}
+Coverage rules: EVERY must-have rubric gets at least one dedicated question (fold several into one deep question when natural). Good-to-have rubrics get questions only after every must-have is covered, as the mix allows. Add-on rubrics only if questions remain — never at the expense of a must-have. Tag each question with "rubrics": [exact sub-skill names it assesses] ([] if none). Write expectedKeyPoints from the strong/weak anchors.
+` : ""}
 ${conceptRubric.length ? `
 ROLE CONCEPT RUBRIC (from the JD — the competencies this role actually needs). Spread questions across these so each concept is assessed at least once where the mix allows; tag every question with "concepts": [exact concept names it assesses]. Use the strong/weak anchors to write expectedKeyPoints:
 ${conceptRubric.map((c, i) => `${i + 1}. ${c.concept}\n   strong: ${c.strong || "—"}\n   weak: ${c.weak || "—"}`).join("\n")}
@@ -173,6 +182,7 @@ Generate exactly this structure (${techCount} technical — ${conceptCount} "con
       "kind": "concept | applied",
       "concepts": [],
       "mustHaves": [],
+      "rubrics": [],
       "estimatedMinutes": 4
     }
   ],

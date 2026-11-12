@@ -11,6 +11,8 @@ import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { reconcileConcepts, sanitizeConceptRubric } from '@/lib/screen/position-config'
 import { appUrl } from '@/lib/screen/app-url'
 import { markReport, serverReportInput } from '@/lib/screen/report/pipeline'
+import { readSelection, TIER_INFO } from '@/lib/screen/rubrics/types'
+import { applyTierVerdict, reconcileRubricResults, type RubricAssessment } from '@/lib/screen/rubrics/scoring'
 
 // Fixpack 6 #3: when the caller sends no transcript/responses (recruiter
 // "Generate Report", the server sweep), use what the server already persisted
@@ -78,12 +80,14 @@ export async function POST(req: NextRequest) {
     // Recruiter-marked must-have requirements for this position (Screen F3).
     // Recruiter-marked must-haves (F3) + the JD-derived concept rubric (#13).
     const posCfg = candidateId
-      ? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { position: { select: { mustHaves: true, conceptRubric: true } } } }).catch(() => null))?.position ?? null
+      ? (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { position: { select: { mustHaves: true, conceptRubric: true, rubricSelection: true } } } }).catch(() => null))?.position ?? null
       : body.positionId
-        ? await prisma.position.findUnique({ where: { id: body.positionId }, select: { mustHaves: true, conceptRubric: true } }).catch(() => null)
+        ? await prisma.position.findUnique({ where: { id: body.positionId }, select: { mustHaves: true, conceptRubric: true, rubricSelection: true } }).catch(() => null)
         : null
     const mustHaves: string[] = posCfg?.mustHaves ?? []
     const conceptRubric = sanitizeConceptRubric(posCfg?.conceptRubric)
+    // Rubric library selection, tiered Must-have / Good-to-have / Add-on (drives the verdict).
+    const rubricSel = readSelection(posCfg?.rubricSelection)
 
     const hasTranscript = Array.isArray(transcript) && transcript.length > 0
     const hasResponses = Array.isArray(questionResponses) && questionResponses.length > 0
@@ -120,6 +124,9 @@ export async function POST(req: NextRequest) {
           : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
         conceptAssessment: (conceptRubric.length
           ? reconcileConcepts(conceptRubric, null, { insufficientEvidence: true })
+          : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+        rubricAssessment: (rubricSel.length
+          ? (() => { const items = reconcileRubricResults(rubricSel, null, { insufficientEvidence: true }); return { items, gate: applyTierVerdict('maybe', 0, items, { insufficientEvidence: true }).gate } })()
           : Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       }
 
@@ -213,6 +220,12 @@ export async function POST(req: NextRequest) {
                 `- "not_met": the candidate was asked about it and showed a clear gap, lack of experience, or incorrect understanding.\n` +
                 `- "insufficient_evidence": it was not covered, or only superficially — do NOT guess.\n\n`
               : '') +
+            (rubricSel.length
+              ? `SELECTED ROLE RUBRICS (chosen by the recruiter from the rubric library, each with a tier). Rate EACH from the transcript only — the resume is NOT evidence:\n` +
+                rubricSel.map((r, i) => `${i + 1}. [${TIER_INFO[r.tier].label}] ${r.subSkill} (id ${r.rubricId})\n   standard: ${r.statement}\n   strong looks like: ${r.strong || '—'}\n   weak looks like: ${r.weak || '—'}`).join('\n') + `\n` +
+                `- "met": concrete, specific evidence matching the standard. "partial": correct but shallow or incomplete. "not_met": asked about it and showed a clear gap or incorrect understanding. "not_assessed": it did not come up in enough depth — do NOT guess.\n` +
+                `- Rate honestly; the platform applies the tier policy (must-haves gate the verdict) itself — do not adjust your recommendation to compensate.\n\n`
+              : '') +
             `Return ONLY this exact JSON structure:\n` +
             `{\n` +
             `  "overallScore": <number 0-100>,\n` +
@@ -254,6 +267,7 @@ export async function POST(req: NextRequest) {
               const extra = [
                 mustHaves.length ? `"mustHaveAssessment": [\n    { "requirement": "<exact requirement text from the list>", "status": "<met|not_met|insufficient_evidence>", "evidence": "<1 sentence citing what the candidate said, or why evidence is insufficient>" }\n  ]` : null,
                 conceptRubric.length ? `"conceptAssessment": [\n    { "concept": "<exact concept name from the rubric>", "rating": "<strong|adequate|weak|not_assessed>", "evidence": "<1 sentence citing what the candidate said>" }\n  ]` : null,
+                rubricSel.length ? `"rubricAssessment": [\n    { "rubricId": "<id from the list>", "subSkill": "<exact name>", "rating": "<met|partial|not_met|not_assessed>", "evidence": "<1 sentence citing what the candidate said>" }\n  ]` : null,
               ].filter(Boolean)
               return extra.length ? `,\n  ${extra.join(',\n  ')}\n` : `\n`
             })() +
@@ -324,6 +338,7 @@ export async function POST(req: NextRequest) {
     // ── Apply rubric weights if position has a scoring rubric ─────────
     let weightedScore = report.insufficientEvidence ? 0 : Math.round(report.overallScore ?? 0)
     let l2Recommended = false
+    let l2Threshold = 75
 
     try {
       // Fetch position rubric — find via candidateId or interviewId
@@ -353,6 +368,7 @@ export async function POST(req: NextRequest) {
       }
 
       const threshold = positionData?.l2ScoreThreshold ?? 75
+      l2Threshold = threshold
       l2Recommended = weightedScore >= threshold && ['yes', 'strong_yes'].includes(report.recommendation ?? '')
     } catch (rubricErr) {
       console.warn('[generate-report] Rubric weighting failed (non-fatal):', rubricErr)
@@ -366,6 +382,24 @@ export async function POST(req: NextRequest) {
     report.mustHaveAssessment = mustHaves.length
       ? reconcileMustHaves(mustHaves, report.mustHaveAssessment, { insufficientEvidence: report.insufficientEvidence === true })
       : undefined
+
+    // ── Tier policy (rubric library) — deterministic, after the model ──
+    // Must-haves gate the verdict (not met → "no"; partial / not assessed →
+    // at most "maybe"); good-to-haves add to the score; add-ons are informational.
+    let rubricAssessment: RubricAssessment | undefined
+    if (rubricSel.length) {
+      const insufficient = report.insufficientEvidence === true
+      const items = reconcileRubricResults(rubricSel, report.rubricAssessment, { insufficientEvidence: insufficient })
+      const tiered = applyTierVerdict(report.recommendation, weightedScore, items, { insufficientEvidence: insufficient })
+      rubricAssessment = { items, gate: tiered.gate }
+      if (!insufficient) {
+        report.recommendation = tiered.recommendation
+        weightedScore = tiered.score
+        l2Recommended = weightedScore >= l2Threshold && ['yes', 'strong_yes'].includes(report.recommendation ?? '')
+        if (tiered.gate.capped) report.concernAreas = [...(Array.isArray(report.concernAreas) ? report.concernAreas : []), ...tiered.gate.reasons.filter((r) => !r.startsWith('+'))]
+      }
+    }
+    report.rubricAssessment = rubricAssessment
 
     // ── Persist to DB ─────────────────────────────────────────────────
     const resolvedCandidateId: string | null = candidateId ?? null
@@ -386,6 +420,7 @@ export async function POST(req: NextRequest) {
         insufficientEvidence:   report.insufficientEvidence === true,
         mustHaveAssessment:     (report.mustHaveAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         conceptAssessment:      (report.conceptAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        rubricAssessment:       (rubricAssessment ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       }
       try {
         const savedReport = await prisma.report.upsert({

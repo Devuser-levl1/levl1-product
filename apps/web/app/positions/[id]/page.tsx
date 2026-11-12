@@ -17,6 +17,8 @@ import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type 
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
 import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
+import { RubricSelector } from '@/components/rubrics/RubricSelector'
+import { readSelection, type SelectedRubric } from '@/lib/screen/rubrics/types'
 import { useAccountType } from '@/hooks/useAccountType'
 import {
   Button, ButtonLink, Card, Eyebrow, Badge, Alert, EmptyState, LoadingBlock, Modal, ActionBar,
@@ -70,6 +72,7 @@ interface Position {
   techStack: string[]
   goodToHave: string[]
   mustHaves?: string[]
+  rubricSelection?: unknown
   logistics?: LogisticsConfig | null
   conceptRubric?: ConceptRubricItem[] | null
   knockoutQuestions?: KnockoutQuestion[] | null
@@ -207,6 +210,24 @@ export default function PositionDetailPage() {
   const { isCompany } = useAccountType()
   // Concept rubric (#13) + knockout questions (#14): draft → PATCH
   const [crDraft, setCrDraft]   = useState<ConceptRubricItem[] | null>(null)
+  // Rubric library selection (tiered). Drafted locally, saved explicitly.
+  const [rsDraft, setRsDraft]   = useState<SelectedRubric[] | null>(null)
+  const [rsSaving, setRsSaving] = useState(false)
+  const saveRubricSelection = async () => {
+    if (!rsDraft) return
+    setRsSaving(true)
+    try {
+      const res = await fetch(`/api/positions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rubricSelection: rsDraft.map((r) => ({ rubricId: r.rubricId, tier: r.tier, source: r.source })) }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Couldn\'t save the rubrics.')
+      setPosition(p => p ? { ...p, rubricSelection: data.rubricSelection } : p)
+      setRsDraft(null)
+      toast.success('Rubrics saved')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Couldn\'t save the rubrics.')
+    } finally { setRsSaving(false) }
+  }
   const [koDraft, setKoDraft]   = useState<KnockoutQuestion[] | null>(null)
   const [cfgSaving, setCfgSaving] = useState<'cr' | 'ko' | null>(null)
   const [crGenerating, setCrGenerating] = useState(false)
@@ -620,6 +641,15 @@ export default function PositionDetailPage() {
               subtitle={<>Resolved in a short segment right after the warm-up. Blank = just record the candidate&apos;s answer.</>}
               actions={lgDraft && draftActions(() => setLgDraft(null), saveLogistics, lgSaving)}>
               <LogisticsEditor value={lgDraft ?? readLogisticsConfig(position.logistics)} onChange={setLgDraft} />
+            </Card>
+
+            {/* Rubric library — selected rubrics by tier (drive scoring + coverage) */}
+            <Card title="Role rubrics"
+              subtitle={<>Selected from your rubric library. Must-haves gate the verdict, good-to-haves add to the score, add-ons are informational.</>}
+              actions={rsDraft && draftActions(() => setRsDraft(null), saveRubricSelection, rsSaving)}>
+              <RubricSelector value={rsDraft ?? readSelection(position.rubricSelection)} onChange={setRsDraft}
+                context={{ title: position.title, techStack: position.techStack, goodToHave: position.goodToHave, mustHaves: position.mustHaves, jdText: position.jdText }} />
+              {rsDraft && allQuestions.length > 0 && <p style={{ ...muted, fontSize: text.xs, marginTop: space[3] }}>Reports generated from now on use the saved tiers. Regenerate questions so every new must-have rubric gets a dedicated question.</p>}
             </Card>
 
             {/* Role concept rubric (#13) */}
