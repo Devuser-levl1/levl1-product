@@ -117,6 +117,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         return NextResponse.json({ error: 'Invalid status transition' }, { status: 400 })
       }
     }
+    // A (re)start begins a NEW attempt (retakes reuse the same Interview row):
+    // clear the previous attempt's outcome + report pipeline state, so the new
+    // report is generated, tracked and retried from scratch — not hidden behind
+    // the old one.
+    if (data.status === 'in_progress' && current.status !== 'in_progress') {
+      Object.assign(data, { completedAt: null, terminationReason: null, reportStatus: null, reportError: null, reportAttempts: 0, reportUpdatedAt: null })
+    }
     if (body.startedAt !== undefined) data.startedAt = isoDate(body.startedAt)
     if (body.completedAt !== undefined) data.completedAt = isoDate(body.completedAt)
     if (body.consentWithdrawnAt !== undefined) data.consentWithdrawnAt = isoDate(body.consentWithdrawnAt)

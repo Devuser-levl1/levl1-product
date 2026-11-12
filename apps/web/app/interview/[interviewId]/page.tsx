@@ -594,6 +594,10 @@ export default function InterviewPage() {
   const whiteboardHasInkRef  = useRef(false)          // has the candidate drawn anything?
   const whiteboardEmptyNudgedRef = useRef(false)
   const lastTestedCodeRef    = useRef<string | null>(null)  // code the last test run used
+  // Per-turn latency telemetry: candidate last heard → STT turn end → brain →
+  // interviewer's first audio. One turn_timing log line per answer.
+  const lastHeardAtRef = useRef<number | null>(null)
+  const turnTimingRef  = useRef<{ lastHeard: number | null; commit: number; brainStart?: number; brainEnd?: number; brainDegraded?: boolean; ttsStart?: number; ttsAttempts?: number; path: 'voice' | 'typed' | 'editor' } | null>(null)
   const [voiceStatus, setVoiceStatusState] = useState<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
   const voiceStatusRef    = useRef<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
   const setVoiceStatus = useCallback((v: 'ok' | 'reconnecting' | 'unavailable' | 'blocked') => { voiceStatusRef.current = v; setVoiceStatusState(v) }, [])
@@ -902,11 +906,12 @@ export default function InterviewPage() {
   }, [interviewId])
 
   // Voice trouble is reported server-side (ops logs + Control Room), never just console.
-  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked' | 'stt_error' | 'brain_unavailable' | 'barge_in', detail?: string, attempt?: number) => {
+  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked' | 'stt_error' | 'brain_unavailable' | 'barge_in' | 'turn_timing', detail?: string, attempt?: number, timing?: Record<string, number | string | boolean | null>) => {
     const token = voiceTokenRef.current?.token
-    console.warn('[voice]', kind, detail ?? '', attempt ?? '')
+    if (kind !== 'turn_timing') console.warn('[voice]', kind, detail ?? '', attempt ?? '')
+    else console.info('[turn]', timing)
     if (!token) return
-    fetch('/api/interview/voice-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-voice-token': token }, body: JSON.stringify({ kind, detail, attempt }), keepalive: true }).catch(() => {})
+    fetch('/api/interview/voice-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-voice-token': token }, body: JSON.stringify({ kind, detail, attempt, timing }), keepalive: true }).catch(() => {})
   }, [])
 
   // Pre-warm the interviewer voice while the candidate is on the pre-start
@@ -991,6 +996,8 @@ export default function InterviewPage() {
     let reportedReconnect = false
     while (isMountedRef.current && gen === speakGenRef.current) {
       attempt++
+      if (turnTimingRef.current && !turnTimingRef.current.ttsStart) turnTimingRef.current.ttsStart = Date.now()
+      if (turnTimingRef.current) turnTimingRef.current.ttsAttempts = attempt
       try {
         const token = await ensureVoiceToken()
         if (gen !== speakGenRef.current || !isMountedRef.current) return 'done'
@@ -1000,7 +1007,26 @@ export default function InterviewPage() {
           body: { text: cleanText, voiceAccent: interviewerRef.current.voiceKey ?? undefined, stream: true },
           register: (h) => { ttsHandleRef.current = h; playbackStopRef.current = () => h.stop() },
           // Arm once sound is actually playing so calibration hears the echo level.
-          onPlaying: () => armBargeIn(() => ttsHandleRef.current?.stop()),
+          onPlaying: () => {
+            armBargeIn(() => ttsHandleRef.current?.stop())
+            // Turn timing: the interviewer's first audible response to this answer.
+            const tt = turnTimingRef.current
+            if (tt && tt.ttsStart) {
+              const now = Date.now()
+              const ms = (a?: number | null, b?: number | null) => (a != null && b != null ? Math.max(0, Math.round(b - a)) : null)
+              reportVoice('turn_timing', undefined, undefined, {
+                path: tt.path,
+                sttTurnEndMs: ms(tt.lastHeard, tt.commit),      // candidate last heard → turn committed
+                brainMs: ms(tt.brainStart, tt.brainEnd),          // evaluate-response round trip
+                brainDegraded: tt.brainDegraded ?? null,
+                gapBeforeVoiceMs: ms(tt.brainEnd ?? tt.commit, tt.ttsStart),  // client logic between brain and the next line
+                ttsFirstAudioMs: ms(tt.ttsStart, now),           // voice request → first audio
+                ttsAttempts: tt.ttsAttempts ?? 1,
+                totalMs: ms(tt.lastHeard ?? tt.commit, now),      // what the candidate actually waited
+              })
+              turnTimingRef.current = null
+            }
+          },
         })
         // A newer line may already own the handle — only clear our own.
         if (gen !== speakGenRef.current) return interrupted ? 'interrupted' : 'done'
@@ -1068,6 +1094,10 @@ export default function InterviewPage() {
     // Shared end-of-turn capture. During the warm-up arc, route to its handler.
     const captureNow = (rawText: string) => {
       const text = normalizeSpokenTech(rawText)   // idempotent; covers the Web Speech path too
+      if (!aiSpeakingRef.current && text.trim() && !capturedRef.current) {
+        turnTimingRef.current = { lastHeard: lastHeardAtRef.current, commit: Date.now(), path: 'voice' }
+        lastHeardAtRef.current = null
+      }
       // Echo guard: drop anything captured while Alex is speaking — it's his own
       // TTS bleeding into the mic, never candidate intent. This is what stops the
       // false-termination loop (his "…end the interview…" being re-heard as a request).
@@ -1092,6 +1122,7 @@ export default function InterviewPage() {
       rec.onresult = (event: SpeechRecognitionEvent) => {
         if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
         const text = Array.from(event.results).map(r => r[0].transcript).join(' ').trim()
+        if (text) lastHeardAtRef.current = Date.now()
         liveTranscriptRef.current = text
         setLiveTranscript(text)
         if (text) {
@@ -1128,6 +1159,7 @@ export default function InterviewPage() {
       const dg = new ScribeStt({
         onInterim: (text) => {
           if (aiSpeakingRef.current) return  // echo guard — ignore Alex's own voice
+          if (text) lastHeardAtRef.current = Date.now()
           liveTranscriptRef.current = text
           setLiveTranscript(text)
           if (text) { hasSpokenRef.current = true; if (speechStartedAtRef.current === null) speechStartedAtRef.current = Date.now(); setListeningHint(''); clearSilenceTimers() }
@@ -1268,6 +1300,7 @@ export default function InterviewPage() {
   const submitTextInput = useCallback(() => {
     const text = textInputValue.trim()
     if (!text) return
+    turnTimingRef.current = { lastHeard: null, commit: Date.now(), path: 'typed' }
     setTextInputValue('')
     capturedRef.current = true
     candidateSpokeRef.current = true   // typed input is genuine input
@@ -1518,6 +1551,8 @@ export default function InterviewPage() {
         .slice(-5)
         .map(r => ({ question: r.questionText, response: r.candidateResponse }))
 
+      if (!turnTimingRef.current) turnTimingRef.current = { lastHeard: null, commit: Date.now(), path: 'editor' }
+      turnTimingRef.current.brainStart = Date.now()
       const res = await fetch('/api/interview/evaluate-response', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1541,6 +1576,7 @@ export default function InterviewPage() {
         }),
       })
       ev = await res.json()
+      if (turnTimingRef.current) { turnTimingRef.current.brainEnd = Date.now(); turnTimingRef.current.brainDegraded = !!ev.degraded }
       const cov = (ev as unknown as { coverage?: { uncoveredKeys?: unknown } }).coverage
       if (cov && Array.isArray(cov.uncoveredKeys)) uncoveredKeysRef.current = (cov.uncoveredKeys as unknown[]).filter((k): k is string => typeof k === 'string')
     } catch {

@@ -119,7 +119,40 @@ export async function findPendingReports(opts: { agencyId?: string; limit?: numb
     orderBy: { completedAt: 'asc' },
     take: opts.limit ?? 5,
   })
-  return rows
+  // 3. RETAKES: the candidate still has the previous attempt's report, so
+  //    "report: null" misses a retake whose own report failed. A report older
+  //    than the interview's latest completion is stale → regenerate.
+  const stale2 = await staleReportInterviews({ ...opts, minAgeMs: SETTLE_MS, maxAttempts: MAX_AUTO_ATTEMPTS })
+  const ids = new Set(rows
     .filter((r) => r.reportStatus !== 'generating' || !r.reportUpdatedAt || now - r.reportUpdatedAt.getTime() > STUCK_MS)
-    .map((r) => r.id)
+    .map((r) => r.id))
+  for (const s of stale2) if (s.reportStatus !== 'generating' || !s.reportUpdatedAt || now - s.reportUpdatedAt.getTime() > STUCK_MS) ids.add(s.id)
+  return Array.from(ids).slice(0, opts.limit ?? 5)
+}
+
+/**
+ * Completed interviews whose candidate HAS a report, but one generated before
+ * this attempt finished (a retake). Prisma can't compare two columns, so the
+ * candidates are narrowed in SQL and compared here.
+ */
+export async function staleReportInterviews(opts: { agencyId?: string; minAgeMs?: number; maxAttempts?: number; take?: number } = {}) {
+  const now = Date.now()
+  const rows = await prisma.interview.findMany({
+    where: {
+      ...(opts.agencyId ? { position: { agencyId: opts.agencyId } } : {}),
+      isDemo: false, status: 'completed',
+      completedAt: { not: null, ...(opts.minAgeMs ? { lt: new Date(now - opts.minAgeMs) } : {}) },
+      // SQL "<>" never matches NULL, so "never attempted" (null) must be listed explicitly.
+      AND: [
+        { OR: [{ terminationReason: null }, { terminationReason: { not: TERMINATION_REASONS.CONSENT_WITHDRAWN } }] },
+        { OR: [{ reportStatus: null }, { reportStatus: { not: 'ready' } }] },
+      ],
+      ...(opts.maxAttempts ? { reportAttempts: { lt: opts.maxAttempts } } : {}),
+      candidate: { report: { isNot: null } },
+    },
+    select: { id: true, candidateId: true, completedAt: true, terminationReason: true, reportStatus: true, reportError: true, reportAttempts: true, reportUpdatedAt: true, candidate: { select: { report: { select: { generatedAt: true } } } } },
+    orderBy: { completedAt: 'desc' },
+    take: opts.take ?? 100,
+  })
+  return rows.filter((r) => r.completedAt && r.candidate.report && r.candidate.report.generatedAt < r.completedAt)
 }

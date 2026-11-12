@@ -205,7 +205,10 @@ export async function POST(req: NextRequest) {
     })
 
     let result: Record<string, unknown> | null = null
+    const brainT0 = Date.now()
+    let attempts = 0
     for (let attempt = 1; attempt <= 2 && !result; attempt++) {
+      attempts = attempt
       try {
         const res = await callBrain()
         const raw   = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
@@ -218,6 +221,8 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!result) throw new Error('brain returned no result')
+    // Latency telemetry (pairs with the room's turn_timing line).
+    console.info(JSON.stringify({ evt: 'brain_turn', model: INTERVIEW_MODEL, ms: Date.now() - brainT0, attempts, interviewId: interviewId || null }))
     // Delivery tags never reach the transcript/report: the fields stay clean and
     // a tagged copy (≤1 tag) goes in `speech` for the voice only.
     const speech: Record<string, string> = {}

@@ -406,6 +406,7 @@ export async function POST(req: NextRequest) {
 
     if (resolvedCandidateId) {
       const reportData = {
+        generatedAt:            new Date(),   // refreshed on every (re)generation — retakes overwrite the row
         overallScore:           weightedScore,
         recommendation:         report.recommendation ?? 'maybe',
         professionalSummary:    report.professionalSummary ?? '',

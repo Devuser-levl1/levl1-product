@@ -22,16 +22,33 @@ const WARNING: Record<string, string | null> = {
 // falls back to browser recognition and the Control Room flags 'webspeech'.
 // brain_unavailable = evaluate-response degraded (e.g. Anthropic out of credits) — alert.
 // barge_in = the candidate interrupted the interviewer (telemetry, info only).
-const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked', 'stt_error', 'brain_unavailable', 'barge_in'])
+// turn_timing = per-answer latency breakdown (telemetry, info only).
+const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked', 'stt_error', 'brain_unavailable', 'barge_in', 'turn_timing'])
+const TIMING_KEYS = ['path', 'sttTurnEndMs', 'brainMs', 'brainDegraded', 'gapBeforeVoiceMs', 'ttsFirstAudioMs', 'ttsAttempts', 'totalMs'] as const
 
 export async function POST(req: NextRequest) {
   const interviewId = verifyVoiceToken(req.headers.get('x-voice-token'))
   if (!interviewId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const body = await req.json().catch(() => ({})) as { kind?: unknown; detail?: unknown; attempt?: unknown }
+  const body = await req.json().catch(() => ({})) as { kind?: unknown; detail?: unknown; attempt?: unknown; timing?: unknown }
   const kind = typeof body.kind === 'string' && KINDS.has(body.kind) ? body.kind : null
   if (!kind) return NextResponse.json({ error: 'Unknown kind' }, { status: 400 })
   const detail = typeof body.detail === 'string' ? body.detail.slice(0, 200) : null
   const attempt = typeof body.attempt === 'number' ? body.attempt : null
+
+  if (kind === 'turn_timing') {
+    // Whitelisted numbers/booleans only — one line per answer: evt=turn_timing
+    const t = (body.timing && typeof body.timing === 'object' ? body.timing : {}) as Record<string, unknown>
+    const timing: Record<string, number | string | boolean | null> = {}
+    for (const k of TIMING_KEYS) {
+      const v = t[k]
+      if (typeof v === 'number' && Number.isFinite(v)) timing[k] = Math.max(0, Math.min(600_000, Math.round(v)))
+      else if (typeof v === 'boolean') timing[k] = v
+      else if (k === 'path' && typeof v === 'string') timing[k] = v.slice(0, 12)
+      else timing[k] = null
+    }
+    console.info(JSON.stringify({ evt: 'turn_timing', interviewId, ...timing }))
+    return NextResponse.json({ ok: true })
+  }
 
   const log = JSON.stringify({ evt: 'voice_event', kind, detail, attempt, interviewId })
   if (kind === 'recovered' || kind === 'barge_in') console.info(log); else if (kind === 'stt_error' || kind === 'gave_up' || kind === 'brain_unavailable') console.error(log); else console.warn(log)
