@@ -19,8 +19,6 @@ services:
         sync: false
       - key: ELEVENLABS_VOICE_ID
         sync: false
-      - key: NEXT_PUBLIC_ELEVENLABS_API_KEY
-        sync: false
       - key: NEXT_PUBLIC_ELEVENLABS_VOICE_ID
         sync: false
       # Twilio WhatsApp (sandbox for testing). Set values in the dashboard.

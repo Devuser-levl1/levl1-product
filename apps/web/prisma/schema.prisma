@@ -623,6 +623,10 @@ model InterviewLiveState {
   sttWarning      String?
   lastSpeechAt    DateTime? // last candidate speech (interim or final)
   tabHidden       Boolean   @default(false)
+  // Interviewer voice (TTS) health — written by /api/interview/voice-event
+  voiceWarning     String?   // null = fine; else what the recruiter should know
+  voiceIssues      Int       @default(0)   // failed TTS attempts this session
+  lastVoiceIssueAt DateTime?
   // Rolling tail for the drill-in view: [{ speaker, text, timestamp }] + the current interim line
   transcriptTail  Json?
   interim         String?

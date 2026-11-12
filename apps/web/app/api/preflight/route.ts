@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     const candidateInvited = !!(candidate && ['invited', 'scheduled', 'interviewing'].includes(candidate.status))
 
     // ElevenLabs check
-    const elevenLabsConfigured = !!(process.env.ELEVENLABS_API_KEY || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY)
+    const elevenLabsConfigured = !!process.env.ELEVENLABS_API_KEY   // server-side key only
 
     return NextResponse.json({
       positionApproved: {

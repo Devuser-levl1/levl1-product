@@ -113,7 +113,7 @@ npm run dev
 | Variable | Required | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Yes | Powers all AI evaluation, question generation, and report summaries |
-| `ELEVENLABS_API_KEY` | No | ElevenLabs TTS for AI interviewer voice. Falls back to browser SpeechSynthesis |
+| `ELEVENLABS_API_KEY` | Yes (Screen voice) | ElevenLabs TTS + Scribe STT, server-side only. Never set a `NEXT_PUBLIC_` copy. No browser-voice fallback: without it the room shows "voice unavailable" |
 | `ELEVENLABS_VOICE_ID` | No | Defaults to Rachel (`21m00Tcm4TlvDq8ikWAM`) |
 
 ---

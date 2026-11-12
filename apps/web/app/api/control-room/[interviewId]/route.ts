@@ -52,6 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
       questionIndex: live.questionIndex, questionCount: live.questionCount, questionText: live.questionText,
       camState: live.camState, faceCount: live.faceCount, sttMode: live.sttMode, micOk: live.micOk,
       sttWarning: live.sttWarning, lastSpeechAt: live.lastSpeechAt, tabHidden: live.tabHidden,
+      voiceWarning: live.voiceWarning, voiceIssues: live.voiceIssues,
       transcriptTail: openArray(live.transcriptTail), interim: openText(live.interim),
     },
     health,

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
             select: {
               lastBeatAt: true, phase: true, phaseSince: true, questionIndex: true, questionCount: true,
               camState: true, faceCount: true, faceAbsentSince: true, multiFaceAt: true, sttMode: true,
-              micOk: true, sttWarning: true, lastSpeechAt: true, tabHidden: true,
+              micOk: true, sttWarning: true, lastSpeechAt: true, tabHidden: true, voiceWarning: true,
             },
           },
         },

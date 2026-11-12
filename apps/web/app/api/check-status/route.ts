@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  // Server-side routes read non-NEXT_PUBLIC_ vars reliably.
-  // Keep NEXT_PUBLIC_ as a secondary fallback for flexibility.
-  return NextResponse.json({
-    elevenLabsConfigured: !!(
-      process.env.ELEVENLABS_API_KEY ||
-      process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY
-    ),
-  })
+  // The ElevenLabs key lives ONLY in ELEVENLABS_API_KEY (server-side). A
+  // NEXT_PUBLIC_ copy of the secret must never exist.
+  return NextResponse.json({ elevenLabsConfigured: !!process.env.ELEVENLABS_API_KEY })
 }

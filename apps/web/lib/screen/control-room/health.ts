@@ -25,6 +25,7 @@ export interface LiveSnapshot {
   sttWarning: string | null
   lastSpeechAt: Date | string | null
   tabHidden: boolean
+  voiceWarning?: string | null   // interviewer TTS trouble (voice-event)
 }
 
 export interface RecentFlag { type: string; count: number }
@@ -134,6 +135,8 @@ export function deriveHealth(input: HealthInput): Health {
     }
 
     if (live.tabHidden) add('tab_hidden', 'Interview tab is in the background', 'watch')
+    // Interviewer voice (TTS): reconnecting = watch; gave up / blocked = alert.
+    if (live.voiceWarning) add('voice', live.voiceWarning, /unavailable|blocked/i.test(live.voiceWarning) ? 'alert' : 'watch')
 
     // Stalled: stuck in a non-candidate phase long past normal.
     if (live.phase && STALL_PHASES.has(live.phase) && phaseSince !== null && now - phaseSince > STALL_MS) {

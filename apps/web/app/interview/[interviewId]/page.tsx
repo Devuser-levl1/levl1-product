@@ -7,7 +7,7 @@ import { useAppStore, InterviewPhase, TranscriptEntry, QuestionResponse } from '
 import { Position } from '@/store/appStore'
 import Whiteboard from '@/components/interview/Whiteboard'
 import { AIVisualizer } from '@/components/interview/AIVisualizer'
-import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp, Maximize2, Minimize2, ChevronDown, ChevronUp, ShieldCheck, Play, ListChecks, Wand2, CheckCircle2, XCircle, EyeOff } from 'lucide-react'
+import { Mic, MicOff, Code2, PenLine, Clock, AlertTriangle, X, Loader2, Monitor, BarChart3, Check, ArrowDown, ArrowUp, Maximize2, Minimize2, ChevronDown, ChevronUp, ShieldCheck, Play, ListChecks, Wand2, CheckCircle2, XCircle, EyeOff, VolumeX } from 'lucide-react'
 import { IntegrityMonitor, type PresenceSample } from '@/components/interviews/IntegrityMonitor'
 import { HEARTBEAT_MS, type HeartbeatInput } from '@/lib/screen/control-room/live'
 import { DemoSalesCTA } from '@/components/interviews/DemoSalesCTA'
@@ -15,6 +15,7 @@ import { detectTerminationIntent } from '@/lib/screen/session/termination'
 import { TERMINATION_REASONS, TerminationReason } from '@/lib/screen/session/lifecycle'
 import { ScribeStt, DEFAULT_KEYTERMS, prefetchScribeToken } from '@/lib/screen/interview/scribe-stt'
 import { sttKeyterms, normalizeSpokenTech } from '@/lib/screen/tech-terms'
+import { playStreamedSpeech, unlockTtsAudio, TtsError, TTS_TIMING, type StreamHandle } from '@/lib/screen/interview/tts-stream'
 import { BargeInDetector, BARGE_IN_CONFIG } from '@/lib/screen/interview/barge-in'
 import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/session/persona'
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
@@ -556,6 +557,14 @@ export default function InterviewPage() {
   const bargeInRef        = useRef<BargeInDetector | null>(null)
   const bargeInPendingRef = useRef(false)   // a barge-in happened; next startListening takes its audio
   const playbackStopRef   = useRef<(() => void) | null>(null)  // resolves the in-flight speakText
+  // Streamed interviewer voice (no browser speechSynthesis — ever).
+  const ttsHandleRef      = useRef<StreamHandle | null>(null)
+  const speakGenRef       = useRef(0)                 // bumps per line; a stale retry loop exits
+  const voiceTokenRef     = useRef<{ token: string; exp: number } | null>(null)
+  const voiceUnblockRef   = useRef<(() => void) | null>(null)
+  const [voiceStatus, setVoiceStatusState] = useState<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
+  const voiceStatusRef    = useRef<'ok' | 'reconnecting' | 'unavailable' | 'blocked'>('ok')
+  const setVoiceStatus = useCallback((v: 'ok' | 'reconnecting' | 'unavailable' | 'blocked') => { voiceStatusRef.current = v; setVoiceStatusState(v) }, [])
   // Interviewer voice + matching name for THIS interview (position → account → env default).
   const [interviewer, setInterviewer] = useState<{ name: string; voiceKey: string | null }>({ name: INTERVIEWER_NAME, voiceKey: null })
   const interviewerRef    = useRef(interviewer)
@@ -605,24 +614,28 @@ export default function InterviewPage() {
     return () => {
       isMountedRef.current = false
       bargeInRef.current?.dispose(); bargeInRef.current = null
+      // A generation counter, not a DOM ref: bumping it stops any in-flight retry loop.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      speakGenRef.current++
+      ttsHandleRef.current?.stop(); ttsHandleRef.current = null
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.src = ''
         audioRef.current = null
       }
-      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
     }
   }, [])
 
   /* ── Kill audio when interview completes ──────────────────── */
   useEffect(() => {
     if (phase === 'completed') {
+      speakGenRef.current++
+      ttsHandleRef.current?.stop(); ttsHandleRef.current = null
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.src = ''
         audioRef.current = null
       }
-      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
     }
   }, [phase])
 
@@ -834,15 +847,36 @@ export default function InterviewPage() {
   const stopAllAudio = useCallback(() => {
     if (!bargeInPendingRef.current) bargeInRef.current?.disarm()
     playbackStopRef.current = null
+    speakGenRef.current++                       // any retry loop for an older line stops
+    ttsHandleRef.current?.stop(); ttsHandleRef.current = null
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.src = ''
       audioRef.current = null
     }
-    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
   /* ── TTS ──────────────────────────────────────────────────── */
+  // Short-lived voice token for /api/interview/generate-speech (the endpoint
+  // only speaks for a live interview). Refreshed 5 min before expiry.
+  const ensureVoiceToken = useCallback(async (): Promise<string> => {
+    const cur = voiceTokenRef.current
+    if (cur && cur.exp - Date.now() > 5 * 60_000) return cur.token
+    const res = await fetch('/api/interview/voice-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interviewId }) })
+    if (!res.ok) throw new TtsError(res.status === 409 ? 'unauthorized' : 'http', res.status)
+    const d = (await res.json()) as { token: string; expiresAt: string }
+    voiceTokenRef.current = { token: d.token, exp: new Date(d.expiresAt).getTime() }
+    return d.token
+  }, [interviewId])
+
+  // Voice trouble is reported server-side (ops logs + Control Room), never just console.
+  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked', detail?: string, attempt?: number) => {
+    const token = voiceTokenRef.current?.token
+    console.warn('[voice]', kind, detail ?? '', attempt ?? '')
+    if (!token) return
+    fetch('/api/interview/voice-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-voice-token': token }, body: JSON.stringify({ kind, detail, attempt }), keepalive: true }).catch(() => {})
+  }, [])
+
   // opts.bargeIn: the candidate may interrupt this line (only lines that are
   // followed by listening opt in). Resolves 'interrupted' if they did.
   const speakText = useCallback(async (text: string, opts: { bargeIn?: boolean } = {}): Promise<'done' | 'interrupted'> => {
@@ -890,97 +924,67 @@ export default function InterviewPage() {
     // where "…end the interview…" gets re-heard and treated as candidate intent).
     aiSpeakingRef.current = true
 
-    // Diagnostic fix: ALWAYS attempt ElevenLabs via the server route (which holds
-    // ELEVENLABS_API_KEY). The old client-side gate on NEXT_PUBLIC_ELEVENLABS_API_KEY
-    // meant that if only the server key was set, every interview silently fell back
-    // to robotic browser speechSynthesis. The route returns non-audio if unconfigured,
-    // and we still fall through to browser TTS below as a last resort.
-    {
+    // ── Streamed ElevenLabs voice (no robotic fallback, ever) ─────────────
+    // First audio ~1s (PCM streamed as generated). On failure: retry once at
+    // once; then show "voice reconnecting" and keep retrying with backoff up to
+    // TTS_TIMING.reconnectMaxMs. If it still can't speak, the line stays on
+    // screen (transcript) and the interview continues — it NEVER switches to the
+    // browser's speechSynthesis voice. Pronunciation fixes run server-side on
+    // every attempt. Every retry/reconnect is reported server-side (voice-event).
+    const gen = ++speakGenRef.current
+    const lineStart = Date.now()
+    let attempt = 0
+    let reportedReconnect = false
+    while (isMountedRef.current && gen === speakGenRef.current) {
+      attempt++
       try {
-        // 8-second timeout — fall through to browser TTS on timeout
-        const controller = new AbortController()
-        const timeout    = setTimeout(() => controller.abort(), 8000)
-        const res = await fetch('/api/interview/generate-speech', {
-          signal:  controller.signal,
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, voiceAccent: interviewerRef.current.voiceKey ?? undefined, voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID }),
+        const token = await ensureVoiceToken()
+        if (gen !== speakGenRef.current || !isMountedRef.current) return 'done'
+        const result = await playStreamedSpeech({
+          url: '/api/interview/generate-speech',
+          headers: { 'x-voice-token': token },
+          body: { text: cleanText, voiceAccent: interviewerRef.current.voiceKey ?? undefined, stream: true },
+          register: (h) => { ttsHandleRef.current = h; playbackStopRef.current = () => h.stop() },
+          // Arm once sound is actually playing so calibration hears the echo level.
+          onPlaying: () => armBargeIn(() => ttsHandleRef.current?.stop()),
         })
-        clearTimeout(timeout)
-        if (!isMountedRef.current) return 'done'
-        const ct = res.headers.get('Content-Type') || ''
-        if (ct.includes('audio/mpeg')) {
-          const blob = await res.blob()
-          if (!isMountedRef.current) return 'done'
-          const url = URL.createObjectURL(blob)
-          await new Promise<void>((resolve) => {
-            const audio = new Audio(url)
-            audioRef.current = audio
-            let settled = false
-            const finish = () => { if (settled) return; settled = true; URL.revokeObjectURL(url); if (audioRef.current === audio) audioRef.current = null; playbackStopRef.current = null; resolve() }
-            playbackStopRef.current = finish
-            audio.onended = finish
-            audio.onerror = finish
-            // Arm once sound is actually playing so calibration hears the echo level.
-            audio.onplaying = () => armBargeIn(() => { audio.pause(); finish() })
-            audio.play().catch(finish)
-          })
-          if (interrupted) return 'interrupted'
-          bargeInRef.current?.disarm()
-          // Brief grace so the tail/echo of the last words isn't captured as speech.
-          setTimeout(() => { aiSpeakingRef.current = false }, 500)
-          return 'done'
-        }
-        const bodyText = await res.text().catch(() => '(unreadable)')
-        console.warn('[speakText] Non-audio response:', bodyText)
+        // A newer line may already own the handle — only clear our own.
+        if (gen !== speakGenRef.current) return interrupted ? 'interrupted' : 'done'
+        ttsHandleRef.current = null
+        playbackStopRef.current = null
+        if (attempt > 1 || reportedReconnect || voiceStatusRef.current !== 'ok') { setVoiceStatus('ok'); reportVoice('recovered', undefined, attempt) }
+        if (interrupted) return 'interrupted'
+        void result
+        bargeInRef.current?.disarm()
+        // Brief grace so the tail/echo of the last words isn't captured as speech.
+        setTimeout(() => { aiSpeakingRef.current = false }, 500)
+        return 'done'
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          console.warn('[speakText] ElevenLabs timeout — falling back to browser TTS')
-        } else {
-          console.warn('[speakText] fetch threw:', err)
+        if (gen !== speakGenRef.current || !isMountedRef.current) return 'done'
+        const kind = err instanceof TtsError ? err.kind : 'network'
+        if (kind === 'unauthorized') voiceTokenRef.current = null   // mint a fresh token next attempt
+        reportVoice('retry', kind, attempt)
+        if (kind === 'autoplay_blocked') {
+          // Needs a tap (e.g. after a page refresh). Wait for it; don't burn the budget.
+          setVoiceStatus('blocked'); reportVoice('blocked', kind, attempt)
+          await new Promise<void>((resolve) => { voiceUnblockRef.current = resolve })
+          voiceUnblockRef.current = null
+          setVoiceStatus('reconnecting')
+          continue
         }
+        if (attempt === 1 && kind !== 'rate_limited') continue   // one immediate retry
+        if (Date.now() - lineStart > TTS_TIMING.reconnectMaxMs) {
+          setVoiceStatus('unavailable'); reportVoice('gave_up', kind, attempt)
+          bargeInRef.current?.disarm()
+          setTimeout(() => { aiSpeakingRef.current = false }, 300)
+          return 'done'   // the line is on screen; the interview carries on
+        }
+        if (!reportedReconnect) { reportedReconnect = true; setVoiceStatus('reconnecting'); reportVoice('reconnecting', kind, attempt) }
+        await delay(Math.min(8000, 1000 * 2 ** Math.max(0, attempt - 2)))
       }
     }
-
-    if (!isMountedRef.current) return 'done'
-
-    // Browser TTS fallback — prefer Google US voice (Chrome) for best quality
-    await new Promise<void>((resolve) => {
-      if (typeof window === 'undefined' || !window.speechSynthesis) { resolve(); return }
-      window.speechSynthesis.cancel()
-
-      const speak = () => {
-        const voices = window.speechSynthesis.getVoices()
-        // Priority: Google en-US (Chrome) → any en-US → any voice
-        const preferred =
-          voices.find(v => v.name.includes('Google') && v.lang === 'en-US') ||
-          voices.find(v => v.lang === 'en-US') ||
-          voices[0]
-
-        const utt = new SpeechSynthesisUtterance(text)
-        if (preferred) utt.voice = preferred
-        utt.rate   = 0.92
-        utt.pitch  = 1.0
-        utt.volume = 1.0
-        utt.onend  = () => resolve()
-        utt.onerror = () => resolve()
-        utt.onstart = () => armBargeIn(() => { window.speechSynthesis.cancel(); resolve() })
-        window.speechSynthesis.speak(utt)
-      }
-
-      // Chrome loads voices asynchronously; other browsers return them immediately
-      const voices = window.speechSynthesis.getVoices()
-      if (voices.length > 0) {
-        speak()
-      } else {
-        window.speechSynthesis.addEventListener('voiceschanged', speak, { once: true })
-      }
-    })
-    if (interrupted) return 'interrupted'
-    bargeInRef.current?.disarm()
-    setTimeout(() => { aiSpeakingRef.current = false }, 500)  // clear echo guard (TTS fallback path)
     return 'done'
-  }, [setPhase, stopAllAudio])
+  }, [setPhase, stopAllAudio, ensureVoiceToken, reportVoice, setVoiceStatus])
 
   /* ── STT ──────────────────────────────────────────────────── */
   // Stop whichever recognizer is currently active (Deepgram or Web Speech).
@@ -2245,6 +2249,7 @@ export default function InterviewPage() {
   const startInterview = useCallback(async () => {
     if (!candidate || !position || !interview) return
     if (!consentOk || !mediaOk) return  // no capture without both consents
+    void unlockTtsAudio()   // inside the click: lets the streamed voice play (iOS/Safari autoplay rules)
     startFraudRecording()  // begin the interview-long recording for fraud diarization
     if (BARGE_IN_CONFIG.enabled && !bargeInRef.current) {
       bargeInRef.current = new BargeInDetector()
@@ -3045,6 +3050,16 @@ export default function InterviewPage() {
               )}
             </div>
             {listeningHint && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', fontStyle: 'italic' }}>{listeningHint}</div>}
+            {voiceStatus !== 'ok' && (
+              <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--lv-text-body)', background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '8px 10px', flexWrap: 'wrap' }}>
+                {voiceStatus === 'reconnecting' && <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} aria-hidden="true" /><span>Voice reconnecting… one moment</span></>}
+                {voiceStatus === 'unavailable' && <><VolumeX size={14} aria-hidden="true" /><span>Voice is unavailable right now — please read the question on screen. We&apos;ll keep trying.</span></>}
+                {voiceStatus === 'blocked' && <>
+                  <VolumeX size={14} aria-hidden="true" /><span>Your browser paused the interviewer&apos;s audio.</span>
+                  <button type="button" className="lv-btn lv-btn--primary lv-btn--sm" onClick={async () => { await unlockTtsAudio(); voiceUnblockRef.current?.() }}>Turn on audio</button>
+                </>}
+              </div>
+            )}
             {sttWarning && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--lv-warning)', background: 'color-mix(in srgb, var(--lv-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--lv-warning) 30%, transparent)', borderRadius: 8, padding: '8px 10px' }}>
                 <MicOff size={14} color="var(--lv-warning)" /><span>{sttWarning}</span>
