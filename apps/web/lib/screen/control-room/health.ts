@@ -136,6 +136,8 @@ export function deriveHealth(input: HealthInput): Health {
 
     if (live.tabHidden) add('tab_hidden', 'Interview tab is in the background', 'watch')
     // Interviewer voice (TTS): reconnecting = watch; gave up / blocked = alert.
+    // Scribe failed (logged server-side as stt_error) → browser recognition, lower accuracy.
+    if (live.sttMode === 'webspeech') add('stt_degraded', 'Live transcription degraded — using browser speech recognition', 'watch')
     if (live.voiceWarning) add('voice', live.voiceWarning, /unavailable|blocked/i.test(live.voiceWarning) ? 'alert' : 'watch')
 
     // Stalled: stuck in a non-candidate phase long past normal.

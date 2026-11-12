@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sttClientConfig } from '@/lib/screen/interview/voice-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,9 @@ export async function POST(req: NextRequest) {
     })
     if (res.ok) {
       const data = (await res.json()) as { token?: string }
-      if (data.token) return NextResponse.json({ token: data.token })
+      // The live model + endpointing come from server env (ELEVENLABS_STT_*),
+      // so they can be switched on Render without rebuilding the client.
+      if (data.token) return NextResponse.json({ token: data.token, config: sttClientConfig() })
     }
     const detail = (await res.text().catch(() => '')).slice(0, 300)
     console.warn('[elevenlabs/stt-token] mint failed:', res.status, detail)

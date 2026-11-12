@@ -8,6 +8,16 @@ import { sanitizeRubric } from '@/lib/screen/taskbank/types'
 import { matchSkills } from '@/lib/screen/taskbank/select'
 import { computeCoverage, coverageGuidance, type SkillCoverage } from '@/lib/screen/taskbank/coverage'
 import { skillMapForPosition } from '@/lib/screen/taskbank/store'
+import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-config'
+import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
+
+// Optional light delivery tags for v3/v4 voices (ELEVENLABS_TTS_AUDIO_TAGS=1).
+function audioTagsOn(): boolean {
+  if (process.env.ELEVENLABS_TTS_AUDIO_TAGS !== '1') return false
+  try { return ttsSupportsAudioTags(ttsModel()) } catch { return false }
+}
+const TAG_GUIDANCE =
+  'DELIVERY TAGS (optional, use sparingly): the interviewer voice understands a few delivery tags. You MAY begin followUpQuestion or confirmBack with ONE of: [warmly], [thoughtfully], [encouragingly], [curious], [reassuring]. Use a tag in at most about one line in three, never more than one per field, and never in any other field. When unsure, use none.\n\n'
 
 // Technical content structure — server-side context the browser never sees:
 //   • the work-sample rubric's EXPECTED probe answers (judge the defense)
@@ -138,6 +148,7 @@ export async function POST(req: NextRequest) {
         '- If you ARE asking a follow-up, open followUpQuestion with that one-sentence restatement, then ask.\n' +
         '- If you are NOT asking a follow-up, put the restatement in confirmBack (it is spoken before moving on).\n' +
         '- For non-substantive answers, set confirmBack to "" and do not restate. Never restate on every turn; never sound robotic; never praise ("great answer") or judge; vary the opener ("So…", "If I\'ve got that right…", "Okay — …").\n\n' +
+        (audioTagsOn() ? TAG_GUIDANCE : '') +
         'RELEVANCE SCORE (relevanceScore 0-10) — how well the response addresses the question:\n' +
         '- 9-10: Directly and comprehensively addresses the question asked\n' +
         '- 7-8: Mostly relevant with only minor tangents\n' +
@@ -174,11 +185,20 @@ export async function POST(req: NextRequest) {
     const raw   = res.content[0].type === 'text' ? res.content[0].text : '{}'
     const clean = raw.replace(/```json|```/g, '').trim()
     const result = JSON.parse(clean)
+    // Delivery tags never reach the transcript/report: the fields stay clean and
+    // a tagged copy (≤1 tag) goes in `speech` for the voice only.
+    const speech: Record<string, string> = {}
+    for (const f of ['followUpQuestion', 'confirmBack'] as const) {
+      if (typeof result[f] !== 'string') continue
+      if (audioTagsOn()) speech[f] = limitAudioTags(result[f], 1)
+      result[f] = stripAudioTags(result[f])
+    }
 
     // Between-question adaptation: the room promotes a question covering an
     // unassessed must-have. Only skill names/aliases — no rubric content.
     return NextResponse.json({
       ...result,
+      ...(Object.keys(speech).length ? { speech } : {}),
       ...(ctx.coverage ? { coverage: { uncoveredKeys: ctx.coverage.uncoveredKeys, uncoveredMustHaves: ctx.coverage.uncoveredMustHaves.map((u) => u.name) } } : {}),
     }, { status: 200 })
   } catch (err: unknown) {

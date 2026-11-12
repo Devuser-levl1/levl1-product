@@ -134,16 +134,18 @@ export function findSkills(text: string): Map<string, number> {
 
 // Always-on technical keyterms (beyond the position's own skills).
 const BASE_STT_TERMS = ['C#', 'C++', '.NET', 'ASP.NET', 'SQL', 'PostgreSQL', 'Kubernetes', 'Kafka', 'Redis', 'GraphQL', 'TypeScript', 'JavaScript', 'Python', 'Java', 'React', 'Node.js', 'Docker', 'AWS', 'Azure', 'microservices', 'API', 'CI/CD', 'LINQ', 'async/await', 'idempotent', 'latency', 'concurrency']
-export const MAX_STT_KEYTERMS = 50   // ElevenLabs documents no limit; stay conservative
-const MAX_KEYTERM_LEN = 48
+// Scribe realtime limits (documented): ≤50 keyterms, each ≤20 characters.
+// Longer terms are DROPPED, not truncated (a cut-off term would bias wrongly).
+export const MAX_STT_KEYTERMS = 50
+export const MAX_KEYTERM_LEN = 20
 
 /** Keyterm list for Scribe: control words + position skills (canonical) + base glossary, de-duplicated and capped. */
 export function sttKeyterms(controlWords: string[], positionSkills: string[] = []): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   const push = (k: string) => {
-    const s = k.trim().slice(0, MAX_KEYTERM_LEN)
-    if (!s || seen.has(s.toLowerCase()) || out.length >= MAX_STT_KEYTERMS) return
+    const s = k.trim()
+    if (!s || s.length > MAX_KEYTERM_LEN || seen.has(s.toLowerCase()) || out.length >= MAX_STT_KEYTERMS) return
     seen.add(s.toLowerCase()); out.push(s)
   }
   controlWords.forEach(push)

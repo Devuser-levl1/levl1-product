@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { analyzeDiarization, type ScribeBatchWord } from '@/lib/screen/integrity/diarization'
 import { encryptString } from '@/lib/screen/privacy/crypto'
+import { sttBatchModel } from '@/lib/screen/interview/voice-config'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120  // batch STT on a full interview can take a while
 
-// ── Post-interview fraud diarization (Scribe v2 batch) ─────────────────────
+// ── Post-interview fraud diarization (Scribe batch, ELEVENLABS_STT_BATCH_MODEL) ─────────────────────
 // The browser uploads the recorded interview audio once the interview ends. We
 // run ElevenLabs batch speech-to-text with diarization, detect any second/
 // whispering voice, and persist those as `second_voice` integrity events feeding
@@ -48,9 +49,10 @@ export async function POST(req: NextRequest) {
     if (buf.byteLength > MAX_BYTES) return NextResponse.json({ error: 'audio too large' }, { status: 413 })
 
     // Batch STT with diarization.
+    const batchModel = sttBatchModel()   // throws loudly on a malformed value
     const form = new FormData()
     form.append('file', new Blob([buf], { type: req.headers.get('content-type') || 'audio/webm' }), 'interview.webm')
-    form.append('model_id', 'scribe_v2')
+    form.append('model_id', batchModel)   // ELEVENLABS_STT_BATCH_MODEL (default scribe_v3)
     form.append('diarize', 'true')
     form.append('timestamps_granularity', 'word')
     const lang = process.env.SCRIBE_BATCH_LANGUAGE
@@ -61,7 +63,8 @@ export async function POST(req: NextRequest) {
     })
     if (!res.ok) {
       const detail = (await res.text().catch(() => '')).slice(0, 300)
-      console.warn('[fraud-diarize] batch STT failed:', res.status, detail)
+      // Loud: a rejected model must be visible, never silently swapped.
+      console.error(JSON.stringify({ evt: /model/i.test(detail) ? 'stt_model_rejected' : 'stt_batch_error', status: res.status, model: batchModel, interviewId, detail }))
       return NextResponse.json({ error: 'diarize_failed', status: res.status }, { status: 502 })
     }
 

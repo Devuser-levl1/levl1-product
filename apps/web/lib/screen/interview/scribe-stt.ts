@@ -64,7 +64,10 @@ export const SCRIBE_DEFAULTS = {
 }
 
 const WS_BASE = process.env.NEXT_PUBLIC_SCRIBE_WS_URL ?? 'wss://api.elevenlabs.io/v1/speech-to-text/realtime'
-const MODEL_ID = process.env.NEXT_PUBLIC_SCRIBE_MODEL ?? 'scribe_v2_realtime'
+// The live model + commit strategy come from the SERVER with each token
+// (ELEVENLABS_STT_MODEL / ELEVENLABS_STT_COMMIT_STRATEGY) — switchable on Render
+// without a rebuild. These are only used if an old server omits them.
+const FALLBACK_MODEL = 'scribe_v3_live'
 const TARGET_RATE = 16000              // pcm_16000
 const MAX_QUEUE_SAMPLES = TARGET_RATE * 30   // ≤30 s buffered before the socket opens / for replay
 const TOKEN_TTL_MS = 4 * 60 * 1000     // single-use tokens are short-lived; stay well inside
@@ -77,25 +80,37 @@ export const DEFAULT_KEYTERMS = [
 ]
 
 /* ── token pre-fetch (one spare token, used by the next turn) ─────────────── */
-let spare: { token: string; at: number } | null = null
+export interface SttServerConfig { model: string; commitStrategy: 'vad' | 'turn_prediction'; vadSilenceSecs?: number; commitGraceMs?: number }
+interface Minted { token: string; config: SttServerConfig }
+let spare: (Minted & { at: number }) | null = null
 let spareInflight: Promise<void> | null = null
 
-async function mintToken(): Promise<string | null> {
+async function mintToken(): Promise<Minted | null> {
   try {
     const res = await fetch('/api/elevenlabs/stt-token', { method: 'POST' })
     if (!res.ok) return null
-    const { token } = (await res.json()) as { token?: string }
-    return token ?? null
+    const d = (await res.json()) as { token?: string; config?: Partial<SttServerConfig> }
+    if (!d.token) return null
+    const c = d.config ?? {}
+    return {
+      token: d.token,
+      config: {
+        model: typeof c.model === 'string' && c.model ? c.model : FALLBACK_MODEL,
+        commitStrategy: c.commitStrategy === 'turn_prediction' ? 'turn_prediction' : 'vad',
+        vadSilenceSecs: typeof c.vadSilenceSecs === 'number' ? c.vadSilenceSecs : undefined,
+        commitGraceMs: typeof c.commitGraceMs === 'number' ? c.commitGraceMs : undefined,
+      },
+    }
   } catch { return null }
 }
 export function prefetchScribeToken() {
   if (spareInflight || (spare && Date.now() - spare.at < TOKEN_TTL_MS)) return
-  spareInflight = mintToken().then((t) => { if (t) spare = { token: t, at: Date.now() } }).finally(() => { spareInflight = null })
+  spareInflight = mintToken().then((t) => { if (t) spare = { ...t, at: Date.now() } }).finally(() => { spareInflight = null })
 }
-async function takeToken(): Promise<{ token: string | null; cached: boolean }> {
-  if (spare && Date.now() - spare.at < TOKEN_TTL_MS) { const t = spare.token; spare = null; return { token: t, cached: true } }
+async function takeToken(): Promise<{ minted: Minted | null; cached: boolean }> {
+  if (spare && Date.now() - spare.at < TOKEN_TTL_MS) { const t = spare; spare = null; return { minted: t, cached: true } }
   spare = null
-  return { token: await mintToken(), cached: false }
+  return { minted: await mintToken(), cached: false }
 }
 
 // Inbound messages key on `message_type` (verified against the live WS).
@@ -104,6 +119,8 @@ interface ScribeMsg {
   text?: string
   transcript?: string
   words?: ScribeWord[]
+  error?: string
+  message?: string
 }
 
 export class ScribeStt {
@@ -124,12 +141,25 @@ export class ScribeStt {
   private partial = ''
   private graceTimer: ReturnType<typeof setTimeout> | null = null
   private ended = false
-  private readonly grace: number
-  private readonly vad: number
+  private grace: number
+  private vad: number
+  private model = FALLBACK_MODEL
+  private commitStrategy: 'vad' | 'turn_prediction' = 'vad'
 
   constructor(private handlers: ScribeSttHandlers, private opts: ScribeSttOptions = {}) {
     this.grace = opts.commitGraceMs ?? SCRIBE_DEFAULTS.commitGraceMs
     this.vad = opts.vadSilenceSecs ?? SCRIBE_DEFAULTS.vadSilenceSecs
+  }
+
+  /** Model + strategy actually used this turn (for diagnostics). */
+  get activeModel() { return { model: this.model, commitStrategy: this.commitStrategy } }
+
+  private applyServerConfig(c: SttServerConfig) {
+    this.model = c.model
+    this.commitStrategy = c.commitStrategy
+    // Explicit per-call options win; then server env; then client defaults.
+    if (this.opts.vadSilenceSecs === undefined && c.vadSilenceSecs !== undefined) this.vad = c.vadSilenceSecs
+    if (this.opts.commitGraceMs === undefined && c.commitGraceMs !== undefined) this.grace = c.commitGraceMs
   }
 
   // Returns false if STT can't start (caller falls back to Web Speech).
@@ -142,11 +172,12 @@ export class ScribeStt {
       ])
       this.stream = stream
       if (this.stopped) { this.cleanup(); return false }
-      if (!tok.token) { this.cleanup(); return false }
+      if (!tok.minted) { this.cleanup(); return false }
+      this.applyServerConfig(tok.minted.config)
 
       // Start capturing NOW — audio is queued until the socket is open.
       this.beginCapture()
-      this.connect(tok.token, tok.cached)
+      this.connect(tok.minted.token, tok.cached)
       prefetchScribeToken()   // ready for the next turn
       return true
     } catch (err) {
@@ -158,9 +189,11 @@ export class ScribeStt {
 
   private connect(token: string, cachedToken: boolean) {
     const params = new URLSearchParams({
-      model_id: MODEL_ID,
+      model_id: this.model,
       audio_format: 'pcm_16000',
-      commit_strategy: 'vad',
+      // turn_prediction (scribe_v3_live): commit when the model predicts the
+      // candidate has finished; VAD silence stays active as the backstop.
+      commit_strategy: this.commitStrategy,
       vad_silence_threshold_secs: String(this.vad),
       token,
     })
@@ -186,11 +219,12 @@ export class ScribeStt {
     this.retried = true
     try { this.ws?.close() } catch {}
     this.ws = null
-    const token = await mintToken()
-    if (!token || this.stopped) { this.handlers.onError?.('auth_error'); return }
+    const minted = await mintToken()
+    if (!minted || this.stopped) { this.handlers.onError?.('auth_error'); return }
+    this.applyServerConfig(minted.config)
     this.queue = [...this.replay, ...this.queue]
     this.replay = []; this.replaySamples = 0; this.firstChunkSent = false
-    this.connect(token, false)
+    this.connect(minted.token, false)
   }
 
   private sendPcm(buf: ArrayBuffer) {
@@ -281,10 +315,13 @@ export class ScribeStt {
         if (cachedToken && !this.retried && !this.gotTranscript) { void this.retryWithFreshToken(); break }
         this.handlers.onError?.(msg.message_type)
         break
-      case 'quota_exceeded': case 'rate_limited': case 'resource_exhausted':
-      case 'transcriber_error': case 'input_error': case 'invalid_request': case 'chunk_size_exceeded':
-        this.handlers.onError?.(msg.message_type)
+      case 'quota_exceeded': case 'rate_limited': case 'resource_exhausted': case 'unaccepted_terms':
+      case 'transcriber_error': case 'input_error': case 'invalid_request': case 'chunk_size_exceeded': case 'error': {
+        // e.g. invalid_request when the configured model / commit strategy isn't on the plan.
+        const why = (msg.error ?? msg.message ?? '').toString().slice(0, 160)
+        this.handlers.onError?.(why ? `${msg.message_type}: ${why}` : msg.message_type)
         break
+      }
     }
   }
 

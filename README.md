@@ -96,7 +96,9 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # ElevenLabs (optional — browser TTS used as fallback)
 ELEVENLABS_API_KEY=...
-ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+ELEVENLABS_VOICE_ID=f0JpDwzbGK384Dd1WH2s
+ELEVENLABS_TTS_MODEL=eleven_v4_turbo
+ELEVENLABS_STT_MODEL=scribe_v3_live
 ```
 
 ### Run
@@ -114,7 +116,13 @@ npm run dev
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Yes | Powers all AI evaluation, question generation, and report summaries |
 | `ELEVENLABS_API_KEY` | Yes (Screen voice) | ElevenLabs TTS + Scribe STT, server-side only. Never set a `NEXT_PUBLIC_` copy. No browser-voice fallback: without it the room shows "voice unavailable" |
-| `ELEVENLABS_VOICE_ID` | No | Defaults to Rachel (`21m00Tcm4TlvDq8ikWAM`) |
+| `ELEVENLABS_VOICE_ID` | No | Shared voice for TTS. Defaults to Ananya (`f0JpDwzbGK384Dd1WH2s`) |
+| `ELEVENLABS_TTS_MODEL` | No | Interviewer TTS model, read per request (no rebuild). Default `eleven_v4_turbo`; A/B with `eleven_v4` |
+| `ELEVENLABS_TTS_AUDIO_TAGS` | No | `1` lets the interviewer use light delivery tags ([warmly]…) on v3/v4 models. Default off |
+| `ELEVENLABS_STT_MODEL` | No | Live interview transcription. Default `scribe_v3_live` |
+| `ELEVENLABS_STT_BATCH_MODEL` | No | Post-interview diarization (second-voice check). Default `scribe_v3` |
+| `ELEVENLABS_STT_COMMIT_STRATEGY` | No | `turn_prediction` (default on scribe_v3_live) or `vad` |
+| `ELEVENLABS_STT_VAD_SILENCE_SECS` / `ELEVENLABS_STT_COMMIT_GRACE_MS` | No | Endpointing overrides (default 1.4 s / 900 ms). Check models with `GET /api/interview/voice-check` (admin) |
 
 ---
 

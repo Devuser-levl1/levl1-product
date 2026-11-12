@@ -218,6 +218,7 @@ interface EvalResult {
   generateDynamic: boolean
   suggestedTransition: string
   confirmBack?: string   // one-sentence restatement of a substantive answer (active mirroring)
+  speech?: { followUpQuestion?: string; confirmBack?: string }   // same lines + optional delivery tags (voice only)
 }
 
 /* ── Question bank ──────────────────────────────────────────────── */
@@ -870,7 +871,7 @@ export default function InterviewPage() {
   }, [interviewId])
 
   // Voice trouble is reported server-side (ops logs + Control Room), never just console.
-  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked', detail?: string, attempt?: number) => {
+  const reportVoice = useCallback((kind: 'retry' | 'reconnecting' | 'recovered' | 'gave_up' | 'blocked' | 'stt_error', detail?: string, attempt?: number) => {
     const token = voiceTokenRef.current?.token
     console.warn('[voice]', kind, detail ?? '', attempt ?? '')
     if (!token) return
@@ -1082,7 +1083,10 @@ export default function InterviewPage() {
         // A socket/auth/quota failure before the candidate was heard → Web Speech
         // for the rest of the session instead of a silent, dead mic.
         onError: (reason) => {
-          const fatal = ['auth_error', 'socket_error', 'quota_exceeded', 'rate_limited', 'resource_exhausted'].includes(reason)
+          // Loud, never silent: every Scribe error is reported server-side (ops log).
+          reportVoice('stt_error', reason)
+          const kind = reason.split(':')[0]
+          const fatal = ['auth_error', 'socket_error', 'quota_exceeded', 'rate_limited', 'resource_exhausted', 'invalid_request', 'unaccepted_terms', 'error'].includes(kind)
           if (!fatal || dgSttRef.current !== dg || capturedRef.current || hasSpokenRef.current || phaseRef.current !== 'listening') return
           sttPreferWebSpeechRef.current = true
           try { dg.stop() } catch {}
@@ -1541,7 +1545,7 @@ export default function InterviewPage() {
     if (ev.shouldAskFollowUp && ev.followUpQuestion && withinBudget) {
       followUpCountRef.current += 1
       addTranscript({ speaker: 'ai', text: ev.followUpQuestion, questionId: q.id, type: 'followup' })
-      if ((await speakText(ev.followUpQuestion, { bargeIn: true })) !== 'interrupted') await delay(1500)
+      if ((await speakText(ev.speech?.followUpQuestion || ev.followUpQuestion, { bargeIn: true })) !== 'interrupted') await delay(1500)
       startListening()
     } else {
       // Speak quality-based transition — section changes get their own preamble in moveToQuestion
@@ -1552,7 +1556,8 @@ export default function InterviewPage() {
         lastConfirmBackRef.current = true
         const text = isSectionChange ? confirmBack : `${confirmBack} ${pick(TR_CONFIRM_NEXT)}`
         addTranscript({ speaker: 'ai', text, type: 'transition' })
-        await speakText(text)
+        const spokenBack = (ev.speech?.confirmBack ?? '').trim() || confirmBack
+        await speakText(isSectionChange ? spokenBack : text.replace(confirmBack, spokenBack))
         await delay(400)
       } else {
         lastConfirmBackRef.current = false

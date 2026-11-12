@@ -17,7 +17,9 @@ const WARNING: Record<string, string | null> = {
   blocked: 'Interviewer audio blocked by the browser — waiting for the candidate to tap',
   recovered: null,
 }
-const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked'])
+// stt_error = live transcription (Scribe) failed — logged as an error; the room
+// falls back to browser recognition and the Control Room flags 'webspeech'.
+const KINDS = new Set(['retry', 'reconnecting', 'recovered', 'gave_up', 'blocked', 'stt_error'])
 
 export async function POST(req: NextRequest) {
   const interviewId = verifyVoiceToken(req.headers.get('x-voice-token'))
@@ -25,11 +27,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as { kind?: unknown; detail?: unknown; attempt?: unknown }
   const kind = typeof body.kind === 'string' && KINDS.has(body.kind) ? body.kind : null
   if (!kind) return NextResponse.json({ error: 'Unknown kind' }, { status: 400 })
-  const detail = typeof body.detail === 'string' ? body.detail.slice(0, 120) : null
+  const detail = typeof body.detail === 'string' ? body.detail.slice(0, 200) : null
   const attempt = typeof body.attempt === 'number' ? body.attempt : null
 
   const log = JSON.stringify({ evt: 'voice_event', kind, detail, attempt, interviewId })
-  if (kind === 'recovered') console.info(log); else console.warn(log)
+  if (kind === 'recovered') console.info(log); else if (kind === 'stt_error' || kind === 'gave_up') console.error(log); else console.warn(log)
 
   const now = new Date()
   const data = {
