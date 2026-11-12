@@ -11,6 +11,13 @@
 export const LIVE_INTERVIEW_MODEL = process.env.SCREEN_LIVE_MODEL ?? 'claude-sonnet-4-6'
 export const SCORING_MODEL        = process.env.SCREEN_SCORING_MODEL ?? 'claude-opus-4-8'
 
+// Non-interview Screen helpers (resume extraction, candidate / position
+// summaries, "generate more questions"). Same fast tier as the live brain by
+// default, but its own constant + env so retuning the live interview model
+// doesn't silently move these batch-style helpers (and vice versa).
+// Callers send no temperature/top_p/top_k, so any current model id is safe here.
+export const SCREEN_UTILITY_MODEL = process.env.SCREEN_UTILITY_MODEL ?? 'claude-sonnet-4-6'
+
 // Back-compat alias — existing live callers imported INTERVIEW_MODEL. It now
 // points at the fast live model. (Opus 4.8 rejects temperature/top_p/top_k;
 // sonnet-4-6 accepts them but callers here send none, so either is safe.)

@@ -119,9 +119,12 @@ levl1/                       (repo root; the Next.js app lives in apps/web)
   - Screen final scoring / report / work-sample scoring / concept rubric:
     `SCORING_MODEL` = claude-opus-4-8. Env override: SCREEN_SCORING_MODEL.
     (Both in lib/screen/interview/model.ts.)
-  - Known drift: some Screen routes still hardcode ids — extract-resume,
-    generate-candidate-summary, generate-more-questions, generate-position-summary
-    (claude-sonnet-4-6) and positions/parse-jd (claude-opus-4-7).
+  - Screen helpers (resume extraction, candidate / position summaries, "generate
+    more questions"): `SCREEN_UTILITY_MODEL` = claude-sonnet-4-6. Env override:
+    SCREEN_UTILITY_MODEL. JD parsing, JD generation and question-set generation
+    use `SCORING_MODEL`.
+  - Callers must not send temperature/top_p/top_k, so any constant can be pointed
+    at an Opus model without a 400.
 - Keep prompts in lib/hire/prompts.ts — never inline in route handlers.
 - All AI calls are async and queued via pg-boss — never block the request.
 - Return structured JSON from Claude using XML tags in the prompt.

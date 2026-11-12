@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { SCREEN_UTILITY_MODEL } from '@/lib/screen/interview/model'
 import { extractTextFromFile } from '@/lib/parseResume'
 
 export async function POST(req: NextRequest) {
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
       `Resume text:\n${cleanedText}`
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: SCREEN_UTILITY_MODEL,
       max_tokens: 1024,
       system:
         'You are a resume parser. Extract information accurately from imperfectly formatted text. ' +

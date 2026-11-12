@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { SCREEN_UTILITY_MODEL } from '@/lib/screen/interview/model'
 
 interface CandidateSummary {
   id?: string
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       .join('\n\n')
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: SCREEN_UTILITY_MODEL,
       max_tokens: 2048,
       system:
         'You are a recruitment analytics expert reviewing multiple candidates for the same role. ' +
@@ -75,7 +76,6 @@ export async function POST(req: NextRequest) {
             `}`,
         },
       ],
-      temperature: 0.2,
     })
 
     const raw   = response.content[0].type === 'text' ? response.content[0].text : '{}'

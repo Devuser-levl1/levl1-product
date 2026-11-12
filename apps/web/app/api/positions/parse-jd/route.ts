@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { parseExperience, sanitizeExperience } from '@/lib/screen/position-config'
 import { sanitizeMustHaves } from '@/lib/screen/recruiter/must-haves'
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const response = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: SCORING_MODEL,
       max_tokens: 1500,
       system: 'You are a JD parser. Extract structured information from job descriptions. Return only valid JSON, no markdown fences.',
       messages: [{

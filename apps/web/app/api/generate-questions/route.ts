@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { SCORING_MODEL } from "@/lib/screen/interview/model";
 import { sanitizeMustHaves } from "@/lib/screen/recruiter/must-haves";
 import { readSelection, TIER_INFO } from "@/lib/screen/rubrics/types";
 import { formatExperience, isJuniorExperience, isSeniorExperience, parseExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeMix } from "@/lib/screen/position-config";
@@ -232,7 +233,7 @@ Generate exactly this structure (${techCount} technical — ${conceptCount} "con
 Output ONLY the JSON object. No other text.`;
 
     const message = await client.messages.create({
-      model: "claude-opus-4-7",
+      model: SCORING_MODEL,   // deep tier (lib/screen/interview/model.ts)
       max_tokens: 8000,   // 14-question JSON ~3k tokens; thinking blocks need extra headroom
       thinking: { type: "adaptive" },
       system: systemPrompt,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { SCREEN_UTILITY_MODEL } from '@/lib/screen/interview/model'
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: SCREEN_UTILITY_MODEL,
       max_tokens: 512,
       system:
         'You are a senior recruitment consultant writing a professional candidate evaluation summary for a hiring manager. ' +

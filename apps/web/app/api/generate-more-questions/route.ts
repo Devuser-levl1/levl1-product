@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { SCREEN_UTILITY_MODEL } from '@/lib/screen/interview/model'
 
 const SECTION_DESC: Record<string, string> = {
   technical:  'Technical knowledge, concepts and skills questions',
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       : 'None'
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: SCREEN_UTILITY_MODEL,
       max_tokens: 2048,
       system:
         `You are a senior technical interviewer. ` +

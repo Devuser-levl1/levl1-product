@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { SCORING_MODEL } from "@/lib/screen/interview/model";
 import { formatExperience, parseExperience, sanitizeExperience } from "@/lib/screen/position-config";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -73,7 +74,7 @@ ${isManager ? "## Leadership & Management Requirements" : ""}
 Make it compelling, specific, and appropriately senior for a ${experienceText} ${roleType} in the ${domainContext} space.`;
 
     const message = await client.messages.create({
-      model: "claude-opus-4-7",
+      model: SCORING_MODEL,   // deep tier (lib/screen/interview/model.ts)
       max_tokens: 2000,
       thinking: { type: "adaptive" },
       system: systemPrompt,
