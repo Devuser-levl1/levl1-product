@@ -909,6 +909,27 @@ export default function InterviewPage() {
     fetch('/api/interview/voice-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-voice-token': token }, body: JSON.stringify({ kind, detail, attempt }), keepalive: true }).catch(() => {})
   }, [])
 
+  // Pre-warm the interviewer voice while the candidate is on the pre-start
+  // screen: V4 Turbo's FIRST request is ~2 s slower than later ones, so the
+  // opening line would lag. Warm on load, re-warm every 2 min until Start
+  // (max 5 — a few characters each). Nothing is played.
+  useEffect(() => {
+    if (dbLoading || !interview || phase !== 'waiting') return
+    let warms = 0
+    const warmNow = async () => {
+      if (warms >= 5) return
+      warms++
+      try {
+        const token = await ensureVoiceToken()
+        await fetch('/api/interview/generate-speech', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-voice-token': token }, body: JSON.stringify({ warm: true, voiceAccent: interviewerRef.current.voiceKey ?? undefined }) })
+      } catch { /* best-effort: the real line still works, just cold */ }
+    }
+    void warmNow()
+    const iv = setInterval(() => { void warmNow() }, 120_000)
+    return () => clearInterval(iv)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbLoading, !!interview, phase === 'waiting', ensureVoiceToken])
+
   // opts.bargeIn: the candidate may interrupt this line (only lines that are
   // followed by listening opt in). Resolves 'interrupted' if they did.
   const speakText = useCallback(async (text: string, opts: { bargeIn?: boolean } = {}): Promise<'done' | 'interrupted'> => {

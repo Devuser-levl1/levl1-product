@@ -65,9 +65,12 @@ export async function POST(req: NextRequest) {
   const session = interviewId ? null : getSessionFromRequest(req)
   if (!interviewId && !session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: { text?: unknown; voiceId?: unknown; voiceAccent?: unknown; stream?: unknown }
+  let body: { text?: unknown; voiceId?: unknown; voiceAccent?: unknown; stream?: unknown; warm?: unknown }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
-  const raw = typeof body.text === 'string' ? body.text.trim() : ''
+  // warm: true → pre-warm the TTS model/voice before the interview starts
+  // (V4 Turbo's first request is ~2 s slower). Tiny text, audio discarded.
+  const warm = body.warm === true && !!interviewId
+  const raw = warm ? 'Hi.' : typeof body.text === 'string' ? body.text.trim() : ''
   if (!raw) return NextResponse.json({ error: 'text required' }, { status: 400 })
   const limit = interviewId ? MAX_LINE_CHARS : PREVIEW_MAX_CHARS
   if (raw.length > limit) return NextResponse.json({ error: `text too long (max ${limit})` }, { status: 413 })
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.error(JSON.stringify({ evt: 'voice_config_error', detail: e instanceof Error ? e.message : String(e) }))
     return NextResponse.json({ error: 'Voice model misconfigured' }, { status: 503 })
   }
-  const stream = body.stream === true && !!interviewId
+  const stream = (body.stream === true || warm) && !!interviewId
   const vid = resolveVoice(body.voiceAccent, body.voiceId)
   // Delivery tags only for models that understand them (≤2 per line).
   const tagged = ttsSupportsAudioTags(modelId) ? limitAudioTags(raw, 2) : stripAudioTags(raw)
@@ -119,6 +122,14 @@ export async function POST(req: NextRequest) {
     console.error(JSON.stringify({ evt: modelRejected ? 'voice_model_rejected' : 'voice_upstream_error', status: upstream.status, detail, interviewId, model: modelId, voice: vid, chars: raw.length, ms: Date.now() - started }))
     // Don't leak upstream detail to the browser.
     return NextResponse.json({ error: `Voice service returned ${upstream.status}` }, { status: upstream.status === 429 ? 429 : 502 })
+  }
+
+  if (warm) {
+    // Drain and discard: the point is only to make the next real line fast.
+    const reader = upstream.body.getReader()
+    for (;;) { const c = await reader.read(); if (c.done) break }
+    console.info(JSON.stringify({ evt: 'voice_warm', interviewId, model: modelId, ms: Date.now() - started }))
+    return new NextResponse(null, { status: 204 })
   }
 
   if (stream) {
