@@ -302,6 +302,7 @@ model Position {
   questionMix        Json?     // { concept, technical, scenario, behavioral, eq } counts
   conceptRubric      Json?     // [{ id, concept, strong, weak }] — JD-derived, recruiter-editable
   rubricSelection    Json?     // [{ rubricId, tier: must|good|addon, source, snapshot… }] — lib/screen/rubrics/types.ts
+  calibration        Json?     // AI draft → moderator calibration state — lib/screen/calibration/types.ts
   knockoutQuestions  Json?     // [{ id, question, requiredAnswer }] — surfaced in report, never auto-reject
   voiceAccent        String?
   softSkillWeightage Json?
@@ -465,6 +466,8 @@ model TaskBankItem {
   status            String        @default("draft")  // draft | reviewed | active | retired
   isSample          Boolean       @default(false)   // Levl1-provided starter content (must still be reviewed)
   contentKey        String?       // stable id of Levl1 starter content (in-place upgrades of unreviewed drafts)
+  source            String        @default("manual") // manual | starter | ai (drafted from a position, then calibrated)
+  originPositionId  String?       // the position an AI draft was generated for
   qaEvidence        Json?         // Levl1 content QA: independent solution agreement + mutants each test catches
   reviewNote        String?       @db.Text
   reviewedBy        String?
@@ -521,6 +524,8 @@ model RubricLibraryItem {
   status       String    @default("draft")  // draft | reviewed | active | retired
   isSample     Boolean   @default(false)    // Levl1 sample content — must still be reviewed
   contentKey   String?   // stable id of Levl1 sample content
+  source       String    @default("manual") // manual | sample | ai (drafted from a position, then calibrated)
+  originPositionId String? // the position an AI draft was generated for
   reviewNote   String?   @db.Text
   reviewedBy   String?
   reviewedAt   DateTime?

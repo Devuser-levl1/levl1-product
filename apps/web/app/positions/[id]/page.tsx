@@ -18,6 +18,7 @@ import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEdit
 import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
 import { RubricSelector } from '@/components/rubrics/RubricSelector'
+import { CalibrationPanel } from '@/components/calibration/CalibrationPanel'
 import { readSelection, type SelectedRubric } from '@/lib/screen/rubrics/types'
 import { useAccountType } from '@/hooks/useAccountType'
 import {
@@ -174,7 +175,7 @@ const muted: React.CSSProperties = { fontSize: text.sm, color: lv.textMuted, mar
 const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: space[4] }
 const stack = (gap: number): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap })
 
-type TabKey = 'overview' | 'questions' | 'candidates' | 'reports'
+type TabKey = 'overview' | 'questions' | 'candidates' | 'reports' | 'calibration'
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PositionDetailPage() {
@@ -324,7 +325,7 @@ export default function PositionDetailPage() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const t = q.get('tab')
-    if (t === 'overview' || t === 'questions' || t === 'candidates' || t === 'reports') setTab(t)
+    if (t === 'overview' || t === 'calibration' || t === 'questions' || t === 'candidates' || t === 'reports') setTab(t)
     if (q.get('upload') === '1') { setTab('candidates'); setShowUpload(true) }
     if (t || q.get('upload')) window.history.replaceState(null, '', window.location.pathname)
   }, [])
@@ -573,6 +574,7 @@ export default function PositionDetailPage() {
         <div style={{ padding: `0 ${gutter}` }}>
           <Tabs<TabKey> label="Position sections" idPrefix="pos-tab" value={tab} onChange={setTab} items={[
             { key: 'overview',   label: 'Overview',   icon: <FileText size={14} aria-hidden="true" /> },
+            { key: 'calibration', label: 'AI draft',  icon: <Tag size={14} aria-hidden="true" /> },
             { key: 'questions',  label: 'Questions',  icon: <Tag size={14} aria-hidden="true" />,       count: allQuestions.length || undefined },
             { key: 'candidates', label: 'Candidates', icon: <Users size={14} aria-hidden="true" />,     count: candidates.length || undefined },
             { key: 'reports',    label: 'Reports',    icon: <BarChart3 size={14} aria-hidden="true" />, count: completedCount || undefined },
@@ -585,6 +587,8 @@ export default function PositionDetailPage() {
         <TabPanel tabKey={tab} idPrefix="pos-tab">
 
         {/* ─── OVERVIEW TAB ─── */}
+        {tab === 'calibration' && <CalibrationPanel positionId={id} onApplied={() => void refreshPosition()} />}
+
         {tab === 'overview' && (
           <div style={stack(space[6])}>
 

@@ -7,9 +7,9 @@ import { sanitizeLogisticsConfig } from '@/lib/screen/logistics/config'
 import { sanitizeSelectionRequest } from '@/lib/screen/rubrics/types'
 import { buildSelection } from '@/lib/screen/rubrics/store'
 import { formatExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeKnockouts, sanitizeMix, sanitizeContactEmails } from '@/lib/screen/position-config'
-import { isInterviewMode, resolveMode, hasWorkspace } from '@/lib/screen/workspace/modes'
+import { isInterviewMode } from '@/lib/screen/workspace/modes'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
-import { ensureWorkSampleTask } from '@/lib/screen/workspace/ensure-task'
+import { startGeneration } from '@/lib/screen/calibration/store'
 
 export const dynamic = 'force-dynamic'
 
@@ -117,8 +117,11 @@ export async function POST(req: NextRequest) {
     if ('workSampleTask' in data) data.workSampleTask = sanitizeTask(data.workSampleTask) ?? undefined
 
     const position = await prisma.position.create({ data: data as never })
-    // Technical / hybrid → draft (and Judge0-verify) a work-sample task in the background.
-    if (hasWorkspace(resolveMode(position)) && !position.workSampleTask) void ensureWorkSampleTask(position.id)
+    // AI-first: draft rubrics (with tiers) and — for technical / hybrid roles — a
+    // Judge0-verified work-sample task, in the background. Nothing is used live
+    // until a moderator calibrates and approves it (position page → AI draft).
+    // A task supplied with the request is kept; calibration then only drafts rubrics.
+    void startGeneration(position.id, agencyId, session.email).catch((e) => console.error('[positions] calibration kick failed:', e instanceof Error ? e.message : e))
     return NextResponse.json(position, { status: 201 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
