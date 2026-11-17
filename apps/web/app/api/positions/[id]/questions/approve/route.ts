@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     await prisma.questionSet.update({ where: { positionId: params.id }, data: { [section]: updated } })
-    const approval = await recomputeQuestionApproval(params.id)
+    const approval = await recomputeQuestionApproval(params.id, { by: access.session.email })
     return NextResponse.json({ success: true, section, approverType: field === 'approvedByHR' ? 'hr' : 'tech', affected: questionId ?? null, action, questions: updated, approval })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update question'

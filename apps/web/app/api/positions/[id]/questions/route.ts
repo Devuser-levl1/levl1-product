@@ -64,7 +64,7 @@ export async function POST(
 
     // Approval is DERIVED from the per-question flags (single source of truth,
     // Fixpack 9 #5) — client-sent techLeadApproved / hrApproved are ignored.
-    await recomputeQuestionApproval(params.id)
+    await recomputeQuestionApproval(params.id, { by: access.session.email })
 
     return NextResponse.json(qs)
   } catch (err) {
