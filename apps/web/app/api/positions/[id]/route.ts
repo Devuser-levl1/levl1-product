@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Whitelist updatable fields to prevent mass-assignment
     const ALLOWED = new Set([
-      'status', 'title', 'department', 'workMode', 'interviewDuration',
+      'status', 'title', 'department', 'domainContext', 'workMode', 'interviewDuration',
       'techLeadEmail', 'hrEmail', 'clientManagerEmail',
       'techLeadApproved', 'hrApproved', 'jdApprovedAt', 'jdApprovedBy',
       'l2ScoreThreshold', 'scoringRubric', 'rubricApproved',
@@ -62,6 +62,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Production interview length is platform config (PRODUCTION_INTERVIEW_MINUTES) — never let an update
     // set 20/45/60.
     if ('interviewDuration' in safe) safe.interviewDuration = PRODUCTION_INTERVIEW_MINUTES
+    // Department / industry context (Fixpack 9): plain text, bounded; blank → null.
+    for (const [k, max] of [['department', 80], ['domainContext', 240]] as const) {
+      if (!(k in safe)) continue
+      const v = safe[k]
+      if (v !== null && typeof v !== 'string') return NextResponse.json({ error: `${k} must be text` }, { status: 400 })
+      safe[k] = typeof v === 'string' && v.trim() ? v.replace(/\s+/g, ' ').trim().slice(0, max) : null
+    }
     if ('mustHaves' in safe) safe.mustHaves = sanitizeMustHaves(safe.mustHaves)
     if ('logistics' in safe) safe.logistics = sanitizeLogisticsConfig(safe.logistics)
     // Fixpack 3 — validated shapes (lib/screen/position-config.ts)

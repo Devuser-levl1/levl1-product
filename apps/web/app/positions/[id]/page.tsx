@@ -19,6 +19,7 @@ import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
 import { RubricSelector } from '@/components/rubrics/RubricSelector'
 import { CalibrationPanel } from '@/components/calibration/CalibrationPanel'
+import { PositionContextEditor } from '@/components/positions/PositionContextEditor'
 import { readSelection, type SelectedRubric } from '@/lib/screen/rubrics/types'
 import { useAccountType } from '@/hooks/useAccountType'
 import {
@@ -604,6 +605,12 @@ export default function PositionDetailPage() {
                 <Badge tone="neutral"><Mail size={12} aria-hidden="true" />{isCompany ? 'Hiring contact' : 'Client'}: {position.clientManagerEmail}</Badge>
               )}
             </div>
+
+            {/* Department + industry / domain context (feeds generation) */}
+            <Card title="Role context">
+              <PositionContextEditor positionId={id} department={position.department} domainContext={position.domainContext} canEdit
+                onSaved={(patch) => setPosition(p => p ? { ...p, department: patch.department ?? undefined, domainContext: patch.domainContext ?? undefined } : p)} />
+            </Card>
 
             {/* JD */}
             {position.jdText && (
