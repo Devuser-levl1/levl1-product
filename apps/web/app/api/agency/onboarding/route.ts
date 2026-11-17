@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { isAccountType } from '@/lib/screen/account-type'
 import { isVoiceKey } from '@/lib/screen/interviewer-voice'
+import { normalizeVoiceKey } from '@/lib/voiceOptions'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       if (data.teamSize)      updateData.teamSize       = data.teamSize
       // "Primary service" retired → replaced by the account type choice.
       if (isAccountType(data.accountType)) updateData.accountType = data.accountType
-      if (isVoiceKey(data.voiceAccent))    updateData.voiceAccent = data.voiceAccent  // default interviewer voice
+      if (isVoiceKey(data.voiceAccent))    updateData.voiceAccent = normalizeVoiceKey(data.voiceAccent) ?? data.voiceAccent  // default interviewer voice
       if (data.city)          updateData.city           = data.city
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { SCREEN_UTILITY_MODEL } from '@/lib/screen/interview/model'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
 
 const SECTION_DESC: Record<string, string> = {
   technical:  'Technical knowledge, concepts and skills questions',
@@ -11,6 +12,9 @@ const SECTION_DESC: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  // Was unauthenticated — anyone could spend the AI budget. Recruiters only.
+  const access = recruiterAccess(req, { edit: true })
+  if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
   try {
     const body = await req.json()
     const {
@@ -41,7 +45,10 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: SCREEN_UTILITY_MODEL,
-      max_tokens: 2048,
+      // Fixpack 9 #4: was a flat 2048 — 5 system-design questions use ~1.6–1.8k
+      // tokens, so whiteboard batches were intermittently CUT OFF mid-JSON and
+      // failed with a raw parse error ("nothing happened"). Scale with the ask.
+      max_tokens: Math.min(12000, Math.max(1, Number(count) || 5) * (sectionType === 'whiteboard' || sectionType === 'scenario' ? 1400 : 800) + 600),
       system:
         `You are a senior technical interviewer. ` +
         `Generate exactly ${count} new interview question${count !== 1 ? 's' : ''} for the ${sectionType} section. ` +
@@ -72,9 +79,16 @@ export async function POST(req: NextRequest) {
       }],
     })
 
-    const raw   = response.content[0].type === 'text' ? response.content[0].text : '[]'
-    const clean = raw.replace(/```json|```/g, '').trim()
-    const arr   = JSON.parse(clean)
+    if (response.stop_reason === 'max_tokens') {
+      console.error(JSON.stringify({ evt: 'generate_more_truncated', sectionType, count, output_tokens: response.usage.output_tokens }))
+      return NextResponse.json({ error: 'The AI response was too long and got cut off. Please try again, or ask for fewer questions.' }, { status: 502 })
+    }
+    const raw   = response.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
+    const start = raw.indexOf('['), end = raw.lastIndexOf(']')
+    let arr: unknown
+    try { arr = JSON.parse(start >= 0 && end > start ? raw.slice(start, end + 1) : raw.replace(/```json|```/g, '').trim()) }
+    catch { return NextResponse.json({ error: 'The AI returned an unreadable answer. Please try again.' }, { status: 502 }) }
+    if (!Array.isArray(arr) || arr.length === 0) return NextResponse.json({ error: 'No questions came back. Please try again.' }, { status: 502 })
 
     // Guarantee stable unique IDs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

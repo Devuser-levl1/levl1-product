@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SCORING_MODEL } from "@/lib/screen/interview/model";
 import { sanitizeMustHaves } from "@/lib/screen/recruiter/must-haves";
 import { readSelection, TIER_INFO } from "@/lib/screen/rubrics/types";
+import { STYLE_INFO, isInterviewStyle } from "@/lib/screen/interview-style";
 import { formatExperience, isJuniorExperience, isSeniorExperience, parseExperience, sanitizeConceptRubric, sanitizeExperience, sanitizeMix } from "@/lib/screen/position-config";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -134,12 +135,12 @@ OUTPUT: ONLY valid JSON, no markdown, no explanation.`;
 Position: ${positionTitle} at ${company}
 Experience: ${experienceText}${isJunior ? " (junior)" : isSenior ? " (senior)" : ""} | Role Type: ${roleType} | Work Mode: ${workMode}
 Role domain: ${primaryDomain}
-Industry context: ${domainContext}
+Industry context: ${domainContext || "not specified"}${domainContext ? " — tailor scenario and applied questions to this industry's real constraints (e.g. regulation, data sensitivity, scale, failure costs), without making them domain trivia" : ""}
 Tech Stack (MUST be covered): ${mustHaveTech?.join(", ")}
 Nice-to-have tech: ${niceToHaveTech?.join(", ")}
 Interview Duration: ${interviewDuration} mins
 Soft Skill Weights: Technical ${weights?.technical}/100, Leadership ${weights?.leadership}/100, Communication ${weights?.communication}/100, Problem Solving ${weights?.problemSolving}/100
-Interview Style: ${interviewStyle}
+Interview Style: ${isInterviewStyle(interviewStyle) ? STYLE_INFO[interviewStyle].prompt : (interviewStyle || "Structured")}
 ${redFlags ? `Red flags / gaps to probe: ${redFlags}` : ""}
 ${mustHaves.length ? `
 MUST-HAVE REQUIREMENTS (non-negotiable — the recruiter will judge each one as met / not met):

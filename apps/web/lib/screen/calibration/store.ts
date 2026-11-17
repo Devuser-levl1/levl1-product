@@ -33,7 +33,7 @@ async function loadPosition(positionId: string, agencyId: string) {
     where: { id: positionId, agencyId },
     select: {
       id: true, title: true, company: true, jdText: true, techStack: true, mustHaves: true, goodToHave: true,
-      experienceMin: true, experienceMax: true, primaryDomain: true, interviewMode: true, roleType: true,
+      experienceMin: true, experienceMax: true, primaryDomain: true, domainContext: true, interviewMode: true, roleType: true,
       calibration: true, rubricSelection: true, workSampleTask: true,
     },
   })
@@ -44,7 +44,7 @@ async function contextFor(p: Pos, agencyId: string): Promise<PositionContext> {
   const existing = await prisma.rubricLibraryItem.findMany({ where: { agencyId, status: 'active' }, select: { id: true, area: true, subSkill: true, keywords: true }, take: 60, orderBy: { updatedAt: 'desc' } })
   return {
     title: p.title, company: p.company, jdText: p.jdText, techStack: p.techStack, mustHaves: p.mustHaves, goodToHave: p.goodToHave,
-    experienceMin: p.experienceMin, experienceMax: p.experienceMax, primaryDomain: p.primaryDomain, existing,
+    experienceMin: p.experienceMin, experienceMax: p.experienceMax, primaryDomain: p.primaryDomain, domainContext: p.domainContext, existing,
   }
 }
 

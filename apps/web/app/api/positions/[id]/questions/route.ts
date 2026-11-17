@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionFromRequest } from '@/lib/auth'
+import { recruiterAccess } from '@/lib/screen/recruiter/access'
+import { recomputeQuestionApproval } from '@/lib/screen/approvals/state'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,8 +25,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = getSessionFromRequest(req)
-    if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    const access = recruiterAccess(req, { edit: true })
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
+    const owned = await prisma.position.findFirst({ where: { id: params.id, agencyId: access.session.agencyId }, select: { id: true } })
+    if (!owned) return NextResponse.json({ error: 'Position not found' }, { status: 404 })
 
     const body = await req.json()
     const {
@@ -35,8 +38,6 @@ export async function POST(
       eqQuestions = [],
       whiteboardQuestions = [],
       timeAllocation = {},
-      techLeadApproved,
-      hrApproved,
     } = body
 
     // Upsert the question set
@@ -61,27 +62,9 @@ export async function POST(
       },
     })
 
-    // Update position approval status if provided
-    if (techLeadApproved !== undefined || hrApproved !== undefined) {
-      const updateData: Record<string, unknown> = {}
-      if (techLeadApproved !== undefined) updateData.techLeadApproved = techLeadApproved
-      if (hrApproved !== undefined) updateData.hrApproved = hrApproved
-
-      // If both approved, set status to 'active'
-      const position = await prisma.position.findUnique({ where: { id: params.id } })
-      if (position) {
-        const newTechApproved = techLeadApproved ?? position.techLeadApproved
-        const newHrApproved = hrApproved ?? position.hrApproved
-        if (newTechApproved && newHrApproved) {
-          updateData.status = 'active'
-        }
-      }
-
-      await prisma.position.update({
-        where: { id: params.id },
-        data: updateData,
-      })
-    }
+    // Approval is DERIVED from the per-question flags (single source of truth,
+    // Fixpack 9 #5) — client-sent techLeadApproved / hrApproved are ignored.
+    await recomputeQuestionApproval(params.id)
 
     return NextResponse.json(qs)
   } catch (err) {

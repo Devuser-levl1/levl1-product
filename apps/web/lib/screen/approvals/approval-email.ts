@@ -52,9 +52,9 @@ export function approvalEmailHtml(o: ApprovalEmailInput): string {
   </div>
   <div style="padding:28px">
     <h2 style="margin:0 0 12px;font-size:19px;font-weight:600;color:#18181B">Approve ${esc(scope)} for ${esc(o.positionTitle)}</h2>
-    <p style="color:#52525B;font-size:14px;line-height:1.6;margin:0 0 20px"><strong>${esc(o.agencyName)}</strong> has drafted interview questions for the <strong>${esc(o.positionTitle)}</strong> role at <strong>${esc(o.company)}</strong>. Please review ${esc(scope)} — you can edit, remove or add questions, then approve. Interviews start once questions are approved.</p>
+    <p style="color:#52525B;font-size:14px;line-height:1.6;margin:0 0 20px"><strong>${esc(o.agencyName)}</strong> has drafted interview questions for the <strong>${esc(o.positionTitle)}</strong> role at <strong>${esc(o.company)}</strong>. Please review ${esc(scope)} in Levl1 Screen — you can edit or remove questions, then approve them there. Interviews start once questions are approved.</p>
     ${blocks}
-    <p style="font-size:12px;color:#A1A1AA;margin:8px 0 0">${combined ? 'These links expire' : 'This link expires'} in 7 days. No login required.</p>
+    <p style="font-size:12px;color:#A1A1AA;margin:8px 0 0">Approvals happen only in the app — this email can't approve anything. Sign in with your work email; if you don't have access yet, ask ${esc(o.agencyName)} to add you to their Screen workspace.</p>
   </div>
 </div></body></html>`
 }

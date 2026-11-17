@@ -23,6 +23,8 @@ export interface PositionContext {
   experienceMin: number | null
   experienceMax: number | null
   primaryDomain: string | null
+  /** Industry / domain context (Position.domainContext), e.g. "Banking — UPI payments". */
+  domainContext: string | null
   /** Active library rubrics the AI may REUSE instead of duplicating. */
   existing: { id: string; area: string; subSkill: string; keywords: string[] }[]
 }
@@ -61,6 +63,7 @@ function ctxBlock(p: PositionContext): string {
     `POSITION: ${p.title}${p.company ? ` at ${p.company}` : ''}\n` +
     `EXPERIENCE: ${exp}\n` +
     `DOMAIN: ${p.primaryDomain || 'unspecified'}\n` +
+    `INDUSTRY CONTEXT: ${p.domainContext || 'unspecified'}${p.domainContext ? ' (tailor scenarios, probes and tasks to this industry)' : ''}\n` +
     `REQUIRED SKILLS (JD parse): ${p.techStack.join(', ') || 'none listed'}\n` +
     `MUST-HAVES (recruiter): ${p.mustHaves.join(' | ') || 'none listed'}\n` +
     `NICE-TO-HAVES: ${p.goodToHave.join(', ') || 'none listed'}\n` +

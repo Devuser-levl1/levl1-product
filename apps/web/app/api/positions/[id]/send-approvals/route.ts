@@ -9,25 +9,10 @@ export const dynamic = 'force-dynamic'
 
 type ApproverType = 'tech_lead' | 'hr'
 
-// Re-sending must NOT invalidate links already in someone's inbox (it used to
-// deleteMany pending tokens and mint new ones, so every earlier "Review
-// questions" email opened "Invalid approval link"). Reuse a live token for the
-// same recipient (extending its expiry); skip approvers who already approved;
-// only retire tokens whose recipient changed or that expired.
-async function issueToken(positionId: string, type: ApproverType, email: string, expires: Date):
-  Promise<{ token: string; status: 'reused' | 'new' } | { status: 'already_approved' }> {
-  const latest = await prisma.approvalToken.findFirst({ where: { positionId, type }, orderBy: { createdAt: 'desc' } })
-  const sameRecipient = !!latest && latest.email.trim().toLowerCase() === email.trim().toLowerCase()
-  if (latest && sameRecipient && latest.status === 'approved') return { status: 'already_approved' }
-  if (latest && sameRecipient && latest.status === 'pending' && latest.expiresAt.getTime() > Date.now()) {
-    await prisma.approvalToken.update({ where: { id: latest.id }, data: { expiresAt: expires } })
-    return { token: latest.token, status: 'reused' }
-  }
-  // Recipient changed, link expired, or changes were requested → retire stale pending links, issue a fresh one.
-  await prisma.approvalToken.deleteMany({ where: { positionId, type, status: 'pending' } })
-  const created = await prisma.approvalToken.create({ data: { positionId, type, email, expiresAt: expires } })
-  return { token: created.token, status: 'new' }
-}
+// Fixpack 9 #5 — the email is a NOTIFICATION + DEEP LINK only. Approval
+// happens in the app (position → Questions), which is the single source of
+// truth; there is no approve-by-email path any more, so no tokens are minted.
+// "Already approved" is read from the derived Position flags.
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -50,13 +35,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const agency  = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     const baseUrl  = appUrl()
-    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const reviewUrl = (role: ApproverType) => `${baseUrl}/positions/${position.id}?tab=questions&review=${role}`
 
     const sent:   string[] = []
     const failed: string[] = []
     const alreadyApproved: string[] = []
 
-    // 1) Issue / reuse a token per configured approver (independent failures).
+    // 1) Who still needs to review (approval state is derived in-app).
     const approvers: { role: ApproverType; email: string }[] = []
     if (position.techLeadEmail) approvers.push({ role: 'tech_lead', email: position.techLeadEmail })
     else console.warn('[send-approvals] No tech lead email on position')
@@ -65,14 +50,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const due: { role: ApproverType; email: string; url: string }[] = []
     for (const a of approvers) {
-      try {
-        const t = await issueToken(position.id, a.role, a.email, expires)
-        if (t.status === 'already_approved') alreadyApproved.push(a.role)
-        else due.push({ ...a, url: `${baseUrl}/approve/${t.token}` })
-      } catch (e) {
-        console.error(`[send-approvals] ${a.role} token failed:`, e instanceof Error ? e.message : e)
-        failed.push(a.role)
-      }
+      const done = a.role === 'tech_lead' ? position.techLeadApproved : position.hrApproved
+      if (done) alreadyApproved.push(a.role)
+      else due.push({ ...a, url: reviewUrl(a.role) })
     }
 
     // 2) One email per recipient — when the tech lead and HR are the same

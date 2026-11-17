@@ -5,7 +5,7 @@ import { Play, Loader2, TrendingUp, CheckCircle2 } from "lucide-react";
 import { InviteTemplateEditor } from "@/components/interviews/InviteTemplateEditor";
 import { ACCOUNT_TYPES, isAccountType, type AccountType } from "@/lib/screen/account-type";
 import toast from "react-hot-toast";
-import { VOICE_OPTIONS, getVoiceOption } from "@/lib/voiceOptions";
+import { VOICE_OPTIONS, getVoiceOption, DEFAULT_VOICE_KEY, normalizeVoiceKey } from "@/lib/voiceOptions";
 import { restartTour } from "@/components/ui/ProductTour";
 import { useAppStore } from "@/store/appStore";
 import { PRODUCTION_INTERVIEW_MINUTES } from "@/lib/screen/session/duration";
@@ -90,7 +90,7 @@ export default function SettingsPage() {
   const [autoScore,         setAutoScore]       = useState(true);
 
   // Voice & Accent
-  const [voiceAccent,    setVoiceAccent]    = useState("american");
+  const [voiceAccent,    setVoiceAccent]    = useState(DEFAULT_VOICE_KEY);
   const [previewLoading, setPreviewLoading] = useState<string | null>(null);
   const [savingVoice,    setSavingVoice]    = useState(false);
   const [accountType,    setAccountType]    = useState<AccountType | null>(null);
@@ -120,7 +120,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/agency/voice")
       .then((r) => r.json())
-      .then((d) => { if (d.voiceAccent) setVoiceAccent(d.voiceAccent); })
+      .then((d) => { if (d.voiceAccent) setVoiceAccent(normalizeVoiceKey(d.voiceAccent) ?? DEFAULT_VOICE_KEY); })
       .catch(() => {});
   }, []);
 
@@ -553,7 +553,7 @@ export default function SettingsPage() {
               {/* Name */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: voiceAccent === v.key ? "var(--lv-brand-text)" : "var(--lv-text)" }}>
-                  {v.accent}
+                  {v.interviewerName} · {v.accent} <span style={{ fontWeight: 400, color: "var(--lv-text-muted)" }}>({v.gender})</span>
                 </div>
                 <div style={{ fontSize: 11, color: "var(--lv-text-muted)", marginTop: 1 }}>{v.description}</div>
               </div>

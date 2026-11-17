@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { isVoiceKey } from '@/lib/screen/interviewer-voice'
-import { DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
+import { DEFAULT_VOICE_KEY, normalizeVoiceKey } from '@/lib/voiceOptions'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const { voiceAccent } = await req.json().catch(() => ({}))
     if (!isVoiceKey(voiceAccent)) return NextResponse.json({ error: 'Unknown voice' }, { status: 400 })
-    const updated = await prisma.agency.update({ where: { id: access.session.agencyId }, data: { voiceAccent }, select: { voiceAccent: true } })
+    const updated = await prisma.agency.update({ where: { id: access.session.agencyId }, data: { voiceAccent: normalizeVoiceKey(voiceAccent) ?? DEFAULT_VOICE_KEY }, select: { voiceAccent: true } })
     return NextResponse.json({ voiceAccent: updated.voiceAccent })
   } catch (err) {
     console.error('agency voice PATCH error:', err)
@@ -30,5 +30,5 @@ export async function GET(req: NextRequest) {
   const access = recruiterAccess(req)
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
   const agency = await prisma.agency.findUnique({ where: { id: access.session.agencyId }, select: { voiceAccent: true } }).catch(() => null)
-  return NextResponse.json({ voiceAccent: isVoiceKey(agency?.voiceAccent) ? agency!.voiceAccent : DEFAULT_VOICE_KEY })
+  return NextResponse.json({ voiceAccent: (isVoiceKey(agency?.voiceAccent) && normalizeVoiceKey(agency!.voiceAccent)) || DEFAULT_VOICE_KEY })
 }

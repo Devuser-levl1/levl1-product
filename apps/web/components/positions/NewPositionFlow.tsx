@@ -8,6 +8,9 @@ import type { LogisticsConfig } from "@/lib/screen/logistics/config";
 import { DEFAULT_MIX, contactEmailError, formatExperience, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion, type QuestionMix } from "@/lib/screen/position-config";
 import { ConceptRubricEditor, ExperienceRangeInput, KnockoutEditor, QuestionMixEditor, experienceValid } from "./SetupFields";
 import { InterviewModeField } from "./InterviewModeField";
+import { DEPARTMENTS, INDUSTRIES, composeDomain } from "@/lib/screen/position-fields";
+import { INTERVIEW_STYLES, STYLE_INFO } from "@/lib/screen/interview-style";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { RubricSelector } from "@/components/rubrics/RubricSelector";
 import type { SelectedRubric } from "@/lib/screen/rubrics/types";
 import { suggestMode, type InterviewMode } from "@/lib/screen/workspace/modes";
@@ -331,7 +334,11 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
   const [mustHaves,       setMustHaves]       = useState<string[]>([]);
   const [logistics,       setLogistics]       = useState<LogisticsConfig>({});
   const [primaryDomain,   setPrimaryDomain]   = useState("Backend Engineering");
-  const [domainContext,   setDomainContext]   = useState("Fintech");
+  // Industry dropdown + free-text details → one stored domainContext (feeds question / rubric generation).
+  const [industry,        setIndustry]        = useState("");
+  const [domainDetails,   setDomainDetails]   = useState("");
+  const domainContext = composeDomain(industry, domainDetails);
+  const [deptOther,       setDeptOther]       = useState(false);
   const [companyStage,    setCompanyStage]    = useState("Growth Stage");
   const [workMode,        setWorkMode]        = useState("Hands-on (writes code/does the work)");
   const [isNewRole,       setIsNewRole]       = useState("New Role");
@@ -802,8 +809,18 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   </FormField>
                 )}
                 <FormField label="Department">
-                  <Input placeholder="e.g. Engineering, Product" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                  <Select aria-label="Department" value={deptOther || (department && !(DEPARTMENTS as readonly string[]).includes(department)) ? "__other" : department}
+                    onChange={(e) => { if (e.target.value === "__other") { setDeptOther(true); setDepartment(""); } else { setDeptOther(false); setDepartment(e.target.value); } }}>
+                    <option value="">Select a department</option>
+                    {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                    <option value="__other">Other…</option>
+                  </Select>
                 </FormField>
+                {(deptOther || (department && !(DEPARTMENTS as readonly string[]).includes(department))) && (
+                  <FormField label="Department name">
+                    <Input placeholder="Type the department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                  </FormField>
+                )}
                 <FormField label="Role Type">
                   <Select value={roleType} onChange={(e) => setRoleType(e.target.value)}>
                     {ROLE_TYPES.map((r) => <option key={r}>{r}</option>)}
@@ -867,7 +884,7 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   {VOICE_OPTIONS.map((v) => (
                     <label key={v.key} className="lv-option" data-checked={voiceAccent === v.key} style={{ flexWrap: "wrap" }}>
                       <input type="radio" name="posVoice" value={v.key} checked={voiceAccent === v.key} onChange={() => setVoiceAccent(v.key)} />
-                      <span style={{ fontSize: text.sm, color: voiceAccent === v.key ? lv.brandText : lv.textBody, fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>{v.accent}</span>
+                      <span style={{ fontSize: text.sm, color: voiceAccent === v.key ? lv.brandText : lv.textBody, fontWeight: voiceAccent === v.key ? 600 : 400, flex: 1 }}>{v.accent} <span style={{ color: lv.textMuted, fontWeight: 400 }}>({v.gender})</span></span>
                       <span style={{ fontSize: text.xs, color: lv.textMuted }}>Interviewer: <strong style={{ color: lv.textBody }}>{v.interviewerName}</strong></span>
                       <Button variant="secondary" size="sm" aria-label={`Preview ${v.interviewerName}'s voice`} leftIcon={<Play size={12} fill="currentColor" />} style={{ cursor: previewingVoice ? "wait" : undefined }}
                         onClick={async (e) => {
@@ -1046,9 +1063,10 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               </div>
 
               <div style={twoCol}>
-                <FormField label="Industry / Domain Context">
-                  <Select value={domainContext} onChange={(e) => setDomainContext(e.target.value)}>
-                    {["Fintech","Healthtech","Ecommerce","SaaS","Enterprise IT","Edtech","Logistics","Gaming","Other"].map((r) => <option key={r}>{r}</option>)}
+                <FormField label="Industry" hint="Ananya tailors scenarios and rubrics to this industry">
+                  <Select aria-label="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+                    <option value="">Not specified</option>
+                    {INDUSTRIES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </Select>
                 </FormField>
                 <FormField label="Company Stage">
@@ -1057,6 +1075,9 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
                   </Select>
                 </FormField>
               </div>
+              <FormField label="Domain details (optional)" hint="Anything specific, or an industry not listed — e.g. core banking: UPI and card payments; RBI compliance">
+                <Input value={domainDetails} onChange={(e) => setDomainDetails(e.target.value)} placeholder="e.g. Claims processing for health insurance" maxLength={200} />
+              </FormField>
 
               <Field label="Hands-on involvement">
                 <RadioGroup label="Hands-on involvement" options={["Hands-on (writes code/does the work)","Hybrid (leads + contributes)","Oversight (leads, does not execute)"]} value={workMode} onChange={setWorkMode} />
@@ -1089,7 +1110,18 @@ export default function NewPositionFlow({ onClose }: { onClose: () => void }) {
               </Card>
 
               <Field label="Interview Style">
-                <RadioGroup label="Interview style" options={["Conversational","Structured","Pressure test"]} value={interviewStyle} onChange={setInterviewStyle} />
+                {/* Each style explains itself on hover/focus (same Tooltip as the Control Room help icons). */}
+                <div className="lv-seg" role="radiogroup" aria-label="Interview style">
+                  {INTERVIEW_STYLES.map((opt) => (
+                    <Tooltip key={opt} content={STYLE_INFO[opt].tooltip} position="bottom">
+                      <button type="button" role="radio" aria-checked={interviewStyle === opt}
+                        className="lv-seg__opt" onClick={() => setInterviewStyle(opt)}>
+                        {opt}
+                      </button>
+                    </Tooltip>
+                  ))}
+                </div>
+                <div className="lv-hint" style={{ marginTop: 6 }}>{STYLE_INFO[(INTERVIEW_STYLES as readonly string[]).includes(interviewStyle) ? (interviewStyle as (typeof INTERVIEW_STYLES)[number]) : "Structured"].tooltip}</div>
               </Field>
 
               {/* Observe & Defend — interview mode (JD suggests; HR overrides) */}

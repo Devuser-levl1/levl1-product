@@ -211,6 +211,7 @@ export default function PositionDetailPage() {
   const { isCompany } = useAccountType()
   // Concept rubric (#13) + knockout questions (#14): draft → PATCH
   const [crDraft, setCrDraft]   = useState<ConceptRubricItem[] | null>(null)
+  const [reviewAs, setReviewAs] = useState<'tech_lead' | 'hr' | null>(null)
   // Rubric library selection (tiered). Drafted locally, saved explicitly.
   const [rsDraft, setRsDraft]   = useState<SelectedRubric[] | null>(null)
   const [rsSaving, setRsSaving] = useState(false)
@@ -327,7 +328,10 @@ export default function PositionDetailPage() {
     const t = q.get('tab')
     if (t === 'overview' || t === 'calibration' || t === 'questions' || t === 'candidates' || t === 'reports') setTab(t)
     if (q.get('upload') === '1') { setTab('candidates'); setShowUpload(true) }
-    if (t || q.get('upload')) window.history.replaceState(null, '', window.location.pathname)
+    // Approval emails deep-link here: ?tab=questions&review=tech_lead|hr
+    const rv = q.get('review')
+    if (rv === 'tech_lead' || rv === 'hr') setReviewAs(rv)
+    if (t || q.get('upload') || rv) window.history.replaceState(null, '', window.location.pathname)
   }, [])
 
   // Fetch reports when tab opened
@@ -740,6 +744,11 @@ export default function PositionDetailPage() {
         {tab === 'questions' && (
           <div style={stack(space[4])}>
             {/* Approval status banner */}
+            {reviewAs && (
+              <Alert tone="info" title={`You're reviewing as ${reviewAs === 'hr' ? 'HR' : 'Tech lead'}`}>
+                Review and approve the {reviewAs === 'hr' ? 'Behavioral and EQ' : 'Technical, Scenario and Whiteboard'} questions below. You can edit or remove any question; approvals here are the only ones that count.
+              </Alert>
+            )}
             <Card title="Approval status"
               actions={(position.techLeadEmail || position.hrEmail) ? (
                 <Button variant="secondary" size="sm" leftIcon={<Mail size={14} />}
@@ -786,19 +795,41 @@ export default function PositionDetailPage() {
               (['Technical', 'Scenario', 'Behavioral', 'EQ', 'Whiteboard'] as const).map(type => {
                 const qs = allQuestions.filter((q) => (q as { _type: string })._type === type)
                 if (qs.length === 0) return null
-                const approvedCount = qs.filter(q => q.approvedByTech || q.approvedByHR).length
+                // Single source of truth: Tech lead owns Technical/Scenario/Whiteboard,
+                // HR owns Behavioral/EQ — the server derives the same mapping.
+                const isHrSection = type === 'Behavioral' || type === 'EQ'
+                const field: 'approvedByTech' | 'approvedByHR' = isHrSection ? 'approvedByHR' : 'approvedByTech'
+                const sectionKey = type === 'Technical' ? 'technicalQuestions' : type === 'Scenario' ? 'scenarioQuestions' : type === 'Behavioral' ? 'behavioralQuestions' : type === 'EQ' ? 'eqQuestions' : 'whiteboardQuestions'
+                const qType = type.toLowerCase()
+                const approvedCount = qs.filter(q => q[field]).length
+                const applyResult = (d: { questions?: QuestionItem[]; approval?: { techLeadApproved: boolean; hrApproved: boolean; status: string } }) => setPosition(p => p ? {
+                  ...p,
+                  ...(d.approval ? { techLeadApproved: d.approval.techLeadApproved, hrApproved: d.approval.hrApproved, status: d.approval.status as typeof p.status } : {}),
+                  questionSet: p.questionSet && d.questions ? { ...p.questionSet, [sectionKey]: d.questions } : p.questionSet,
+                } : p)
+                const approveCall = async (body: Record<string, unknown>) => {
+                  const r = await fetch(`/api/positions/${id}/questions/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionType: qType, ...body }) })
+                  const d = await r.json().catch(() => ({}))
+                  if (!r.ok) throw new Error(d.error ?? 'Couldn\'t update. Please try again.')
+                  applyResult(d)
+                  if (d.approval?.activated) toast.success('All questions approved — the position is now active')
+                  return d
+                }
                 return (
                   <section key={type} aria-label={`${type} questions`} style={stack(space[2])}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: space[2] }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: space[2], flexWrap: 'wrap' }}>
                       <Eyebrow>{type}</Eyebrow>
                       <span className="lv-tab__count">{qs.length}</span>
-                      {approvedCount > 0 && (
-                        <span style={{ fontSize: text.xs, color: lv.success, fontWeight: 600 }}>{approvedCount} approved</span>
+                      <span style={{ fontSize: text.xs, color: approvedCount === qs.length ? lv.success : lv.textMuted, fontWeight: 600 }}>{approvedCount}/{qs.length} approved by {isHrSection ? 'HR' : 'Tech lead'}</span>
+                      {approvedCount < qs.length && (
+                        <Button variant="tertiary" size="sm" style={{ marginLeft: 'auto' }}
+                          onClick={async () => { try { await approveCall({ action: 'approve_section' }); toast.success(`${type} questions approved`) } catch (e) { toast.error(e instanceof Error ? e.message : 'Couldn\'t update.') } }}>
+                          Approve all {type}
+                        </Button>
                       )}
                     </div>
                     {qs.map((q) => {
-                      const isApproved = q.approvedByTech || q.approvedByHR
-                      const qType = type.toLowerCase()
+                      const isApproved = !!q[field]
                       return (
                         <div
                           key={q.id}
@@ -814,22 +845,9 @@ export default function PositionDetailPage() {
                                 leftIcon={isApproved ? <CheckCircle2 size={14} color={lv.success} /> : <Edit3 size={14} />}
                                 onClick={async () => {
                                   try {
-                                    await fetch(`/api/positions/${id}/questions/approve`, {
-                                      method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ questionId: q.id, questionType: qType, action: isApproved ? 'unapprove' : 'approve', approverType: 'tech' }),
-                                    })
-                                    setPosition(p => p ? {
-                                      ...p,
-                                      questionSet: p.questionSet ? {
-                                        ...p.questionSet,
-                                        [type === 'Technical' ? 'technicalQuestions' : type === 'Scenario' ? 'scenarioQuestions' : type === 'Behavioral' ? 'behavioralQuestions' : type === 'EQ' ? 'eqQuestions' : 'whiteboardQuestions']:
-                                          (p.questionSet[type === 'Technical' ? 'technicalQuestions' : type === 'Scenario' ? 'scenarioQuestions' : type === 'Behavioral' ? 'behavioralQuestions' : type === 'EQ' ? 'eqQuestions' : 'whiteboardQuestions'] ?? []).map(
-                                            (qq: QuestionItem) => qq.id === q.id ? { ...qq, approvedByTech: !isApproved } : qq
-                                          ),
-                                      } : undefined,
-                                    } : p)
+                                    await approveCall({ questionId: q.id, action: isApproved ? 'unapprove' : 'approve' })
                                     toast.success(isApproved ? 'Approval removed' : 'Question approved')
-                                  } catch { toast.error('Couldn\'t update. Please try again.') }
+                                  } catch (e) { toast.error(e instanceof Error ? e.message : 'Couldn\'t update. Please try again.') }
                                 }}>
                                 {isApproved ? 'Approved' : 'Approve'}
                               </Button>
