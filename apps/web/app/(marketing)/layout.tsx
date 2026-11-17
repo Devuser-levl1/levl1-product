@@ -8,13 +8,16 @@ import { SITE_URL } from '@/config/site'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'Levl1 — AI technical interviews and an AI-native ATS',
-  description: 'Levl1 Screen runs live, AI-led first-round technical interviews with live coding and a whiteboard. HirePilot is the AI-native ATS + CRM for recruitment teams.',
+  title: 'Levl1 — Technical screening you can actually trust',
+  description: 'Levl1 runs rigorous AI technical interviews with live coding and a whiteboard, flags what others miss, and hands your team evidence-backed decisions.',
 }
 
 // Marketing pages allow pinch-zoom (the app shell's root viewport disables it).
 export const viewport: Viewport = {
-  themeColor: '#4F46E5',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+  ],
   width: 'device-width',
   initialScale: 1,
   // Viewport objects merge with the root's, so these must be set explicitly.

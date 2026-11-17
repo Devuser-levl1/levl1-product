@@ -5,8 +5,8 @@ import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/config/site'
 export const metadata = pageMetadata({ title: 'Terms of Service — Levl1', description: `The terms between you and ${LEGAL_ENTITY} for using Levl1.`, path: '/terms', og: 'legal' })
 
 export default function Terms() {
-  return <LegalPage title="Terms of Service" updated="October 2026">
-    <P>These terms are an agreement between you and {LEGAL_ENTITY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;), which provides Levl1, including Levl1 Screen and HirePilot. By creating an account or using the service you agree to them.</P>
+  return <LegalPage title="Terms of Service" updated="November 2026">
+    <P>These terms are an agreement between you and {LEGAL_ENTITY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;), which provides Levl1 — this website and the hiring software and services we provide through it. By creating an account or using the service you agree to them.</P>
     <H>Accounts</H><P>You are responsible for your account, your team’s access, and the accuracy of the data you upload, including having a lawful basis to process candidate data.</P>
     <H>Acceptable use</H><P>Do not misuse the service, attempt to breach tenant isolation, reverse-engineer the platform, or use it to discriminate unlawfully. AI outputs assist human decisions; final hiring decisions remain yours.</P>
     <H>Subscriptions &amp; billing</H><P>Paid plans are billed in advance via Cashfree. Trials convert to paid only if you choose a plan. Fees are non-refundable except where required by law.</P>

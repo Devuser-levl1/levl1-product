@@ -12,9 +12,9 @@ export default function IntegrityPage() {
   return (
     <>
       <Hero {...integrity.hero} visual={<ScreenIntegrityMock />} />
-      <FeatureGrid heading={integrity.signals.heading} items={integrity.signals.items} />
+      <FeatureGrid heading={integrity.signals.heading} items={integrity.signals.items} columns={4} />
       <FeatureGrid heading={integrity.principles.heading} items={integrity.principles.items} columns={4} tone="mist" />
-      <section className="bg-white py-16">
+      <section className="bg-mk-bg py-16">
         <Container><p data-reveal className="mx-auto max-w-2xl text-center text-[0.95rem] leading-relaxed text-mk-muted">{integrity.honesty}</p></Container>
       </section>
       <CTABand {...integrity.cta} />

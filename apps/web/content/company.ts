@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, INTERVIEW_LENGTH_LABEL, ROUTES } from '@/config/site'
+import { CONTACT_EMAIL, INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES } from '@/config/site'
 import type { CTA, FAQItem, Heading, Item, Step } from './types'
 
 const TALK: CTA = { label: 'Talk to us', href: ROUTES.demo }
@@ -34,7 +34,7 @@ export const iaas = {
 export const customAssessments = {
   meta: {
     title: 'Custom Assessments — Levl1',
-    description: 'We design role-specific technical question banks and scoring rubrics with your team, then run them in Levl1 Screen.',
+    description: 'We design role-specific technical question banks and scoring rubrics with your team, then run them in Screen.',
   },
   hero: {
     eyebrow: 'Services',
@@ -63,7 +63,7 @@ export const customAssessments = {
 export const security = {
   meta: {
     title: 'Security & data handling — Levl1',
-    description: 'How Levl1 handles customer and candidate data today: encryption in transit, tenant isolation, role-based access, candidate consent and named subprocessors.',
+    description: 'How Levl1 handles candidate and customer data today: encryption in transit and at rest, automatic retention, logged consent, tenant isolation, role-based access and named subprocessors.',
   },
   hero: {
     eyebrow: 'Security',
@@ -72,18 +72,21 @@ export const security = {
     lead: 'What Levl1 does today, stated plainly. If something you need isn’t listed, ask us.',
   },
   facts: [
-    { icon: 'lock', title: 'Encryption in transit', body: 'Levl1 is served over HTTPS, so data is encrypted between your browser and our servers.' },
+    { icon: 'lock', title: 'Encrypted in transit', body: 'Levl1 is served over HTTPS, so data is encrypted between the browser and our servers.' },
+    { icon: 'fingerprint', title: 'Interview data encrypted at rest', body: 'Candidate photos, audio recordings, transcripts and responses are encrypted with AES-256-GCM before they reach the database.' },
+    { icon: 'trash', title: 'Automatic retention', body: 'Recordings and transcripts are purged automatically after fixed periods, which are shown to candidates.' },
+    { icon: 'clipboard', title: 'Logged consent', body: 'Separate consents for the AI interview and for recording, each logged with a timestamp and notice version. Withdrawal is logged too.' },
     { icon: 'layers', title: 'Tenant isolation', body: 'Every customer’s data is scoped to its own workspace. Queries are filtered by workspace on the server.' },
-    { icon: 'key', title: 'Role-based access', body: 'Access is controlled by role, and HirePilot keeps an audit log of key actions.' },
-    { icon: 'clipboard', title: 'Candidate consent', body: 'Candidates are told the interview is AI-led and give consent before it starts.' },
-    { icon: 'fingerprint', title: 'Stored credentials are encrypted', body: 'Credentials you connect, such as a mailbox or job-board account, are encrypted with AES-256-GCM.' },
+    { icon: 'key', title: 'Role-based access', body: 'Access is controlled by role, so people see only what their role allows.' },
     { icon: 'userCheck', title: 'Humans make the decisions', body: 'AI scores and integrity flags inform your team. Nothing is auto-rejected.' },
+    { icon: 'server', title: 'Keys stay on the server', body: 'Voice and AI provider keys are server-only. Interview voice sessions use single-use tokens.' },
   ] as Item[],
-  // TODO(abhijit): confirm and add — encryption at rest (Render-managed Postgres), a defined data-retention policy,
-  // "candidate data is not used to train models" (check provider terms), and data residency options. Render nothing until confirmed.
+  // TODO(abhijit): confirm and add — "candidate data is not used to train models" (check provider terms)
+  // and data residency options. Render nothing until confirmed.
   subprocessors: [
-    ['Anthropic', 'AI evaluation and résumé scoring'],
+    ['Anthropic', 'AI evaluation and scoring'],
     ['ElevenLabs', 'Interview voice and transcription'],
+    ['Judge0 (via RapidAPI)', 'Runs candidate code in work samples'],
     ['Twilio', 'WhatsApp messaging'],
     ['Resend', 'Transactional email'],
     ['Cashfree', 'Payments and billing'],
@@ -94,29 +97,30 @@ export const security = {
 
 export const pricingPage = {
   meta: {
-    title: 'Pricing — Levl1 Screen and HirePilot',
-    description: 'Plans for Screen (credit packs and volume plans) and HirePilot (Launch, Scale and Enterprise, per seat). Contact us for pricing.',
+    title: 'Pricing — Levl1',
+    description: `Plans for ${PRODUCTS.screen.name}: pay-as-you-go credit packs and volume plans. Contact us for pricing.`,
   },
-  heading: { eyebrow: 'Pricing', title: 'Plans that fit how you hire.', lead: 'Screen and HirePilot are sold separately. Tell us about your volume and team, and we’ll put together a plan.' } as Heading,
+  heading: { eyebrow: 'Pricing', title: 'Plans that fit how you hire.', lead: `${PRODUCTS.screen.name} is available now. Tell us about your interview volume and we’ll put together a plan.` } as Heading,
   faq: [
-    { q: 'Why don’t you publish prices?', a: 'Plans depend on interview volume, seats and the products you use. Talk to us and we’ll give you a clear quote.' },
-    { q: 'Do candidates know they’re being interviewed by AI?', a: 'Yes. Candidates are told the interview is AI-led by email and WhatsApp, and they give consent before it starts.' },
-    { q: 'How long does a Screen interview take?', a: `${INTERVIEW_LENGTH_LABEL}, including a short guided tour of the interface.` },
-    { q: 'Does the AI make hiring decisions?', a: 'No. Screen scores and flags; your team decides. Integrity flags always go to a person, and nothing is auto-rejected.' },
-    { q: 'What happens to candidate data?', a: 'It is used to run interviews and produce reports for your team. We don’t sell personal data. The services that process it are listed on our Security page.' },
-    { q: 'Is there a free trial?', a: 'HirePilot has a free trial you can start yourself. For Screen, try a demo interview with no sign-up, then talk to us about trying it on your own roles.' },
+    { q: 'Why don’t you publish prices?', a: 'Plans depend on interview volume and how you’ll use them. Talk to us and we’ll give you a clear quote.' },
+    { q: 'Do candidates know they’re being interviewed by AI?', a: 'Yes. Candidates are told the interview is AI-led by email and WhatsApp, and give separate, logged consent to the interview and to recording.' },
+    { q: 'How long does an interview take?', a: `${INTERVIEW_LENGTH_LABEL}, including a short guided tour of the interface.` },
+    { q: 'Does the AI make hiring decisions?', a: 'No. It recommends and flags; your team decides. Integrity flags always go to a person, and nothing is auto-rejected.' },
+    { q: 'What happens to candidate data?', a: 'It’s used to run interviews and produce reports for your team. Recordings and transcripts are encrypted at rest and purged automatically after fixed periods. We don’t sell personal data.' },
+    { q: 'Can we try it first?', a: 'Yes — take a live demo interview with no sign-up, then talk to us about trying it on your own roles.' },
+    { q: `When will ${PRODUCTS.takeHome.name} and ${PRODUCTS.liveInterview.name} be available?`, a: 'Both are in development. Join early access on their pages and you’ll hear first — and help shape them.' },
   ] as FAQItem[],
 }
 
 export const demoPage = {
   meta: {
-    title: 'Book a demo — Levl1',
-    description: 'See Levl1 Screen or HirePilot on your own roles. Or try a demo interview right now, no sign-up.',
+    title: 'Talk to us — Levl1',
+    description: `See ${PRODUCTS.screen.name} on your own roles — or take a live interview right now, no sign-up.`,
   },
-  heading: { eyebrow: 'Book a demo', title: 'See Levl1 on your roles.', lead: 'Tell us a little about your hiring and we’ll set up a walkthrough of Screen, HirePilot, or both.' } as Heading,
+  heading: { eyebrow: 'Talk to us', title: 'See Levl1 on your roles.', lead: 'Tell us a little about your technical hiring and we’ll set up a walkthrough on one of your job descriptions.' } as Heading,
   gallery: {
-    title: 'Can’t wait? Try a demo interview now.',
-    body: 'Pick a technical role and talk to Screen by voice in your browser. No sign-up.',
-    cta: { label: 'Try a demo interview', href: ROUTES.screenDemo } as CTA,
+    title: 'Can’t wait? Try a live interview now.',
+    body: 'Pick a technical role and talk it through by voice in your browser. No sign-up.',
+    cta: { label: 'Try a live interview', href: ROUTES.screenDemo } as CTA,
   },
 }

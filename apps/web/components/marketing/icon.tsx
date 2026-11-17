@@ -3,7 +3,8 @@ import {
   Gauge, Sparkles, Bot, Inbox, Send, BellRing, HeartHandshake, LayoutDashboard, Globe, Megaphone, Briefcase,
   Building2, Target, Lock, KeyRound, UserCheck, ScrollText, Server, Workflow, MessageSquare, Layers, ListChecks,
   Scale, Search, Brain, Handshake, Wand2, Video, PlayCircle, AlertTriangle, Fingerprint, SlidersHorizontal,
-  KanbanSquare, Mail, Puzzle, BadgeCheck, Hourglass, ClipboardCheck, BarChart3, Compass, type LucideIcon,
+  KanbanSquare, Mail, Puzzle, BadgeCheck, Hourglass, ClipboardCheck, BarChart3, Compass, SquareTerminal, MonitorPlay,
+  Download, Trash2, Route, ListFilter, Zap, type LucideIcon,
 } from 'lucide-react'
 import type { IconName } from '@/config/site'
 
@@ -17,6 +18,7 @@ const MAP: Record<IconName, LucideIcon> = {
   brain: Brain, handshake: Handshake, wand: Wand2, video: Video, play: PlayCircle, alert: AlertTriangle,
   fingerprint: Fingerprint, sliders: SlidersHorizontal, kanban: KanbanSquare, mail: Mail, puzzle: Puzzle,
   badge: BadgeCheck, hourglass: Hourglass, clipboard: ClipboardCheck, chart: BarChart3, compass: Compass,
+  terminal: SquareTerminal, monitor: MonitorPlay, download: Download, trash: Trash2, route: Route, filter: ListFilter, zap: Zap,
 }
 
 export function Icon({ name, className = 'h-5 w-5', strokeWidth = 1.8 }: { name: IconName; className?: string; strokeWidth?: number }) {

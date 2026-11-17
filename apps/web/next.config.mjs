@@ -55,21 +55,31 @@ const nextConfig = {
    * ─────────────────────────────────────────────────────────────── */
   async redirects() {
     return [
-      { source: '/login', destination: '/interviews/login', permanent: true },
+      // One sign-in for the site. /signin renders the existing login page;
+      // /interviews/login itself is NOT moved (product code redirects there on
+      // session expiry with ?expired=1&next=…).
+      { source: '/login', destination: '/signin', permanent: true },
+      { source: '/sign-in', destination: '/signin', permanent: true },
       // The login page linked here for a while (it never existed) — keep any
       // bookmarks/shared links working. Create-account lives at /signup.
       { source: '/interviews/signup', destination: '/signup', permanent: true },
 
-      // Website restructure (docs/website-restructure-plan.md) — OLD MARKETING
-      // URLs ONLY, exact matches. These never match product routes such as
-      // /hire/login, /hire/apply/*, or /interviews/login.
-      { source: '/hirepilot', destination: '/products/hirepilot', statusCode: 301 },
+      // Old marketing URLs (exact matches only — never product routes such as
+      // /hire/login, /hire/apply/*, /interviews/login or webhooks).
       { source: '/hirepilot/agencies', destination: '/solutions/agencies', statusCode: 301 },
       { source: '/hirepilot/enterprise', destination: '/solutions/enterprise', statusCode: 301 },
       { source: '/contact', destination: '/demo', statusCode: 301 },
       { source: '/roadmap', destination: '/products/screen', statusCode: 301 },
       { source: '/interviews', destination: '/products/screen/demo', statusCode: 301 },
-      { source: '/hire', destination: '/products/hirepilot', statusCode: 301 },
+
+      // Hire (HirePilot) is hidden from the site and will move to its own
+      // domain. TEMPORARY (307, permanent: false) so browsers don't cache them
+      // and they can be repointed at the new domain later. Exact matches only:
+      // /hire/login, /hire/apply/*, the /hire/* app and webhooks are untouched.
+      { source: '/hire', destination: '/hire/login', permanent: false },
+      { source: '/hirepilot', destination: '/', permanent: false },
+      { source: '/products/hirepilot', destination: '/', permanent: false },
+      { source: '/features/hirematch', destination: '/', permanent: false },
     ]
   },
 

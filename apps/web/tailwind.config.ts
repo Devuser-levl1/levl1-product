@@ -11,22 +11,29 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        // Marketing site tokens (additive; mirrors components/marketing/tokens.ts).
+        // Marketing site tokens — theme-aware RGB triplets defined on .mk-root in
+        // app/(marketing)/marketing.css (light + dark). Legacy names
+        // (purple/indigo/violet/blue/sky) map to the single indigo accent.
         mk: {
-          purple: "#6D28D9",
-          indigo: "#4F46E5",
-          violet: "#7C3AED",
-          blue: "#2563EB",
-          sky: "#38BDF8",
-          ink: "#0B1020",
-          slate: "#475569",
-          muted: "#64748B",
-          line: "#E7E9F5",
-          mist: "#F5F7FF",
+          bg: "rgb(var(--mk-bg) / <alpha-value>)",
+          surface: "rgb(var(--mk-surface) / <alpha-value>)",
+          mist: "rgb(var(--mk-mist) / <alpha-value>)",
+          ink: "rgb(var(--mk-ink) / <alpha-value>)",
+          slate: "rgb(var(--mk-slate) / <alpha-value>)",
+          muted: "rgb(var(--mk-muted) / <alpha-value>)",
+          line: "rgb(var(--mk-line) / <alpha-value>)",
+          accent: "rgb(var(--mk-accent) / <alpha-value>)",
+          "accent-text": "rgb(var(--mk-accent-text) / <alpha-value>)",
+          "accent-soft": "rgb(var(--mk-accent-soft) / <alpha-value>)",
+          purple: "rgb(var(--mk-accent-text) / <alpha-value>)",
+          indigo: "rgb(var(--mk-accent-text) / <alpha-value>)",
+          violet: "rgb(var(--mk-accent-text) / <alpha-value>)",
+          blue: "rgb(var(--mk-accent-text) / <alpha-value>)",
+          sky: "rgb(var(--mk-accent-text) / <alpha-value>)",
         },
       },
       fontFamily: {
-        mkdisplay: ["'Plus Jakarta Sans'", "Inter", "system-ui", "sans-serif"],
+        mkdisplay: ["Inter", "system-ui", "sans-serif"],
       },
     },
   },

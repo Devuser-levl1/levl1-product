@@ -1,17 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DEMO_PERSONAS, DEMO_CATEGORIES, DemoCategory } from '@/lib/screen/demo/personas'
+import { ArrowRight, Mic } from 'lucide-react'
+import { DEMO_PERSONAS } from '@/lib/screen/demo/personas'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 
-const INDIGO = '#4F46E5'
-const VIOLET = '#7C3AED'
-
-// Embeddable demo gallery (Build 05). Lives inside /interviews. One click →
-// /api/demo/start → live Screen voice interview (no JD, no login).
+// Embeddable demo gallery — rendered on /products/screen/demo inside the
+// marketing site (styled with its mk.* tokens). One click → lead gate →
+// /api/demo/start → live voice interview at /interview/[id]?demo=1.
 export function DemoGallery() {
   const router = useRouter()
-  const [filter, setFilter] = useState<DemoCategory | 'All'>('All')
   const [starting, setStarting] = useState(false)
   const [err, setErr] = useState('')
   // Lead-capture gate: which persona the prospect chose + their details.
@@ -19,11 +17,12 @@ export function DemoGallery() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
+  const opener = useRef<HTMLElement | null>(null)
 
-  const shown = filter === 'All' ? DEMO_PERSONAS : DEMO_PERSONAS.filter((p) => p.category === filter)
   const chosen = DEMO_PERSONAS.find((p) => p.slug === leadFor)
 
-  function openLead(slug: string) { setLeadFor(slug); setErr('') }
+  function openLead(slug: string, el: HTMLElement) { opener.current = el; setLeadFor(slug); setErr('') }
+  function closeLead() { if (starting) return; setLeadFor(null); opener.current?.focus() }
 
   async function start() {
     if (starting || !leadFor) return
@@ -39,82 +38,105 @@ export function DemoGallery() {
   }
 
   return (
-    <div id="try-live" style={{ maxWidth: 1080, margin: '0 auto', padding: '8px 24px', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: INDIGO, background: 'rgba(79,70,229,0.08)', border: '1px solid rgba(79,70,229,0.18)', borderRadius: 100, padding: '6px 14px', marginBottom: 14 }}>Live demo · no signup</div>
-        <h2 style={{ fontSize: 32, fontWeight: 600, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Try a real AI interview in <span style={{ color: INDIGO }}>60 seconds</span></h2>
-        <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>Pick a technical role and start a live voice interview instantly — no job description, no login. You&apos;ll get the full evidence report at the end.</p>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 26 }}>
-        {(['All', ...DEMO_CATEGORIES] as const).map((c) => (
-          <button key={c} onClick={() => setFilter(c)} style={{ fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 100, cursor: 'pointer', border: '1px solid ' + (filter === c ? INDIGO : '#E2E8F0'), background: filter === c ? 'rgba(79,70,229,0.08)' : '#fff', color: filter === c ? INDIGO : '#64748B' }}>{c}</button>
-        ))}
-      </div>
-
-      {err && <div style={{ textAlign: 'center', color: '#DC2626', fontSize: 14, marginBottom: 16, fontWeight: 600 }}>{err}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 18 }}>
-        {shown.map((p) => (
-          <div key={p.slug} className="lv-demo-card" style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: VIOLET, background: 'rgba(124,58,237,0.08)', borderRadius: 6, padding: '2px 8px' }}>{p.category}</span>
+    <div id="try-live">
+      <div className="grid gap-4 md:grid-cols-3">
+        {DEMO_PERSONAS.map((p) => (
+          <div key={p.slug} className="mk-card mk-card-hover flex flex-col p-6">
+            <span className="mk-badge mk-badge-neutral w-fit">{p.category}</span>
+            <h3 className="mt-4 text-[1.15rem] font-semibold tracking-tight text-mk-ink">{p.title}</h3>
+            <p className="mt-2 text-[0.92rem] leading-relaxed text-mk-slate">{p.blurb}</p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {p.skills.map((s) => <span key={s} className="rounded-md border border-mk-line px-2 py-0.5 text-[0.75rem] font-medium text-mk-slate">{s}</span>)}
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#0F172A', margin: '0 0 6px' }}>{p.title}</h3>
-            <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 12px', lineHeight: 1.5, minHeight: 38 }}>{p.blurb}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-              {p.skills.map((s) => <span key={s} style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: 100, padding: '3px 10px' }}>{s}</span>)}
+            <p className="mt-4 text-[0.82rem] text-mk-muted">~{p.durationMin} min · {p.accent} · {p.language}</p>
+            <div className="mt-auto pt-6">
+              <button type="button" onClick={(e) => openLead(p.slug, e.currentTarget)} className="mk-btn mk-btn-primary w-full">
+                Try this interview<ArrowRight aria-hidden className="mk-arrow h-4 w-4" strokeWidth={2} />
+              </button>
             </div>
-            <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>
-              <span>~{p.durationMin} min</span>
-              <span>{p.accent}</span>
-              <span>{p.language}</span>
-            </div>
-            <button onClick={() => openLead(p.slug)} style={{ marginTop: 'auto', width: '100%', padding: '11px', borderRadius: 6, border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 600, fontSize: 14, background: `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>
-              Try interview →
-            </button>
           </div>
         ))}
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: 32, fontSize: 14, color: '#64748B' }}>
-        Evaluating for your team? <a href="/contact" style={{ color: INDIGO, fontWeight: 600 }}>Book a demo with our team →</a>
-      </div>
+      <p className="mt-6 flex items-center justify-center gap-2 text-center text-[0.9rem] text-mk-muted">
+        <Mic aria-hidden className="h-4 w-4" strokeWidth={2} />
+        You’ll need a microphone — allow access when your browser asks.
+      </p>
+      <p className="mt-2 text-center text-[0.9rem] text-mk-muted">
+        Evaluating for your team? <a href="/demo" className="font-medium text-mk-accent-text hover:underline">Talk to us</a>
+      </p>
 
-      {/* Lead-capture gate — name + work email before the demo starts. */}
-      {leadFor && (
-        <div onClick={() => !starting && setLeadFor(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '100%', background: '#fff', borderRadius: 8, padding: 26 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: VIOLET, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{chosen?.title} · ~{chosen?.durationMin} min</div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#0F172A', margin: '0 0 6px' }}>Start your live interview</h3>
-            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 18px' }}>Tell us who you are and we&apos;ll begin right away. You&apos;ll get the full evidence report at the end.</p>
-
-            <label style={lbl}>Name</label>
-            <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={inp} />
-            <label style={lbl}>Work email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') start() }} placeholder="you@company.com" style={inp} />
-            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 5 }}>Business email only — personal providers (Gmail, Outlook, etc.) aren&apos;t supported.</div>
-
-            <div style={{ marginTop: 14 }}>
-              <ConsentCheckbox checked={consent} onChange={setConsent}>
-                I agree that Levl1 may contact me about my demo results and its products. <span style={{ color: '#64748B' }}>(Optional — you can still try the demo without this.)</span>
-              </ConsentCheckbox>
-            </div>
-
-            {err && <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginTop: 10 }}>{err}</div>}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button onClick={() => setLeadFor(null)} disabled={starting} style={{ flex: 1, padding: 11, borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={start} disabled={starting} style={{ flex: 2, padding: 11, borderRadius: 6, border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: starting ? 'default' : 'pointer', background: starting ? VIOLET : `linear-gradient(135deg, ${INDIGO}, ${VIOLET})` }}>{starting ? 'Starting…' : 'Start interview →'}</button>
-            </div>
-          </div>
-        </div>
+      {leadFor && chosen && (
+        <LeadDialog
+          title={chosen.title} minutes={chosen.durationMin}
+          name={name} setName={setName} email={email} setEmail={setEmail}
+          consent={consent} setConsent={setConsent}
+          err={err} starting={starting} onStart={start} onClose={closeLead}
+        />
       )}
-
-      <style>{`.lv-demo-card { transition: transform .15s, box-shadow .15s, border-color .15s; } .lv-demo-card:hover { transform: translateY(-2px); border-color: #C7D2FE; box-shadow: 0 10px 28px rgba(79,70,229,0.10); }`}</style>
     </div>
   )
 }
 
-const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', margin: '12px 0 5px' }
-const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 6, border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }
+// Lead-capture gate as a real modal dialog. Forced light (.mk-light) because
+// ConsentCheckbox is light-only.
+function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, setConsent, err, starting, onStart, onClose }: {
+  title: string; minutes: number
+  name: string; setName: (v: string) => void; email: string; setEmail: (v: string) => void
+  consent: boolean; setConsent: (v: boolean) => void
+  err: string; starting: boolean; onStart: () => void; onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  // Latest onClose without re-running the mount effect on every keystroke.
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    ref.current?.querySelector<HTMLInputElement>('input')?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { closeRef.current(); return }
+      if (e.key !== 'Tab' || !ref.current) return
+      const f = Array.from(ref.current.querySelectorAll<HTMLElement>('input, button')).filter((el) => !el.hasAttribute('disabled'))
+      if (!f.length) return
+      const first = f[0], last = f[f.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey) }
+  }, [])
+
+  const label = 'mb-1.5 mt-4 block text-[0.82rem] font-medium text-mk-ink'
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="demo-gate-title" onClick={(e) => e.stopPropagation()}
+        className="mk-light w-full max-w-[440px] rounded-xl border border-mk-line bg-mk-surface p-6 sm:p-7">
+        <p className="text-[0.8rem] font-medium text-mk-muted">{title} · ~{minutes} min</p>
+        <h2 id="demo-gate-title" className="mt-1 text-[1.2rem] font-semibold tracking-tight">Start your live interview</h2>
+        <p className="mt-2 text-[0.92rem] leading-relaxed text-mk-slate">Tell us who you are and we’ll begin right away. You’ll get the evidence report at the end.</p>
+
+        <label htmlFor="demo-name" className={label}>Name</label>
+        <input id="demo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className="mk-field" />
+        <label htmlFor="demo-email" className={label}>Work email</label>
+        <input id="demo-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onStart() }} placeholder="you@company.com" autoComplete="email" className="mk-field" />
+        <p className="mt-1.5 text-[0.78rem] text-mk-muted">Business email only — personal providers (Gmail, Outlook, etc.) aren’t supported.</p>
+
+        <div className="mt-4">
+          <ConsentCheckbox checked={consent} onChange={setConsent}>
+            I agree that Levl1 may contact me about my demo results and its products. <span className="text-mk-muted">(Optional — you can still try the demo without this.)</span>
+          </ConsentCheckbox>
+        </div>
+
+        <p className="mt-4 flex items-center gap-2 text-[0.82rem] text-mk-muted"><Mic aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />Allow microphone access when your browser asks.</p>
+
+        {err && <p role="alert" className="mt-3 text-[0.88rem] font-medium text-rose-700">{err}</p>}
+
+        <div className="mt-6 flex gap-2.5">
+          <button type="button" onClick={onClose} disabled={starting} className="mk-btn mk-btn-secondary flex-1">Cancel</button>
+          <button type="button" onClick={onStart} disabled={starting} className="mk-btn mk-btn-primary flex-[2] disabled:opacity-70">{starting ? 'Starting…' : 'Start interview'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}

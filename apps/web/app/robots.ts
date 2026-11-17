@@ -12,6 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         '/api/', '/admin', '/platform', '/dashboard', '/onboarding', '/settings',
         '/hire/', '/interviews/login', '/candidate/', '/interview/', '/report/', '/reports/',
         '/approve/', '/schedule/', '/positions/', '/accept-invite/', '/reset-password', '/forgot-password', '/signup',
+        '/signin', '/playback/',
       ],
     }],
     sitemap: `${SITE_URL}/sitemap.xml`,

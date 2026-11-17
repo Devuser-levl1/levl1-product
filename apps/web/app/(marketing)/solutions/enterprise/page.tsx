@@ -3,6 +3,7 @@ import { pageMetadata } from '@/lib/marketing/metadata'
 import { Hero } from '@/components/marketing/sections/hero'
 import { FeatureGrid, ProblemGrid } from '@/components/marketing/sections/grids'
 import { SplitRow } from '@/components/marketing/sections/split-feature'
+import { Funnel } from '@/components/marketing/sections/funnel'
 import { CTABand } from '@/components/marketing/sections/bands'
 import { Container, Section, TextLink, ProofPlaceholder } from '@/components/marketing/sections/primitives'
 import { ScreenReportMock } from '@/components/marketing/mocks/screen'
@@ -20,7 +21,8 @@ export default function EnterprisePage() {
         </Container>
       </Section>
       <FeatureGrid heading={enterprise.readiness.heading} items={enterprise.readiness.items} tone="mist" />
-      <div className="-mt-12 bg-mk-mist pb-20 text-center sm:-mt-16"><TextLink cta={enterprise.readiness.link} /></div>
+      <div className="border-b border-mk-line bg-mk-mist pb-16 text-center"><Container><TextLink cta={enterprise.readiness.link} /></Container></div>
+      <Funnel heading={{ eyebrow: 'One funnel', title: 'Screen is stage one. Two more stages are coming.' }} />
       {/* TODO(abhijit): enterprise customer proof — render nothing until verified. */}
       <ProofPlaceholder slot="enterprise" />
       <CTABand {...enterprise.cta} />

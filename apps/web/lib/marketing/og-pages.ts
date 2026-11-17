@@ -1,20 +1,25 @@
+import { PRODUCTS } from '@/config/site'
+
 // Whitelisted OG card copy, keyed by page. /og?p=<key> only renders these —
-// never arbitrary query text.
+// never arbitrary query text. `hirepilot` / `hirematch` stay as keys for the
+// hidden (redirected) Hire pages, with neutral Levl1 copy.
 export const OG_PAGES = {
-  home: { eyebrow: 'Levl1', title: 'Technical interviews that run themselves — and show their work.' },
-  screen: { eyebrow: 'Levl1 Screen', title: 'A first-round technical interviewer that never gets tired, rushed, or biased.' },
-  screenDemo: { eyebrow: 'Levl1 Screen', title: 'Try a real AI technical interview.' },
-  hirepilot: { eyebrow: 'HirePilot', title: 'The AI-native ATS + CRM for recruitment teams that move fast.' },
-  integrity: { eyebrow: 'Integrity', title: 'Flags with evidence. A human makes the call.' },
-  hirematch: { eyebrow: 'HireMatch', title: 'Explainable matching. Verify, don’t filter.' },
-  agencies: { eyebrow: 'For Agencies', title: 'Run your desk. Verify before you submit.' },
-  enterprise: { eyebrow: 'For Enterprise', title: 'Give your engineers their first-round hours back.' },
-  iaas: { eyebrow: 'Services', title: 'Interview-as-a-Service, powered by Levl1.' },
+  home: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
+  screen: { eyebrow: `${PRODUCTS.screen.name} · Stage ${PRODUCTS.screen.stage}`, title: 'A technical interviewer that never gets tired, rushed, or fooled by a good story.' },
+  screenDemo: { eyebrow: 'Live demo · no sign-up', title: 'Sit in the candidate’s chair.' },
+  takeHome: { eyebrow: `${PRODUCTS.takeHome.name} · Coming soon`, title: 'Real work, not trivia.' },
+  liveInterview: { eyebrow: `${PRODUCTS.liveInterview.name} · Coming soon`, title: 'Make every interviewer as good as your best one.' },
+  integrity: { eyebrow: 'Integrity', title: 'Flags with evidence. A person makes the call.' },
+  agencies: { eyebrow: 'For recruitment agencies', title: 'Verify before you submit.' },
+  enterprise: { eyebrow: 'For engineering leaders', title: 'Give your engineers their first-round hours back.' },
+  iaas: { eyebrow: 'Services', title: 'Interview-as-a-Service.' },
   customAssessments: { eyebrow: 'Services', title: 'Custom assessments, designed with your team.' },
-  pricing: { eyebrow: 'Pricing', title: 'Plans for Screen and HirePilot.' },
+  pricing: { eyebrow: 'Pricing', title: 'Plans that fit how you hire.' },
   security: { eyebrow: 'Security', title: 'How Levl1 handles your data.' },
-  demo: { eyebrow: 'Book a demo', title: 'See Levl1 on your roles.' },
+  demo: { eyebrow: 'Talk to us', title: 'See Levl1 on your roles.' },
   legal: { eyebrow: 'Levl1', title: 'Legal' },
+  hirepilot: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
+  hirematch: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
 } as const
 
 export type OgPageKey = keyof typeof OG_PAGES

@@ -18,14 +18,14 @@ export function SplitRow({ block, reverse = false }: { block: SplitBlock; revers
   return (
     <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
       <div data-reveal className={reverse ? 'lg:order-2' : ''}>
-        {block.eyebrow && <p className="mk-eyebrow mb-4 text-mk-purple">{block.eyebrow}</p>}
-        <h2 className="text-[clamp(1.6rem,3vw,2.25rem)] font-extrabold leading-[1.12] tracking-[-0.025em]"><Highlighted title={block.title} highlight={block.highlight} /></h2>
+        {block.eyebrow && <p className="mk-eyebrow mb-3">{block.eyebrow}</p>}
+        <h2 className="text-[clamp(1.55rem,2.8vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.025em]"><Highlighted title={block.title} highlight={block.highlight} /></h2>
         {block.lead && <p className="mk-lead mt-5">{block.lead}</p>}
         {block.bullets && (
           <ul className="mt-7 space-y-3">
             {block.bullets.map((b) => (
               <li key={b} className="flex gap-3 text-mk-slate">
-                <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-violet-100 text-mk-purple"><Check aria-hidden className="h-3.5 w-3.5" strokeWidth={3} /></span>
+                <Check aria-hidden className="mt-1 h-4 w-4 flex-none text-mk-accent-text" strokeWidth={2.4} />
                 <span className="leading-relaxed">{b}</span>
               </li>
             ))}

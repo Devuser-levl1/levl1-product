@@ -6,7 +6,7 @@
 // warm-up runs first). Demo duration is intentionally DECOUPLED from the
 // 30-minute production envelope.
 //
-// CONFIG-DRIVEN: add more personas later by appending to DEMO_PERSONAS (data
+// CONFIG-DRIVEN: add more personas later by appending to ALL_DEMO_PERSONAS (data
 // only) — the gallery + launch path need no code changes. Starter set is
 // exactly three: Backend Engineer, Data Engineer, Full-Stack Engineer.
 
@@ -36,7 +36,9 @@ export interface DemoPersona {
 const beh = (q: string, kp: string[]): DemoQuestion => ({ question: q, expectedKeyPoints: kp, estimatedMinutes: 2 })
 const tech = (q: string, kp: string[], tag: string): DemoQuestion => ({ question: q, expectedKeyPoints: kp, techTag: tag, estimatedMinutes: 3 })
 
-export const DEMO_PERSONAS: DemoPersona[] = [
+// Full persona data, including non-technical roles kept for reference. Only the
+// technical subset below is offered (site gallery + /api/demo/start).
+const ALL_DEMO_PERSONAS: DemoPersona[] = [
   {
     slug: 'backend-engineer',
     title: 'Backend Engineer',
@@ -165,5 +167,12 @@ export const DEMO_PERSONAS: DemoPersona[] = [
   },
 ]
 
-export const DEMO_CATEGORIES: DemoCategory[] = ['Backend', 'Data', 'Full-Stack', 'Product', 'Program', 'Risk', 'Marketing']
+/** Categories offered in the demo — technical hiring only. */
+export const DEMO_CATEGORIES: DemoCategory[] = ['Backend', 'Data', 'Full-Stack']
+
+/** The personas the demo offers. getDemoPersona only resolves these, so
+ *  /api/demo/start rejects non-technical slugs too. (Admin lead lists fall
+ *  back to the raw slug for older non-technical leads.) */
+export const DEMO_PERSONAS: DemoPersona[] = ALL_DEMO_PERSONAS.filter((p) => DEMO_CATEGORIES.includes(p.category))
+
 export function getDemoPersona(slug: string): DemoPersona | undefined { return DEMO_PERSONAS.find((p) => p.slug === slug) }
