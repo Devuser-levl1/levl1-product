@@ -21,7 +21,16 @@ export function DemoGallery() {
 
   const chosen = DEMO_PERSONAS.find((p) => p.slug === leadFor)
 
-  function openLead(slug: string, el: HTMLElement) { opener.current = el; setLeadFor(slug); setErr('') }
+  function openLead(slug: string, el: HTMLElement | null) { opener.current = el; setLeadFor(slug); setErr('') }
+
+  // Deep link from the site's role chips: /products/screen/demo?role=<slug>
+  // opens that role's start dialog. Unknown slugs are ignored.
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('role')
+    if (!slug || !DEMO_PERSONAS.some((p) => p.slug === slug)) return
+    openLead(slug, document.querySelector<HTMLElement>(`[data-demo-slug="${slug}"]`))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   function closeLead() { if (starting) return; setLeadFor(null); opener.current?.focus() }
 
   async function start() {
@@ -50,7 +59,7 @@ export function DemoGallery() {
             </div>
             <p className="mt-4 text-[0.82rem] text-mk-muted">~{p.durationMin} min · {p.accent} · {p.language}</p>
             <div className="mt-auto pt-6">
-              <button type="button" onClick={(e) => openLead(p.slug, e.currentTarget)} className="mk-btn mk-btn-primary w-full">
+              <button type="button" data-demo-slug={p.slug} onClick={(e) => openLead(p.slug, e.currentTarget)} className="mk-btn mk-btn-primary w-full">
                 Try this interview<ArrowRight aria-hidden className="mk-arrow h-4 w-4" strokeWidth={2} />
               </button>
             </div>

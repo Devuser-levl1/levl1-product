@@ -26,7 +26,7 @@ export function StatementBand({ heading, link, aside, tone = 'mist' }: { heading
     <Section tone={tone === 'dark' ? 'mist' : tone}>
       <Container>
         <div className={aside ? 'grid items-center gap-12 lg:grid-cols-2 lg:gap-20' : ''}>
-          <div data-reveal className={aside ? '' : 'mx-auto max-w-3xl text-center'}>
+          <div data-reveal className={aside ? '' : 'max-w-3xl'}>
             {heading.eyebrow && <p className="mk-eyebrow mb-3">{heading.eyebrow}</p>}
             <h2 className="mk-h2"><Highlighted title={heading.title} highlight={heading.highlight} /></h2>
             {heading.lead && <p className="mk-lead mt-5">{heading.lead}</p>}

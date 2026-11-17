@@ -16,7 +16,7 @@ export function Pillars({ heading, pillars }: { heading: Heading; pillars: Pilla
               <div key={p.title} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
                 <div data-reveal className={reverse ? 'lg:order-2' : ''}>
                   <p className="mk-eyebrow mb-3">{p.eyebrow}</p>
-                  <h3 className="text-[clamp(1.55rem,2.8vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.025em]">{p.title}</h3>
+                  <h3 className="mk-h2 !text-[clamp(1.6rem,2.8vw,2.25rem)]">{p.title}</h3>
                   <p className="mk-lead mt-5">{p.promise}</p>
                   <ul className="mt-7 space-y-3">
                     {p.proof.map((b) => (
@@ -30,7 +30,7 @@ export function Pillars({ heading, pillars }: { heading: Heading; pillars: Pilla
                   {p.link && <div className="mt-7"><TextLink cta={p.link} /></div>}
                 </div>
                 <div data-reveal="scale" style={{ ['--d' as string]: '120ms' }} className={reverse ? 'lg:order-1' : ''}>
-                  <Visual name={p.visual} />
+                  <div className="mk-panel"><div className="mk-float rounded-xl"><Visual name={p.visual} /></div></div>
                 </div>
               </div>
             )

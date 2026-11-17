@@ -30,6 +30,14 @@ const config: Config = {
           violet: "rgb(var(--mk-accent-text) / <alpha-value>)",
           blue: "rgb(var(--mk-accent-text) / <alpha-value>)",
           sky: "rgb(var(--mk-accent-text) / <alpha-value>)",
+          // DESIGN.md names (aliases of the tokens above).
+          paper: "rgb(var(--mk-bg) / <alpha-value>)",
+          sunken: "rgb(var(--mk-mist) / <alpha-value>)",
+          body: "rgb(var(--mk-slate) / <alpha-value>)",
+          "accent-ink": "rgb(var(--mk-accent-text) / <alpha-value>)",
+          "accent-tint": "rgb(var(--mk-accent-soft) / <alpha-value>)",
+          pass: "rgb(var(--mk-pass) / <alpha-value>)",
+          flag: "rgb(var(--mk-flag) / <alpha-value>)",
         },
       },
       fontFamily: {

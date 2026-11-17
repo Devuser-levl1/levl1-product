@@ -8,8 +8,8 @@ import { Frame } from './frame'
 
 export function ScreenRoomMock() {
   return (
-    <Frame title="Levl1 — Live interview" label="Interview room: the question across the top, the AI interviewer above the candidate's video on the left, and a code editor with test results and a live transcript on the right.">
-      <div className="bg-zinc-50 p-3 sm:p-4">
+    <Frame title="levl1 · live interview" label="Interview room: the question across the top, the AI interviewer above the candidate's video on the left, and a code editor with test results and a live transcript on the right.">
+      <div className="mk-room bg-zinc-50 p-3 sm:p-4">
         {/* Question bar */}
         <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3">
           <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">Q3 · Work sample</span>
@@ -23,7 +23,7 @@ export function ScreenRoomMock() {
             <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-zinc-900">
               <div className="mk-pulse h-11 w-11 rounded-full bg-indigo-500/90 ring-8 ring-indigo-500/15 sm:h-12 sm:w-12" />
               <span className="absolute bottom-2 left-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">AI interviewer</span>
-              <span className="mk-wave absolute bottom-2.5 right-2.5 flex h-4 items-center gap-[3px] text-indigo-200">{[0, 1, 2, 3].map((i) => <i key={i} style={{ height: 14, animationDelay: `${i * 0.15}s` }} />)}</span>
+              <span className="mk-wave mk-room-wave absolute bottom-2.5 right-2.5 flex h-4 items-center gap-[3px] text-indigo-200">{[0, 1, 2, 3].map((i) => <i key={i} style={{ height: 14, animationDelay: `${i * 0.15}s` }} />)}</span>
             </div>
             <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-zinc-200">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-sm font-semibold text-zinc-600 sm:h-12 sm:w-12">AK</div>
@@ -70,7 +70,7 @@ export function ScreenReportMock() {
   ]
   const must: [string, boolean][] = [['Go', true], ['Distributed systems', true], ['Kafka', false]]
   return (
-    <Frame title="Levl1 — Interview report" label="Interview report: the recommendation first, competencies ranked with a reason for each, must-have skills, and integrity shown separately.">
+    <Frame title="levl1 · interview report" label="Interview report: the recommendation first, competencies ranked with a reason for each, must-have skills, and integrity shown separately.">
       <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-3">
           <div className="min-w-0">
@@ -116,7 +116,7 @@ export function ScreenIntegrityMock() {
     ['Multiple faces', 'A second person visible in frame for 6s at 12:02'],
   ]
   return (
-    <Frame title="Levl1 — Integrity review" label="Integrity review: each flag shows its evidence and timestamp and waits for a human decision. Nothing is auto-rejected.">
+    <Frame title="levl1 · integrity review" label="Integrity review: each flag shows its evidence and timestamp and waits for a human decision. Nothing is auto-rejected.">
       <div className="p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-[12px] font-semibold text-zinc-900">3 flags · awaiting review</p>
@@ -143,7 +143,7 @@ export function ScreenIntegrityMock() {
 
 export function ScreenConsentMock() {
   return (
-    <Frame title="Levl1 — Your interview" label="Candidate scheduling: told up front the interview is AI-led, gives two separate consents, then picks a time.">
+    <Frame title="levl1 · your interview" label="Candidate scheduling: told up front the interview is AI-led, gives two separate consents, then picks a time.">
       <div className="p-4 sm:p-5">
         <p className="text-[12px] font-semibold text-zinc-900">This interview is conducted by an AI interviewer.</p>
         <p className="mt-1 text-[10.5px] leading-snug text-zinc-600">It takes {INTERVIEW_LENGTH_LABEL}, including a short tour of the interface. A person reviews every result.</p>
@@ -174,7 +174,7 @@ export function ScreenApprovalMock() {
     ['Work sample — rate limiter', 'Must-have', true], ['Kafka', 'Good-to-have', false],
   ]
   return (
-    <Frame title="Levl1 — Rubric approval" label="Rubric approval: must-have and good-to-have skills drafted from the job description, approved by the team before interviews run.">
+    <Frame title="levl1 · rubric approval" label="Rubric approval: must-have and good-to-have skills drafted from the job description, approved by the team before interviews run.">
       <div className="p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-[12px] font-semibold text-zinc-900">Senior Backend Engineer</p>
@@ -200,7 +200,7 @@ export function ScreenControlMock() {
     ['Sam Okafor', 'Full-Stack', 18, true, false],
   ]
   return (
-    <Frame title="Levl1 — Control Room" label="Control Room: live interviews in progress with camera, microphone and progress health, visible without joining.">
+    <Frame title="levl1 · control room" label="Control Room: live interviews in progress with camera, microphone and progress health, visible without joining.">
       <div className="p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="flex items-center gap-2 text-[12px] font-semibold text-zinc-900"><span className="mk-pulse h-1.5 w-1.5 rounded-full bg-indigo-600" />3 interviews live</p>

@@ -19,7 +19,7 @@ export function PricingTable({ products, initial = 0 }: { products: PricingProdu
 
   return (
     <div>
-      {products.length > 1 && <div role="tablist" aria-label="Choose a product" className="mx-auto flex w-fit rounded-lg border border-mk-line bg-mk-surface p-1">
+      {products.length > 1 && <div role="tablist" aria-label="Choose a product" className="flex w-fit rounded-lg border border-mk-line bg-mk-surface p-1">
         {products.map((p, i) => (
           <button key={p.id} ref={(el) => { tabs.current[i] = el }} role="tab" id={`${id}-tab-${p.id}`} aria-selected={active === i} aria-controls={`${id}-panel-${p.id}`}
             tabIndex={active === i ? 0 : -1} onClick={() => setActive(i)} onKeyDown={(e) => onKey(e, i)}
@@ -32,8 +32,8 @@ export function PricingTable({ products, initial = 0 }: { products: PricingProdu
       {products.map((product, i) => (
       <div key={product.id} hidden={active !== i} className={`mk-menu-enter focus:outline-none ${products.length > 1 ? 'mt-10' : ''}`}
         {...(products.length > 1 ? { role: 'tabpanel', id: `${id}-panel-${product.id}`, 'aria-labelledby': `${id}-tab-${product.id}`, tabIndex: 0 } : {})}>
-        <p className="mx-auto max-w-xl text-center text-mk-slate">{product.summary} <span className="font-semibold text-mk-ink">{product.unit}.</span></p>
-        <div className={`mt-10 grid gap-6 ${product.plans.length === 3 ? 'lg:grid-cols-3' : 'mx-auto max-w-4xl md:grid-cols-2'}`}>
+        <p className="max-w-xl text-mk-slate">{product.summary} <span className="font-semibold text-mk-ink">{product.unit}.</span></p>
+        <div className={`mt-10 grid gap-6 ${product.plans.length === 3 ? 'lg:grid-cols-3' : 'max-w-4xl md:grid-cols-2'}`}>
           {product.plans.map((plan) => (
             <div key={plan.id} className={`mk-card relative flex flex-col p-8 ${plan.highlighted ? '!border-mk-accent/50' : ''}`}>
               <h3 className="text-xl font-semibold tracking-tight">{plan.name}</h3>

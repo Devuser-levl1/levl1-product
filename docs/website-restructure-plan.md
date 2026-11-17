@@ -90,7 +90,7 @@ Side note, out of scope and not to be touched: 16 API routes fall back to `https
 | `/security` | Rewrite in place | Same URL |
 | `/demo` | **Collision:** currently `redirect('/interviews')` | Replace the redirect page with the demo form page. Anyone with an old `/demo` link now gets the form, and the form links to the gallery |
 | `/interviews` | Keep the route | Same file; refocused as the "Try a demo interview" page (see D2). `/interviews/login` is unaffected |
-| `/privacy`, `/terms` | Restyle in place | Add Avdima Technologies Pvt Ltd as the contracting entity and data controller |
+| `/privacy`, `/terms` | Restyle in place | Name Levl1 as the contracting party and data controller (no separate company name) |
 | `/cookies` | Keep and restyle | Not in the route map, but the cookie banner links to it. Kept, plus a footer link |
 | `/sitemap.xml`, `/robots.txt` | New (`app/sitemap.ts`, `app/robots.ts`) | None. `robots` disallows `/api/`, `/hire/`, `/admin`, `/platform`, `/dashboard`, `/candidate/`, `/interview/`, `/report/`, `/reports/`, `/approve/`, `/schedule/`, `/positions/`, `/settings` |
 
@@ -191,7 +191,7 @@ Next.js redirect sources match exactly, so `/hire` does **not** catch `/hire/log
 4. Product smoke test (status code plus render, no auth changes): `/interviews/login`, `/hire/login`, `/signup`, `/hire/signup`, `/forgot-password`, `/reset-password`, `/careers/<real slug>`, `/candidate/error`, `/admin/login`. Webhook routes reject a bad-signature POST exactly as before (same status as on `main`).
 5. Demo flow: `/interviews` gallery → `/api/demo/start` → `/interview/[id]?demo=1` loads. `/demo` form → `/api/demo` → row in `/admin/demo-leads`.
 6. `git diff --stat main` shows **no** changes under `app/hire/`, `app/api/` (except `app/api/demo/route.ts` if D7 is approved), `app/candidate/`, `app/interview/`, `lib/` (except `lib/marketing/`) or `emails/`.
-7. Greps over marketing code return zero hits for: copilot, take-home, chakra, agentic interview, online test, coming soon, Upword, school, student, Avyoma, MedOrbit, ₹, `$` followed by a digit, "per month", "/mo", SOC 2, ISO 27001, GDPR certified. Footer and legal pages name Avdima Technologies Pvt Ltd.
+7. Greps over marketing code return zero hits for: copilot, take-home, chakra, agentic interview, online test, coming soon, Upword, school, student, Avyoma, MedOrbit, ₹, `$` followed by a digit, "per month", "/mo", SOC 2, ISO 27001, GDPR certified. Footer and legal pages name Levl1 only.
 8. Lighthouse (mobile, production build) for `/`, `/products/ai-interview`, `/products/hirepilot`, with scores reported.
 
 ## 9. TODO placeholders that will exist after Phase B (all render nothing)

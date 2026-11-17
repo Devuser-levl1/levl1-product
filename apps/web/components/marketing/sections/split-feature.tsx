@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import type { SplitBlock } from '@/content/types'
 import { Visual } from '../mocks/registry'
-import { Container, Highlighted, Section, TextLink } from './primitives'
+import { Container, Section, TextLink } from './primitives'
 
 // Text on one side, real product UI on the other. Alternates with `reverse`.
 export function SplitFeature({ block, reverse = false, tone = 'light' }: { block: SplitBlock; reverse?: boolean; tone?: 'light' | 'mist' }) {
@@ -19,7 +19,7 @@ export function SplitRow({ block, reverse = false }: { block: SplitBlock; revers
     <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
       <div data-reveal className={reverse ? 'lg:order-2' : ''}>
         {block.eyebrow && <p className="mk-eyebrow mb-3">{block.eyebrow}</p>}
-        <h2 className="text-[clamp(1.55rem,2.8vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.025em]"><Highlighted title={block.title} highlight={block.highlight} /></h2>
+        <h2 className="mk-h2 !text-[clamp(1.6rem,2.8vw,2.25rem)]">{block.title}</h2>
         {block.lead && <p className="mk-lead mt-5">{block.lead}</p>}
         {block.bullets && (
           <ul className="mt-7 space-y-3">
@@ -34,7 +34,7 @@ export function SplitRow({ block, reverse = false }: { block: SplitBlock; revers
         {block.link && <div className="mt-8"><TextLink cta={block.link} /></div>}
       </div>
       <div data-reveal="scale" style={{ ['--d' as string]: '120ms' }} className={reverse ? 'lg:order-1' : ''}>
-        <Visual name={block.visual} />
+        <div className="mk-panel"><div className="mk-float rounded-xl"><Visual name={block.visual} /></div></div>
       </div>
     </div>
   )

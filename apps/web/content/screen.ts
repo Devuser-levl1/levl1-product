@@ -1,5 +1,6 @@
 import { INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES, TALK_TO_US, TRY_LIVE } from '@/config/site'
-import type { CTA, Heading, Item, SplitBlock, Step } from './types'
+import type { CTA, Heading, Item, SplitBlock, Step, TabItem } from './types'
+import { DEMO_MICROCOPY, DEMO_ROLE_CHIPS } from './home'
 
 const NAME = PRODUCTS.screen.name
 
@@ -11,23 +12,28 @@ export const screen = {
   hero: {
     badge: `Stage ${PRODUCTS.screen.stage} · Available now`,
     badgeTone: 'live' as const,
-    title: 'A technical interviewer that never gets tired, rushed, or fooled by a good story.',
-    highlight: 'or fooled by a good story.',
-    lead: `${NAME} runs a live, spoken technical interview — with real code, a whiteboard and follow-ups on the candidate’s own answers — then hands your team a recommendation with the evidence behind it.`,
+    title: 'A first-round interviewer that can’t be fooled by a good story.',
+    lead: `${NAME} runs a live, spoken technical interview — real code, a whiteboard, follow-ups on the candidate’s own answers — then hands your team a recommendation with the evidence behind it.`,
+    chipsLabel: 'Try it as a candidate:',
+    chips: DEMO_ROLE_CHIPS,
     primary: TRY_LIVE as CTA,
     secondary: TALK_TO_US as CTA,
-    points: [INTERVIEW_LENGTH_LABEL, 'Voice, live coding and whiteboard', 'Questions and rubric your team approves'],
+    microcopy: DEMO_MICROCOPY,
+    evidence: [
+      { time: '06:40', text: 'tests 4/4 passed', tone: 'pass' as const },
+      { time: '30:00', text: 'advance to panel', tone: 'pass' as const },
+    ],
   },
   interview: {
-    heading: { eyebrow: 'Inside the interview', title: 'A real technical round, not a quiz.', lead: 'It holds a conversation, watches the candidate work, and adapts as it goes.' } as Heading,
-    items: [
-      { icon: 'mic', title: 'Adaptive voice', body: 'A natural spoken interview that adjusts depth as it goes. Candidates can interrupt and push back.' },
-      { icon: 'terminal', title: 'Observe & defend', body: 'A real task in a coding workspace. The code runs against tests, then the candidate defends their decisions.' },
-      { icon: 'pen', title: 'Whiteboard', body: 'For system design — the candidate sketches, the interviewer asks about the trade-offs.' },
-      { icon: 'search', title: 'Follow-ups on their own answers', body: 'Questions dig into what the candidate actually said, so rehearsed answers don’t carry the round.' },
-      { icon: 'list', title: 'Logistics & must-haves', body: 'Notice period, location, relocation, work authorization and your knockout questions — covered in the same session.' },
-      { icon: 'users', title: 'Culture-fit', body: 'A short structured segment on working style, scored separately from technical depth.' },
-    ] as Item[],
+    heading: { eyebrow: 'Inside the interview', title: 'A real technical round. Not a quiz.', lead: `${INTERVIEW_LENGTH_LABEL}. It holds a conversation, watches the candidate work, and adapts as it goes.` } as Heading,
+    tabs: [
+      { id: 'voice', label: 'Adaptive voice', visual: 'snipVoice', title: 'A conversation, not a form.', body: 'A natural spoken interview that adjusts its depth as it goes. Candidates can interrupt, ask for clarification and push back — it adapts.', bullets: ['Natural voice, both ways', 'Candidates can interrupt mid-question', 'Depth adjusts to how they’re doing'] },
+      { id: 'code', label: 'Code & tests', visual: 'snipCode', title: 'Observe the work. Then make them defend it.', body: 'A real task in a coding workspace. The code runs against tests, then the candidate explains the decisions behind it.', bullets: ['A real work sample, not trivia', 'Run against your tests', 'Defended out loud afterwards'] },
+      { id: 'whiteboard', label: 'Whiteboard', visual: 'snipWhiteboard', title: 'Design, sketched and questioned.', body: 'For system design, the candidate sketches and the interviewer asks about the trade-offs.', bullets: ['A shared whiteboard in the room', 'Questions about failure modes and scale'] },
+      { id: 'followups', label: 'Follow-ups', visual: 'snipFollowup', title: 'Rehearsed answers don’t carry the round.', body: 'Follow-up questions dig into what the candidate actually said, so a polished story gets tested.', bullets: ['Grounded in the candidate’s own words', 'Probes the parts that sound too clean'] },
+      { id: 'logistics', label: 'Logistics', visual: 'snipLogistics', title: 'The practical questions, covered.', body: 'Notice period, location, relocation, work authorization and your knockout questions — in the same session.', bullets: ['Your knockout questions included', 'Answers captured in the report'] },
+      { id: 'culture', label: 'Culture-fit', visual: 'snipCulture', title: 'Working style, scored on its own.', body: 'A short structured segment on how the candidate likes to work, scored separately from technical depth.', bullets: ['Structured agreement scale', 'Never blended into the technical score'] },
+    ] as TabItem[],
   },
   modes: {
     heading: { eyebrow: 'Interview modes', title: 'The right format for the role.', lead: 'Suggested from the job description — you choose.' } as Heading,
@@ -70,14 +76,17 @@ export const screen = {
     visual: 'screenApproval',
   } as SplitBlock,
   operations: {
-    heading: { eyebrow: 'Operations', title: 'Run many interviews without running them.' } as Heading,
-    items: [
-      { icon: 'calendar', title: 'Self-scheduling', body: 'Candidates book any slot, around the clock — interviews run in parallel.' },
-      { icon: 'monitor', title: 'Control Room', body: 'See live interview health — camera, mic, progress — without joining.' },
-      { icon: 'play', title: 'Session playback', body: 'Replay any interview when you want to see it for yourself.' },
-      { icon: 'download', title: 'CSV export', body: 'Export results by role, date range or recommendation.' },
-    ] as Item[],
-  },
+    eyebrow: 'Operations',
+    title: 'Run many interviews without running them.',
+    lead: 'Interviews run in parallel while your team works the rest of the funnel.',
+    bullets: [
+      'Self-scheduling — candidates book any slot, around the clock',
+      'Control Room — live camera, mic and progress health, without joining',
+      'Session playback — replay any interview yourself',
+      'CSV export — by role, date range or recommendation',
+    ],
+    visual: 'screenControl',
+  } as SplitBlock,
   integrity: {
     heading: { eyebrow: 'Integrity', title: 'Flags with evidence. A person makes the call.', lead: `${NAME} flags behaviour consistent with outside help — assistants, overlays, pasted answers, another face or voice — and attaches the evidence. Nothing is auto-rejected.` } as Heading,
     link: { label: 'How integrity works', href: ROUTES.integrity } as CTA,

@@ -6,7 +6,6 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://levl1.io').replace(/\/$/, '')
 
 export const SITE_NAME = 'Levl1'
-export const LEGAL_ENTITY = 'Avdima Technologies Pvt Ltd'
 export const CONTACT_EMAIL = 'hello@levl1.io'
 
 /** How long a production Screen interview takes, as marketed. The engine's

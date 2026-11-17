@@ -15,8 +15,18 @@ export interface Pillar { eyebrow: string; title: string; promise: string; proof
 /** One audience in an "built for both" split. */
 export interface Audience { label: string; title: string; points: string[] }
 
+/** One "Today → With Screen" row. */
+export interface ComparisonRow { today: string; withScreen: string }
+
+/** One moment in the illustrative interview timeline. */
+export interface TimelineStep { time: string; title: string; body: string; evidence: string; tone?: 'pass' | 'flag' | 'neutral' }
+
+/** One tab: copy on one side, a product visual on the other. */
+export interface TabItem { id: string; label: string; title: string; body: string; bullets?: string[]; visual: VisualKey }
+
 /** Product UI mockups available to content files (see components/marketing/mocks/registry). */
 export type VisualKey =
   | 'screenRoom' | 'screenReport' | 'screenIntegrity' | 'screenConsent' | 'screenApproval' | 'screenControl'
+  | 'snipVoice' | 'snipCode' | 'snipWhiteboard' | 'snipFollowup' | 'snipLogistics' | 'snipCulture'
   | 'hpBrief' | 'hpProfile' | 'hpPipeline' | 'hpLev' | 'hpInbox' | 'hpSubmit' | 'hpAR' | 'hpNurture'
   | 'hpTeam' | 'hpCareers' | 'hpSourcing' | 'hpMatch'

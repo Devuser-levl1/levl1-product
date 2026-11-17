@@ -57,7 +57,7 @@ export function MarketingNav() {
     <header className={`fixed inset-x-0 top-0 z-[100] border-b transition-[background-color,border-color] duration-200 ${solid ? 'mk-glass border-mk-line' : 'border-transparent'}`}>
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[200] focus:rounded-md focus:bg-mk-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium">Skip to content</a>
       <nav ref={navRef} aria-label="Main" className="mx-auto flex h-16 max-w-[1200px] items-center gap-2 px-5 sm:px-8">
-        <Link href="/" aria-label="Levl1 home" className="mr-4 flex items-center rounded-md py-1"><ThemedLogo height={22} priority /></Link>
+        <Link href="/" aria-label="Levl1 home" className="mr-4 flex min-h-[44px] items-center rounded-md"><ThemedLogo height={22} priority /></Link>
 
         <ul className="hidden items-center gap-0.5 lg:flex" onMouseLeave={() => hoverOpen(null)}>
           {NAV.map((g) => (
@@ -74,12 +74,12 @@ export function MarketingNav() {
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
           <Link href={ROUTES.signIn} className={linkCls(false)}>Sign in</Link>
-          <Link href={TALK_TO_US.href} className="mk-btn mk-btn-secondary !px-3.5 !py-2 !text-[0.88rem]">{TALK_TO_US.label}</Link>
-          <Link href={TRY_LIVE.href} className="mk-btn mk-btn-primary !px-3.5 !py-2 !text-[0.88rem]">{TRY_LIVE.label}</Link>
+          <Link href={TALK_TO_US.href} className="mk-btn mk-btn-sm mk-btn-secondary">{TALK_TO_US.label}</Link>
+          <Link href={TRY_LIVE.href} className="mk-btn mk-btn-sm mk-btn-primary">{TRY_LIVE.label}</Link>
         </div>
 
         <button type="button" onClick={() => setDrawer(true)} aria-label="Open menu" aria-expanded={drawer} aria-controls="mk-drawer"
-          className="ml-auto flex h-10 w-10 items-center justify-center rounded-md text-mk-ink transition-colors hover:bg-mk-mist lg:hidden">
+          className="-mr-2 ml-auto flex h-11 w-11 items-center justify-center rounded-md text-mk-ink transition-colors hover:bg-mk-mist lg:hidden">
           <Menu aria-hidden className="h-5 w-5" strokeWidth={2} />
         </button>
       </nav>
@@ -182,8 +182,8 @@ function MobileDrawer({ pathname, onClose }: { pathname: string; onClose: () => 
   return (
     <div id="mk-drawer" ref={ref} role="dialog" aria-modal="true" aria-label="Menu" className="mk-drawer-enter fixed inset-0 z-[200] flex flex-col overflow-y-auto bg-mk-bg">
       <div className="flex h-16 items-center justify-between px-5 sm:px-8">
-        <Link href="/" aria-label="Levl1 home" onClick={onClose}><ThemedLogo height={22} /></Link>
-        <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-mk-mist">
+        <Link href="/" aria-label="Levl1 home" onClick={onClose} className="flex min-h-[44px] items-center"><ThemedLogo height={22} /></Link>
+        <button type="button" onClick={onClose} aria-label="Close menu" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-md hover:bg-mk-mist">
           <X aria-hidden className="h-5 w-5" strokeWidth={2} />
         </button>
       </div>
@@ -204,7 +204,7 @@ function MobileDrawer({ pathname, onClose }: { pathname: string; onClose: () => 
                       {c.links.map((l) => <MenuItem key={l.href} link={l} active={isActive(pathname, l.href)} />)}
                     </div>
                   ))}
-                  {g.footer && <Link href={g.footer.href} className="mt-1 block px-3 py-2.5 text-[0.9rem] font-medium text-mk-accent-text">{g.footer.label}</Link>}
+                  {g.footer && <Link href={g.footer.href} className="mt-1 flex min-h-[44px] items-center px-3 text-[0.9rem] font-medium text-mk-accent-text">{g.footer.label}</Link>}
                 </div>
               </li>
             )

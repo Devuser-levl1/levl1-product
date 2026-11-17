@@ -10,9 +10,9 @@ export function Container({ children, className = '' }: { children: React.ReactN
 export function Section({ children, className = '', id, tone = 'light', labelledBy }: {
   children: React.ReactNode; className?: string; id?: string; tone?: 'light' | 'mist' | 'dark'; labelledBy?: string
 }) {
-  const bg = tone === 'mist' ? 'bg-mk-mist border-y border-mk-line' : 'bg-mk-bg'
+  const bg = tone === 'mist' ? 'bg-mk-mist' : 'bg-mk-bg'
   const style = tone === 'dark' ? { background: 'rgb(var(--mk-invert-bg))', color: 'rgb(var(--mk-invert-ink))' } : undefined
-  return <section id={id} aria-labelledby={labelledBy} style={style} className={`relative py-20 sm:py-28 ${tone === 'dark' ? '' : bg} ${className}`}>{children}</section>
+  return <section id={id} aria-labelledby={labelledBy} style={style} className={`relative py-16 sm:py-24 lg:py-28 ${tone === 'dark' ? '' : bg} ${className}`}>{children}</section>
 }
 
 /** Renders `title` with the `highlight` substring in muted text (never gradient). */
@@ -31,13 +31,14 @@ export function ButtonLink({ cta, variant = 'primary', className = '' }: { cta: 
 
 export function TextLink({ cta }: { cta: CTA; dark?: boolean }) {
   return (
-    <Link href={cta.href} className="mk-link inline-flex items-center gap-1.5 text-[0.95rem] font-medium text-mk-accent-text hover:underline hover:underline-offset-4">
+    <Link href={cta.href} className="mk-link mk-tap gap-1.5 text-[0.95rem] font-medium text-mk-accent-text hover:underline hover:underline-offset-4">
       {cta.label}<ArrowRight aria-hidden className="mk-arrow h-4 w-4" strokeWidth={2} />
     </Link>
   )
 }
 
-export function SectionHeading({ eyebrow, title, highlight, lead, align = 'center', id, as = 'h2' }: {
+// Left-aligned by default (DESIGN.md: only the final CTA is centred).
+export function SectionHeading({ eyebrow, title, highlight, lead, align = 'left', id, as = 'h2' }: {
   eyebrow?: string; title: string; highlight?: string; lead?: string; align?: 'center' | 'left'; dark?: boolean; id?: string; as?: 'h1' | 'h2'
 }) {
   const H = as
@@ -45,7 +46,7 @@ export function SectionHeading({ eyebrow, title, highlight, lead, align = 'cente
     <div data-reveal className={`${align === 'center' ? 'mx-auto text-center' : ''} max-w-3xl`}>
       {eyebrow && <p className="mk-eyebrow mb-3">{eyebrow}</p>}
       <H id={id} className={as === 'h1' ? 'mk-h1' : 'mk-h2'}><Highlighted title={title} highlight={highlight} /></H>
-      {lead && <p className={`mk-lead mt-5 ${align === 'center' ? 'mx-auto' : ''} max-w-2xl`}>{lead}</p>}
+      {lead && <p className={`mk-lead mt-4 ${align === 'center' ? 'mx-auto' : ''} max-w-2xl`}>{lead}</p>}
     </div>
   )
 }

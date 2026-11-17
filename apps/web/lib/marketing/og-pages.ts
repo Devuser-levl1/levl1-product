@@ -4,8 +4,8 @@ import { PRODUCTS } from '@/config/site'
 // never arbitrary query text. `hirepilot` / `hirematch` stay as keys for the
 // hidden (redirected) Hire pages, with neutral Levl1 copy.
 export const OG_PAGES = {
-  home: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
-  screen: { eyebrow: `${PRODUCTS.screen.name} · Stage ${PRODUCTS.screen.stage}`, title: 'A technical interviewer that never gets tired, rushed, or fooled by a good story.' },
+  home: { eyebrow: 'Levl1', title: 'Interviews that show their work.' },
+  screen: { eyebrow: `${PRODUCTS.screen.name} · Stage ${PRODUCTS.screen.stage}`, title: 'A first-round interviewer that can’t be fooled by a good story.' },
   screenDemo: { eyebrow: 'Live demo · no sign-up', title: 'Sit in the candidate’s chair.' },
   takeHome: { eyebrow: `${PRODUCTS.takeHome.name} · Coming soon`, title: 'Real work, not trivia.' },
   liveInterview: { eyebrow: `${PRODUCTS.liveInterview.name} · Coming soon`, title: 'Make every interviewer as good as your best one.' },
@@ -18,8 +18,8 @@ export const OG_PAGES = {
   security: { eyebrow: 'Security', title: 'How Levl1 handles your data.' },
   demo: { eyebrow: 'Talk to us', title: 'See Levl1 on your roles.' },
   legal: { eyebrow: 'Levl1', title: 'Legal' },
-  hirepilot: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
-  hirematch: { eyebrow: 'Levl1', title: 'Technical screening you can actually trust.' },
+  hirepilot: { eyebrow: 'Levl1', title: 'Interviews that show their work.' },
+  hirematch: { eyebrow: 'Levl1', title: 'Interviews that show their work.' },
 } as const
 
 export type OgPageKey = keyof typeof OG_PAGES

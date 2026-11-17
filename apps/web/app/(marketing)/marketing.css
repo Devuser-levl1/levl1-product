@@ -1,59 +1,74 @@
 /* ── Levl1 marketing site — tokens, surfaces, motion ─────────────────────────
-   Scoped to .mk-root so product pages are unaffected. Inter only; near-
-   monochrome zinc with ONE indigo accent (primary actions, focus, "live").
+   Implements apps/web/DESIGN.md ("evidence on paper"). Scoped to .mk-root so
+   product pages are unaffected. Instrument Sans (display) + Inter (body) +
+   JetBrains Mono (evidence); warm paper neutrals with ONE indigo accent.
    Colours are RGB triplets so Tailwind's mk.* utilities can apply alpha.
    Light + dark follow prefers-color-scheme. `.mk-light` forces light tokens
    (product mockups are "screenshots" of the light product). Motion is
    transform/opacity only and respects prefers-reduced-motion. */
 
 .mk-root, .mk-light {
-  --mk-bg: 255 255 255;
+  /* DESIGN.md names → code: paper=--mk-bg, sunken=--mk-mist, body=--mk-slate,
+     accent-ink=--mk-accent-text, accent-tint=--mk-accent-soft */
+  --mk-bg: 251 250 247;          /* paper #FBFAF7 */
   --mk-surface: 255 255 255;
-  --mk-mist: 250 250 250;
-  --mk-ink: 9 9 11;
+  --mk-mist: 244 242 238;        /* sunken #F4F2EE */
+  --mk-ink: 17 17 20;
   --mk-slate: 63 63 70;
-  --mk-muted: 113 113 122;
-  --mk-line: 228 228 231;
+  --mk-muted: 107 107 115;       /* #6B6B73 — ≥ 4.5:1 on paper and sunken */
+  --mk-line: 231 228 222;
   --mk-accent: 79 70 229;        /* #4F46E5 */
   --mk-accent-text: 67 56 202;   /* #4338CA */
-  --mk-accent-soft: 238 242 255;
+  --mk-accent-soft: 238 240 255; /* #EEF0FF */
   --mk-accent-solid: 79 70 229;  /* primary button fill (white text ≥ 4.5:1 in both themes) */
-  --mk-invert-bg: 9 9 11;
-  --mk-invert-ink: 250 250 250;
+  --mk-pass: 4 120 87;
+  --mk-flag: 180 83 9;
+  --mk-invert-bg: 17 17 20;
+  --mk-invert-ink: 250 250 247;
   --mk-invert-muted: 161 161 170;
+  --mk-dot: 17 17 20;
+  --mk-shadow-float: 0 1px 2px rgb(17 17 20 / .06), 0 12px 32px -12px rgb(17 17 20 / .18);
+  --mk-font-display: 'Instrument Sans', Inter, system-ui, sans-serif;
+  --mk-font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   .mk-root {
-    --mk-bg: 9 9 11;
-    --mk-surface: 24 24 27;
-    --mk-mist: 15 15 17;
-    --mk-ink: 250 250 250;
+    --mk-bg: 12 12 14;
+    --mk-surface: 23 23 26;
+    --mk-mist: 18 18 20;
+    --mk-ink: 244 244 245;
     --mk-slate: 212 212 216;
     --mk-muted: 161 161 170;
-    --mk-line: 39 39 42;
+    --mk-line: 42 42 46;
     --mk-accent: 99 102 241;       /* #6366F1 */
     --mk-accent-text: 165 180 252; /* #A5B4FC */
     --mk-accent-soft: 30 27 75;
     --mk-accent-solid: 79 70 229;
-    --mk-invert-bg: 250 250 250;
-    --mk-invert-ink: 9 9 11;
+    --mk-pass: 52 211 153;
+    --mk-flag: 251 191 36;
+    --mk-invert-bg: 244 244 245;
+    --mk-invert-ink: 17 17 20;
     --mk-invert-muted: 82 82 91;
+    --mk-dot: 244 244 245;
+    --mk-shadow-float: 0 1px 2px rgb(0 0 0 / .4), 0 16px 40px -16px rgb(0 0 0 / .6);
     color-scheme: dark;
   }
   /* Forced-light islands inside a dark page. */
   .mk-root .mk-light {
-    --mk-bg: 255 255 255;
+    --mk-bg: 251 250 247;
     --mk-surface: 255 255 255;
-    --mk-mist: 250 250 250;
-    --mk-ink: 9 9 11;
+    --mk-mist: 244 242 238;
+    --mk-ink: 17 17 20;
     --mk-slate: 63 63 70;
-    --mk-muted: 113 113 122;
-    --mk-line: 228 228 231;
+    --mk-muted: 107 107 115;
+    --mk-line: 231 228 222;
     --mk-accent: 79 70 229;
     --mk-accent-text: 67 56 202;
-    --mk-accent-soft: 238 242 255;
+    --mk-accent-soft: 238 240 255;
+    --mk-pass: 4 120 87;
+    --mk-flag: 180 83 9;
     color-scheme: light;
   }
 }
@@ -63,6 +78,7 @@
   color: rgb(var(--mk-ink));
   background: rgb(var(--mk-bg));
   min-height: 100vh;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -71,42 +87,72 @@
 .mk-root a { -webkit-tap-highlight-color: transparent; }
 .mk-root :focus-visible { outline: 2px solid rgb(var(--mk-accent)); outline-offset: 2px; border-radius: 6px; }
 
-/* Typography — hierarchy by size and weight (400/500/600 only). */
-.mk-h1 { font-size: clamp(2.4rem, 5.4vw, 4rem); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
-.mk-h2 { font-size: clamp(1.85rem, 3.6vw, 2.75rem); line-height: 1.08; letter-spacing: -0.03em; font-weight: 600; }
-.mk-h3 { font-size: clamp(1.1rem, 1.6vw, 1.2rem); line-height: 1.3; letter-spacing: -0.015em; font-weight: 600; }
-.mk-lead { font-size: clamp(1.05rem, 1.4vw, 1.2rem); line-height: 1.6; color: rgb(var(--mk-slate)); }
-.mk-eyebrow { font-size: 0.85rem; font-weight: 500; color: rgb(var(--mk-muted)); }
-.mk-hl { color: rgb(var(--mk-muted)); }   /* headline highlight: muted text, never gradient */
+/* Typography — display face for headings (500), Inter for body, mono for evidence.
+   Headlines are single-tone: emphasis comes from wording, not colour. */
+.mk-display, .mk-h1, .mk-h2, .mk-h3 { font-family: var(--mk-font-display); font-weight: 500; }
+.mk-display { font-size: clamp(2.75rem, 6.6vw, 4.75rem); line-height: 1.0; letter-spacing: -0.035em; }
+.mk-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); line-height: 1.04; letter-spacing: -0.03em; }
+.mk-h2 { font-size: clamp(2rem, 3.6vw, 2.75rem); line-height: 1.08; letter-spacing: -0.025em; }
+.mk-h3 { font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.01em; }
+.mk-lead { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.55; color: rgb(var(--mk-slate)); }
+.mk-eyebrow { font-family: var(--mk-font-mono); font-size: 0.78rem; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase; color: rgb(var(--mk-muted)); }
+.mk-mono { font-family: var(--mk-font-mono); }
+.mk-hl { color: inherit; }
 
-/* Buttons */
+/* Buttons — pill; primary = accent fill, secondary = accent tint, quiet = text link */
 .mk-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
-  font-weight: 500; font-size: 0.95rem; line-height: 1; padding: 0.8rem 1.15rem; border-radius: 8px;
+  font-weight: 500; font-size: 1rem; line-height: 1; min-height: 48px; padding: 0 1.35rem; border-radius: 999px;
   border: 1px solid transparent; white-space: nowrap;
   transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
 }
+.mk-btn-sm { min-height: 40px; padding: 0 1rem; font-size: 0.9rem; }
 .mk-btn:active { transform: scale(0.985); }
+.mk-btn:disabled { opacity: .5; }
 .mk-btn-primary { color: #fff; background: rgb(var(--mk-accent-solid)); }
 .mk-btn-primary:hover { background: rgb(67 56 202); }
-.mk-btn-secondary { color: rgb(var(--mk-ink)); background: rgb(var(--mk-surface)); border-color: rgb(var(--mk-line)); }
-.mk-btn-secondary:hover { border-color: rgb(var(--mk-muted) / 0.6); }
+.mk-btn-secondary { color: rgb(var(--mk-accent-text)); background: rgb(var(--mk-accent-soft)); }
+.mk-btn-secondary:hover { background: rgb(var(--mk-accent-soft) / 0.7); box-shadow: inset 0 0 0 1px rgb(var(--mk-accent) / 0.25); }
 .mk-btn-light { color: rgb(var(--mk-invert-bg)); background: rgb(var(--mk-invert-ink)); }
 .mk-btn-light:hover { opacity: .92; }
 .mk-btn-onDark { color: rgb(var(--mk-invert-ink)); border-color: rgb(var(--mk-invert-muted) / 0.5); background: transparent; }
 .mk-btn-onDark:hover { border-color: rgb(var(--mk-invert-ink) / 0.7); }
 .mk-btn .mk-arrow, .mk-link .mk-arrow { transition: transform .2s ease; }
 .mk-btn:hover .mk-arrow, .mk-link:hover .mk-arrow, .mk-card:hover .mk-arrow { transform: translateX(2px); }
+/* Text links get a 44px tap target without changing how they look. */
+.mk-tap { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* Surfaces — flat hairline, near-zero shadow */
 .mk-card { position: relative; background: rgb(var(--mk-surface)); border: 1px solid rgb(var(--mk-line)); border-radius: 12px; transition: border-color .2s ease; }
+.mk-chip { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0 1.1rem; border-radius: 999px; font-size: 0.95rem; font-weight: 500;
+  background: rgb(var(--mk-mist)); color: rgb(var(--mk-ink)); border: 1px solid rgb(var(--mk-line)); transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+.mk-chip:hover { background: rgb(var(--mk-accent-soft)); color: rgb(var(--mk-accent-text)); border-color: rgb(var(--mk-accent) / 0.3); }
 .mk-card-hover:hover { border-color: rgb(var(--mk-muted) / 0.55); }
 .mk-icon-tile {
   display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 8px;
   color: rgb(var(--mk-ink)); background: rgb(var(--mk-mist)); border: 1px solid rgb(var(--mk-line));
 }
-.mk-popover { background: rgb(var(--mk-surface)); border: 1px solid rgb(var(--mk-line)); border-radius: 12px; box-shadow: 0 16px 40px -16px rgb(0 0 0 / 0.18); }
-.mk-glass { background: rgb(var(--mk-bg) / 0.82); backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px); }
+.mk-popover { background: rgb(var(--mk-surface)); border: 1px solid rgb(var(--mk-line)); border-radius: 12px; box-shadow: var(--mk-shadow-float); }
+.mk-float { box-shadow: var(--mk-shadow-float); }
+
+/* Panel — a big rounded tinted surface with a faint dot grid; product UI floats on it. */
+.mk-panel {
+  position: relative; border-radius: 20px; padding: clamp(16px, 3vw, 36px);
+  background-color: rgb(var(--mk-accent-soft));
+  background-image: radial-gradient(rgb(var(--mk-dot) / 0.07) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.mk-panel-sunken { background-color: rgb(var(--mk-mist)); }
+.mk-panel-xl { border-radius: 28px; }
+
+/* Evidence snippet — mono timestamp + one line of product truth. */
+.mk-evidence { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--mk-font-mono); font-size: 0.8rem; line-height: 1.3;
+  color: rgb(var(--mk-ink)); background: rgb(var(--mk-surface)); border: 1px solid rgb(var(--mk-line)); border-radius: 999px; padding: 0.5rem 0.85rem; }
+.mk-evidence time { color: rgb(var(--mk-muted)); }
+.mk-evidence-pass::before, .mk-evidence-flag::before { content: ''; width: 7px; height: 7px; border-radius: 999px; flex: none; }
+.mk-evidence-pass::before { background: rgb(var(--mk-pass)); }
+.mk-evidence-flag::before { background: rgb(var(--mk-flag)); }
+.mk-glass { background: rgb(var(--mk-bg)); }
 
 /* Badges */
 .mk-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 500; line-height: 1; padding: 0.35rem 0.6rem; border-radius: 999px; border: 1px solid rgb(var(--mk-line)); color: rgb(var(--mk-slate)); background: rgb(var(--mk-surface)); white-space: nowrap; }
@@ -119,8 +165,8 @@
    changes; the size hint keeps the scrollbar stable. */
 .mk-root main > section ~ section, .mk-root main > section ~ div { content-visibility: auto; contain-intrinsic-size: auto 720px; }
 
-/* Hero glow — the one allowed indigo light */
-.mk-glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 50% at 50% 0%, rgb(var(--mk-accent) / 0.10), transparent 70%); }
+/* (No hero glow — DESIGN.md: no glows or gradients.) */
+.mk-glow { display: none; }
 
 /* Theme-aware wordmark */
 .mk-logo-dark { display: none; }
@@ -155,6 +201,10 @@
 .mk-caret { display: inline-block; width: 7px; height: 1em; vertical-align: -2px; background: #A5B4FC; animation: mk-blink 1s steps(1) infinite; }
 @keyframes mk-blink { 50% { opacity: 0; } }
 
+/* The room mock adapts to its own width (it is narrow inside tablet heroes). */
+.mk-room { container-type: inline-size; }
+@container (max-width: 400px) { .mk-room-wave { display: none !important; } }
+
 /* Nav */
 .mk-nav-trigger[aria-expanded="true"] .mk-chev { transform: rotate(180deg); }
 .mk-chev { transition: transform .2s ease; }
@@ -170,7 +220,7 @@
 .mk-faq[open] summary .mk-plus { transform: rotate(45deg); }
 
 /* Form fields */
-.mk-field { width: 100%; border-radius: 8px; border: 1px solid rgb(var(--mk-line)); background: rgb(var(--mk-surface)); color: rgb(var(--mk-ink)); padding: 0.7rem 0.85rem; font-size: 0.95rem; transition: border-color .15s ease, box-shadow .15s ease; }
+.mk-field { width: 100%; min-height: 48px; border-radius: 8px; border: 1px solid rgb(var(--mk-line)); background: rgb(var(--mk-surface)); color: rgb(var(--mk-ink)); padding: 0.7rem 0.85rem; font-size: 0.95rem; transition: border-color .15s ease, box-shadow .15s ease; }
 .mk-field::placeholder { color: rgb(var(--mk-muted)); }
 .mk-field:focus { outline: none; border-color: rgb(var(--mk-accent)); box-shadow: 0 0 0 3px rgb(var(--mk-accent) / 0.18); }
 

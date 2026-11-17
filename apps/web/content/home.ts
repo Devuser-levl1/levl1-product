@@ -1,54 +1,64 @@
 import { INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES, TALK_TO_US, TRY_LIVE, type ProductKey } from '@/config/site'
-import type { Audience, CTA, Heading, Item, Pillar, Step } from './types'
+import { DEMO_PERSONAS } from '@/lib/screen/demo/personas'
+import type { ComparisonRow, CTA, Heading, Item, Pillar, TabItem, TimelineStep } from './types'
+import type { Evidence } from '@/components/marketing/sections/hero'
+
+const NAME = PRODUCTS.screen.name
+const demoMins = DEMO_PERSONAS.map((p) => p.durationMin)
+const DEMO_LENGTH = Math.min(...demoMins) === Math.max(...demoMins) ? `${Math.min(...demoMins)} minutes` : `${Math.min(...demoMins)}–${Math.max(...demoMins)} minutes`
+
+/** Role chips that open the live demo for that role. */
+export const DEMO_ROLE_CHIPS: CTA[] = DEMO_PERSONAS.map((p) => ({ label: p.category, href: `${ROUTES.screenDemo}?role=${p.slug}#try-live` }))
+export const DEMO_MICROCOPY = `No sign-up · ${DEMO_LENGTH} · microphone needed`
 
 export const home = {
   meta: {
-    title: 'Levl1 — Technical screening you can actually trust',
-    description: 'Screen runs rigorous AI technical interviews by voice, with live coding and a whiteboard, flags what others miss, and hands your team an evidence-backed recommendation.',
+    title: 'Levl1 — Interviews that show their work',
+    description: `${NAME} runs the technical first round — live voice, real code, a whiteboard — and hands back the evidence, not just a score.`,
   },
   hero: {
-    badge: 'Early access',
-    badgeTone: 'live' as const,
-    title: 'Technical screening you can actually trust.',
-    highlight: 'actually trust.',
-    lead: `${PRODUCTS.screen.name} runs rigorous AI technical interviews, catches what others miss, and hands you evidence-backed decisions — not another résumé pile.`,
+    display: true,
+    title: 'Interviews that show their work.',
+    lead: `${NAME} runs the technical first round — live voice, real code, a whiteboard — and hands back the evidence, not just a score.`,
+    chipsLabel: `Pick a role and talk to ${NAME} now:`,
+    chips: DEMO_ROLE_CHIPS,
     primary: TRY_LIVE as CTA,
     secondary: TALK_TO_US as CTA,
-    points: ['Voice, live coding and whiteboard', INTERVIEW_LENGTH_LABEL, 'Every flag reviewed by a person'],
+    microcopy: DEMO_MICROCOPY,
+    evidence: [
+      { time: '06:40', text: 'tests 4/4 passed', tone: 'pass' },
+      { time: '12:02', text: 'flag · second face, 6s', tone: 'flag' },
+    ] as Evidence[],
   },
-  problem: {
-    heading: { eyebrow: 'The problem', title: 'First-round technical screening is broken.', lead: 'It costs your best engineers the most time, and tells you the least.' } as Heading,
-    items: [
-      { title: 'Screens eat senior engineers’ time', body: 'Hours every week on first rounds — and most of them end in “no”.' },
-      { title: 'AI-interview results can’t be trusted', body: 'Assistants and on-screen overlays feed answers in real time. A good score may not be the candidate’s.' },
-      { title: 'Keyword matching passes the wrong people', body: 'Résumés that say the right words get through. Whether they can do the work is still unknown.' },
-      { title: 'Bare scores you can’t defend', body: 'A number without reasons won’t survive a debrief, and won’t convince a hiring panel.' },
-    ] as Item[],
+  comparison: {
+    heading: { eyebrow: 'Why teams switch', title: 'Your first round costs the most and tells you the least.' } as Heading,
+    withLabel: `With ${NAME}`,
+    rows: [
+      { today: 'Senior engineers spend afternoons on first rounds that mostly end in “no”.', withScreen: 'Your engineers meet the shortlist, not the pipeline.' },
+      { today: 'Assistants and overlays feed answers live — a good score may not be the candidate’s.', withScreen: 'Behaviour consistent with outside help is flagged with evidence. A person decides.' },
+      { today: 'Keyword matching passes people who say the right words.', withScreen: 'Candidates write and run real code, then defend their decisions.' },
+      { today: 'A bare score won’t survive the debrief.', withScreen: 'Every score comes with its reason and the evidence behind it.' },
+      { today: 'Scheduling first rounds takes days of back-and-forth.', withScreen: 'Candidates book any slot, around the clock.' },
+    ] as ComparisonRow[],
   },
-  outcome: {
-    heading: { eyebrow: 'What changes', title: 'What your team gets back.' } as Heading,
-    items: [
-      { icon: 'clock', title: 'Engineer hours back', body: 'Senior engineers meet the shortlist, not the whole pipeline.' },
-      { icon: 'scale', title: 'One bar for everyone', body: 'Every candidate for a role meets the same approved questions and rubric.' },
-      { icon: 'file', title: 'Results you can defend', body: 'Every score comes with its reason and the evidence behind it.' },
-      { icon: 'zap', title: 'A faster funnel', body: 'Candidates book a time that suits them, around the clock.' },
-      { icon: 'filter', title: 'Fewer bad advances', body: 'Weak and assisted performances surface before the panel, not after.' },
-    ] as Item[],
-  },
-  steps: {
-    heading: { eyebrow: 'How it works', title: 'From job description to decision.' } as Heading,
-    items: [
-      { title: 'Your JD in', body: 'AI drafts the questions, a work sample and a must-have / good-to-have rubric. Your team approves them.' },
-      { title: 'The AI runs the interview', body: 'An adaptive spoken interview with live coding and a whiteboard, following up on the candidate’s own answers.' },
-      { title: 'Evidence out', body: 'A report with a clear recommendation, a reason for every score — and integrity kept separate, for a person to review.' },
-    ] as Step[],
+  timeline: {
+    heading: { eyebrow: 'How it works', title: 'One interview, minute by minute.', lead: 'What a candidate goes through — and what your team gets out of each moment.' } as Heading,
+    steps: [
+      { time: 'Before', title: 'Your bar, approved', body: 'Questions, a work sample and a must-have rubric are drafted from your JD. Your team approves them.', evidence: 'rubric approved', tone: 'neutral' },
+      { time: '00:00', title: 'Consent first', body: 'The candidate agrees to an AI-led interview and, separately, to recording.', evidence: 'consent · 2 of 2 logged', tone: 'neutral' },
+      { time: '02:10', title: 'A guided start', body: 'A short tour of the room before the first question.', evidence: 'tour complete', tone: 'neutral' },
+      { time: '06:40', title: 'Real code', body: 'A work sample in the coding workspace, run against your tests.', evidence: 'tests 4/4 passed', tone: 'pass' },
+      { time: '12:02', title: 'A flag, with evidence', body: 'A second face appears for six seconds. Logged for a person to review.', evidence: 'flag · second face, 6s', tone: 'flag' },
+      { time: '30:00', title: 'The recommendation', body: 'Advance or not — with the reason behind every score.', evidence: 'advance to panel', tone: 'pass' },
+    ] as TimelineStep[],
+    caption: `An illustrative interview of ${INTERVIEW_LENGTH_LABEL}. Timings vary by role and interview mode.`,
   },
   pillars: {
-    heading: { eyebrow: 'Why teams trust it', title: 'Three promises, and the proof behind each.' } as Heading,
+    heading: { eyebrow: 'Why teams trust it', title: 'Proof, not promises.' } as Heading,
     items: [
       {
         eyebrow: 'Evidence, not guesses',
-        title: 'Every decision comes with its working.',
+        title: 'See the call. Check the reasoning.',
         promise: 'The report leads with a recommendation, then shows exactly why — so a hiring manager can agree or disagree in minutes.',
         proof: [
           'Recommendation first, then competencies ranked with a reason for each',
@@ -61,7 +71,7 @@ export const home = {
       {
         eyebrow: 'Catches what others miss',
         title: 'Flags with evidence. A person decides.',
-        promise: 'Screen watches for behaviour consistent with outside help — and attaches the evidence to every flag.',
+        promise: `${NAME} watches for behaviour consistent with outside help — and attaches the evidence to every flag.`,
         proof: [
           'Tab switches, fullscreen exits, screen-share drops, no face or multiple faces',
           'Reading-gaze and read-aloud patterns consistent with overlay assistants',
@@ -72,47 +82,33 @@ export const home = {
         link: { label: 'How integrity works', href: ROUTES.integrity },
         visual: 'screenIntegrity',
       },
-      {
-        eyebrow: 'Real technical depth',
-        title: 'Observe the work. Then make them defend it.',
-        promise: 'Candidates solve a real task in a coding workspace, their code runs against tests, and then they explain their decisions.',
-        proof: [
-          'Adaptive follow-ups that dig into the candidate’s own answers',
-          'Observe & defend: a real work sample, run against tests, then defended',
-          'A whiteboard for system design',
-          'Must-have and good-to-have tiers drive the scoring',
-        ],
-        visual: 'screenApproval',
-      },
     ] as Pillar[],
   },
   audience: {
-    heading: { eyebrow: 'Built for both', title: 'For the people who own the bar — and the people who run the process.' } as Heading,
+    heading: { eyebrow: 'Built for both', title: 'One interview. Three teams that rely on it.' } as Heading,
     items: [
       {
-        label: 'Hiring managers & engineering leaders',
+        id: 'eng', label: 'Engineering leaders', visual: 'snipCode',
         title: 'Deeper signal, defensible decisions.',
-        points: [
-          'Watch candidates work, not just talk',
-          'Every score explained — ready for your debrief',
-          'Your engineers’ time goes to the shortlist',
-          'Your rubric, approved by your team',
-        ],
+        body: 'See how candidates actually work — and spend your engineers’ time only on the shortlist.',
+        bullets: ['Watch candidates work, not just talk', 'Every score explained — ready for your debrief', 'Your rubric, approved by your team'],
       },
       {
-        label: 'Recruiters & talent acquisition',
-        title: 'Run more first rounds without more calendar.',
-        points: [
-          'Candidates self-schedule, in parallel, around the clock',
-          'See live interview health in the Control Room without joining',
-          'Consent, invites and reminders by email and WhatsApp',
-          'Export results to CSV',
-        ],
+        id: 'ta', label: 'Recruiters & TA', visual: 'screenControl',
+        title: 'More first rounds, no more calendar.',
+        body: 'Interviews run in parallel while you work the rest of the funnel.',
+        bullets: ['Candidates self-schedule, around the clock', 'Live interview health in the Control Room — without joining', 'Consent, invites and reminders by email and WhatsApp', 'Export results to CSV'],
       },
-    ] as Audience[],
+      {
+        id: 'agencies', label: 'Agencies', visual: 'snipLogistics',
+        title: 'Verify before you submit.',
+        body: 'Put a structured technical interview behind every submission — with the logistics already covered.',
+        bullets: ['The same bar for every candidate', 'Notice period, location and work authorization captured', 'Scores your recruiters can explain to a client'],
+      },
+    ] as TabItem[],
   },
   funnel: {
-    heading: { eyebrow: 'One funnel', title: `${PRODUCTS.screen.name} is the first stage of your technical hiring funnel.`, lead: 'Two more stages are in development.' } as Heading,
+    heading: { eyebrow: 'One funnel', title: 'Stage one of three.', lead: `${NAME} is live. ${PRODUCTS.takeHome.name} and ${PRODUCTS.liveInterview.name} are in development.` } as Heading,
     details: {
       screen: 'Live AI technical interviews with integrity checks and evidence reports.',
       takeHome: 'A real-world task in a real IDE, evaluated against your rubric and tests.',
@@ -120,18 +116,18 @@ export const home = {
     } as Record<ProductKey, string>,
   },
   trust: {
-    heading: { eyebrow: 'Trust', title: 'Built to handle candidate data properly.' } as Heading,
+    heading: { eyebrow: 'Trust', title: 'Consent first. Encrypted. Auto-deleted.' } as Heading,
     items: [
-      { icon: 'clipboard', title: 'Consent first', body: 'Candidates are told the interview is AI-led, and give separate consent for recording. Both are logged.' },
-      { icon: 'lock', title: 'Encrypted', body: 'Data is encrypted in transit, and interview recordings and transcripts are encrypted at rest.' },
-      { icon: 'trash', title: 'Automatic retention', body: 'Recordings and transcripts are purged automatically after fixed periods shown to candidates.' },
-      { icon: 'userCheck', title: 'Humans decide', body: 'The AI recommends and flags. Your team makes every hiring decision.' },
+      { icon: 'clipboard', title: 'Consent, logged', body: 'Separate consent for the AI interview and for recording, both logged.' },
+      { icon: 'lock', title: 'Encrypted', body: 'In transit, and recordings and transcripts at rest.' },
+      { icon: 'trash', title: 'Auto-deleted', body: 'Recordings and transcripts are purged after fixed periods shown to candidates.' },
+      { icon: 'userCheck', title: 'Humans decide', body: 'The AI recommends and flags. Your team decides.' },
     ] as Item[],
     link: { label: 'Read about security', href: ROUTES.security } as CTA,
   },
   cta: {
     title: 'Hear it for yourself.',
-    lead: 'Take a short live interview in your browser, or see Screen on one of your own roles.',
+    lead: `Pick a role and talk to ${NAME} in your browser — no sign-up, ${DEMO_LENGTH}.`,
     primary: TRY_LIVE as CTA,
     secondary: TALK_TO_US as CTA,
   },

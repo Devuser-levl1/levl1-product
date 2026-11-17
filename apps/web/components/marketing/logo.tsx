@@ -4,9 +4,10 @@ import Image from 'next/image'
 //  - black-text-logo.png : light backgrounds (header/nav, light sections)
 //  - white-text-logo.png : dark backgrounds (footer, navy hero, dark CTA bands)
 //  - levl1-icon.png      : standalone L1 mark (favicon, app icon, mobile nav, loading)
-// Source wordmarks are 400×150 (≈2.67:1); the icon is 2000×2000 (square).
+// Wordmarks are transparent PNGs, 900×322 (≈2.8:1), trimmed to the artwork;
+// the icon is square.
 
-const WORDMARK_RATIO = 400 / 150
+const WORDMARK_RATIO = 900 / 322
 
 /** Full Levl1 wordmark. `variant` picks black (light bg) or white (dark bg). */
 export function Logo({

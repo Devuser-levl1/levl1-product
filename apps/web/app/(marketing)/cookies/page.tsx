@@ -1,12 +1,12 @@
 import { LegalPage, H, P, UL } from '@/components/marketing/legal'
 import { pageMetadata } from '@/lib/marketing/metadata'
-import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/config/site'
+import { CONTACT_EMAIL } from '@/config/site'
 
 export const metadata = pageMetadata({ title: 'Cookie Policy — Levl1', description: 'How Levl1 uses cookies and how to control them.', path: '/cookies', og: 'legal' })
 
 export default function Cookies() {
   return <LegalPage title="Cookie Policy" updated="October 2026">
-    <P>{LEGAL_ENTITY} uses a small number of cookies to run Levl1 and, optionally, to understand usage.</P>
+    <P>Levl1 uses a small number of cookies to run the site and service and, optionally, to understand usage.</P>
     <H>Essential cookies</H><P>Required to sign in, keep you authenticated, and secure the service. These cannot be disabled.</P>
     <H>Analytics cookies (optional)</H><P>Help us understand which pages are useful so we can improve the product. These are off unless you accept them.</P>
     <H>Your choice</H>

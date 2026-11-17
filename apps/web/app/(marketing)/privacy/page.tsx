@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { LegalPage, H, P, UL } from '@/components/marketing/legal'
 import { pageMetadata } from '@/lib/marketing/metadata'
-import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/config/site'
+import { CONTACT_EMAIL } from '@/config/site'
 
-export const metadata = pageMetadata({ title: 'Privacy Policy — Levl1', description: `How ${LEGAL_ENTITY} collects, uses and protects personal data.`, path: '/privacy', og: 'legal' })
+export const metadata = pageMetadata({ title: 'Privacy Policy — Levl1', description: 'How Levl1 collects, uses and protects personal data.', path: '/privacy', og: 'legal' })
 
 export default function Privacy() {
   return <LegalPage title="Privacy Policy" updated="November 2026">
-    <P>Levl1 — this website and the hiring software and services we provide through it — is provided by {LEGAL_ENTITY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;). {LEGAL_ENTITY} is the data controller for the personal data described in this policy. This policy explains what we collect, why, and the rights you and candidates have.</P>
+    <P>This policy covers Levl1 — this website and the hiring software and services we provide through it (&ldquo;Levl1&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). Levl1 is the data controller for the personal data described in this policy. This policy explains what we collect, why, and the rights you and candidates have.</P>
     <H>Data we collect</H>
     <UL items={[
       'Account data: name, work email, company, role and usage.',
@@ -28,6 +28,6 @@ export default function Privacy() {
     <H>Sharing &amp; subprocessors</H>
     <P>We share data only with subprocessors that power the service, under contract: Anthropic (AI evaluation), ElevenLabs (interview voice and transcription), Judge0 via RapidAPI (running candidate code), Twilio (WhatsApp), Resend (email), Cashfree (payments) and Render (hosting).</P>
     <H>International transfers</H><P>Data may be processed outside your country using appropriate safeguards.</P>
-    <H>Contact</H><P>Questions or requests: {LEGAL_ENTITY}, {CONTACT_EMAIL}.</P>
+    <H>Contact</H><P>Questions or requests: {CONTACT_EMAIL}.</P>
   </LegalPage>
 }
