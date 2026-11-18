@@ -35,11 +35,11 @@ export function ScreenRoomMock() {
           <div className="flex flex-col gap-3">
             <div className="overflow-hidden rounded-lg bg-zinc-950">
               <div className="flex items-center gap-1 border-b border-white/10 px-2 pt-2">
-                <span className="rounded-t bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white">Code</span>
-                <span className="px-2.5 py-1 text-[10px] font-medium text-zinc-300">Whiteboard</span>
+                <span className="rounded-t bg-white/10 px-1.5 py-1 text-[10px] font-medium text-white sm:px-2.5">Code</span>
+                <span className="px-1.5 py-1 text-[10px] font-medium text-zinc-300 sm:px-2.5">Whiteboard</span>
                 <span className="mb-1 ml-auto rounded bg-indigo-600 px-2 py-0.5 text-[10px] font-medium text-white">Run</span>
               </div>
-              <pre className="overflow-hidden px-3 py-2.5 font-mono text-[9px] leading-[1.6] text-zinc-200 sm:text-[11px]">
+              <pre className="mk-code whitespace-pre-wrap break-words px-3 py-2.5 font-mono text-[9px] leading-[1.6] text-zinc-200 sm:overflow-x-auto sm:whitespace-pre sm:text-[11px]">
 <span className="text-zinc-400">{'// token bucket per tenant'}</span>{'\n'}
 <span className="text-indigo-300">function</span> allow{'(tenant) {\n'}
 {'  '}<span className="text-indigo-300">const</span>{' b = buckets.get(tenant)\n'}
@@ -47,7 +47,7 @@ export function ScreenRoomMock() {
 {'  '}<span className="text-indigo-300">return</span>{' b.take(1)'}<span className="mk-caret ml-0.5" />{'\n}'}
               </pre>
               <div className="flex items-center gap-2 whitespace-nowrap border-t border-white/10 px-3 py-1.5 font-mono text-[9px] text-zinc-300 sm:text-[10px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />tests: 4 passed · 0 failed
+                <span className="h-1.5 w-1.5 flex-none rounded-full bg-emerald-400" /><span className="hidden sm:inline">tests: </span>4 passed · 0 failed
               </div>
             </div>
             <div className="flex-1 rounded-lg border border-zinc-200 bg-white p-3">

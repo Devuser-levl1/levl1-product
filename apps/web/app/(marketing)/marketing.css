@@ -81,7 +81,15 @@
   font-size: 17px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Stop iOS inflating text in some blocks. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+/* Long words / URLs wrap instead of overflowing. (break-word, not anywhere:
+   `anywhere` also shrinks min-content and would squeeze content-sized columns.) */
+.mk-root p, .mk-root li, .mk-root h1, .mk-root h2, .mk-root h3 { overflow-wrap: break-word; }
+/* Code in mockups scrolls on touch from sm up (it wraps on phones). */
+.mk-code { -webkit-overflow-scrolling: touch; }
 .mk-light { color: rgb(var(--mk-ink)); }
 .mk-root ::selection { background: rgb(var(--mk-accent) / 0.18); color: rgb(var(--mk-ink)); }
 .mk-root a { -webkit-tap-highlight-color: transparent; }
@@ -97,6 +105,16 @@
 .mk-lead { font-size: clamp(1.1rem, 1.5vw, 1.25rem); line-height: 1.55; color: rgb(var(--mk-slate)); }
 .mk-eyebrow { font-family: var(--mk-font-mono); font-size: 0.78rem; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase; color: rgb(var(--mk-muted)); }
 .mk-mono { font-family: var(--mk-font-mono); }
+/* Mono from sm up only — phones keep at most one mono element per block. */
+@media (min-width: 640px) { .mk-mono-sm { font-family: var(--mk-font-mono); } }
+
+/* Phones: calmer type scale and density. */
+@media (max-width: 639.98px) {
+  .mk-root { font-size: 16px; }
+  .mk-lead { font-size: 1rem; line-height: 1.6; }
+  .mk-h2 { font-size: 1.75rem; line-height: 1.12; }
+  .mk-h3 { font-size: 1.3rem; }
+}
 .mk-hl { color: inherit; }
 
 /* Buttons — pill; primary = accent fill, secondary = accent tint, quiet = text link */

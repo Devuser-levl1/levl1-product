@@ -3,6 +3,8 @@ import type { ComparisonRow, Heading } from '@/content/types'
 import { Container, Section, SectionHeading } from './primitives'
 
 // "Today → With Screen": the problem and the outcome in one place, row by row.
+// Phones: each label sits on its own line above its sentence (inline labels
+// made every row start ragged).
 export function Comparison({ heading, rows, todayLabel = 'Today', withLabel }: { heading: Heading; rows: ComparisonRow[]; todayLabel?: string; withLabel: string }) {
   return (
     <Section>
@@ -14,10 +16,10 @@ export function Comparison({ heading, rows, todayLabel = 'Today', withLabel }: {
           </div>
           <ul className="divide-y divide-mk-line">
             {rows.map((r) => (
-              <li key={r.today} className="grid gap-2 px-6 py-5 md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-0">
-                <p className="text-mk-slate"><span className="mk-eyebrow mr-2 md:hidden">{todayLabel}</span>{r.today}</p>
+              <li key={r.today} className="grid gap-3 px-5 py-5 sm:px-6 md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-0">
+                <p className="text-mk-slate"><span className="mk-eyebrow mb-1 block md:hidden">{todayLabel}</span>{r.today}</p>
                 <ArrowRight aria-hidden className="mx-auto hidden h-4 w-10 text-mk-muted md:block" strokeWidth={1.75} />
-                <p className="font-medium text-mk-ink"><span className="mk-eyebrow mr-2 !text-mk-accent-text md:hidden">{withLabel}</span>{r.withScreen}</p>
+                <p className="font-medium text-mk-ink"><span className="mk-eyebrow mb-1 block !text-mk-accent-text md:hidden">{withLabel}</span>{r.withScreen}</p>
               </li>
             ))}
           </ul>

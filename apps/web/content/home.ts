@@ -88,13 +88,13 @@ export const home = {
     heading: { eyebrow: 'Built for both', title: 'One interview. Three teams that rely on it.' } as Heading,
     items: [
       {
-        id: 'eng', label: 'Engineering leaders', visual: 'snipCode',
+        id: 'eng', label: 'Engineering leaders', shortLabel: 'Eng leaders', visual: 'snipCode',
         title: 'Deeper signal, defensible decisions.',
         body: 'See how candidates actually work — and spend your engineers’ time only on the shortlist.',
         bullets: ['Watch candidates work, not just talk', 'Every score explained — ready for your debrief', 'Your rubric, approved by your team'],
       },
       {
-        id: 'ta', label: 'Recruiters & TA', visual: 'screenControl',
+        id: 'ta', label: 'Recruiters & TA', shortLabel: 'Recruiters', visual: 'screenControl',
         title: 'More first rounds, no more calendar.',
         body: 'Interviews run in parallel while you work the rest of the funnel.',
         bullets: ['Candidates self-schedule, around the clock', 'Live interview health in the Control Room — without joining', 'Consent, invites and reminders by email and WhatsApp', 'Export results to CSV'],
@@ -103,6 +103,7 @@ export const home = {
         id: 'agencies', label: 'Agencies', visual: 'snipLogistics',
         title: 'Verify before you submit.',
         body: 'Put a structured technical interview behind every submission — with the logistics already covered.',
+        bodyShort: 'A structured technical interview behind every submission.',
         bullets: ['The same bar for every candidate', 'Notice period, location and work authorization captured', 'Scores your recruiters can explain to a client'],
       },
     ] as TabItem[],

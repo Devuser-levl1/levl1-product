@@ -28,10 +28,11 @@ export function CodeSnippet() {
   return (
     <Frame title="levl1 · work sample · ratelimit.ts" label="Coding workspace: the candidate's code and the test results after pressing Run.">
       <div className="bg-zinc-950">
-        <pre className="overflow-hidden px-5 py-4 font-mono text-[11.5px] leading-[1.7] text-zinc-200">
+        {/* Never clip code: wrap on phones, scroll sideways from sm up. */}
+        <pre className="mk-code whitespace-pre-wrap break-words px-4 py-4 font-mono text-[10.5px] leading-[1.7] text-zinc-200 sm:overflow-x-auto sm:whitespace-pre sm:px-5 sm:text-[11.5px]">
 <span className="text-zinc-400">{'// token bucket per tenant'}</span>{'\n'}
 <span className="text-indigo-300">export function</span>{' allow(tenant: string) {\n'}
-{'  const b = buckets.get(tenant) ?? create(tenant)\n'}
+{'  const b = bucketFor(tenant)\n'}
 {'  b.refill(Date.now())\n'}
 {'  '}<span className="text-indigo-300">return</span>{' b.take(1)\n}'}
         </pre>

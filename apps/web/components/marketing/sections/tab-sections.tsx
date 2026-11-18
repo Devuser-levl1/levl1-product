@@ -13,12 +13,14 @@ export function TabSection({ heading, items, label, tone = 'light' }: { heading:
         <SectionHeading {...heading} />
         <div data-reveal className="mt-10">
           <Tabs label={label} tabs={items.map((t) => ({
-            id: t.id, label: t.label,
+            id: t.id, label: t.label, shortLabel: t.shortLabel,
             panel: (
               <div className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
                 <div>
                   <h3 className="mk-h3">{t.title}</h3>
-                  <p className="mt-3 leading-relaxed text-mk-slate">{t.body}</p>
+                  <p className="mt-3 leading-relaxed text-mk-slate">
+                    {t.bodyShort ? <><span className="sm:hidden">{t.bodyShort}</span><span className="hidden sm:inline">{t.body}</span></> : t.body}
+                  </p>
                   {t.bullets && (
                     <ul className="mt-6 space-y-2.5">
                       {t.bullets.map((b) => (

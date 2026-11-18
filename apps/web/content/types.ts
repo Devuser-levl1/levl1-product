@@ -21,8 +21,9 @@ export interface ComparisonRow { today: string; withScreen: string }
 /** One moment in the illustrative interview timeline. */
 export interface TimelineStep { time: string; title: string; body: string; evidence: string; tone?: 'pass' | 'flag' | 'neutral' }
 
-/** One tab: copy on one side, a product visual on the other. */
-export interface TabItem { id: string; label: string; title: string; body: string; bullets?: string[]; visual: VisualKey }
+/** One tab: copy on one side, a product visual on the other.
+ *  `shortLabel` / `bodyShort` are shown below the `sm` breakpoint only. */
+export interface TabItem { id: string; label: string; shortLabel?: string; title: string; body: string; bodyShort?: string; bullets?: string[]; visual: VisualKey }
 
 /** Product UI mockups available to content files (see components/marketing/mocks/registry). */
 export type VisualKey =
