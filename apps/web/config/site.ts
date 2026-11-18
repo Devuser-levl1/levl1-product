@@ -14,14 +14,19 @@ export const CONTACT_EMAIL = 'hello@levl1.io'
 export const INTERVIEW_LENGTH_LABEL = '~30 minutes'
 
 // ── Products — the technical hiring funnel. ALL product names live here. ──────
-// Slugs are functional and don't change with names.
+// ONE source of truth for the stage names, used by the marketing site AND the
+// app (sidebar). Rename a product here and every user-facing mention follows.
+// Keys, slugs and routes are functional and don't change with names.
+//   Stage 1 Screen    — AI technical screening (live)
+//   Stage 2 Solve     — real-world take-home, defended (coming soon)
+//   Stage 3 Interview — human-led, AI-assisted technical interview (coming soon)
 export type ProductKey = 'screen' | 'takeHome' | 'liveInterview'
 export interface Product { name: string; stage: number; tagline: string; status: 'live' | 'soon'; href: string }
 
 export const PRODUCTS: Record<ProductKey, Product> = {
-  screen: { name: 'Screen', stage: 1, tagline: 'AI technical interviews', status: 'live', href: '/products/screen' },
-  takeHome: { name: 'Take-Home', stage: 2, tagline: 'Real-world async tasks, auto-evaluated', status: 'soon', href: '/products/take-home' },
-  liveInterview: { name: 'Live Interview', stage: 3, tagline: 'Human interviews with an AI copilot', status: 'soon', href: '/products/live-interview' },
+  screen: { name: 'Screen', stage: 1, tagline: 'AI technical screening', status: 'live', href: '/products/screen' },
+  takeHome: { name: 'Solve', stage: 2, tagline: 'Real-world take-home, defended — can’t be faked', status: 'soon', href: '/products/take-home' },
+  liveInterview: { name: 'Interview', stage: 3, tagline: 'Human-led, AI-assisted technical interview', status: 'soon', href: '/products/live-interview' },
 }
 export const PRODUCT_ORDER: ProductKey[] = ['screen', 'takeHome', 'liveInterview']
 export const SOON_LABEL = 'Coming soon'

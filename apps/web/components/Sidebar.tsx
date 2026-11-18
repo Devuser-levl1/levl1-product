@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { SupportModal } from "@/components/ui/SupportModal";
 import { useAccountType } from "@/hooks/useAccountType";
 import { ScreenLogo, ScreenIcon } from "@/components/screen/brand/ScreenLogo";
+import { PRODUCTS } from "@/config/site";
 
 interface NavItem {
   section: NavSection;
@@ -55,9 +56,11 @@ const NAV_SCREEN: NavItem[] = [
   { section: "control-room", icon: Radar, label: "Control Room" },
 ];
 
-const NAV_COMING_SOON: { key: string; icon: React.ElementType; label: string }[] = [
-  { key: "take-home",  icon: ClipboardList, label: "Take-home assessment" },
-  { key: "human-led",  icon: UserRound,     label: "Human-led interviews" },
+// Product names come from the ONE names config (config/site.ts → PRODUCTS),
+// shared with the marketing site. Stage 2 Solve, Stage 3 Interview.
+const NAV_COMING_SOON: { key: string; icon: React.ElementType; label: string; tagline: string }[] = [
+  { key: "solve",     icon: ClipboardList, label: PRODUCTS.takeHome.name,      tagline: PRODUCTS.takeHome.tagline },
+  { key: "interview", icon: UserRound,     label: PRODUCTS.liveInterview.name, tagline: PRODUCTS.liveInterview.tagline },
 ];
 
 const NAV_LIBRARY: NavItem[] = [
@@ -261,17 +264,17 @@ export default function Sidebar() {
               aria-expanded={screenOpen} aria-controls="nav-screen-group"
               style={{ justifyContent: "flex-start", padding: "9px 12px", minHeight: 34 }}>
               <AudioLines size={16} style={{ flexShrink: 0 }} strokeWidth={1.75} />
-              {label("Screen", <ChevronDown size={14} aria-hidden="true" style={{ marginLeft: "auto", flexShrink: 0, transform: screenOpen ? "none" : "rotate(-90deg)", transition: "transform 0.15s" }} />)}
+              {label(PRODUCTS.screen.name, <ChevronDown size={14} aria-hidden="true" style={{ marginLeft: "auto", flexShrink: 0, transform: screenOpen ? "none" : "rotate(-90deg)", transition: "transform 0.15s" }} />)}
             </button>
           )}
           {(screenOpen || sidebarCollapsed) && (
-            <div id="nav-screen-group" role="group" aria-label="Screen" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div id="nav-screen-group" role="group" aria-label={PRODUCTS.screen.name} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {NAV_SCREEN.map((n) => navLink(n, true))}
             </div>
           )}
           {/* Announced products — not clickable yet */}
-          {NAV_COMING_SOON.map(({ key, icon: Icon, label: text }) => (
-            <div key={key} className="sidebar-link" role="link" aria-disabled="true" title={`${text} — coming soon`}
+          {NAV_COMING_SOON.map(({ key, icon: Icon, label: text, tagline }) => (
+            <div key={key} className="sidebar-link" role="link" aria-disabled="true" title={`${text} — ${tagline}. Coming soon.`}
               style={{ justifyContent: sidebarCollapsed ? "center" : "flex-start", padding: sidebarCollapsed ? "9px" : "7px 12px", minHeight: 34, cursor: "default", opacity: 0.7 }}>
               <Icon size={16} style={{ flexShrink: 0 }} strokeWidth={1.75} />
               <AnimatePresence>

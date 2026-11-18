@@ -13,7 +13,7 @@ function Line({ who, children }: { who: 'AI' | 'Candidate'; children: React.Reac
 
 export function VoiceSnippet() {
   return (
-    <Frame title="levl1 · live interview · transcript" label="Live transcript: the AI asks a question, the candidate interrupts to push back, and the AI adapts.">
+    <Frame title="levl1 · screen · transcript" label="Live transcript: the AI asks a question, the candidate interrupts to push back, and the AI adapts.">
       <div className="space-y-3 p-5">
         <Line who="AI">How would you keep one tenant’s burst from slowing down everyone else?</Line>
         <Line who="Candidate">Sorry — can I push back on the premise? I’d first check whether the limit should be per tenant or per endpoint.</Line>

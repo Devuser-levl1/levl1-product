@@ -8,7 +8,7 @@ import { Frame } from './frame'
 
 export function ScreenRoomMock() {
   return (
-    <Frame title="levl1 · live interview" label="Interview room: the question across the top, the AI interviewer above the candidate's video on the left, and a code editor with test results and a live transcript on the right.">
+    <Frame title="levl1 · screen" label="Interview room: the question across the top, the AI interviewer above the candidate's video on the left, and a code editor with test results and a live transcript on the right.">
       <div className="mk-room bg-zinc-50 p-3 sm:p-4">
         {/* Question bar */}
         <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3">

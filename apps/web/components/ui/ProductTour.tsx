@@ -37,7 +37,7 @@ const TOUR_STEPS = [
   },
   {
     id:      'interviews',
-    title:   'Monitor Live Interviews',
+    title:   'Monitor interviews as they happen',
     text:    'Monitor live interviews here. The AI interviewer handles everything — you just watch the transcript and scores update in real time.',
     attachTo: { element: '[data-tour="nav-interviews"]', on: 'right' as const },
   },
