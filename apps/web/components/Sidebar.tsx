@@ -52,7 +52,7 @@ const NAV_WORKSPACE: NavItem[] = [
 ];
 
 const NAV_SCREEN: NavItem[] = [
-  { section: "interviews",   icon: Video, label: "Interviews"   },
+  { section: "interviews",   icon: Video, label: "Sessions"     },
   { section: "control-room", icon: Radar, label: "Control Room" },
 ];
 

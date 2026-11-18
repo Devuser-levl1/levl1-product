@@ -188,8 +188,8 @@ export default function InterviewsPage() {
       )}
     <Page style={{ maxWidth: 1280 }}>
       <PageHeader
-        title="Interviews"
-        description="Track live and upcoming AI voice interviews in real-time."
+        title="Sessions"
+        description="Track live and upcoming Screen sessions in real time."
         actions={
           <div role="status" style={{
             display: "flex", alignItems: "center", gap: space[2], padding: `${space[2]}px ${space[4]}px`,
