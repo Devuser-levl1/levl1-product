@@ -64,8 +64,11 @@ export default function LoginPage() {
           {step === 'email' ? 'Enter your work email and we\'ll send you a one-time code.' : `We sent a 6-digit code to ${email}.`}
         </p>
 
+        {/* Distinct keys: React must not reuse one step's form/buttons for the
+            other — otherwise the "different email" click lands on the email
+            step's submit button and re-sends the code to the old address. */}
         {step === 'email' ? (
-          <form onSubmit={requestCode}>
+          <form key="email" onSubmit={requestCode}>
             <label style={labelStyle}>Work email</label>
             <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" style={inputStyle} />
             <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 6 }}>Personal email (Gmail, Outlook, etc.) isn&apos;t supported.</div>
@@ -75,14 +78,14 @@ export default function LoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={verifyCode}>
+          <form key="code" onSubmit={verifyCode}>
             <label style={labelStyle}>6-digit code</label>
             <input autoFocus inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" style={{ ...inputStyle, letterSpacing: 8, fontSize: 18, textAlign: 'center', fontWeight: 600 }} />
             {error && <div style={errStyle}>{error}</div>}
             <button type="submit" disabled={loading} style={btnStyle(loading)}>
               {loading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <>Verify &amp; sign in <ArrowRight size={16} /></>}
             </button>
-            <button type="button" onClick={() => { setStep('email'); setCode(''); setError('') }} style={{ width: '100%', marginTop: 10, background: 'none', border: 'none', color: 'var(--lv-text-muted)', fontSize: 13, cursor: 'pointer' }}>← Use a different email</button>
+            <button type="button" onClick={(e) => { e.preventDefault(); setStep('email'); setCode(''); setError('') }} style={{ width: '100%', marginTop: 10, background: 'none', border: 'none', color: 'var(--lv-text-muted)', fontSize: 13, cursor: 'pointer' }}>← Use a different email</button>
           </form>
         )}
 

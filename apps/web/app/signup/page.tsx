@@ -84,7 +84,8 @@ export default function SignupPage() {
           </p>
 
           {step === 'code' ? (
-            <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            // Distinct keys so React never reuses one step's form/buttons for the other.
+            <form key="code" onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Field label="6-digit code">
                 <Input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ letterSpacing: 8, fontSize: 18, textAlign: 'center', fontWeight: 600, height: 52 }}
                   value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" />
@@ -94,12 +95,12 @@ export default function SignupPage() {
                 {loading ? 'Creating your account…' : 'Verify & create account'}
               </Button>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <Button variant="tertiary" size="sm" onClick={() => { setStep('details'); setCode(''); setError('') }}>← Edit details</Button>
+                <Button variant="tertiary" size="sm" onClick={(e) => { e.preventDefault(); setStep('details'); setCode(''); setError('') }}>← Edit details</Button>
                 <Button variant="tertiary" size="sm" disabled={loading} onClick={() => { setCode(''); void submit(false) }}>Resend code</Button>
               </div>
             </form>
           ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form key="details" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field label="Agency / Company name" required>
               <Input value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder="HireEdge Recruitment" autoComplete="organization" />
             </Field>

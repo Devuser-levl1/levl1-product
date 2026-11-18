@@ -6,7 +6,7 @@ import { OG_PAGES, type OgPageKey } from '@/lib/marketing/og-pages'
 // The Levl1 wordmark (transparent PNG, 900×322), embedded once per process.
 let wordmark: Promise<string> | null = null
 function getWordmark() {
-  wordmark ??= readFile(path.join(process.cwd(), 'public/brand/black-text-logo.png')).then((b) => `data:image/png;base64,${b.toString('base64')}`)
+  wordmark ??= readFile(path.join(process.cwd(), 'public/brand/levl1-wordmark-black.png')).then((b) => `data:image/png;base64,${b.toString('base64')}`)
   return wordmark
 }
 

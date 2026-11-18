@@ -116,12 +116,12 @@ export const FOOTER: { title: string; links: NavLink[] }[] = [
     { label: 'Pricing', href: ROUTES.pricing },
   ] },
   { title: 'Solutions', links: [
-    { label: 'For Engineering Leaders', href: ROUTES.enterprise },
-    { label: 'For Recruitment Agencies', href: ROUTES.agencies },
+    { label: 'Engineering leaders', href: ROUTES.enterprise },
+    { label: 'Recruitment agencies', href: ROUTES.agencies },
   ] },
   { title: 'Services', links: [
     { label: 'Interview-as-a-Service', href: ROUTES.iaas },
-    { label: 'Custom Assessments', href: ROUTES.customAssessments },
+    { label: 'Custom assessments', href: ROUTES.customAssessments },
   ] },
   { title: 'Company', links: [
     { label: 'Contact', href: ROUTES.demo },

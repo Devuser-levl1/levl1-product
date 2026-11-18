@@ -1,8 +1,9 @@
 import Image from 'next/image'
 
 // Brand assets (do not recolor or stretch — switch variant by background).
-//  - black-text-logo.png : light backgrounds (header/nav, light sections)
-//  - white-text-logo.png : dark backgrounds (footer, navy hero, dark CTA bands)
+//  - levl1-wordmark-black.png : light backgrounds (header/nav, light sections)
+//  - levl1-wordmark-white.png : dark backgrounds (dark mode, dark bands)
+// To change the logo, add files under NEW names (browsers cache by URL).
 //  - levl1-icon.png      : standalone L1 mark (favicon, app icon, mobile nav, loading)
 // Wordmarks are transparent PNGs, 900×322 (≈2.8:1), trimmed to the artwork;
 // the icon is square.
@@ -19,7 +20,7 @@ export function Logo({
   height?: number
   priority?: boolean
 }) {
-  const src = variant === 'white' ? '/brand/white-text-logo.png' : '/brand/black-text-logo.png'
+  const src = variant === 'white' ? '/brand/levl1-wordmark-white.png' : '/brand/levl1-wordmark-black.png'
   const width = Math.round(height * WORDMARK_RATIO)
   return (
     <Image
