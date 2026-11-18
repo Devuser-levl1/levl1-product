@@ -54,7 +54,7 @@ export function PoweredBy({ link }: { link?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, fontSize: 12, color: 'var(--lv-text-muted)' }}>
       Powered by {link
-        ? <a href="https://levl1.io" aria-label="Screen from Levl1" style={{ display: 'inline-flex' }}><ScreenLogo height={22} tone="dark" /></a>
+        ? <a href="https://levl1.io" aria-label="Levl1" style={{ display: 'inline-flex' }}><ScreenLogo height={22} tone="dark" /></a>
         : <ScreenLogo height={22} tone="dark" />}
     </div>
   )

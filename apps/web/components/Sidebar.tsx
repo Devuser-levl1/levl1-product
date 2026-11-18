@@ -103,7 +103,7 @@ export default function Sidebar() {
           textAlign: "left",
         }}
       >
-        {/* Screen brand mark — "SCREEN / From Levl1" (Screen-scoped; Hire keeps its own logo). */}
+        {/* Levl1 brand mark (components/screen/brand/ScreenLogo.tsx). */}
         {sidebarCollapsed ? (
           <ScreenIcon size={32} />
         ) : (
