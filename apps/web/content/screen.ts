@@ -101,7 +101,7 @@ export const screen = {
 
 export const screenDemo = {
   meta: {
-    title: `Try a live interview — ${NAME} — Levl1`,
+    title: `Try ${NAME} live — Levl1`,
     description: 'Pick a technical role and take a short, live AI interview by voice in your browser. No sign-up.',
   },
   hero: {

@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES } from '@/config/site'
+import { CONTACT_EMAIL, INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES, TRY_LIVE } from '@/config/site'
 import type { CTA, FAQItem, Heading, Item, Step } from './types'
 
 const TALK: CTA = { label: 'Talk to us', href: ROUTES.demo }
@@ -119,8 +119,8 @@ export const demoPage = {
   },
   heading: { eyebrow: 'Talk to us', title: 'See Levl1 on your roles.', lead: 'Tell us a little about your technical hiring and we’ll set up a walkthrough on one of your job descriptions.' } as Heading,
   gallery: {
-    title: 'Can’t wait? Try a live interview now.',
+    title: `Can’t wait? Try ${PRODUCTS.screen.name} live now.`,
     body: 'Pick a technical role and talk it through by voice in your browser. No sign-up.',
-    cta: { label: 'Try a live interview', href: ROUTES.screenDemo } as CTA,
+    cta: TRY_LIVE as CTA,
   },
 }

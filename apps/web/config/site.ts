@@ -80,7 +80,7 @@ const productLink = (k: ProductKey, icon: IconName): NavLink => ({
   badge: PRODUCTS[k].status === 'soon' ? SOON_LABEL : undefined,
 })
 
-export const TRY_LIVE = { label: 'Try a live interview', href: ROUTES.screenDemo }
+export const TRY_LIVE = { label: `Try ${PRODUCTS.screen.name} live`, href: ROUTES.screenDemo }
 export const TALK_TO_US = { label: 'Talk to us', href: ROUTES.demo }
 
 export const NAV: NavGroup[] = [
@@ -93,7 +93,7 @@ export const NAV: NavGroup[] = [
         { label: 'Security', href: ROUTES.security, icon: 'lock', desc: 'How candidate data is protected.' },
       ] },
     ],
-    footer: { label: 'Try a live interview — no sign-up', href: ROUTES.screenDemo },
+    footer: { label: `Try ${PRODUCTS.screen.name} live — no sign-up`, href: ROUTES.screenDemo },
   },
   {
     label: 'Solutions',
