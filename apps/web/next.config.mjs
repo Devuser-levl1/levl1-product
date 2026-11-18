@@ -71,6 +71,11 @@ const nextConfig = {
       { source: '/contact', destination: '/demo', statusCode: 301 },
       { source: '/roadmap', destination: '/products/screen', statusCode: 301 },
       { source: '/interviews', destination: '/products/screen/demo', statusCode: 301 },
+      // Product-name URLs (config/site.ts PRODUCTS) → the existing pages. The
+      // functional slugs stay; TEMPORARY so they can be flipped if the pages
+      // ever move to the name slugs.
+      { source: '/products/solve', destination: '/products/take-home', permanent: false },
+      { source: '/products/interview', destination: '/products/live-interview', permanent: false },
 
       // Hire (HirePilot) is hidden from the site and will move to its own
       // domain. TEMPORARY (307, permanent: false) so browsers don't cache them
