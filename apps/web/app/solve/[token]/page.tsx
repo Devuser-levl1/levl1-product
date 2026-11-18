@@ -7,7 +7,7 @@ import { Button, Alert, LoadingBlock } from '@/components/screen/ui'
 import { CandidateShell } from '@/components/screen/candidate/CandidateShell'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 import { SolveNotice } from '@/components/solve/SolveNotice'
-import { SolveWorkspace } from '@/components/solve/SolveWorkspace'
+import { SolveWorkspace, type AiExchangeView } from '@/components/solve/SolveWorkspace'
 import { SolveDefense } from '@/components/solve/SolveDefense'
 import type { PublicTask } from '@/lib/screen/workspace/task'
 import { PRODUCTS } from '@/config/site'
@@ -26,6 +26,7 @@ interface View {
   task: PublicTask | null
   saved: { code: string; language: string; savedAt: string } | null
   resumeMs: number; executionsLeft: number
+  ai: { enabled: boolean; remaining: number; exchanges: AiExchangeView[] }
   defense: { status: string; deadlineAt: string | null; turns: { speaker: 'ai' | 'candidate'; text: string }[]; voiceAccent: string | null }
 }
 
@@ -78,7 +79,7 @@ export default function SolvePage() {
   if (v.status === 'started' && v.task) {
     return (
       <SolveWorkspace token={token} task={v.task} saved={v.saved} resumeMs={v.resumeMs} deadlineAt={v.deadlineAt}
-        executionAvailable={v.executionAvailable} executionsLeft={v.executionsLeft} onSubmitted={(d) => setV(d as View)} />
+        executionAvailable={v.executionAvailable} executionsLeft={v.executionsLeft} ai={v.ai} onSubmitted={(d) => setV(d as View)} />
     )
   }
 
@@ -100,7 +101,7 @@ export default function SolvePage() {
               { icon: <CalendarClock size={16} aria-hidden="true" />, text: <>Start any time before <strong>{fmt(v.expiresAt)}</strong>. The task stays hidden until you start.</> },
               { icon: <Clock size={16} aria-hidden="true" />, text: <>Once you start you have <strong>{v.config.durationMinutes} minutes</strong>. The clock keeps running if you close the page, and your work is saved as you go. When time runs out, what you have is submitted.</> },
               ...(v.config.defenseRequired ? [{ icon: <MessageSquareText size={16} aria-hidden="true" />, text: <>After you submit, a short spoken conversation (about 10 minutes) about your solution{v.config.defenseTiming === 'flexible' ? ', which you can do straight away or later' : ', straight after you submit'}. You need a microphone.</> }] : []),
-              { icon: <ShieldCheck size={16} aria-hidden="true" />, text: v.config.aiPolicy === 'allowed' ? <>You may use AI tools and documentation, but you must be able to explain every line.</> : <>Please work on your own: documentation and search are fine, AI coding assistants are not.</> },
+              { icon: <ShieldCheck size={16} aria-hidden="true" />, text: v.config.aiPolicy === 'allowed' ? <>AI help is allowed: there&apos;s an AI assistant built into the editor. How you use it is part of the assessment, and you must be able to explain every line you submit.</> : <>Please work on your own: documentation and search are fine, AI coding assistants are not.</> },
             ].map((r, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, lineHeight: 1.55, color: 'var(--lv-text-body)' }}>
                 <span style={{ color: 'var(--lv-brand)', marginTop: 2 }}>{r.icon}</span><span>{r.text}</span>

@@ -13,6 +13,8 @@ import { nextDefenseTurn, openerLine, closingLine, type DefenseTurn } from '@/li
 import { queueSolveReport } from '@/lib/screen/solve/report'
 import { recordStageUsage } from '@/lib/screen/solve/usage'
 import { SOLVE_NOTICE_VERSION } from '@/lib/screen/solve/notice'
+import { askAssistant, AI_MAX_PROMPTS, AI_PROMPT_MAX_CHARS, type AiExchange } from '@/lib/screen/solve/assistant'
+import { aiUsageMetrics, aiUsageText } from '@/lib/screen/solve/ai-usage'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -26,7 +28,7 @@ export const maxDuration = 60
 const first = (n: string) => n.trim().split(/\s+/)[0] || n
 
 async function view(s: LoadedSubmission) {
-  const row = await prisma.solveSubmission.findUnique({ where: { id: s.id }, select: { code: true, language: true, updatedAt: true, lastTests: true, timeline: true, execCount: true, defenseTranscript: true } })
+  const row = await prisma.solveSubmission.findUnique({ where: { id: s.id }, select: { code: true, language: true, updatedAt: true, lastTests: true, timeline: true, execCount: true, defenseTranscript: true, aiLog: true, aiPromptCount: true } })
   const tl = row ? openArray<TimelineEvent>(row.timeline) : []
   const started = s.status !== 'invited' && s.status !== 'expired'
   const turns = openArray<DefenseTurn>(row?.defenseTranscript)
@@ -45,6 +47,11 @@ async function view(s: LoadedSubmission) {
     saved: started && row ? { code: openText(row.code) ?? '', language: row.language, savedAt: row.updatedAt.toISOString(), lastTests: row.lastTests ?? null } : null,
     resumeMs: tl.length ? tl[tl.length - 1].t + 1000 : 0,
     executionsLeft: Math.max(0, SOLVE_MAX_EXECUTIONS - (row?.execCount ?? 0)),
+    ai: {
+      enabled: s.config.aiPolicy === 'allowed',
+      remaining: Math.max(0, AI_MAX_PROMPTS - (row?.aiPromptCount ?? 0)),
+      exchanges: started && s.config.aiPolicy === 'allowed' ? openArray<AiExchange>(row?.aiLog).map(publicExchange) : [],
+    },
     defense: {
       status: s.defenseStatus, deadlineAt: s.defenseDeadlineAt?.toISOString() ?? null,
       turns: turns.map(({ speaker, text }) => ({ speaker, text })),
@@ -73,6 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       case 'defense_start': return defenseStart(s)
       case 'defense_answer': return defenseAnswer(s, body)
       case 'voice': return voice(s)
+      case 'assist': return assist(s, body)
       case 'voice_event': {
         // Voice/STT failures are logged loudly (never silent) — same events as the room.
         const kind = body.kind === 'stt_failed' ? 'stt_error' : 'voice_upstream_error'
@@ -193,7 +201,7 @@ async function submit(s: LoadedSubmission, body: Record<string, unknown>, token:
 }
 
 async function readTurns(id: string) {
-  const row = await prisma.solveSubmission.findUnique({ where: { id }, select: { defenseTranscript: true, code: true, timeline: true, finalTests: true, language: true, defenseInputMode: true } })
+  const row = await prisma.solveSubmission.findUnique({ where: { id }, select: { defenseTranscript: true, code: true, timeline: true, finalTests: true, language: true, defenseInputMode: true, aiLog: true } })
   return { row, turns: openArray<DefenseTurn>(row?.defenseTranscript) }
 }
 
@@ -228,11 +236,18 @@ async function defenseAnswer(s: LoadedSubmission, body: Record<string, unknown>)
   const overtime = !!s.defenseStartedAt && now.getTime() - s.defenseStartedAt.getTime() > DEFENSE_MAX_MINUTES * 60_000
   const next = overtime
     ? { say: closingLine(first(s.candidateName)), done: true }
-    : await nextDefenseTurn({
-      firstName: first(s.candidateName), task: s.task, language: row.language, code: openText(row.code) ?? '',
-      timeline: openArray<TimelineEvent>(row.timeline), finalTests: (Array.isArray(row.finalTests) ? row.finalTests : null) as FinalTestRow[] | null,
-      aiPolicy: s.config.aiPolicy, maxFollowUps: s.config.defenseQuestions,
-    }, turns)
+    : await (async () => {
+      const code = openText(row.code) ?? ''
+      const timeline = openArray<TimelineEvent>(row.timeline)
+      const exchanges = s.config.aiPolicy === 'allowed' ? openArray<AiExchange>(row.aiLog) : []
+      const m = exchanges.length ? aiUsageMetrics(exchanges, timeline, code, s.task.starterCode) : null
+      return nextDefenseTurn({
+        firstName: first(s.candidateName), task: s.task, language: row.language, code, timeline,
+        finalTests: (Array.isArray(row.finalTests) ? row.finalTests : null) as FinalTestRow[] | null,
+        aiPolicy: s.config.aiPolicy, maxFollowUps: s.config.defenseQuestions,
+        ai: m ? { summary: aiUsageText(exchanges, m, 400).slice(0, 6000), lines: m.aiLines } : null,
+      }, turns)
+    })()
   turns.push({ speaker: 'ai', text: next.say, at: new Date().toISOString() })
   await prisma.solveSubmission.update({
     where: { id: s.id },
@@ -249,4 +264,26 @@ async function defenseAnswer(s: LoadedSubmission, body: Record<string, unknown>)
 async function voice(s: LoadedSubmission) {
   if (s.defenseStatus !== 'in_progress') return NextResponse.json({ error: 'not_live' }, { status: 409 })
   return NextResponse.json({ voiceToken: voiceToken(s.id) })
+}
+
+const publicExchange = (x: AiExchange) => ({ id: x.id, prompt: x.prompt, response: x.response, blocks: x.blocks, error: x.error ?? null, includedCode: x.includedCode })
+
+// Built-in AI assistant — only when the position allows AI help. Every exchange
+// is logged (encrypted) as AI-fluency evidence; the count is capped atomically.
+async function assist(s: LoadedSubmission, body: Record<string, unknown>) {
+  if (s.config.aiPolicy !== 'allowed') return NextResponse.json({ error: 'The AI assistant isn\'t part of this take-home.' }, { status: 403 })
+  if (!isWorking(s)) return NextResponse.json({ error: 'The take-home is no longer open.' }, { status: 409 })
+  const prompt = typeof body.prompt === 'string' ? body.prompt.trim().slice(0, AI_PROMPT_MAX_CHARS) : ''
+  if (!prompt) return NextResponse.json({ error: 'Ask something first.' }, { status: 400 })
+  const code = body.includeCode === true && typeof body.code === 'string' ? body.code.slice(0, MAX_CODE_CHARS) : null
+  const t = typeof body.t === 'number' && Number.isFinite(body.t) ? Math.max(0, Math.round(body.t)) : 0
+  const language = isWorkspaceLanguage(body.language) && s.task.languages.includes(body.language) ? body.language : s.task.language
+  const claimed = await prisma.solveSubmission.updateMany({ where: { id: s.id, aiPromptCount: { lt: AI_MAX_PROMPTS } }, data: { aiPromptCount: { increment: 1 } } })
+  if (!claimed.count) return NextResponse.json({ error: `You've used all ${AI_MAX_PROMPTS} assistant questions for this take-home.` }, { status: 429 })
+  const row = await prisma.solveSubmission.findUnique({ where: { id: s.id }, select: { aiLog: true, aiPromptCount: true } })
+  const log = openArray<AiExchange>(row?.aiLog)
+  const x = await askAssistant({ task: s.task, language, prompt, code, history: log, id: `A${log.length + 1}`, t })
+  await prisma.solveSubmission.update({ where: { id: s.id }, data: { aiLog: sealJson([...log, x].slice(-60)) } })
+  await recordStageUsage({ agencyId: s.agencyId, stage: 'solve', kind: 'solve_ai', refId: s.id, units: 1, isDemo: s.isDemo })
+  return NextResponse.json({ exchange: publicExchange(x), remaining: Math.max(0, AI_MAX_PROMPTS - (row?.aiPromptCount ?? 0)) })
 }

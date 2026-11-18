@@ -7,6 +7,7 @@ import { sanitizeSolveConfig } from '@/lib/screen/solve/config'
 import { runSolveReport } from '@/lib/screen/solve/report'
 import { applyTimeTransitions } from '@/lib/screen/solve/session'
 import type { DefenseTurn } from '@/lib/screen/solve/defense'
+import type { AiExchange } from '@/lib/screen/solve/assistant'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
@@ -22,7 +23,7 @@ async function load(id: string, agencyId: string) {
       id: true, status: true, task: true, config: true, language: true, code: true, invitedAt: true, expiresAt: true, startedAt: true, deadlineAt: true, submittedAt: true,
       autoSubmitted: true, finalTests: true, submissionQuality: true, consentGiven: true, consentAt: true, consentNoticeVersion: true,
       defenseStatus: true, defenseDeadlineAt: true, defenseStartedAt: true, defenseCompletedAt: true, defenseTranscript: true, defenseInputMode: true,
-      report: true, score: true, recommendation: true, reportStatus: true, reportError: true, reportAttempts: true, purgedAt: true,
+      aiLog: true, report: true, score: true, recommendation: true, reportStatus: true, reportError: true, reportAttempts: true, purgedAt: true,
       candidate: { select: { id: true, name: true, email: true, score: true, recommendation: true, interview: { select: { status: true } } } },
       position: { select: { id: true, title: true, company: true } },
     },
@@ -50,6 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       status: s.defenseStatus, deadlineAt: s.defenseDeadlineAt, startedAt: s.defenseStartedAt, completedAt: s.defenseCompletedAt, inputMode: s.defenseInputMode,
       turns: openArray<DefenseTurn>(s.defenseTranscript).map(({ speaker, text, mode }) => ({ speaker, text, mode: mode ?? null })),
     },
+    ai: { exchanges: s.purgedAt ? [] : openArray<AiExchange>(s.aiLog).map(({ id, t, prompt, includedCode, response, blocks, error }) => ({ id, t, prompt, includedCode, response, blocks, error: error ?? null })) },
     report: s.report ?? null, score: s.score, recommendation: s.recommendation,
     reportStatus: s.reportStatus, reportError: s.reportStatus === 'failed' ? s.reportError : null, reportAttempts: s.reportAttempts,
   })

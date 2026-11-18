@@ -160,9 +160,9 @@ export function SolvePositionPanel({ positionId }: { positionId: string }) {
               <Field label="Time allowed once started" hint={`${LIMITS.durationMinutes.min}–${LIMITS.durationMinutes.max} minutes`}>
                 <Input type="number" min={LIMITS.durationMinutes.min} max={LIMITS.durationMinutes.max} value={cfg.durationMinutes} disabled={!canEdit} onChange={(e) => set('durationMinutes', Number(e.target.value))} />
               </Field>
-              <Field label="Outside AI help" hint="The defense applies either way.">
+              <Field label="AI help" hint={cfg.aiPolicy === 'allowed' ? 'Built-in AI assistant on. The report scores AI fluency: how well they used it, not whether.' : 'Submitted code is checked for signs of AI generation (review-only), unless the AI check is off for this position.'}>
                 <Select value={cfg.aiPolicy} disabled={!canEdit} onChange={(e) => set('aiPolicy', e.target.value as SolveConfig['aiPolicy'])}>
-                  <option value="not_allowed">Not allowed</option><option value="allowed">Allowed — must be able to explain it</option>
+                  <option value="not_allowed">Not allowed</option><option value="allowed">Allowed — built-in assistant, AI fluency assessed</option>
                 </Select>
               </Field>
               <Field label="Integrity level" hint={INTEGRITY_INFO[cfg.integrityLevel]}>

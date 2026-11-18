@@ -601,6 +601,10 @@ model SolveSubmission {
   finalTests           Json? // server-run on submit (hidden tests included) — the scored result
   execCount            Int             @default(0)
   integrity            Json? // { tabSwitches, awayMs, pastes, largestPaste, flags[] }
+  // Built-in AI assistant (only when aiPolicy = allowed): encrypted exchange log,
+  // lib/screen/solve/assistant.ts AiExchange[]. The AI-fluency evidence.
+  aiLog                Json?
+  aiPromptCount        Int       @default(0)
   // Trivial / empty submission guard — never silently accepted.
   submissionQuality    String? // ok | trivial | empty
   // Consent (notice version + append-only log)

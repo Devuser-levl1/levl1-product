@@ -7,14 +7,14 @@ import { prisma } from '@/lib/prisma'
 // metering must not break the candidate's flow.
 
 export type Stage = 'screen' | 'solve' | 'interview'
-export type SolveUsageKind = 'solve_invite' | 'solve_submission' | 'solve_defense' | 'solve_exec'
+export type SolveUsageKind = 'solve_invite' | 'solve_submission' | 'solve_defense' | 'solve_exec' | 'solve_ai'
 
 export async function recordStageUsage(o: { agencyId: string; stage: Stage; kind: SolveUsageKind; refId: string; units?: number; isDemo?: boolean }) {
   try {
     await prisma.stageUsageEvent.upsert({
       where: { kind_refId: { kind: o.kind, refId: o.refId } },
-      // solve_exec accumulates Judge0 executions on one row per submission.
-      update: o.kind === 'solve_exec' ? { units: { increment: o.units ?? 1 } } : {},
+      // solve_exec / solve_ai accumulate (Judge0 runs / assistant prompts) on one row per submission.
+      update: o.kind === 'solve_exec' || o.kind === 'solve_ai' ? { units: { increment: o.units ?? 1 } } : {},
       create: { agencyId: o.agencyId, stage: o.stage, kind: o.kind, refId: o.refId, units: o.units ?? 1, isDemo: !!o.isDemo },
     })
   } catch (e) {

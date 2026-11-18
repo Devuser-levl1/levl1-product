@@ -6,9 +6,13 @@
 //   • NO camera, NO photo, NO audio recording. The defense conversation is
 //     transcribed live by ElevenLabs (speech-to-text) and spoken by ElevenLabs
 //     (interviewer voice); only the TEXT transcript is stored, encrypted.
-//   • Anthropic evaluates the work and the conversation
+//   • Anthropic evaluates the work and the conversation, and (aiPolicy =
+//     allowed) runs the built-in assistant; prompts, answers and
+//     insert/copy/keep/remove of its code are captured (aiLog, encrypted)
+//   • aiPolicy = not_allowed: the final code may be checked for AI generation
+//     (review-only flag, never auto-reject)
 //   • deleted SCREEN_TRANSCRIPT_RETENTION_DAYS after submission
-//     (lib/screen/solve/sweep.ts); the evaluation report stays
+//     (lib/screen/solve/sweep.ts — code, timeline, aiLog, defense); the report stays
 // Change the copy in components/solve/SolveNotice.tsx and bump this version
 // whenever any of that changes.
-export const SOLVE_NOTICE_VERSION = '2026-11-18.1'
+export const SOLVE_NOTICE_VERSION = '2026-11-18.2'

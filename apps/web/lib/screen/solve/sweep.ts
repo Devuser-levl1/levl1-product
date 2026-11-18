@@ -10,7 +10,7 @@ import { findPendingSolveReports, runSolveReport } from './report'
 //      auto-submits, missed / abandoned defenses)
 //   2. missing / failed reports (sequential; capped attempts)
 //   3. retention: code, work timeline and defense transcript are deleted
-//      SCREEN_TRANSCRIPT_RETENTION_DAYS after submission (same window as an
+//      (and the AI-assistant log) SCREEN_TRANSCRIPT_RETENTION_DAYS after submission (same window as an
 //      interview transcript — the candidate notice states this). The report stays.
 
 let running = false
@@ -41,7 +41,7 @@ export async function runSolveSweep(opts: { agencyId?: string; limit?: number } 
     const cutoff = new Date(now.getTime() - readCapturePolicy().transcriptRetentionDays * 86_400_000)
     const purged = await prisma.solveSubmission.updateMany({
       where: { purgedAt: null, submittedAt: { lt: cutoff } },
-      data: { code: null, timeline: Prisma.DbNull, defenseTranscript: Prisma.DbNull, purgedAt: now },
+      data: { code: null, timeline: Prisma.DbNull, defenseTranscript: Prisma.DbNull, aiLog: Prisma.DbNull, purgedAt: now },
     })
     return { skipped: false, transitions: due.length, reports: ids, purged: purged.count }
   } finally {

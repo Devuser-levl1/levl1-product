@@ -26,6 +26,8 @@ export interface DefenseContext {
   finalTests: FinalTestRow[] | null
   aiPolicy: AiPolicy
   maxFollowUps: number
+  // Built-in assistant use (aiPolicy = allowed): exchange summary + which final lines came from AI.
+  ai?: { summary: string; lines: { from: number; to: number; ref: string }[] } | null
 }
 
 /** Line 1. Names the task so the transcript is self-describing. */
@@ -43,7 +45,11 @@ function outermostJson(text: string): Record<string, unknown> | null {
   try { return JSON.parse(text.slice(a, b + 1)) } catch { return null }
 }
 
-const numbered = (code: string) => code.split('\n').slice(0, 400).map((l, i) => `${String(i + 1).padStart(3, ' ')}  ${l}`).join('\n').slice(0, 14_000)
+const numbered = (code: string, ai?: DefenseContext['ai']) => {
+  const origin = new Map<number, string>()
+  ai?.lines.forEach((r) => { for (let i = r.from; i <= r.to; i++) origin.set(i, r.ref) })
+  return code.split('\n').slice(0, 400).map((l, i) => `${String(i + 1).padStart(3, ' ')}${origin.has(i + 1) ? ` [${origin.get(i + 1)}]` : '     '} ${l}`).join('\n').slice(0, 14_000)
+}
 
 export interface NextTurn { say: string; done: boolean; degraded?: boolean }
 
@@ -77,12 +83,16 @@ export async function nextDefenseTurn(c: DefenseContext, turns: DefenseTurn[]): 
           role: 'user',
           content:
             `TASK: ${c.task.title}\n${c.task.prompt.slice(0, 1500)}\n\n` +
-            `THEIR FINAL CODE (${c.language}, line-numbered):\n${numbered(c.code)}\n\n` +
+            `THEIR FINAL CODE (${c.language}, line-numbered${c.ai?.lines.length ? '; [A#] marks lines that came from the AI assistant' : ''}):\n${numbered(c.code, c.ai)}\n\n` +
+            (c.ai?.summary ? `HOW THEY USED THE BUILT-IN AI ASSISTANT:\n${c.ai.summary}\n\n` : '') +
             `RESULT: ${tests}\n\nHOW THE WORK EVOLVED (timeline):\n${tl.text}\n\n` +
             (c.task.probeAngles.length ? `DECISIONS WORTH DEFENDING: ${c.task.probeAngles.join('; ')}\n\n` : '') +
             (rubric.probes.length ? 'RUBRIC PROBES (interviewer-only; pick one that fits what THEY did, ask it in your own words anchored in their code):\n' +
               rubric.probes.map((p) => `- ${p.decision}: ${p.question} (strong answer: ${p.strongAnswer})`).join('\n') + '\n\n' : '') +
             `POLICY: outside AI help was ${c.aiPolicy === 'allowed' ? 'ALLOWED — that is fine, but they must still understand and own every line' : 'NOT allowed'}.\n\n` +
+            (c.ai?.summary && !turns.some((t) => t.speaker === 'ai' && /\b(AI|assistant|suggest)/i.test(t.text))
+              ? 'AI USE: they used the assistant and you have not asked about it yet. Make ONE of your remaining questions about a specific AI interaction: why they accepted, changed or rejected a particular suggestion, or have them explain specific [A#] lines in their own words, or how they checked the AI was right. Be neutral: using AI was allowed.\n\n'
+              : '') +
             `CONVERSATION SO FAR:\n${convo}\n\n` +
             `You may ask at most ${remaining} more question${remaining === 1 ? '' : 's'}. ` +
             'If you already have clear evidence either way and further questions would add nothing, you may finish early. ' +

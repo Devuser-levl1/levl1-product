@@ -10,6 +10,7 @@ import type { SolveReport } from '@/lib/screen/solve/report'
 import { TIER_INFO, type RubricTier } from '@/lib/screen/rubrics/types'
 import { DIMENSION_LABEL, type RubricDimension } from '@/lib/screen/taskbank/types'
 import { PRODUCTS } from '@/config/site'
+import { FLUENCY_DIMENSIONS, FLUENCY_LABEL } from '@/lib/screen/solve/ai-fluency-labels'
 
 // ── Solve report (recruiter) — verdict first, then the evidence behind it ──
 
@@ -22,6 +23,7 @@ interface Data {
   consent: { given: boolean; at: string | null; noticeVersion: string | null }
   work: { language: string; code: string | null; finalTests: { id: string; name: string; hidden: boolean; passed: boolean; status: string }[] | null; quality: string | null; purgedAt: string | null }
   defense: { status: string; inputMode: string | null; turns: { speaker: 'ai' | 'candidate'; text: string; mode: string | null }[] }
+  ai: { exchanges: { id: string; t: number; prompt: string; includedCode: boolean; response: string; blocks: { id: string; code: string }[]; error: string | null }[] }
   report: SolveReport | null; reportStatus: string | null; reportError: string | null
 }
 
@@ -31,6 +33,7 @@ const REC: Record<string, { label: string; tone: Tone }> = {
 const RATING: Record<string, { label: string; tone: Tone }> = {
   met: { label: 'Met', tone: 'success' }, partial: { label: 'Partial', tone: 'warning' }, not_met: { label: 'Not met', tone: 'danger' }, not_assessed: { label: 'Not assessed', tone: 'neutral' },
   strong: { label: 'Strong', tone: 'success' }, weak: { label: 'Weak', tone: 'danger' }, not_evidenced: { label: 'Not evidenced', tone: 'neutral' },
+  adequate: { label: 'Adequate', tone: 'brand' },
 }
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '—')
 const h2: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--lv-text)', margin: '0 0 8px' }
@@ -172,6 +175,71 @@ export default function SolveReportPage() {
           </div>
         </Card>
       )}
+
+      {/* ── AI use (separate axis) ── */}
+      {rep?.aiUse && (() => {
+        const u = rep.aiUse!
+        if (u.policy === 'not_allowed') {
+          const flagged = rep.integrity?.flags.some((f) => f.kind === 'ai_generated_code')
+          return (
+            <Card title="AI use" subtitle="AI help was not allowed for this take-home.">
+              <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: 0 }}>
+                {!u.provenanceChecked ? 'The AI-generated-code check is off for this position.' : flagged ? 'Possible AI-generated code. See Integrity below. Review it with the defense transcript before deciding.' : 'Checked the submitted code and how it was written: no signs of AI generation.'}
+              </p>
+            </Card>
+          )
+        }
+        if (!u.used || !u.metrics) return <Card title="AI use" subtitle="The built-in AI assistant was available."><p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: 0 }}>The candidate didn&apos;t use the assistant. This isn&apos;t scored either way.</p></Card>
+        const m = u.metrics, f = u.fluency
+        return (
+          <Card title="AI use" subtitle="How well they worked with the built-in AI assistant. Using AI isn't penalised; using it blindly is. A# = an assistant exchange.">
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <span style={h2}>AI fluency</span><span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>{f?.score ?? '—'}</span>
+                <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>
+                  {m.prompts} question{m.prompts === 1 ? '' : 's'} · {m.codeShared} with their code · {m.inserts} insert{m.inserts === 1 ? '' : 's'}/copies · {m.verifiedAfterInsert}/{m.inserts} followed by a run · ~{Math.round(m.aiShareOfFinal * 100)}% of final code from AI
+                </span>
+              </div>
+              {f ? <>
+                {f.summary && <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: 0, lineHeight: 1.6 }}>{f.summary}</p>}
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {FLUENCY_DIMENSIONS.map((dim) => (
+                    <div key={dim} style={{ display: 'flex', gap: 10, fontSize: 13, alignItems: 'flex-start' }}>
+                      <Badge tone={RATING[f.dimensions[dim].rating]?.tone ?? 'neutral'}>{RATING[f.dimensions[dim].rating]?.label ?? f.dimensions[dim].rating}</Badge>
+                      <span><strong style={{ color: 'var(--lv-text)' }}>{FLUENCY_LABEL[dim]}</strong>{f.dimensions[dim].note && <span style={{ color: 'var(--lv-text-body)' }}> — {f.dimensions[dim].note}</span>}</span>
+                    </div>
+                  ))}
+                </div>
+                {f.caughtMistakes.length > 0 && <div><div style={h2}>AI mistakes they caught</div><ul style={{ listStyle: 'disc', margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.6 }}>{f.caughtMistakes.map((c, i) => <li key={i}><strong>{c.ref}</strong> {c.note}</li>)}</ul></div>}
+                {f.evidence.length > 0 && <ul style={{ listStyle: 'disc', margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>{f.evidence.map((e, i) => <li key={i}><strong>{e.ref}</strong> {e.note}</li>)}</ul>}
+              </> : <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>The fluency assessment couldn&apos;t be generated; regenerate the report to retry. The measured usage above is complete.</p>}
+              {m.blocks.length > 0 && (
+                <div>
+                  <div style={h2}>What happened to the AI&apos;s code</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {m.blocks.map((b) => <Badge key={b.id} tone={b.fate === 'edited' ? 'brand' : 'neutral'} title={`${Math.round(b.survival * 100)}% of its lines are in the final code`}>{b.id} {b.inserted ? 'inserted' : 'reused'} · {b.fate === 'kept' ? 'kept as-is' : b.fate}</Badge>)}
+                  </div>
+                  {m.aiLines.length > 0 && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 6 }}>Final-code lines from AI: {m.aiLines.map((r) => `${r.from === r.to ? r.from : `${r.from}–${r.to}`} (${r.ref})`).join(', ')}</div>}
+                </div>
+              )}
+              {d.ai.exchanges.length > 0 && (
+                <details>
+                  <summary style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', cursor: 'pointer' }}>Assistant conversation ({d.ai.exchanges.length})</summary>
+                  <div style={{ display: 'grid', gap: 10, marginTop: 8 }}>
+                    {d.ai.exchanges.map((x) => (
+                      <div key={x.id} style={{ borderLeft: '2px solid var(--lv-border)', paddingLeft: 10 }}>
+                        <div style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}><strong>{x.id}</strong> at {Math.floor(x.t / 60000)}:{String(Math.floor((x.t % 60000) / 1000)).padStart(2, '0')}{x.includedCode ? ' · shared their code' : ''}</div>
+                        <div style={{ fontSize: 13, color: 'var(--lv-text)', margin: '2px 0 4px', whiteSpace: 'pre-wrap' }}><strong>Asked:</strong> {x.prompt}</div>
+                        <pre style={{ margin: 0, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', background: 'var(--lv-surface-muted)', padding: 8, borderRadius: 6, color: 'var(--lv-text-body)', maxHeight: 280, overflow: 'auto' }}>{x.error ?? x.response}</pre>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          </Card>
+        )
+      })()}
 
       {/* ── Integrity ── */}
       {rep?.integrity && (

@@ -4,7 +4,8 @@
 // them into evidence-linked moments (M1, M2…) used by grounded follow-ups,
 // judgment scoring and integrity review.
 
-export type TimelineKind = 'open' | 'edit' | 'paste' | 'run' | 'tests' | 'lang' | 'format' | 'snapshot' | 'submit'
+// ai_prompt / ai_insert / ai_copy: Solve's built-in AI assistant (AI-fluency evidence). Screen never emits them.
+export type TimelineKind = 'open' | 'edit' | 'paste' | 'run' | 'tests' | 'lang' | 'format' | 'snapshot' | 'submit' | 'ai_prompt' | 'ai_insert' | 'ai_copy'
 
 export interface TimelineEvent {
   t: number            // ms since the workspace opened for this task
@@ -16,12 +17,13 @@ export interface TimelineEvent {
   total?: number       // tests
   lang?: string        // lang / open
   code?: string        // snapshot only (capped)
+  ref?: string         // ai_*: the assistant exchange id (A1, A2…)
 }
 
 export const MAX_EVENTS = 1500
 export const MAX_SNAPSHOTS = 40
 export const SNAPSHOT_MAX_CHARS = 12_000
-const KINDS = new Set<TimelineKind>(['open', 'edit', 'paste', 'run', 'tests', 'lang', 'format', 'snapshot', 'submit'])
+const KINDS = new Set<TimelineKind>(['open', 'edit', 'paste', 'run', 'tests', 'lang', 'format', 'snapshot', 'submit', 'ai_prompt', 'ai_insert', 'ai_copy'])
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.round(v)) : undefined)
 
@@ -41,6 +43,7 @@ export function sanitizeEvents(raw: unknown): TimelineEvent[] {
     const tot = num(o.total); if (tot !== undefined) ev.total = Math.min(tot, 100)
     if (typeof o.lang === 'string') ev.lang = o.lang.slice(0, 20)
     if (k === 'snapshot' && typeof o.code === 'string') ev.code = o.code.slice(0, SNAPSHOT_MAX_CHARS)
+    if (k.startsWith('ai_') && typeof o.ref === 'string' && /^A\d{1,3}(\.\d{1,2})?$/.test(o.ref)) ev.ref = o.ref
     return [ev]
   })
 }
@@ -68,7 +71,7 @@ function similarity(a: string, b: string): number {
   return inter / Math.max(A.size, B.size)
 }
 
-export interface Moment { id: string; at: string; kind: 'start' | 'paste' | 'rewrite' | 'abandon' | 'first_run' | 'tests' | 'all_pass' | 'lang' | 'submit'; note: string }
+export interface Moment { id: string; at: string; kind: 'start' | 'paste' | 'rewrite' | 'abandon' | 'first_run' | 'tests' | 'all_pass' | 'lang' | 'submit' | 'ai'; note: string }
 
 export interface TimelineDigest {
   durationMs: number
@@ -120,6 +123,8 @@ export function digest(events: TimelineEvent[]): TimelineDigest {
       prevSnap = { t: e.t, code: e.code }
     }
     if (e.k === 'submit') push(e.t, 'submit', 'Submitted the solution')
+    if (e.k === 'ai_prompt') push(e.t, 'ai', `Asked the AI assistant${e.ref ? ` (${e.ref})` : ''}`)
+    if (e.k === 'ai_insert' || e.k === 'ai_copy') push(e.t, 'ai', `${e.k === 'ai_insert' ? 'Inserted' : 'Copied'} AI code${e.ref ? ` from ${e.ref}` : ''} (${e.n ?? 0} chars)`)
   }
   const durationMs = ev.length ? ev[ev.length - 1].t : 0
   if (firstEdit !== null) moments.unshift({ id: 'M0', at: mmss(firstEdit), kind: 'start', note: 'Started writing code' })

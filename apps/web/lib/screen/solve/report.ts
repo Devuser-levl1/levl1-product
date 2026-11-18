@@ -11,6 +11,8 @@ import { reconcileRubricResults, applyTierVerdict, type RubricAssessment } from 
 import { sanitizeSolveConfig } from './config'
 import type { FinalTestRow, IntegritySummary } from './evaluate'
 import type { DefenseTurn } from './defense'
+import type { AiExchange } from './assistant'
+import { aiUsageMetrics, scoreAiFluency, checkCodeProvenance, type AiUsageMetrics, type AiFluency } from './ai-usage'
 
 // ── Solve report (Screen-scoped, server-only) ──────────────────────────────
 // Evidence-based and verdict-forward, like the Screen report:
@@ -39,10 +41,14 @@ export interface SolveReport {
   defense: { required: boolean; status: string; inputMode: string | null; questions: number; degraded: boolean }
   work: { quality: string; language: string; activeMinutes: number; runs: number; testRuns: number; autoSubmitted: boolean; moments: { id: string; at: string; note: string }[] }
   screen: { score: number | null; recommendation: string | null } | null
+  // AI use (separate axis): built-in assistant metrics + fluency when allowed;
+  // the provenance check lands in integrity.flags when it wasn't. Absent on older reports.
+  aiUse?: { policy: 'allowed' | 'not_allowed'; used: boolean; metrics: AiUsageMetrics | null; fluency: AiFluency | null; provenanceChecked: boolean } | null
   generatedAt: string
 }
 
-const WEIGHTS = { correctness: 0.4, approach: 0.2, criticalThinking: 0.15, defense: 0.25 }
+// aiFluency only counts when the assistant was allowed AND used (then the rest renormalise).
+const WEIGHTS = { correctness: 0.4, approach: 0.2, criticalThinking: 0.15, defense: 0.25, aiFluency: 0.15 }
 const RECS: Recommendation[] = ['no', 'maybe', 'yes', 'strong_yes']
 const isRec = (v: unknown): v is Recommendation => typeof v === 'string' && (RECS as string[]).includes(v)
 const strList = (v: unknown, n: number) => (Array.isArray(v) ? v : []).filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 300)).slice(0, n)
@@ -58,9 +64,9 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
     where: { id },
     select: {
       agencyId: true, positionId: true, task: true, config: true, language: true, code: true, timeline: true, runs: true, finalTests: true, lastTests: true,
-      integrity: true, submissionQuality: true, autoSubmitted: true, defenseStatus: true, defenseTranscript: true, defenseInputMode: true,
+      integrity: true, submissionQuality: true, autoSubmitted: true, defenseStatus: true, defenseTranscript: true, defenseInputMode: true, aiLog: true,
       candidate: { select: { name: true, score: true, recommendation: true, interview: { select: { status: true } } } },
-      position: { select: { title: true, rubricSelection: true } },
+      position: { select: { title: true, rubricSelection: true, aiAssistCheck: true } },
     },
   })
   if (!row) throw new Error('Submission not found')
@@ -71,7 +77,7 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
   const timeline = openArray<TimelineEvent>(row.timeline)
   const d = digest(timeline)
   const finalTests = (Array.isArray(row.finalTests) ? row.finalTests : null) as FinalTestRow[] | null
-  const integrity = (row.integrity && typeof row.integrity === 'object' && 'flags' in (row.integrity as object) ? row.integrity : null) as IntegritySummary | null
+  let integrity = (row.integrity && typeof row.integrity === 'object' && 'flags' in (row.integrity as object) ? row.integrity : null) as IntegritySummary | null
   const turns = openArray<DefenseTurn>(row.defenseTranscript)
   const defenseLines = turns.map((t) => `${t.speaker === 'ai' ? 'Interviewer' : 'Candidate'}: ${t.text.slice(0, 700)}`)
   const quality = row.submissionQuality ?? 'ok'
@@ -98,7 +104,7 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
     return {
       ...base,
       verdict: { recommendation: null, score: null, insufficientEvidence: true, headline: quality === 'empty' ? 'No code was submitted' : 'No meaningful work beyond the starter code', reasons: ['There is not enough work to evaluate. This is not a fail: check with the candidate whether they had trouble with the link or the editor before deciding.'] },
-      summary: '', strengths: [], concerns: [], correctness: null, axes: null, criteria: [],
+      summary: '', strengths: [], concerns: [], correctness: null, axes: null, criteria: [], aiUse: null,
       rubric: selection.length ? { items: reconcileRubricResults(selection, [], { insufficientEvidence: true }), gate: applyTierVerdict('maybe', 0, [], { insufficientEvidence: true }).gate } : null,
     }
   }
@@ -111,6 +117,20 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
   })
   if (!scores) throw new Error('Work scoring unavailable (AI) — will retry')
 
+  // ── AI use ──
+  const testsLine = tests.length ? `${tests.filter((t) => t.passed).length}/${tests.length} tests passing (hidden included)` : 'tests not run'
+  const exchanges = cfg.aiPolicy === 'allowed' ? openArray<AiExchange>(row.aiLog) : []
+  const aiMetrics = exchanges.length ? aiUsageMetrics(exchanges, timeline, code, task.starterCode) : null
+  const fluency = aiMetrics ? await scoreAiFluency({ task, language: row.language, code, exchanges, metrics: aiMetrics, timeline, testsLine, defenseLines }) : null
+  if (aiMetrics && !fluency) console.warn(JSON.stringify({ evt: 'solve_ai_fluency_missing', id }))
+  let provenanceChecked = false
+  if (cfg.aiPolicy === 'not_allowed' && row.position.aiAssistCheck) {
+    provenanceChecked = true
+    const flag = await checkCodeProvenance({ task, language: row.language, code, timeline, defenseLines })
+    if (flag) integrity = { ...(integrity ?? { tabSwitches: 0, awayMs: 0, pastes: 0, largestPaste: 0, flags: [], level: cfg.integrityLevel }), flags: [...(integrity?.flags ?? []), { kind: flag.kind, note: flag.note + (flag.span ? ` Evidence: "${flag.span}"` : '') }] }
+  }
+  const aiUse: SolveReport['aiUse'] = { policy: cfg.aiPolicy, used: exchanges.some((x) => !x.error), metrics: aiMetrics, fluency, provenanceChecked }
+
   const hidden = tests.filter((t) => t.hidden)
   const correctness = tests.length ? { passed: tests.filter((t) => t.passed).length, total: tests.length, hiddenPassed: hidden.filter((t) => t.passed).length, hiddenTotal: hidden.length } : null
   const defended = row.defenseStatus === 'completed' && turns.some((t) => t.speaker === 'candidate')
@@ -121,6 +141,7 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
   if (scores.approach.score !== null) parts.push([scores.approach.score, WEIGHTS.approach])
   if (scores.criticalThinking.score !== null) parts.push([scores.criticalThinking.score, WEIGHTS.criticalThinking])
   if (defended && scores.defense.score !== null) parts.push([scores.defense.score, WEIGHTS.defense])
+  if (fluency?.score != null) parts.push([fluency.score, WEIGHTS.aiFluency])
   const wsum = parts.reduce((s, [, w]) => s + w, 0)
   const blended = wsum ? Math.round(parts.reduce((s, [v, w]) => s + v * w, 0) / wsum) : 0
 
@@ -139,6 +160,9 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
         `APPROACH ${scores.approach.score ?? '—'}: ${scores.approach.rationale}\nCRITICAL THINKING ${scores.criticalThinking.score ?? '—'}: ${scores.criticalThinking.rationale}\n` +
         `DEFENSE ${defended ? `${scores.defense.score ?? '—'}: ${scores.defense.rationale}` : 'not completed'}\n` +
         `TASK RUBRIC: ${scores.criteria.map((c) => `${c.dimension}=${c.verdict}${c.note ? ` (${c.note})` : ''}`).join('; ') || 'none'}\n` +
+        (cfg.aiPolicy === 'allowed'
+          ? `AI FLUENCY (AI use was allowed; judge how WELL they used it, not whether): ${fluency ? `${fluency.score ?? '—'}: ${fluency.rationale}` : aiMetrics ? 'not scored' : 'did not use the assistant'}${aiMetrics ? ` — ~${Math.round(aiMetrics.aiShareOfFinal * 100)}% of final lines from AI, ${aiMetrics.verifiedAfterInsert}/${aiMetrics.inserts} inserts verified by running` : ''}\n`
+          : '') +
         `ASSESSOR SUMMARY: ${scores.summary}\n` +
         `INTEGRITY FLAGS (for review only — never reject on these alone): ${integrity?.flags.map((f) => f.note).join(' ') || 'none'}\n\n` +
         `DEFENSE TRANSCRIPT:\n${defenseLines.length ? defenseLines.join('\n').slice(0, 6000) : '(none)'}\n\n` +
@@ -169,6 +193,8 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
     axes: { approach: scores.approach, criticalThinking: scores.criticalThinking, defense: defended ? scores.defense : { score: null, rationale: 'No defense interview.', evidence: [] } },
     criteria: scores.criteria,
     rubric: selection.length ? { items, gate: tier.gate } : null,
+    integrity,
+    aiUse,
   }
 }
 

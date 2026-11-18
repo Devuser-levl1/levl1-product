@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Play, ListChecks, CheckCircle2, XCircle, EyeOff, Clock, Send } from 'lucide-react'
-import { Button, Badge, Alert, useConfirm } from '@/components/screen/ui'
+import { Play, ListChecks, CheckCircle2, XCircle, EyeOff, Clock, Send, Sparkles, CornerDownLeft, Copy } from 'lucide-react'
+import { Button, Badge, Alert, Textarea, Checkbox, useConfirm } from '@/components/screen/ui'
 import { LANGUAGE_LABEL, type PublicTask, type WorkspaceLanguage } from '@/lib/screen/workspace/task'
 import type { TimelineEvent } from '@/lib/screen/workspace/timeline'
 
@@ -20,6 +20,7 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 })
 
 interface RunOutput { status: string; statusText: string; stdout: string; stderr: string; compileOutput: string; timeSec: number | null }
+export interface AiExchangeView { id: string; prompt: string; response: string; blocks: { id: string; lang: string; code: string }[]; error: string | null; includedCode: boolean }
 interface TestResults { passed: number; total: number; results: { id: string; name: string; hidden: boolean; passed: boolean; status: string; actual?: string; expected?: string; input?: string; stderr?: string }[] }
 
 export interface SolveWorkspaceProps {
@@ -30,6 +31,7 @@ export interface SolveWorkspaceProps {
   deadlineAt: string | null
   executionAvailable: boolean
   executionsLeft: number
+  ai: { enabled: boolean; remaining: number; exchanges: AiExchangeView[] }
   onSubmitted: (view: unknown) => void
 }
 
@@ -40,7 +42,7 @@ const mmss = (ms: number) => {
 }
 const meaningful = (s: string) => s.replace(/\s+/g, '')
 
-export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, executionAvailable, executionsLeft: initialLeft, onSubmitted }: SolveWorkspaceProps) {
+export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, executionAvailable, executionsLeft: initialLeft, ai, onSubmitted }: SolveWorkspaceProps) {
   const localKey = `lv_solve_${token.slice(0, 16)}`
   const [language, setLanguage] = useState<WorkspaceLanguage>(() => (saved?.language && task.languages.includes(saved.language as WorkspaceLanguage) ? saved.language as WorkspaceLanguage : task.language))
   const [code, setCode] = useState<string>(() => {
@@ -52,7 +54,13 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
     } catch { /* storage blocked */ }
     return c
   })
-  const [tab, setTab] = useState<'task' | 'tests' | 'output'>('task')
+  const [tab, setTab] = useState<'task' | 'tests' | 'output' | 'ai'>('task')
+  const [exchanges, setExchanges] = useState<AiExchangeView[]>(ai.exchanges)
+  const [aiLeft, setAiLeft] = useState(ai.remaining)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiShareCode, setAiShareCode] = useState(true)
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   const [runBusy, setRunBusy] = useState<'run' | 'tests' | null>(null)
   const [runOutput, setRunOutput] = useState<RunOutput | null>(null)
   const [testResults, setTestResults] = useState<TestResults | null>(null)
@@ -72,7 +80,13 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
   const dirtyRef = useRef(false); const inflightRef = useRef(false)
   const countersRef = useRef({ tabSwitches: 0, awayMs: 0, awaySince: 0 })
   const submittedRef = useRef(false)
-  const editorRef = useRef<{ getValue: () => string } | null>(null)
+  type EditorLike = {
+    getValue: () => string; focus: () => void
+    getSelection: () => { startLineNumber: number; startColumn: number } | null
+    getModel: () => { getLineContent: (line: number) => string; getValueInRange: (r: unknown) => string } | null
+    executeEdits: (source: string, edits: { range: unknown; text: string; forceMoveMarkers?: boolean }[]) => boolean
+  }
+  const editorRef = useRef<EditorLike | null>(null)
 
   const t = () => Date.now() - startRef.current
   const push = (e: TimelineEvent) => { pendingRef.current.push(e) }
@@ -131,7 +145,7 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
   }
 
   const onMount = useCallback((editor: unknown) => {
-    const ed = editor as { onDidPaste: (cb: (e: { range: unknown }) => void) => void; getModel: () => { getValueInRange: (r: unknown) => string } | null; getValue: () => string }
+    const ed = editor as EditorLike & { onDidPaste: (cb: (e: { range: unknown }) => void) => void }
     editorRef.current = ed
     try {
       // Paste SIZE only — the clipboard text is never sent anywhere.
@@ -152,6 +166,43 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
       else { setTestResults(d as TestResults); setTab('tests'); push({ t: at, k: 'tests', ok: true, passed: d.passed, total: d.total }) }
       if (typeof d.executionsLeft === 'number') setLeft(d.executionsLeft)
     } catch { setNote('Couldn\'t reach the code runner. Check your connection and try again.') } finally { setRunBusy(null) }
+  }
+
+  // ── Built-in AI assistant (only when the position allows AI help) ──
+  const askAi = async () => {
+    const prompt = aiPrompt.trim()
+    if (!prompt || aiBusy) return
+    setAiBusy(true); setAiError(null)
+    const at = t()
+    try {
+      const r = await fetch(`/api/solve/t/${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'assist', prompt, includeCode: aiShareCode, code: aiShareCode ? codeRef.current : undefined, language: langRef.current, t: at }) })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) { setAiError(d.error ?? 'The assistant couldn\'t answer. Try again.'); return }
+      const x = d.exchange as AiExchangeView
+      setExchanges((xs) => [...xs, x]); setAiPrompt('')
+      if (typeof d.remaining === 'number') setAiLeft(d.remaining)
+      push({ t: at, k: 'ai_prompt', ref: x.id })
+    } catch { setAiError('Couldn\'t reach the assistant. Check your connection.') } finally { setAiBusy(false) }
+  }
+  const insertAi = (b: { id: string; code: string }) => {
+    const ed = editorRef.current
+    if (!ed) return
+    try {
+      // Match the cursor line's indentation for every inserted line after the first.
+      const sel = ed.getSelection()
+      const lineText = sel ? ed.getModel()?.getLineContent(sel.startLineNumber) ?? '' : ''
+      const indent = (lineText.slice(0, Math.max(0, (sel?.startColumn ?? 1) - 1)).match(/^\s*/)?.[0]) ?? ''
+      const text = b.code.split('\n').map((l, i) => (i === 0 || !l ? l : indent + l)).join('\n')
+      ed.executeEdits('ai-assistant', [{ range: sel, text, forceMoveMarkers: true }])
+      ed.focus()
+      push({ t: t(), k: 'ai_insert', ref: b.id, n: b.code.length })
+      snapshot(true)
+    } catch { /* editor API shape differs */ }
+  }
+  const copyAi = (b: { id: string; code: string }) => {
+    void navigator.clipboard?.writeText(b.code).catch(() => {})
+    push({ t: t(), k: 'ai_copy', ref: b.id, n: b.code.length })
   }
 
   const doSubmit = useCallback(async (auto: boolean) => {
@@ -205,9 +256,9 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
       <div className="solve-cols" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <section aria-label="Task" className="solve-left" style={{ width: '40%', minWidth: 280, borderRight: '1px solid var(--lv-border)', display: 'flex', flexDirection: 'column', background: 'var(--lv-surface)' }}>
           <div role="tablist" aria-label="Task panels" style={{ display: 'flex', gap: 4, padding: '8px 12px', borderBottom: '1px solid var(--lv-border)' }}>
-            {(['task', 'tests', 'output'] as const).map((k) => (
+            {(ai.enabled ? (['task', 'tests', 'output', 'ai'] as const) : (['task', 'tests', 'output'] as const)).map((k) => (
               <button key={k} role="tab" type="button" aria-selected={tab === k} onClick={() => setTab(k)} className={`lv-btn lv-btn--sm ${tab === k ? 'lv-btn--secondary' : 'lv-btn--ghost'}`}>
-                {k === 'task' ? 'Task' : k === 'tests' ? `Tests${testResults ? ` ${testResults.passed}/${testResults.total}` : ''}` : 'Output'}
+                {k === 'task' ? 'Task' : k === 'tests' ? `Tests${testResults ? ` ${testResults.passed}/${testResults.total}` : ''}` : k === 'ai' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Sparkles size={13} aria-hidden="true" />AI assistant</span> : 'Output'}
               </button>
             ))}
           </div>
@@ -249,6 +300,46 @@ export function SolveWorkspace({ token, task, saved, resumeMs, deadlineAt, execu
                 <pre style={{ margin: 0, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--lv-text-body)', background: 'var(--lv-surface-muted)', padding: 10, borderRadius: 6 }}>{runOutput.compileOutput || runOutput.stderr || runOutput.stdout || '(no output)'}</pre>
               </div>
             ))}
+            {tab === 'ai' && ai.enabled && (
+              <div style={{ display: 'grid', gap: 10 }}>
+                <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  Use it the way you would at work. How you use it is part of the assessment: what you ask, whether you check what it gives you, and whether you can explain the result. Your questions and its answers are shared with the hiring team.
+                </p>
+                {exchanges.map((x) => (
+                  <div key={x.id} style={{ display: 'grid', gap: 6 }}>
+                    <div style={{ justifySelf: 'end', maxWidth: '92%', padding: '8px 10px', borderRadius: 8, background: 'var(--lv-brand-tint, #EEF2FF)', fontSize: 13, color: 'var(--lv-text-body)', whiteSpace: 'pre-wrap' }}>
+                      {x.prompt}{x.includedCode && <div style={{ fontSize: 11, color: 'var(--lv-text-muted)', marginTop: 2 }}>with your code</div>}
+                    </div>
+                    {x.error ? <Alert tone="warning">{x.error}</Alert> : (
+                      <div style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--lv-surface-muted)', fontSize: 13, lineHeight: 1.55, color: 'var(--lv-text-body)' }}>
+                        {x.response.split(/```[\w+#-]*\n[\s\S]*?```/g).map((part, i) => (
+                          <div key={i}>
+                            {part.trim() && <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap' }}>{part.trim()}</p>}
+                            {x.blocks[i] && (
+                              <div style={{ border: '1px solid var(--lv-border)', borderRadius: 6, background: 'var(--lv-surface)', margin: '6px 0' }}>
+                                <pre style={{ margin: 0, padding: 8, fontFamily: 'var(--lv-font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', overflowX: 'auto' }}>{x.blocks[i].code}</pre>
+                                <div style={{ display: 'flex', gap: 6, padding: '4px 6px', borderTop: '1px solid var(--lv-border)' }}>
+                                  <Button size="sm" variant="ghost" leftIcon={<CornerDownLeft size={13} />} onClick={() => insertAi(x.blocks[i])}>Insert at cursor</Button>
+                                  <Button size="sm" variant="ghost" leftIcon={<Copy size={13} />} onClick={() => copyAi(x.blocks[i])}>Copy</Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {aiError && <Alert tone="warning">{aiError}</Alert>}
+                <Textarea aria-label="Ask the AI assistant" rows={3} value={aiPrompt} placeholder="Ask the assistant…" disabled={aiBusy || aiLeft <= 0}
+                  onChange={(e) => setAiPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void askAi() } }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <Checkbox checked={aiShareCode} onChange={setAiShareCode}>Include my current code</Checkbox>
+                  <span style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginLeft: 'auto' }}>{aiLeft} questions left</span>
+                  <Button size="sm" leftIcon={<Sparkles size={14} />} loading={aiBusy} disabled={!aiPrompt.trim() || aiLeft <= 0} onClick={askAi}>Ask</Button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
         <section aria-label="Code editor" className="solve-editor" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
