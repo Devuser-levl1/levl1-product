@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
   BarChart3, Plus, Mail, Download, AlertCircle,
-  Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown,
+  Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown, ClipboardList,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
@@ -19,6 +19,8 @@ import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
 import { RubricSelector } from '@/components/rubrics/RubricSelector'
 import { CalibrationPanel } from '@/components/calibration/CalibrationPanel'
+import { SolvePositionPanel } from '@/components/solve/SolvePositionPanel'
+import { PRODUCTS } from '@/config/site'
 import { PositionContextEditor } from '@/components/positions/PositionContextEditor'
 import { readSelection, type SelectedRubric } from '@/lib/screen/rubrics/types'
 import { useAccountType } from '@/hooks/useAccountType'
@@ -176,7 +178,8 @@ const muted: React.CSSProperties = { fontSize: text.sm, color: lv.textMuted, mar
 const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: space[4] }
 const stack = (gap: number): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap })
 
-type TabKey = 'overview' | 'questions' | 'candidates' | 'reports' | 'calibration'
+type TabKey = 'overview' | 'questions' | 'candidates' | 'reports' | 'calibration' | 'solve'
+const TAB_KEYS: TabKey[] = ['overview', 'questions', 'candidates', 'reports', 'calibration', 'solve']
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PositionDetailPage() {
@@ -187,6 +190,11 @@ export default function PositionDetailPage() {
   const [position, setPosition]     = useState<Position | null>(null)
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState<TabKey>('overview')
+  // Deep link (?tab=solve from notifications).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab') as TabKey | null
+    if (t && TAB_KEYS.includes(t)) setTab(t)
+  }, [])
   const [reportsLoading, setReportsLoading] = useState(false)
 
   // Fix 5: upload modal with positionId pre-set
@@ -582,6 +590,7 @@ export default function PositionDetailPage() {
             { key: 'calibration', label: 'AI draft',  icon: <Tag size={14} aria-hidden="true" /> },
             { key: 'questions',  label: 'Questions',  icon: <Tag size={14} aria-hidden="true" />,       count: allQuestions.length || undefined },
             { key: 'candidates', label: 'Candidates', icon: <Users size={14} aria-hidden="true" />,     count: candidates.length || undefined },
+            { key: 'solve',      label: PRODUCTS.takeHome.name, icon: <ClipboardList size={14} aria-hidden="true" /> },
             { key: 'reports',    label: 'Reports',    icon: <BarChart3 size={14} aria-hidden="true" />, count: completedCount || undefined },
           ]} />
         </div>
@@ -593,6 +602,9 @@ export default function PositionDetailPage() {
 
         {/* ─── OVERVIEW TAB ─── */}
         {tab === 'calibration' && <CalibrationPanel positionId={id} onApplied={() => void refreshPosition()} />}
+
+        {/* ─── SOLVE (Stage 2) ─── */}
+        {tab === 'solve' && <SolvePositionPanel positionId={id} />}
 
         {tab === 'overview' && (
           <div style={stack(space[6])}>

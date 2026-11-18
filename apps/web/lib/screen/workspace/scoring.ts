@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
 import { openArray, openText } from '@/lib/screen/privacy/fields'
 import { digest, type TimelineEvent } from './timeline'
-import { sanitizeTask } from './task'
+import { sanitizeTask, type WorkSampleTask } from './task'
 import { sanitizeRubric, DIMENSION_LABEL } from '@/lib/screen/taskbank/types'
 
 // ── Work-sample judgment scoring (Screen-scoped, server-only) ──────────────
@@ -27,7 +27,7 @@ export interface WorkSampleScores {
 }
 
 interface StoredEntry { speaker?: string; text?: string; segment?: string }
-interface TestRow { passed?: boolean }
+export interface TestRow { passed?: boolean }
 
 function outermostJson(text: string): Record<string, unknown> | null {
   const a = text.indexOf('{'); const b = text.lastIndexOf('}')
@@ -64,14 +64,38 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
   })
   if (!row) return null
   const task = sanitizeTask(row.task)
-  const code = openText(row.code) ?? ''
-  if (!task || !code.trim()) return null
+  if (!task) return null
+  const scores = await scoreWork({
+    task,
+    code: openText(row.code) ?? '',
+    language: row.language,
+    timeline: openArray<TimelineEvent>(row.timeline),
+    tests: (Array.isArray(row.lastTests) ? row.lastTests : []) as TestRow[],
+    defenseLines: defenseExchange(openArray<StoredEntry>(row.interview.transcript), task.title),
+  })
+  if (!scores) return null
+  await prisma.interviewWorkSample.update({ where: { interviewId }, data: { scores: scores as unknown as Prisma.InputJsonValue } })
+  return scores
+}
 
-  const tests = (Array.isArray(row.lastTests) ? row.lastTests : []) as TestRow[]
+/** Inputs for judgment scoring — shared by the Screen work sample and Solve (async take-home). */
+export interface WorkScoringInput {
+  task: WorkSampleTask
+  code: string
+  language: string
+  timeline: TimelineEvent[]
+  tests: TestRow[]
+  defenseLines: string[]       // "Interviewer: …" / "Candidate: …" lines
+  context?: string             // extra framing (e.g. take-home policy) — appended to the prompt
+}
+
+/** Pure scoring call (no DB writes). null when there's nothing to score or the model fails. */
+export async function scoreWork(input: WorkScoringInput): Promise<WorkSampleScores | null> {
+  const { task, code, tests, defenseLines: defense } = input
+  if (!code.trim()) return null
   const passed = tests.filter((t) => t?.passed).length
   const correctness = { passed, total: tests.length, score: tests.length ? Math.round((passed / tests.length) * 100) : null }
-  const tl = digest(openArray<TimelineEvent>(row.timeline))
-  const defense = defenseExchange(openArray<StoredEntry>(row.interview.transcript), task.title)
+  const tl = digest(input.timeline)
 
   const rubric = sanitizeRubric(task.rubric ?? {})
   const rubricText = (rubric.criteria.length || rubric.probes.length)
@@ -95,10 +119,11 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
         `TASK: ${task.title}\n${task.prompt.slice(0, 1500)}\n` +
         (task.lookFor.length ? `STRONG APPROACH LOOKS LIKE: ${task.lookFor.join('; ')}\n` : '') +
         rubricText +
-        `\nFINAL CODE (${row.language}):\n${code.slice(0, 8000)}\n` +
+        `\nFINAL CODE (${input.language}):\n${code.slice(0, 8000)}\n` +
         `\nTESTS: ${correctness.total ? `${passed}/${correctness.total} passing (incl. hidden)` : 'never run'}\n` +
         `\nTIMELINE (how the work evolved):\n${tl.text}\n` +
         `\nDEFENSE (explanation + follow-ups):\n${defense.length ? defense.map((l, i) => `D${i + 1} ${l}`).join('\n') : '(none captured)'}\n\n` +
+        (input.context ? `CONTEXT: ${input.context}\n\n` : '') +
         'Return JSON: {"approach":{"score":0,"rationale":"…","evidence":[{"ref":"M2","note":"…"}]},' +
         '"criticalThinking":{…same…},"defense":{…same…},' +
         (rubric.criteria.length ? '"criteria":[{"id":"c1","verdict":"strong|partial|weak|not_evidenced","note":"…","ref":"M2"}],' : '') +
@@ -119,6 +144,5 @@ export async function scoreWorkSample(interviewId: string): Promise<WorkSampleSc
     summary: typeof j.summary === 'string' ? j.summary.slice(0, 800) : '',
     generatedAt: new Date().toISOString(),
   }
-  await prisma.interviewWorkSample.update({ where: { interviewId }, data: { scores: scores as unknown as Prisma.InputJsonValue } })
   return scores
 }

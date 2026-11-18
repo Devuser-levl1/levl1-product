@@ -57,9 +57,10 @@ const NAV_SCREEN: NavItem[] = [
 ];
 
 // Product names come from the ONE names config (config/site.ts → PRODUCTS),
-// shared with the marketing site. Stage 2 Solve, Stage 3 Interview.
+// shared with the marketing site. Stage 2 Solve is live in the app (its
+// per-position setup lives on the position page); Stage 3 Interview is announced.
+const NAV_SOLVE: NavItem = { section: "solve", icon: ClipboardList, label: PRODUCTS.takeHome.name };
 const NAV_COMING_SOON: { key: string; icon: React.ElementType; label: string; tagline: string }[] = [
-  { key: "solve",     icon: ClipboardList, label: PRODUCTS.takeHome.name,      tagline: PRODUCTS.takeHome.tagline },
   { key: "interview", icon: UserRound,     label: PRODUCTS.liveInterview.name, tagline: PRODUCTS.liveInterview.tagline },
 ];
 
@@ -272,6 +273,8 @@ export default function Sidebar() {
               {NAV_SCREEN.map((n) => navLink(n, true))}
             </div>
           )}
+          {/* Solve — async take-home (Stage 2) */}
+          {navLink(NAV_SOLVE)}
           {/* Announced products — not clickable yet */}
           {NAV_COMING_SOON.map(({ key, icon: Icon, label: text, tagline }) => (
             <div key={key} className="sidebar-link" role="link" aria-disabled="true" title={`${text} — ${tagline}. Coming soon.`}

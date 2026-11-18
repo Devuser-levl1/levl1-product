@@ -19,6 +19,7 @@ import AnalyticsPage from "./analytics/AnalyticsPage";
 import SettingsPage from "./settings/SettingsPage";
 import { TaskBankPage } from "./taskbank/TaskBankPage";
 import { RubricLibraryPage } from "./rubrics/RubricLibraryPage";
+import { SolvePage } from "./solve/SolvePage";
 // Shepherd.js accesses document/window at import time — must be client-only
 const ProductTour = dynamic(
   () => import("./ui/ProductTour").then((m) => ({ default: m.ProductTour })),
@@ -61,6 +62,7 @@ export default function DashboardShell() {
       case "candidates": return <CandidatesPage />;
       case "interviews": return <InterviewsPage />;
       case "control-room": return <ControlRoomPage />;
+      case "solve":      return <SolvePage />;
       case "reports":    return <ReportsPage />;
       case "analytics":  return <AnalyticsPage />;
       case "task-bank":  return <TaskBankPage />;

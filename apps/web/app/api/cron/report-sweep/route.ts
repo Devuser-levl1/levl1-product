@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runReportSweep } from '@/lib/screen/report/sweep'
 import { runRetentionPurge } from '@/lib/screen/privacy/retention'
+import { runSolveSweep } from '@/lib/screen/solve/sweep'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -27,7 +28,12 @@ async function run(req: NextRequest) {
       console.error('[cron/report-sweep] retention purge failed:', e instanceof Error ? e.message : e)
       return null
     })
-    return NextResponse.json({ ok: true, ...result, retention })
+    // Solve (Stage 2): deadline transitions, missing reports, retention.
+    const solve = await runSolveSweep({ limit: 5 }).catch((e) => {
+      console.error('[cron/report-sweep] solve sweep failed:', e instanceof Error ? e.message : e)
+      return null
+    })
+    return NextResponse.json({ ok: true, ...result, retention, solve })
   } catch (err) {
     console.error('[cron/report-sweep]', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'sweep_failed' }, { status: 500 })

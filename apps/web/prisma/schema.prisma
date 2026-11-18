@@ -326,6 +326,8 @@ model Position {
   positionReport PositionReport?
   interviewSlots InterviewSlot[]
   approvalTokens ApprovalToken[]
+  solveAssignment  SolveAssignment?
+  solveSubmissions SolveSubmission[]
 }
 
 model ApprovalToken {
@@ -381,8 +383,9 @@ model Candidate {
   uploadedAt       DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  interview Interview?
-  report    Report?
+  interview       Interview?
+  report          Report?
+  solveSubmission SolveSubmission?
 }
 
 model Interview {
@@ -541,6 +544,111 @@ model RubricLibraryItem {
 // (AES-GCM encrypted, autosaved continuously), the work-capture timeline (how
 // the solution evolved), Judge0 run history + latest test results, and the
 // judgment scores computed at report time. Code never executes on our servers.
+// ── Solve: async take-home (Stage 2 of the Screen funnel) ──────────────────
+// Screen-scoped (NOT Hire). The UI name comes from config/site.ts PRODUCTS.
+// Reuses the Screen engine: task shape (lib/screen/workspace/task.ts), Judge0,
+// timeline, encryption (lib/screen/privacy), task bank, tiered rubrics.
+// Shapes + logic: lib/screen/solve/*.ts.
+
+// One per position: whether the position uses Solve, its task + config.
+model SolveAssignment {
+  id         String   @id @default(cuid())
+  positionId String   @unique
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  agencyId   String
+  enabled    Boolean  @default(false)
+  task       Json? // WorkSampleTask (approved before invites can be sent)
+  config     Json // SolveConfig — lib/screen/solve/config.ts
+  updatedBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  submissions SolveSubmission[]
+
+  @@index([agencyId])
+}
+
+// One per candidate (candidates are position-scoped). The candidate reaches it
+// with a token link (no login); only the SHA-256 of the token is stored.
+model SolveSubmission {
+  id                   String          @id @default(cuid())
+  assignmentId         String
+  assignment           SolveAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  positionId           String
+  position             Position        @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidateId          String          @unique
+  candidate            Candidate       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  agencyId             String
+  isDemo               Boolean         @default(false)
+  tokenHash            String          @unique
+  // invited | started | submitted | completed | expired
+  status               String          @default("invited")
+  task                 Json // snapshot of the assignment task at invite time
+  config               Json // snapshot of the assignment config at invite time
+  invitedAt            DateTime        @default(now())
+  invitedBy            String?
+  expiresAt            DateTime // must START before this
+  startedAt            DateTime?
+  deadlineAt           DateTime? // min(expiresAt + duration grace, startedAt + duration)
+  submittedAt          DateTime?
+  autoSubmitted        Boolean         @default(false)
+  // Work (same shapes as InterviewWorkSample; code + timeline encrypted)
+  language             String          @default("python")
+  code                 String?         @db.Text
+  timeline             Json?
+  runs                 Json?
+  lastTests            Json? // client "Run tests" results
+  finalTests           Json? // server-run on submit (hidden tests included) — the scored result
+  execCount            Int             @default(0)
+  integrity            Json? // { tabSwitches, awayMs, pastes, largestPaste, flags[] }
+  // Trivial / empty submission guard — never silently accepted.
+  submissionQuality    String? // ok | trivial | empty
+  // Consent (notice version + append-only log)
+  consentGiven         Boolean         @default(false)
+  consentAt            DateTime?
+  consentNoticeVersion String?
+  consentLog           Json? // [{ kind, at, noticeVersion, surface, userAgent }]
+  // Defend-your-submission interview
+  // not_required | pending | in_progress | completed | expired
+  defenseStatus        String          @default("not_required")
+  defenseDeadlineAt    DateTime?
+  defenseStartedAt     DateTime?
+  defenseCompletedAt   DateTime?
+  defenseTranscript    Json? // encrypted [{ speaker, text, at, inputMode }]
+  defenseInputMode     String? // voice | typed | mixed
+  // Evaluation + report (pipeline state like Interview.reportStatus)
+  scores               Json? // WorkScores — lib/screen/workspace/scoring.ts
+  report               Json? // SolveReport — lib/screen/solve/report.ts
+  score                Int?
+  recommendation       String? // strong_yes | yes | maybe | no
+  reportStatus         String? // null | generating | ready | failed
+  reportError          String?         @db.Text
+  reportAttempts       Int             @default(0)
+  reportUpdatedAt      DateTime?
+  purgedAt             DateTime? // retention purge of code / timeline / defense transcript
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([positionId])
+  @@index([agencyId, status])
+}
+
+// Usage ledger tagged by funnel stage (screen | solve | interview). Idempotent
+// per (kind, refId). Billing reads it per stage; demo rows are tagged.
+model StageUsageEvent {
+  id        String   @id @default(cuid())
+  agencyId  String
+  stage     String // screen | solve | interview
+  kind      String // e.g. solve_invite | solve_submission | solve_defense | solve_exec
+  refId     String
+  units     Int      @default(1)
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([kind, refId])
+  @@index([agencyId, stage, createdAt])
+}
+
 model InterviewWorkSample {
   id          String    @id @default(cuid())
   interviewId String    @unique
