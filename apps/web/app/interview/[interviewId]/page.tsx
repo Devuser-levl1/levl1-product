@@ -248,6 +248,51 @@ interface EvalResult {
   degradedReason?: string
 }
 
+/* ── Streamed evaluation (speak sooner) ─────────────────────────── */
+// evaluate-response with { stream: true } emits NDJSON: a `decision` line as
+// soon as every field the room decides on is ready (~2.5s), then `final` with
+// the key points + evaluator note (~2s later, while the line is being spoken).
+// A non-streaming JSON reply (older server, degraded path) resolves both at once.
+async function fetchEvaluation(body: Record<string, unknown>): Promise<{ ev: EvalResult; final: Promise<EvalResult> }> {
+  const res = await fetch('/api/interview/evaluate-response', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, stream: true }),
+  })
+  if (!res.body || !(res.headers.get('content-type') ?? '').includes('ndjson')) {
+    const ev = (await res.json()) as EvalResult
+    return { ev, final: Promise.resolve(ev) }
+  }
+  const reader = res.body.getReader()
+  const dec = new TextDecoder()
+  let resolveDecision!: (e: EvalResult) => void, rejectDecision!: (e: unknown) => void
+  let resolveFinal!: (e: EvalResult) => void
+  const decisionP = new Promise<EvalResult>((r, j) => { resolveDecision = r; rejectDecision = j })
+  const final = new Promise<EvalResult>((r) => { resolveFinal = r })
+  let decided: EvalResult | null = null
+  ;(async () => {
+    let buf = ''
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += dec.decode(value, { stream: true })
+        let i
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1)
+          if (!line) continue
+          const msg = JSON.parse(line) as EvalResult & { type?: string }
+          if (msg.type === 'decision' && !decided) { decided = msg; resolveDecision(msg) }
+          if (msg.type === 'final') { if (!decided) { decided = msg; resolveDecision(msg) } resolveFinal(msg); return }
+        }
+      }
+      if (decided) resolveFinal(decided); else rejectDecision(new Error('evaluation stream ended without a decision'))
+    } catch (e) {
+      if (decided) resolveFinal(decided); else rejectDecision(e)
+    }
+  })()
+  return { ev: await decisionP, final }
+}
+
 /* ── Question bank ──────────────────────────────────────────────── */
 function buildQuestions(pos: Position): LocalQuestion[] {
   const tech  = pos.techStack
@@ -1545,6 +1590,8 @@ export default function InterviewPage() {
       evaluatorNote: '', shouldAskFollowUp: false, generateDynamic: false,
       suggestedTransition: '',
     }
+    // The full evaluation (key points + note) lands ~2s after the decision.
+    let finalEval: Promise<EvalResult> | null = null
     try {
       // Diagnostic fix: pass the candidate's ACTUAL prior answers (not empty
       // strings) so the brain has session memory and can reference what they
@@ -1555,10 +1602,7 @@ export default function InterviewPage() {
 
       if (!turnTimingRef.current) turnTimingRef.current = { lastHeard: null, commit: Date.now(), path: 'editor' }
       turnTimingRef.current.brainStart = Date.now()
-      const res = await fetch('/api/interview/evaluate-response', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const evaluation = await fetchEvaluation({
           questionText:      q.question,
           expectedKeyPoints: q.expectedKeyPoints,
           candidateResponse: responseText,
@@ -1575,9 +1619,11 @@ export default function InterviewPage() {
           interviewId,
           coverageAnswers: responsesRef.current.map(r => ({ questionText: `${r.questionText} ${r.questionType}`, score: r.score })),
           timeLeftSec: timeRemainingRef.current,
-        }),
+          // Stuck handling: the room already gave its ONE simpler hint here.
+          easedOff: stuckActiveRef.current,
       })
-      ev = await res.json()
+      ev = evaluation.ev
+      finalEval = evaluation.final
       if (turnTimingRef.current) { turnTimingRef.current.brainEnd = Date.now(); turnTimingRef.current.brainDegraded = !!ev.degraded }
       const cov = (ev as unknown as { coverage?: { uncoveredKeys?: unknown } }).coverage
       if (cov && Array.isArray(cov.uncoveredKeys)) uncoveredKeysRef.current = (cov.uncoveredKeys as unknown[]).filter((k): k is string => typeof k === 'string')
@@ -1643,6 +1689,17 @@ export default function InterviewPage() {
     responsesRef.current = updatedResponses
     setQuestionResponses(updatedResponses)
     upsertQuestionResponse(qr)
+    // Streamed evaluation: fill in the key points + evaluator note when the
+    // final reply lands (it arrives while the next line is being spoken).
+    if (finalEval && !ev.degraded) {
+      void finalEval.then((f) => {
+        if (!Array.isArray(f.keyPointsCovered) && !f.evaluatorNote) return
+        const full: QuestionResponse = { ...qr, keyPointsCovered: f.keyPointsCovered ?? [], keyPointsMissed: f.keyPointsMissed ?? [], evaluatorNote: f.evaluatorNote ?? qr.evaluatorNote }
+        responsesRef.current = responsesRef.current.map((r) => (r === qr ? full : r))
+        setQuestionResponses(responsesRef.current)
+        upsertQuestionResponse(full)
+      }).catch(() => { /* the decision already drove the turn; key points are best-effort */ })
+    }
 
     const avg = Math.round(updatedResponses.reduce((a, r) => a + r.score, 0) / updatedResponses.length)
     setRunningScore(avg)

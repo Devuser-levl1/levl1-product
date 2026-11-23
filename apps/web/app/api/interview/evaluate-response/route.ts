@@ -12,7 +12,9 @@ import { readSelection } from '@/lib/screen/rubrics/types'
 import { mustRubricIds, rubricSkillNodes, rubricTierGuidance } from '@/lib/screen/rubrics/coverage'
 import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-config'
 import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
-import { DELIBERATION_GUIDANCE, sanitizeDeliberation, reconcileDecision } from '@/lib/screen/interview/deliberation'
+import { DELIBERATION_GUIDANCE, sanitizeDeliberation, reconcileDecision, type Deliberation } from '@/lib/screen/interview/deliberation'
+
+type Processed = { payload: Record<string, unknown>; deliberation: Deliberation; changed: string[] }
 
 // Optional light delivery tags for v3/v4 voices (ELEVENLABS_TTS_AUDIO_TAGS=1).
 function audioTagsOn(): boolean {
@@ -88,6 +90,8 @@ export async function POST(req: NextRequest) {
     // How many follow-ups already asked on THIS question (Part 3a depth cap).
     const followUpCount: number           = Math.max(0, Number(body.followUpCount) || 0)
     const followUpsLeft                   = Math.max(0, MAX_FOLLOWUPS - followUpCount)
+    // The room already gave its one simpler hint on this question (stuck handling).
+    const easedOff                        = body.easedOff === true
     // Recent interviewer lines — so phrasing can be varied, not repeated.
     const recentAiLines: string[] = Array.isArray(body.recentAiLines)
       ? body.recentAiLines.filter((l: unknown): l is string => typeof l === 'string').slice(-8).map((l: string) => l.slice(0, 200))
@@ -142,7 +146,7 @@ export async function POST(req: NextRequest) {
       ? `FOLLOW-UP BUDGET: EXHAUSTED. You have already asked ${followUpCount} follow-ups on this question (cap is ${MAX_FOLLOWUPS}). You MUST set shouldAskFollowUp=false now and move on gracefully, even if the answer is unsatisfactory — record what is missing in keyPointsMissed and do NOT drill further.`
       : `FOLLOW-UP BUDGET: ${followUpsLeft} of ${MAX_FOLLOWUPS} follow-ups remain on this question. Only ask one if it is genuinely high-signal; otherwise advance. Never exceed the cap.`
 
-    const callBrain = () => client.messages.create({
+    const params: Anthropic.MessageCreateParamsNonStreaming = {
       model: INTERVIEW_MODEL,
       // +200 for the short deliberation written before the decision (~30–60 tokens in practice).
       max_tokens: 900,
@@ -197,67 +201,84 @@ export async function POST(req: NextRequest) {
           `Candidate response: ${answerForModel}\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
           `${budgetLine}${prevCtx}${workBlock}${ctx.block}` +
+          (easedOff ? `\n\nSTUCK HANDLING: the candidate was already given ONE simpler hint on this question. Do NOT ease off again: probe only if this answer gives you something real to probe, otherwise move_on.` : '') +
           (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
           `\n\n` +
-          `Return ONLY this JSON (write "deliberation" FIRST — your decision below must follow from it):\n` +
+          `Return ONLY this JSON, in EXACTLY this key order (deliberation first — every decision below must follow from it; key points and the note come last):\n` +
           `{\n` +
           `  "deliberation": { "answer": "complete|partial|thin|off_topic|none", "state": "confident|thinking|stuck|unsure|meta", "gap": "<the single biggest gap, max 12 words, or empty>", "move": "probe_gap|go_deeper|pivot|ease_off|move_on" },\n` +
           `  "score": <integer 0-10>,\n` +
           `  "relevanceScore": <integer 0-10>,\n` +
+          `  "shouldAskFollowUp": true|false,\n` +
+          `  "followUpQuestion": "only if shouldAskFollowUp is true, else empty string",\n` +
+          `  "confirmBack": "one-sentence restatement of a substantive answer when NOT following up, else empty string",\n` +
           `  "keyPointsCovered": ["point1"],\n` +
           `  "keyPointsMissed": ["point2"],\n` +
-          `  "evaluatorNote": "1-2 sentences",\n` +
-          `  "shouldAskFollowUp": true|false,\n` +
-          `  "followUpQuestion": "optional — only if shouldAskFollowUp is true",\n` +
-          `  "generateDynamic": true|false,\n` +
-          `  "suggestedTransition": "brief neutral phrase before moving on",\n` +
-          `  "confirmBack": "one-sentence restatement of a substantive answer when NOT following up, else empty string"\n` +
+          `  "evaluatorNote": "1-2 sentences"\n` +
           `}`,
       }],
-    })
+    }
+    const callBrain = () => client.messages.create(params)
 
-    let result: Record<string, unknown> | null = null
-    const brainT0 = Date.now()
-    let attempts = 0
-    for (let attempt = 1; attempt <= 2 && !result; attempt++) {
-      attempts = attempt
-      try {
-        const res = await callBrain()
-        const raw   = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
-        const clean = raw.replace(/```json|```/g, '').trim()
-        result = JSON.parse(clean) as Record<string, unknown>
-      } catch (e) {
-        const c = classifyBrainError(e)
-        if (attempt === 1 && c.retryable) { await new Promise((r) => setTimeout(r, 600)); continue }
-        throw e
+    // Shared post-processing for the decision AND the final payload (same
+    // fields → same reconciled decision, so what the room acts on early is
+    // exactly what the final reply says).
+    const postProcess = (raw: Record<string, unknown>): Processed => {
+      // Deliberate-before-responding: validate the reasoning, then make the
+      // decision consistent with it AND with the hard rules (budget cap).
+      const deliberation = sanitizeDeliberation(raw.deliberation, { answerEmpty: !answerText })
+      const fixed = reconcileDecision(raw, deliberation, { followUpsLeft, easedOff })
+      const result: Record<string, unknown> = { ...fixed.result, deliberation }
+      // Delivery tags never reach the transcript/report: the fields stay clean and
+      // a tagged copy (≤1 tag) goes in `speech` for the voice only.
+      const speech: Record<string, string> = {}
+      for (const f of ['followUpQuestion', 'confirmBack'] as const) {
+        const v = result[f]
+        if (typeof v !== 'string') continue
+        if (audioTagsOn()) speech[f] = limitAudioTags(v, 1)
+        result[f] = stripAudioTags(v)
+      }
+      return {
+        payload: {
+          ...result,
+          ...(Object.keys(speech).length ? { speech } : {}),
+          // Between-question adaptation: the room promotes a question covering an
+          // unassessed must-have. Only skill names/aliases — no rubric content.
+          ...(ctx.coverage ? { coverage: { uncoveredKeys: ctx.coverage.uncoveredKeys, uncoveredMustHaves: ctx.coverage.uncoveredMustHaves.map((u) => u.name) } } : {}),
+        } as Record<string, unknown>,
+        deliberation, changed: fixed.changed,
       }
     }
-    if (!result) throw new Error('brain returned no result')
-    // Deliberate-before-responding: validate the reasoning, then make the
-    // decision consistent with it AND with the hard rules (budget cap).
-    const deliberation = sanitizeDeliberation(result.deliberation, { answerEmpty: !answerText })
-    const fixed = reconcileDecision(result, deliberation, { followUpsLeft })
-    result = { ...fixed.result, deliberation }
-    if (fixed.changed.length) console.info(JSON.stringify({ evt: 'brain_reconciled', interviewId: interviewId || null, changed: fixed.changed, move: deliberation.move }))
-    // Latency telemetry (pairs with the room's turn_timing line).
-    console.info(JSON.stringify({ evt: 'brain_turn', model: INTERVIEW_MODEL, ms: Date.now() - brainT0, attempts, interviewId: interviewId || null, move: deliberation.move, state: deliberation.state, answer: deliberation.answer }))
-    // Delivery tags never reach the transcript/report: the fields stay clean and
-    // a tagged copy (≤1 tag) goes in `speech` for the voice only.
-    const speech: Record<string, string> = {}
-    for (const f of ['followUpQuestion', 'confirmBack'] as const) {
-      const v = result[f]
-      if (typeof v !== 'string') continue
-      if (audioTagsOn()) speech[f] = limitAudioTags(v, 1)
-      result[f] = stripAudioTags(v)
+    const brainT0 = Date.now()
+    const logTurn = (p: ReturnType<typeof postProcess>, extra: Record<string, unknown>) => {
+      if (p.changed.length) console.info(JSON.stringify({ evt: 'brain_reconciled', interviewId: interviewId || null, changed: p.changed, move: p.deliberation.move }))
+      // Latency telemetry (pairs with the room's turn_timing line).
+      console.info(JSON.stringify({ evt: 'brain_turn', model: INTERVIEW_MODEL, ms: Date.now() - brainT0, interviewId: interviewId || null, move: p.deliberation.move, state: p.deliberation.state, answer: p.deliberation.answer, ...extra }))
+    }
+    const runNonStreaming = async () => {
+      let result: Record<string, unknown> | null = null
+      let attempts = 0
+      for (let attempt = 1; attempt <= 2 && !result; attempt++) {
+        attempts = attempt
+        try {
+          const res = await callBrain()
+          const raw   = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
+          const clean = raw.replace(/```json|```/g, '').trim()
+          result = JSON.parse(clean) as Record<string, unknown>
+        } catch (e) {
+          const c = classifyBrainError(e)
+          if (attempt === 1 && c.retryable) { await new Promise((r) => setTimeout(r, 600)); continue }
+          throw e
+        }
+      }
+      if (!result) throw new Error('brain returned no result')
+      const p = postProcess(result)
+      logTurn(p, { attempts })
+      return p.payload
     }
 
-    // Between-question adaptation: the room promotes a question covering an
-    // unassessed must-have. Only skill names/aliases — no rubric content.
-    return NextResponse.json({
-      ...result,
-      ...(Object.keys(speech).length ? { speech } : {}),
-      ...(ctx.coverage ? { coverage: { uncoveredKeys: ctx.coverage.uncoveredKeys, uncoveredMustHaves: ctx.coverage.uncoveredMustHaves.map((u) => u.name) } } : {}),
-    }, { status: 200 })
+    if (body.stream === true) return streamDecision({ client, params, postProcess, logTurn, runNonStreaming, brainT0, interviewId })
+    return NextResponse.json(await runNonStreaming(), { status: 200 })
   } catch (err: unknown) {
     const c = classifyBrainError(err)
     // LOUD: one structured line ops can alert on (e.g. evt=brain_unavailable reason=billing).
@@ -265,9 +286,14 @@ export async function POST(req: NextRequest) {
     // Still 200 so the interview doesn't crash — but flagged `degraded`, so the
     // room probes trivial answers instead of accepting them and the Control Room
     // shows that answers are not being evaluated.
-    return NextResponse.json({
+    return NextResponse.json(degradedPayload(c.reason), { status: 200 })
+  }
+}
+
+function degradedPayload(reason: string) {
+  return {
       degraded: true,
-      degradedReason: c.reason,
+      degradedReason: reason,
       score: 5,
       relevanceScore: 5,
       keyPointsCovered: [],
@@ -276,6 +302,92 @@ export async function POST(req: NextRequest) {
       shouldAskFollowUp: false,
       generateDynamic: false,
       suggestedTransition: 'Thank you.',
-    }, { status: 200 })
   }
+}
+
+// ── Streamed decision (speak sooner) ───────────────────────────────────────
+// The reply is ~250 tokens at ~60 tok/s, so the room used to wait ~4s for the
+// whole JSON before speaking. With { stream: true } the route streams the
+// brain's reply and emits NDJSON:
+//   {"type":"decision", ...}  as soon as every field the room DECIDES on is
+//                             complete (deliberation, score, relevance, the
+//                             follow-up flag + question, confirm-back) — the
+//                             prompt orders those first
+//   {"type":"final", ...}     the full reply (adds key points + evaluator note)
+// Both go through the same postProcess (reconcile + budget cap), so the early
+// decision is exactly the final one. Failures stay LOUD: before a decision →
+// fall back to the normal call (with its retry), then to the degraded payload.
+const DECISION_END_KEY = '"keyPointsCovered"'
+
+function parseDecisionPrefix(text: string): Record<string, unknown> | null {
+  const at = text.indexOf(DECISION_END_KEY)
+  const start = text.indexOf('{')
+  if (at < 0 || start < 0 || start > at) return null
+  try { return JSON.parse(text.slice(start, at).replace(/,\s*$/, '') + '}') as Record<string, unknown> } catch { return null }
+}
+
+function streamDecision(o: {
+  client: Anthropic
+  params: Anthropic.MessageCreateParamsNonStreaming
+  postProcess: (raw: Record<string, unknown>) => Processed
+  logTurn: (p: Processed, extra: Record<string, unknown>) => void
+  runNonStreaming: () => Promise<Record<string, unknown>>
+  brainT0: number
+  interviewId: string
+}) {
+  const enc = new TextEncoder()
+  const body = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (type: 'decision' | 'final', payload: Record<string, unknown>) => controller.enqueue(enc.encode(JSON.stringify({ type, ...payload }) + '\n'))
+      let decisionSent = null as Record<string, unknown> | null
+      let decisionMs: number | null = null
+      try {
+        let text = ''
+        const stream = o.client.messages.stream(o.params)
+        stream.on('text', (delta: string) => {
+          text += delta
+          if (decisionSent) return
+          const prefix = parseDecisionPrefix(text)
+          if (!prefix) return
+          const p = o.postProcess(prefix)
+          decisionSent = p.payload
+          decisionMs = Date.now() - o.brainT0
+          send('decision', p.payload)
+        })
+        await stream.finalMessage()
+        const clean = text.replace(/```json|```/g, '').trim()
+        const a = clean.indexOf('{'); const b = clean.lastIndexOf('}')
+        const raw = JSON.parse(a >= 0 && b > a ? clean.slice(a, b + 1) : clean) as Record<string, unknown>
+        const p = o.postProcess(raw)
+        o.logTurn(p, { streamed: true, decisionMs })
+        // The decision the room already acted on wins for the decision fields.
+        send('final', decisionSent ? { ...p.payload, ...pickDecision(decisionSent) } : p.payload)
+      } catch (err) {
+        if (decisionSent) {
+          // Already acting on the decision — finish with what we have (no key points), loudly.
+          console.warn(JSON.stringify({ evt: 'brain_stream_incomplete', interviewId: o.interviewId || null, detail: (err instanceof Error ? err.message : String(err)).slice(0, 200) }))
+          send('final', { ...(decisionSent as Record<string, unknown>), keyPointsCovered: [], keyPointsMissed: [], evaluatorNote: '', partial: true })
+        } else {
+          try {
+            send('final', await o.runNonStreaming())
+          } catch (e2) {
+            const c = classifyBrainError(e2)
+            console.error(JSON.stringify({ evt: 'brain_unavailable', route: 'evaluate-response', stream: true, reason: c.reason, status: c.status, model: INTERVIEW_MODEL, detail: (e2 instanceof Error ? e2.message : String(e2)).slice(0, 300) }))
+            send('final', degradedPayload(c.reason))
+          }
+        }
+      } finally {
+        controller.close()
+      }
+    },
+  })
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' } })
+}
+
+const DECISION_FIELDS = ['deliberation', 'score', 'relevanceScore', 'shouldAskFollowUp', 'followUpQuestion', 'confirmBack', 'speech'] as const
+function pickDecision(d: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const k of DECISION_FIELDS) if (k in d) out[k] = d[k]
+  if (!('followUpQuestion' in d)) out.followUpQuestion = undefined
+  return out
 }

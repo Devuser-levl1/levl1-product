@@ -50,15 +50,17 @@ export function sanitizeDeliberation(raw: unknown, o: { answerEmpty: boolean }):
 const ASKS = new Set<NextMove>(['probe_gap', 'go_deeper', 'pivot', 'ease_off'])
 
 /** Make the decision consistent with the deliberation and the hard rules. */
-export function reconcileDecision(result: Record<string, unknown>, d: Deliberation, o: { followUpsLeft: number }): { result: Record<string, unknown>; changed: string[] } {
+export function reconcileDecision(result: Record<string, unknown>, d: Deliberation, o: { followUpsLeft: number; easedOff?: boolean }): { result: Record<string, unknown>; changed: string[] } {
   const r = { ...result }
   const changed: string[] = []
   const q = typeof r.followUpQuestion === 'string' ? r.followUpQuestion.trim() : ''
   if (r.shouldAskFollowUp === true) {
     if (o.followUpsLeft <= 0) { r.shouldAskFollowUp = false; changed.push('budget_exhausted') }
     else if (d.valid && d.move === 'move_on') { r.shouldAskFollowUp = false; changed.push('deliberation_move_on') }
+    // The room already gave its ONE simpler hint for this question → never a second ease-off.
+    else if (o.easedOff && d.move === 'ease_off') { r.shouldAskFollowUp = false; changed.push('already_eased_off') }
     else if (!q) { r.shouldAskFollowUp = false; changed.push('no_question_text') }
-  } else if (d.valid && ASKS.has(d.move) && q && o.followUpsLeft > 0) {
+  } else if (d.valid && ASKS.has(d.move) && q && o.followUpsLeft > 0 && !(o.easedOff && d.move === 'ease_off')) {
     // Reasoned that a follow-up is the best move and wrote one, but forgot the flag.
     r.shouldAskFollowUp = true; changed.push('deliberation_asks')
   }
