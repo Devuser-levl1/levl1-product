@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Mic } from 'lucide-react'
 import { DEMO_PERSONAS } from '@/lib/screen/demo/personas'
@@ -125,8 +126,13 @@ function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, s
   }, [])
 
   const label = 'mb-1.5 mt-4 block text-[0.82rem] font-medium text-mk-ink'
-  return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+  // Portal to <body>: marketing sections use `content-visibility: auto`
+  // (marketing.css), which contains + clips `position: fixed` descendants — the
+  // dialog rendered inside the section opened off-screen with scrolling locked,
+  // so the name/email fields couldn't be reached. `.mk-light` carries the site tokens
+  // (not `.mk-root`, which would add a full-height page background under the overlay).
+  return createPortal(
+    <div className="mk-light" style={{ fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif", fontSize: 17 }}><div className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="demo-gate-title" onClick={(e) => e.stopPropagation()}
         className="mk-light w-full max-w-[440px] rounded-xl border border-mk-line bg-mk-surface p-6 sm:p-7">
         <p className="text-[0.8rem] font-medium text-mk-muted">{title} · ~{minutes} min</p>
@@ -154,6 +160,7 @@ function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, s
           <button type="button" onClick={onStart} disabled={starting} className="mk-btn mk-btn-primary flex-[2] disabled:opacity-70">{starting ? 'Starting…' : 'Start interview'}</button>
         </div>
       </div>
-    </div>
+    </div></div>,
+    document.body,
   )
 }

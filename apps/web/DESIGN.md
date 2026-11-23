@@ -1,7 +1,11 @@
 # DESIGN.md — Levl1 marketing site
 
-Scope: the public site in `app/(marketing)` (levl1.io). The product app has its
-own rules (Screen minimalist design); this file does not apply there.
+Scope: the public site in `app/(marketing)` (levl1.io). Since 2026-11-23 the
+Screen product app shares this palette and type at the TOKEN level
+(`app/screen-tokens.css`: paper/sunken/line/ink, Instrument Sans display
+headings, JetBrains Mono evidence; headings on Screen surfaces via
+`html[data-lv-type]` in `app/screen-ui.css`). The app keeps its own component
+rules and compact sizes (Screen minimalist design); Hire is not affected.
 
 **Direction: "evidence on paper."** A warm, editorial, light-first site where
 the product's *evidence* — transcript lines, test results, timestamps, a

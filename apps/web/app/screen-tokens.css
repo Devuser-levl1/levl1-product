@@ -5,12 +5,18 @@
    ADDITIVE: the legacy globals (--brand, --accent, .btn-*, .input, .card —
    some used by Hire) are untouched.
 
+   2026-11-23 — aligned with the site's "evidence on paper" direction
+   (apps/web/DESIGN.md): warm paper page, warm hairlines, Instrument Sans for
+   display headings, JetBrains Mono for evidence. Same one indigo accent.
+   Layouts and component styles are unchanged — tokens only.
+
    Visual direction (Minimalist overhaul, pass A)
    • Near-monochrome neutral (zinc) scale + ONE accent: indigo (#4F46E5),
      reserved for the primary action and the active/selected state.
    • --lv-accent is now a NEUTRAL (no second hue); --lv-gradient-brand is a
      solid indigo (the name is kept so existing references keep working).
-   • Inter only (--lv-font-display aliases the sans stack); weights 400/500/600
+   • Inter for UI/body; Instrument Sans for display headings (page/modal titles);
+     JetBrains Mono for evidence (code, timestamps); weights 400/500/600
      — --lv-weight-bold is capped at 600.
    • Desaturated status colours (one green, one amber, one red), AA on white
      and on their soft backgrounds.
@@ -27,31 +33,31 @@
   --lv-brand:              #4F46E5;
   --lv-brand-hover:        #4338CA;
   --lv-brand-active:       #3730A3;
-  --lv-brand-soft:         #EEF0FD;   /* selected rows / active nav — quiet tint */
+  --lv-brand-soft:         #EEF0FF;   /* accent-tint: selected rows / active nav */
   --lv-brand-soft-border:  #D3D7F8;
   --lv-brand-text:         #4338CA;   /* brand-coloured text/links on light surfaces (AA) */
   --lv-on-brand:           #FFFFFF;
   --lv-accent:             #52525B;   /* neutral — the second hue is retired */
-  --lv-accent-soft:        #F4F4F5;
+  --lv-accent-soft:        #F4F2EE;
   --lv-gradient-brand:     #4F46E5;   /* solid; name kept for existing references */
 
   /* ── Text (neutral ink scale) ──────────────────────────────────────── */
-  --lv-text:               #18181B;   /* headings, primary text      17.7:1 */
+  --lv-text:               #111114;   /* ink: headings, primary text  18.6:1 on paper */
   --lv-text-body:          #3F3F46;   /* body copy                   10.4:1 */
-  --lv-text-muted:         #71717A;   /* secondary text, hints        4.8:1 */
+  --lv-text-muted:         #6B6B73;   /* secondary text, hints   ≥4.5:1 on paper + surface */
   --lv-text-subtle:        #A1A1AA;   /* placeholders / decorative ONLY      */
   --lv-text-inverse:       #FFFFFF;
 
   /* ── Surfaces ──────────────────────────────────────────────────────── */
-  --lv-bg:                 #FAFAFA;   /* app page background */
+  --lv-bg:                 #FBFAF7;   /* paper — warm page background */
   --lv-surface:            #FFFFFF;   /* cards, modals, inputs */
-  --lv-surface-sunken:     #FAFAFA;   /* insets, table headers, read-only fields */
-  --lv-surface-muted:      #F4F4F5;   /* hover rows, chips */
+  --lv-surface-sunken:     #F4F2EE;   /* sunken: insets, table headers, read-only fields */
+  --lv-surface-muted:      #F4F2EE;   /* hover rows, chips (warm) */
   --lv-overlay:            rgba(9, 9, 11, 0.40);   /* modal / drawer backdrop */
 
   /* ── Borders (hairline) ────────────────────────────────────────────── */
-  --lv-border:             #E4E4E7;
-  --lv-border-strong:      #D4D4D8;   /* decorative: card hover, dividers (NOT a control boundary) */
+  --lv-border:             #E7E4DE;   /* line — warm hairline */
+  --lv-border-strong:      #D8D3CA;   /* decorative: card hover, dividers (NOT a control boundary) */
   --lv-border-control:     #8E8E96;   /* input / checkbox / radio boundary — ≥3:1 (WCAG 1.4.11) */
   --lv-border-focus:       #4F46E5;
 
@@ -67,8 +73,8 @@
   --lv-danger-soft:        #FBF3F2;
   --lv-danger-border:      #F0D3CF;
   --lv-info:               #3F3F46;   /* info is neutral — indigo stays for action/selection */
-  --lv-info-soft:          #F4F4F5;
-  --lv-info-border:        #E4E4E7;
+  --lv-info-soft:          #F4F2EE;
+  --lv-info-border:        #E7E4DE;
 
   /* ── Focus ─────────────────────────────────────────────────────────── */
   --lv-focus-ring:         0 0 0 3px rgba(79, 70, 229, 0.28);
@@ -88,8 +94,8 @@
 
   /* ── Typography — Inter only ───────────────────────────────────────── */
   --lv-font-sans:    var(--font-sans, 'Inter', system-ui, sans-serif);
-  --lv-font-display: var(--lv-font-sans);   /* headings use Inter too */
-  --lv-font-mono:    var(--font-mono, ui-monospace, monospace);
+  --lv-font-display: 'Instrument Sans', var(--lv-font-sans);   /* display headings (site DESIGN.md) */
+  --lv-font-mono:    'JetBrains Mono', var(--font-mono, ui-monospace, monospace);   /* evidence */
   --lv-text-2xs:  11px;   /* micro labels, counters */
   --lv-text-xs:   12px;   /* captions, badges, table meta */
   --lv-text-sm:   13px;   /* secondary UI text, labels */
@@ -160,19 +166,19 @@
   --lv-accent-soft:        #27272A;
   --lv-gradient-brand:     #4F46E5;   /* white glyphs sit on it — 6.3:1 */
 
-  --lv-text:               #FAFAFA;
+  --lv-text:               #F4F4F5;
   --lv-text-body:          #D4D4D8;
   --lv-text-muted:         #A1A1AA;
   --lv-text-subtle:        #71717A;
   --lv-text-inverse:       #18181B;
 
-  --lv-bg:                 #09090B;
-  --lv-surface:            #131316;
-  --lv-surface-sunken:     #0E0E11;
+  --lv-bg:                 #0C0C0E;
+  --lv-surface:            #17171A;
+  --lv-surface-sunken:     #121214;
   --lv-surface-muted:      #1F1F23;
   --lv-overlay:            rgba(0, 0, 0, 0.60);
 
-  --lv-border:             #26262B;
+  --lv-border:             #2A2A2E;
   --lv-border-strong:      #3A3A40;
   --lv-border-control:     #6B6B74;
   --lv-border-focus:       #818CF8;
@@ -217,19 +223,19 @@
     --lv-accent-soft:        #27272A;
     --lv-gradient-brand:     #4F46E5;   /* white glyphs sit on it — 6.3:1 */
 
-    --lv-text:               #FAFAFA;
+    --lv-text:               #F4F4F5;
     --lv-text-body:          #D4D4D8;
     --lv-text-muted:         #A1A1AA;
     --lv-text-subtle:        #71717A;
     --lv-text-inverse:       #18181B;
 
-    --lv-bg:                 #09090B;
-    --lv-surface:            #131316;
-    --lv-surface-sunken:     #0E0E11;
+    --lv-bg:                 #0C0C0E;
+    --lv-surface:            #17171A;
+    --lv-surface-sunken:     #121214;
     --lv-surface-muted:      #1F1F23;
     --lv-overlay:            rgba(0, 0, 0, 0.60);
 
-    --lv-border:             #26262B;
+    --lv-border:             #2A2A2E;
     --lv-border-strong:      #3A3A40;
     --lv-border-control:     #6B6B74;
     --lv-border-focus:       #818CF8;

@@ -102,7 +102,7 @@
 .lv-page { max-width: var(--lv-content-max); margin: 0 auto; padding: var(--lv-space-8) var(--lv-gutter) var(--lv-space-12); }
 .lv-page-header { display: flex; align-items: flex-end; gap: var(--lv-space-4); flex-wrap: wrap; margin-bottom: var(--lv-space-6); }
 .lv-page-header__text { flex: 1 1 280px; min-width: 0; }
-.lv-page-title { margin: 0; font-family: var(--lv-font-display); font-size: var(--lv-text-xl); font-weight: var(--lv-weight-semibold); letter-spacing: -0.015em; color: var(--lv-text); }
+.lv-page-title { margin: 0; font-family: var(--lv-font-display); font-size: var(--lv-text-xl); font-weight: var(--lv-weight-medium); letter-spacing: -0.02em; color: var(--lv-text); }   /* Instrument Sans 500 (DESIGN.md) */
 .lv-page-desc { margin: var(--lv-space-1) 0 0; font-size: var(--lv-text-base); color: var(--lv-text-muted); }
 .lv-page-header__actions { display: flex; gap: var(--lv-space-2); align-items: center; flex-wrap: wrap; }
 @media (max-width: 640px) { .lv-page { padding: var(--lv-space-6) var(--lv-space-4) var(--lv-space-10); } }
@@ -177,7 +177,7 @@
 .lv-drawer { display: flex; flex-direction: column; width: min(560px, 100vw); height: 100%; background: var(--lv-bg); box-shadow: var(--lv-shadow-lg); animation: lv-slide var(--lv-dur) var(--lv-ease); }
 .lv-modal__head { display: flex; align-items: flex-start; gap: var(--lv-space-3); padding: var(--lv-space-5) var(--lv-space-5) var(--lv-space-3); }
 .lv-drawer .lv-modal__head { background: var(--lv-surface); border-bottom: 1px solid var(--lv-border); padding-bottom: var(--lv-space-4); }
-.lv-modal__title { margin: 0; font-family: var(--lv-font-display); font-size: var(--lv-text-md); font-weight: var(--lv-weight-semibold); color: var(--lv-text); }
+.lv-modal__title { margin: 0; font-family: var(--lv-font-display); font-size: var(--lv-text-md); font-weight: var(--lv-weight-medium); letter-spacing: -0.01em; color: var(--lv-text); }
 .lv-modal__desc { margin: var(--lv-space-1) 0 0; font-size: var(--lv-text-sm); color: var(--lv-text-muted); }
 .lv-modal__body { padding: var(--lv-space-2) var(--lv-space-5) var(--lv-space-5); overflow-y: auto; flex: 1; color: var(--lv-text-body); font-size: var(--lv-text-base); }
 .lv-drawer .lv-modal__body { padding: var(--lv-space-5); }
@@ -276,3 +276,10 @@
 }
 [data-lv-theme="dark"] .screen-logo__ink--dark { display: none !important; }
 [data-lv-theme="dark"] .screen-logo__ink--light { display: block !important; }
+
+/* ── Shared display typography (site "evidence on paper", DESIGN.md) ──────
+   Screen surfaces only (html[data-lv-type], components/screen/ScreenTheme.tsx):
+   headings use the display face. :where() keeps specificity at zero, so any
+   heading that sets its own font-family keeps it. Never applies to Hire or
+   the marketing site (which has its own .mk-* type). */
+html[data-lv-type] :where(h1, h2, h3) { font-family: var(--lv-font-display); letter-spacing: -0.015em; }
