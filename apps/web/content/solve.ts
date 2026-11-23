@@ -7,6 +7,8 @@ import type { CTA, Heading, Item, SplitBlock, Step } from './types'
 
 const NAME = PRODUCTS.takeHome.name
 const SET_UP: CTA = { label: 'Sign in to set it up', href: ROUTES.signIn }
+// Public demo: a real take-home (isDemo) — lib/screen/solve/demo.ts, /api/solve/demo/start.
+export const TRY_SOLVE: CTA = { label: `Try ${NAME} live`, href: `${ROUTES.takeHome}#try-live` }
 
 export const solve = {
   meta: {
@@ -18,9 +20,9 @@ export const solve = {
     badgeTone: 'live' as const,
     title: 'A take-home they have to defend.',
     lead: `${NAME} sends a real-world task the candidate solves on their own time. It runs against your tests, gets scored against your rubric, and ends with a short spoken interview about the code they wrote — so a submission they didn’t write doesn’t get through.`,
-    primary: TALK_TO_US as CTA,
-    secondary: SET_UP,
-    microcopy: `Part of ${PRODUCTS.screen.name} workspaces — turn it on per position.`,
+    primary: TRY_SOLVE,
+    secondary: TALK_TO_US as CTA,
+    microcopy: 'No sign-up · about 25 minutes · AI assistant included · microphone for the defense',
   },
   how: {
     heading: { eyebrow: 'How it works', title: 'Async, but accountable.' } as Heading,
@@ -61,6 +63,9 @@ export const solve = {
     ],
     visual: 'solveReport',
   } as SplitBlock,
+  tryLive: {
+    heading: { eyebrow: 'Live demo · no sign-up', title: 'Sit the take-home yourself.', lead: `Pick a role: solve a real task with the built-in AI assistant, defend it out loud, then see the report a hiring team gets. Up to 20 minutes for the task, about 5 for the defense.` } as Heading,
+  },
   steps: [
     { title: 'Turn it on for a position', body: 'Pick or generate a task, approve it, set the window.' },
     { title: 'Send it to candidates', body: `Usually the ones who passed ${PRODUCTS.screen.name}. Each gets a private link; no account needed.` },
@@ -68,7 +73,7 @@ export const solve = {
   ] as Step[],
   cta: {
     title: 'See it on one of your roles.',
-    lead: `We’ll set ${NAME} up on a real job description with you.`,
+    lead: `We’ll set ${NAME} up on a real job description with you — or sign in and turn it on for a position.`,
     primary: TALK_TO_US as CTA,
     secondary: SET_UP,
   },

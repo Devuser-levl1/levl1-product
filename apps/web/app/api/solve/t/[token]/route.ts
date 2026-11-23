@@ -34,7 +34,7 @@ async function view(s: LoadedSubmission) {
   const turns = openArray<DefenseTurn>(row?.defenseTranscript)
   const policy = readCapturePolicy()
   return {
-    status: s.status,
+    status: s.status, isDemo: s.isDemo,
     candidateFirstName: first(s.candidateName), positionTitle: s.positionTitle, company: s.company, orgName: s.orgName,
     config: { durationMinutes: s.config.durationMinutes, defenseRequired: s.config.defenseRequired, defenseTiming: s.config.defenseTiming, aiPolicy: s.config.aiPolicy, integrityLevel: s.config.integrityLevel },
     taskTitle: s.task.title, taskMinutes: s.config.durationMinutes,

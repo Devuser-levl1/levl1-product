@@ -10,7 +10,18 @@ import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 // marketing site (styled with its mk.* tokens). One click → lead gate →
 // /api/demo/start → live voice interview at /interview/[id]?demo=1 — the REAL
 // room + engine (coding IDE, observe-and-defend, consent) with demo content.
-export function DemoGallery() {
+// product: 'screen' (live voice interview) | 'solve' (take-home + defense,
+// /api/solve/demo/start → /solve/<token>?demo=1). Same personas, lead gate and
+// shared rate limit; only the endpoint, redirect and copy differ.
+type DemoProduct = 'screen' | 'solve'
+const COPY: Record<DemoProduct, { cta: string; title: string; lead: string; mic: string; foot: string; start: string }> = {
+  screen: { cta: 'Try this interview', title: 'Start your live interview', lead: 'Tell us who you are and we’ll begin right away. You’ll get the evidence report at the end.', mic: 'Allow microphone access when your browser asks.', foot: 'You’ll need a microphone — allow access when your browser asks.', start: 'Start interview' },
+  solve: { cta: 'Try this take-home', title: 'Start your take-home', lead: 'Tell us who you are and the task opens right away: up to 20 minutes, with the built-in AI assistant, then a short spoken defense. You’ll see the evidence report at the end.', mic: 'The defense at the end is spoken — allow microphone access when your browser asks.', foot: 'You’ll need a microphone for the short spoken defense at the end.', start: 'Start take-home' },
+}
+const SOLVE_DEMO_MINUTES = 25   // 20-minute task window + ~5-minute defense (lib/screen/solve/demo.ts)
+
+export function DemoGallery({ product = 'screen' }: { product?: DemoProduct } = {}) {
+  const copy = COPY[product]
   const router = useRouter()
   const [starting, setStarting] = useState(false)
   const [err, setErr] = useState('')
@@ -41,10 +52,10 @@ export function DemoGallery() {
     if (!email.trim()) { setErr('Please enter your work email.'); return }
     setStarting(true); setErr('')
     try {
-      const res = await fetch('/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim(), marketingConsent: consent }) })
+      const res = await fetch(product === 'solve' ? '/api/solve/demo/start' : '/api/demo/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: leadFor, name: name.trim(), email: email.trim(), marketingConsent: consent }) })
       const d = await res.json()
       if (!res.ok) { setErr(d.error ?? 'Couldn\'t start the demo. Please try again.'); setStarting(false); return }
-      router.push(`/interview/${d.interviewId}?demo=1`)
+      router.push(product === 'solve' ? d.url : `/interview/${d.interviewId}?demo=1`)
     } catch { setErr('Network error — please try again.'); setStarting(false) }
   }
 
@@ -66,10 +77,10 @@ export function DemoGallery() {
                 <div className="mt-0.5 text-[0.75rem] text-mk-muted">{p.work.language}</div>
               </div>
             )}
-            <p className="mt-4 text-[0.82rem] text-mk-muted">~{p.durationMin} min · {p.accent} · {p.language}</p>
+            <p className="mt-4 text-[0.82rem] text-mk-muted">~{product === 'solve' ? SOLVE_DEMO_MINUTES : p.durationMin} min · {p.accent} · {p.language}</p>
             <div className="mt-auto pt-6">
               <button type="button" data-demo-slug={p.slug} onClick={(e) => openLead(p.slug, e.currentTarget)} className="mk-btn mk-btn-primary w-full">
-                Try this interview<ArrowRight aria-hidden className="mk-arrow h-4 w-4" strokeWidth={2} />
+                {copy.cta}<ArrowRight aria-hidden className="mk-arrow h-4 w-4" strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -78,7 +89,7 @@ export function DemoGallery() {
 
       <p className="mt-6 flex items-center justify-center gap-2 text-center text-[0.9rem] text-mk-muted">
         <Mic aria-hidden className="h-4 w-4" strokeWidth={2} />
-        You’ll need a microphone — allow access when your browser asks.
+        {copy.foot}
       </p>
       <p className="mt-2 text-center text-[0.9rem] text-mk-muted">
         Evaluating for your team? <a href="/demo" className="font-medium text-mk-accent-text hover:underline">Talk to us</a>
@@ -86,7 +97,7 @@ export function DemoGallery() {
 
       {leadFor && chosen && (
         <LeadDialog
-          title={chosen.title} minutes={chosen.durationMin}
+          title={chosen.title} minutes={product === 'solve' ? SOLVE_DEMO_MINUTES : chosen.durationMin} copy={copy}
           name={name} setName={setName} email={email} setEmail={setEmail}
           consent={consent} setConsent={setConsent}
           err={err} starting={starting} onStart={start} onClose={closeLead}
@@ -98,8 +109,8 @@ export function DemoGallery() {
 
 // Lead-capture gate as a real modal dialog. Forced light (.mk-light) because
 // ConsentCheckbox is light-only.
-function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, setConsent, err, starting, onStart, onClose }: {
-  title: string; minutes: number
+function LeadDialog({ title, minutes, copy, name, setName, email, setEmail, consent, setConsent, err, starting, onStart, onClose }: {
+  title: string; minutes: number; copy: { title: string; lead: string; mic: string; start: string }
   name: string; setName: (v: string) => void; email: string; setEmail: (v: string) => void
   consent: boolean; setConsent: (v: boolean) => void
   err: string; starting: boolean; onStart: () => void; onClose: () => void
@@ -136,8 +147,8 @@ function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, s
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="demo-gate-title" onClick={(e) => e.stopPropagation()}
         className="mk-light w-full max-w-[440px] rounded-xl border border-mk-line bg-mk-surface p-6 sm:p-7">
         <p className="text-[0.8rem] font-medium text-mk-muted">{title} · ~{minutes} min</p>
-        <h2 id="demo-gate-title" className="mt-1 text-[1.2rem] font-semibold tracking-tight">Start your live interview</h2>
-        <p className="mt-2 text-[0.92rem] leading-relaxed text-mk-slate">Tell us who you are and we’ll begin right away. You’ll get the evidence report at the end.</p>
+        <h2 id="demo-gate-title" className="mt-1 text-[1.2rem] font-semibold tracking-tight">{copy.title}</h2>
+        <p className="mt-2 text-[0.92rem] leading-relaxed text-mk-slate">{copy.lead}</p>
 
         <label htmlFor="demo-name" className={label}>Name</label>
         <input id="demo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" className="mk-field" />
@@ -151,13 +162,13 @@ function LeadDialog({ title, minutes, name, setName, email, setEmail, consent, s
           </ConsentCheckbox>
         </div>
 
-        <p className="mt-4 flex items-center gap-2 text-[0.82rem] text-mk-muted"><Mic aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />Allow microphone access when your browser asks.</p>
+        <p className="mt-4 flex items-center gap-2 text-[0.82rem] text-mk-muted"><Mic aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />{copy.mic}</p>
 
         {err && <p role="alert" className="mt-3 text-[0.88rem] font-medium text-rose-700">{err}</p>}
 
         <div className="mt-6 flex gap-2.5">
           <button type="button" onClick={onClose} disabled={starting} className="mk-btn mk-btn-secondary flex-1">Cancel</button>
-          <button type="button" onClick={onStart} disabled={starting} className="mk-btn mk-btn-primary flex-[2] disabled:opacity-70">{starting ? 'Starting…' : 'Start interview'}</button>
+          <button type="button" onClick={onStart} disabled={starting} className="mk-btn mk-btn-primary flex-[2] disabled:opacity-70">{starting ? 'Starting…' : copy.start}</button>
         </div>
       </div>
     </div></div>,

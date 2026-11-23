@@ -53,7 +53,8 @@ export async function loadByToken(token: unknown): Promise<LoadedSubmission | nu
     defenseStatus: row.defenseStatus, defenseDeadlineAt: row.defenseDeadlineAt, defenseStartedAt: row.defenseStartedAt, defenseCompletedAt: row.defenseCompletedAt,
     reportStatus: row.reportStatus,
     candidateName: row.candidate.name, positionTitle: row.position.title, company: row.position.company,
-    orgName: row.position.agency?.senderName || row.position.agency?.name || row.position.company,
+    // Demo take-homes belong to the internal demo agency — show the product, not its internal name.
+    orgName: row.isDemo ? 'Levl1' : (row.position.agency?.senderName || row.position.agency?.name || row.position.company),
     voiceAccent: row.position.voiceAccent,
   }
   return applyTimeTransitions(s)

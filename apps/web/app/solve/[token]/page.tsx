@@ -16,6 +16,7 @@ import { PRODUCTS } from '@/config/site'
 
 interface View {
   status: 'invited' | 'started' | 'submitted' | 'completed' | 'expired'
+  isDemo?: boolean
   candidateFirstName: string; positionTitle: string; company: string; orgName: string
   config: { durationMinutes: number; defenseRequired: boolean; defenseTiming: 'immediate' | 'flexible'; aiPolicy: 'allowed' | 'not_allowed'; integrityLevel: string }
   taskTitle: string
@@ -86,7 +87,10 @@ export default function SolvePage() {
   const title = `${v.positionTitle} · ${v.company}`
   return (
     <CandidateShell brand={BRAND} agencyName={v.orgName} logo={null} width={680}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{PRODUCTS.takeHome.name} · take-home assessment</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{PRODUCTS.takeHome.name} · take-home assessment</span>
+        {v.isDemo && <span className="lv-badge lv-badge--brand">Live demo</span>}
+      </div>
       <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginTop: 2, marginBottom: 16 }}>{title}</div>
 
       {v.status === 'expired' && (
@@ -128,7 +132,8 @@ export default function SolvePage() {
           return (
             <div style={{ display: 'grid', gap: 14 }}>
               <Alert tone="success" title={v.autoSubmitted ? 'Time\'s up — your work was submitted' : 'Your solution is submitted'}>One last step: a short conversation about your solution.{d.deadlineAt && d.status === 'pending' ? ` You can do it now or come back to this link any time before ${fmt(d.deadlineAt)}.` : ''}</Alert>
-              <SolveDefense token={token} firstName={v.candidateFirstName} voiceAccent={d.voiceAccent} initialTurns={d.turns} inProgress={d.status === 'in_progress'} onDone={() => { /* stay on the finished view */ }} />
+              <SolveDefense token={token} firstName={v.candidateFirstName} voiceAccent={d.voiceAccent} initialTurns={d.turns} inProgress={d.status === 'in_progress'}
+                onDone={() => { if (v.isDemo) setTimeout(() => { void load() }, 2500) /* demo: switch to the finished view with the report link */ }} />
             </div>
           )
         }
@@ -138,10 +143,20 @@ export default function SolvePage() {
             <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--lv-text-body)', margin: 0 }}>
               {v.quality && v.quality !== 'ok'
                 ? `We received your submission, but it doesn't contain work beyond the starter code. If something went wrong (the editor, your connection or the link), please let ${v.orgName} know.`
-                : `Your take-home for ${v.positionTitle} is with ${v.orgName}'s hiring team. They'll be in touch about next steps.`}
+                : v.isDemo
+                  ? 'That was the full candidate experience: a real task, the built-in AI assistant, tests, and a spoken defense of your own code.'
+                  : `Your take-home for ${v.positionTitle} is with ${v.orgName}'s hiring team. They'll be in touch about next steps.`}
             </p>
             {d.status === 'expired' && <Alert tone="info">The window for the follow-up conversation has closed. Your submission was still sent.</Alert>}
-            <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>You can close this page.</p>
+            {v.isDemo && (
+              <div style={{ display: 'grid', gap: 10, padding: '14px 16px', border: '1px solid var(--lv-brand-soft-border)', background: 'var(--lv-brand-soft)', borderRadius: 8 }}>
+                <span style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>
+                  <strong style={{ color: 'var(--lv-text)' }}>See what the hiring team sees.</strong> Your evidence report (tests, how you worked, how you used AI and your defense) takes about a minute to prepare.
+                </span>
+                <div><a href={`/solve/${token}/report`} className="lv-btn lv-btn--primary">See your report</a></div>
+              </div>
+            )}
+            {!v.isDemo && <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: 0 }}>You can close this page.</p>}
           </div>
         )
       })()}
