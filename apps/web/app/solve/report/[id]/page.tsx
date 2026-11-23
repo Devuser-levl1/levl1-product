@@ -10,6 +10,7 @@ import type { SolveReport } from '@/lib/screen/solve/report'
 import { TIER_INFO, type RubricTier } from '@/lib/screen/rubrics/types'
 import { DIMENSION_LABEL, type RubricDimension } from '@/lib/screen/taskbank/types'
 import { PRODUCTS } from '@/config/site'
+import { ConfidenceTag } from '@/components/interviews/report/report-visuals'
 import { FLUENCY_DIMENSIONS, FLUENCY_LABEL } from '@/lib/screen/solve/ai-fluency-labels'
 
 // ── Solve report (recruiter) — verdict first, then the evidence behind it ──
@@ -107,6 +108,7 @@ export default function SolveReportPage() {
             {v?.insufficientEvidence ? <Badge tone="neutral">Insufficient evidence</Badge> : rec && <Badge tone={rec.tone}>{rec.label}</Badge>}
             {v?.score != null && <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--lv-text)', fontVariantNumeric: 'tabular-nums' }}>{v.score}<span style={{ fontSize: 14, fontWeight: 500, color: 'var(--lv-text-muted)' }}>/100</span></span>}
             {rep.correctness && <span style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>Tests {rep.correctness.passed}/{rep.correctness.total} · hidden {rep.correctness.hiddenPassed}/{rep.correctness.hiddenTotal}</span>}
+            {v?.confidence && !v.insufficientEvidence && (v.confidence === 'high' ? <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>High confidence</span> : <ConfidenceTag level={v.confidence} />)}
             {rep.defense.required && <span style={{ fontSize: 13, color: 'var(--lv-text-body)' }}>Defense: {DEFENSE_STATUS_LABEL[rep.defense.status] ?? rep.defense.status}{rep.defense.inputMode === 'typed' ? ' (typed answers)' : rep.defense.inputMode === 'mixed' ? ' (partly typed)' : ''}</span>}
           </div>
           {v?.headline && <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--lv-text)', margin: '12px 0 0', lineHeight: 1.5 }}>{v.headline}</p>}
@@ -153,7 +155,8 @@ export default function SolveReportPage() {
               const ax = rep.axes![k]
               return (
                 <div key={k}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={h2}>{label}</span><span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>{ax.score ?? '—'}</span></div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}><span style={h2}>{label}</span><span style={{ fontSize: 13, fontWeight: 600, color: ax.score !== null && ax.confidence === 'low' ? 'var(--lv-text-muted)' : 'var(--lv-text)' }}>{ax.score !== null && ax.confidence === 'low' ? '~' : ''}{ax.score ?? '—'}</span>{ax.score !== null && <ConfidenceTag level={ax.confidence} reason={ax.confidenceReason} />}</div>
+                  {ax.score !== null && ax.confidence && ax.confidence !== 'high' && ax.confidenceReason && <p style={{ fontSize: 12, color: 'var(--lv-text-muted)', margin: '0 0 4px' }}>{ax.confidenceReason}</p>}
                   <p style={{ fontSize: 13, color: 'var(--lv-text-body)', margin: 0, lineHeight: 1.6 }}>{ax.rationale}</p>
                   {ax.evidence.length > 0 && <ul style={{ listStyle: 'disc', margin: '4px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>{ax.evidence.map((e, i) => <li key={i}><strong>{e.ref}</strong> {e.note}</li>)}</ul>}
                 </div>
@@ -195,7 +198,8 @@ export default function SolveReportPage() {
           <Card title="AI use" subtitle="How well they worked with the built-in AI assistant. Using AI isn't penalised; using it blindly is. A# = an assistant exchange.">
             <div style={{ display: 'grid', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <span style={h2}>AI fluency</span><span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>{f?.score ?? '—'}</span>
+                <span style={h2}>AI fluency</span><span style={{ fontSize: 13, fontWeight: 600, color: f?.confidence === 'low' ? 'var(--lv-text-muted)' : 'var(--lv-text)' }}>{f?.confidence === 'low' && f.score != null ? '~' : ''}{f?.score ?? '—'}</span>
+                {f?.score != null && <ConfidenceTag level={f.confidence} reason={f.confidenceReason} />}
                 <span style={{ fontSize: 12, color: 'var(--lv-text-muted)' }}>
                   {m.prompts} question{m.prompts === 1 ? '' : 's'} · {m.codeShared} with their code · {m.inserts} insert{m.inserts === 1 ? '' : 's'}/copies · {m.verifiedAfterInsert}/{m.inserts} followed by a run · ~{Math.round(m.aiShareOfFinal * 100)}% of final code from AI
                 </span>

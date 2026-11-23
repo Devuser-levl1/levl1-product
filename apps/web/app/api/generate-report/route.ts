@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
+import { sectionEvidence, gradeSection, communicationCap, overallConfidence, questionConfidence, minConfidence, isConfidence, type EvidenceContext, type ScoredSection } from '@/lib/screen/session/confidence'
 import { scoreWorkSample } from '@/lib/screen/workspace/scoring'
 import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
         },
         communication: { status: INSUFFICIENT_EVIDENCE } as Prisma.InputJsonValue,
         insufficientEvidence: true,
+        scoreConfidence: { level: null, needsReview: true, lowAreas: [], summary: 'Insufficient evidence to score this interview.' } as Prisma.InputJsonValue,
         strengthAreas: [],
         concernAreas: ['No transcript or question responses were captured during the interview.'],
         questionWiseEvaluation: [],
@@ -197,7 +199,9 @@ export async function POST(req: NextRequest) {
         'If a key point was not addressed, mark it as Not Covered. ' +
         'Be specific — quote or closely reference actual candidate statements. ' +
         'Be balanced — note genuine strengths and genuine concerns. ' +
-        'Never fabricate. Never hallucinate. Return strict JSON only, no markdown, no preamble.',
+        'Never fabricate. Never hallucinate. ' +
+        'Be honest about uncertainty: for every score also say how CONFIDENT you are given the evidence — "low" when answers were thin, vague, mostly prompted, contradictory, or the transcript looks garbled (likely speech-to-text errors); "medium" when usable but limited; "high" only when well evidenced. Never inflate confidence. ' +
+        'Return strict JSON only, no markdown, no preamble.',
       messages: [
         {
           role: 'user',
@@ -231,17 +235,19 @@ export async function POST(req: NextRequest) {
             `  "overallScore": <number 0-100>,\n` +
             `  "recommendation": "<strong_yes|yes|maybe|no>",\n` +
             `  "professionalSummary": "<4-5 sentence paragraph, third person, factual, grounded in transcript>",\n` +
+            `  "overallConfidence": "<high|medium|low>",\n` +
             `  "sectionScores": {\n` +
-            `    "technical":  { "score": <number>, "outOf": 100 },\n` +
-            `    "scenario":   { "score": <number>, "outOf": 100 },\n` +
-            `    "behavioral": { "score": <number>, "outOf": 100 },\n` +
-            `    "eq":         { "score": <number>, "outOf": 100 },\n` +
-            `    "whiteboard": { "score": <number>, "outOf": 100 }\n` +
+            `    "technical":  { "score": <number>, "outOf": 100, "confidence": "<high|medium|low>", "confidenceReason": "<why, max 20 words>" },\n` +
+            `    "scenario":   { "score": <number>, "outOf": 100, "confidence": "<high|medium|low>", "confidenceReason": "<…>" },\n` +
+            `    "behavioral": { "score": <number>, "outOf": 100, "confidence": "<high|medium|low>", "confidenceReason": "<…>" },\n` +
+            `    "eq":         { "score": <number>, "outOf": 100, "confidence": "<high|medium|low>", "confidenceReason": "<…>" },\n` +
+            `    "whiteboard": { "score": <number>, "outOf": 100, "confidence": "<high|medium|low>", "confidenceReason": "<…>" }\n` +
             `  },\n` +
             `  "communication": {\n` +
             `    "coherence": <0-10>, "fluency": <0-10>, "grammar": <0-10>, "clarity": <0-10>,\n` +
             `    "cefr": "<A1|A2|B1|B2|C1|C2>",\n` +
-            `    "rationale": "<1 sentence on spoken communication quality, grounded in the transcript>"\n` +
+            `    "rationale": "<1 sentence on spoken communication quality, grounded in the transcript>",\n` +
+            `    "confidence": "<high|medium|low>"\n` +
             `  },\n` +
             `  "strengthAreas": ["<specific strength with evidence>", ...],\n` +
             `  "concernAreas": ["<specific concern with evidence>", ...],\n` +
@@ -335,6 +341,58 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Graded confidence (engine principle 3) ──────────────────────────
+    // Each score carries a confidence = min(model judgment, what the evidence
+    // supports). Low → "needs human review", never a falsely precise number.
+    // Extends the INSUFFICIENT_EVIDENCE gate above (none < low < medium < high).
+    let scoreConfidence: ReturnType<typeof overallConfidence> | null = null
+    {
+      const live = typeof interviewId === 'string' && interviewId
+        ? await prisma.interviewLiveState.findUnique({ where: { interviewId }, select: { sttMode: true } }).catch(() => null)
+        : null
+      const ctx: EvidenceContext = {
+        sttDegraded: !!body.sttFailed || live?.sttMode === 'webspeech' || live?.sttMode === 'none',
+        typedAnswers: live?.sttMode === 'text',
+      }
+      const qrs = (Array.isArray(questionResponses) ? questionResponses : []) as { questionId?: string; questionText?: string; questionType?: string; candidateResponse?: string; evaluatorNote?: string }[]
+      // Per-question status/confidence from the ACTUAL answer. (Fix: the model
+      // returns only an excerpt, so status used to be computed from undefined
+      // and every question showed "insufficient evidence".)
+      if (Array.isArray(report.questionWiseEvaluation)) {
+        report.questionWiseEvaluation = report.questionWiseEvaluation.map((q: { questionId?: string; questionText?: string; candidateResponseExcerpt?: string; evaluatorNote?: string }) => {
+          const src = qrs.find((r) => (q.questionId && r.questionId === q.questionId) || (q.questionText && r.questionText === q.questionText))
+          const answer = src?.candidateResponse ?? q.candidateResponseExcerpt
+          const conf = questionConfidence(answer, src?.evaluatorNote ?? q.evaluatorNote, ctx)
+          return { ...q, status: conf ? 'SCORED' : INSUFFICIENT_EVIDENCE, ...(conf ? { confidence: conf } : {}) }
+        })
+      }
+      if (!report.insufficientEvidence) {
+        const ss = (report.sectionScores ?? {}) as Record<string, { score?: unknown; outOf?: unknown; confidence?: unknown; confidenceReason?: unknown }>
+        const graded: Record<string, ScoredSection> = {}
+        for (const k of Object.keys(ss)) {
+          graded[k] = qrs.length
+            ? gradeSection(ss[k], sectionEvidence(qrs, k), ctx)
+            // Regenerated from the transcript only (no per-question responses): can't map evidence to areas → at most medium.
+            : (() => { const g = gradeSection(ss[k], { asked: 1, evaluable: 2, avgWords: 40, degradedLive: 0 }, ctx); return g.confidence ? { ...g, confidence: minConfidence(g.confidence, 'medium'), confidenceReason: [g.confidenceReason, 'Scored from the transcript only; per-question answers were not captured.'].filter(Boolean).join(' ') } : g })()
+        }
+        report.sectionScores = graded
+        const candWords = (Array.isArray(transcript) ? transcript : []).filter((t: { speaker?: string }) => t.speaker === 'candidate')
+          .reduce((n: number, t: { text?: string }) => n + String(t.text ?? '').split(/\s+/).filter(Boolean).length, 0)
+        const cc = communicationCap(candWords, ctx)
+        if (report.communication && typeof report.communication === 'object') {
+          if (!cc.cap) report.communication = { status: INSUFFICIENT_EVIDENCE, rationale: cc.reason }
+          else {
+            const conf = minConfidence(isConfidence(report.communication.confidence) ? report.communication.confidence : 'medium', cc.cap)
+            report.communication = { ...report.communication, confidence: conf, needsReview: conf === 'low', ...(cc.reason && conf !== 'high' ? { confidenceReason: cc.reason } : {}) }
+          }
+        }
+        scoreConfidence = overallConfidence(graded, report.overallConfidence)
+        console.info(JSON.stringify({ evt: 'report_confidence', interviewId, overall: scoreConfidence.level, low: scoreConfidence.lowAreas.map((a) => a.key), sttDegraded: ctx.sttDegraded }))
+      } else {
+        scoreConfidence = { level: null, needsReview: true, lowAreas: [], summary: 'Insufficient evidence to score this interview.' }
+      }
+    }
+
     // ── Apply rubric weights if position has a scoring rubric ─────────
     let weightedScore = report.insufficientEvidence ? 0 : Math.round(report.overallScore ?? 0)
     let l2Recommended = false
@@ -422,6 +480,7 @@ export async function POST(req: NextRequest) {
         mustHaveAssessment:     (report.mustHaveAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         conceptAssessment:      (report.conceptAssessment ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         rubricAssessment:       (rubricAssessment ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+        scoreConfidence:        (scoreConfidence ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       }
       try {
         const savedReport = await prisma.report.upsert({
@@ -547,6 +606,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...report,
+      scoreConfidence,
       overallScore: weightedScore,
       l2Recommended,
       interviewId,

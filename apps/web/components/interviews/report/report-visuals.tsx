@@ -11,9 +11,10 @@ const INDIGO = 'var(--lv-brand)'
 const VIOLET = 'var(--lv-text-body)'   // communication axis — monochrome ink (no second hue)
 const INSUFFICIENT = 'INSUFFICIENT_EVIDENCE'
 
-export interface Dimension { key: string; label: string; score: number | null; outOf: number; status?: string; color?: string }
-export interface Communication { coherence?: number; fluency?: number; grammar?: number; clarity?: number; cefr?: string; rationale?: string; status?: string }
-export interface EvidenceQuestion { questionText: string; questionType?: string; candidateResponseExcerpt?: string; keyPointsCovered?: string[]; keyPointsMissed?: string[]; score?: number; evaluatorNote?: string; status?: string }
+export type ConfidenceLevel = 'high' | 'medium' | 'low'
+export interface Dimension { key: string; label: string; score: number | null; outOf: number; status?: string; color?: string; confidence?: ConfidenceLevel; confidenceReason?: string }
+export interface Communication { coherence?: number; fluency?: number; grammar?: number; clarity?: number; cefr?: string; rationale?: string; status?: string; confidence?: ConfidenceLevel; confidenceReason?: string }
+export interface EvidenceQuestion { questionText: string; questionType?: string; candidateResponseExcerpt?: string; keyPointsCovered?: string[]; keyPointsMissed?: string[]; score?: number; evaluatorNote?: string; status?: string; confidence?: ConfidenceLevel }
 export interface IntegritySummaryShape {
   reviewStatus: 'CLEAN' | 'FLAGGED_FOR_REVIEW'
   totalEvents: number; totalFlags: number; countsByType: Record<string, number>; threshold: number
@@ -23,6 +24,21 @@ export interface IntegritySummaryShape {
 
 const scoreHue = (s: number) => (s >= 7 ? 'var(--lv-success)' : s >= 5 ? 'var(--lv-warning)' : 'var(--lv-danger)')
 const isInsufficient = (d: { status?: string; score: number | null }) => d.status === INSUFFICIENT || d.score == null
+
+// Engine principle 3: low confidence is never shown as a precise number.
+// Medium gets a quiet caveat; low gets "needs human review" + the reason.
+export function ConfidenceTag({ level, reason }: { level?: ConfidenceLevel; reason?: string }) {
+  if (!level || level === 'high') return null
+  const low = level === 'low'
+  return (
+    <span title={reason} style={{ fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', borderRadius: 100, padding: '2px 8px',
+      color: low ? 'var(--lv-warning)' : 'var(--lv-text-muted)',
+      background: low ? 'color-mix(in srgb, var(--lv-warning) 10%, transparent)' : 'var(--lv-surface-muted)',
+      border: `1px solid ${low ? 'color-mix(in srgb, var(--lv-warning) 30%, transparent)' : 'var(--lv-border)'}` }}>
+      {low ? 'Low confidence · needs review' : 'Medium confidence'}
+    </span>
+  )
+}
 
 function InsufficientTag() {
   return <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--lv-text-muted)', background: 'var(--lv-surface-muted)', border: '1px solid var(--lv-border)', borderRadius: 100, padding: '2px 9px', whiteSpace: 'nowrap' }}>Insufficient evidence to score</span>
@@ -92,6 +108,9 @@ export function CommunicationDial({ communication }: { communication: Communicat
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 180 }}>
+        {!insufficient && communication?.confidence && communication.confidence !== 'high' && (
+          <div style={{ marginBottom: 8 }}><ConfidenceTag level={communication.confidence} reason={communication.confidenceReason} /></div>
+        )}
         {!insufficient && communication?.cefr && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--lv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CEFR</span>
@@ -112,6 +131,8 @@ export function CommunicationDial({ communication }: { communication: Communicat
           </div>
         )}
         {!insufficient && communication?.rationale && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 10, lineHeight: 1.5 }}>{communication.rationale}</div>}
+        {!insufficient && communication?.confidenceReason && communication.confidence !== 'high' && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 6, lineHeight: 1.5 }}>{communication.confidenceReason}</div>}
+        {insufficient && communication?.rationale && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 8, lineHeight: 1.5 }}>{communication.rationale}</div>}
       </div>
     </div>
   )
@@ -136,6 +157,7 @@ function SkillRow({ rank, dim, questions }: { rank: number; dim: Dimension; ques
   const insufficient = isInsufficient(dim)
   const pct = insufficient ? 0 : Math.round(((dim.score ?? 0) / dim.outOf) * 100)
   const score10 = insufficient ? null : Math.round(((dim.score ?? 0) / dim.outOf) * 10)
+  const low = !insufficient && dim.confidence === 'low'
   // Evidence: questions whose type matches this competency (best-effort), else all.
   const evidence = questions.filter((q) => (q.questionType ?? '').toLowerCase().includes(dim.key.toLowerCase()))
   const shown = evidence.length ? evidence : []
@@ -147,10 +169,11 @@ function SkillRow({ rank, dim, questions }: { rank: number; dim: Dimension; ques
         <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--lv-text)' }}>{dim.label}</span>
         {insufficient ? <InsufficientTag /> : (
           <>
+            <ConfidenceTag level={dim.confidence} reason={dim.confidenceReason} />
             <div style={{ width: 120, height: 7, borderRadius: 4, background: 'var(--lv-surface-muted)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: scoreHue(score10 ?? 0) }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: low ? 'var(--lv-border-strong)' : scoreHue(score10 ?? 0) }} />
             </div>
-            <span style={{ fontFamily: 'var(--lv-font-display)', fontSize: 16, fontWeight: 600, color: scoreHue(score10 ?? 0), width: 42, textAlign: 'right' }}>{score10}<span style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>/10</span></span>
+            <span title={low ? 'Approximate — low confidence' : undefined} style={{ fontFamily: 'var(--lv-font-display)', fontSize: 16, fontWeight: 600, color: low ? 'var(--lv-text-muted)' : scoreHue(score10 ?? 0), width: 46, textAlign: 'right' }}>{low ? '~' : ''}{score10}<span style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>/10</span></span>
           </>
         )}
         <span aria-hidden="true" style={{ color: 'var(--lv-text-muted)', fontSize: 12, width: 14 }}>{open ? '▲' : '▼'}</span>
@@ -158,10 +181,15 @@ function SkillRow({ rank, dim, questions }: { rank: number; dim: Dimension; ques
       {open && (
         <div style={{ padding: '0 14px 14px', borderTop: '1px solid var(--lv-surface-muted)' }}>
           {insufficient && <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginTop: 12 }}>No evaluable answers were captured for this competency, so it is not scored.</div>}
+          {!insufficient && dim.confidence && dim.confidence !== 'high' && (
+            <div style={{ fontSize: 13, color: low ? 'var(--lv-warning)' : 'var(--lv-text-muted)', marginTop: 12 }}>
+              {low ? 'Needs human review — the evidence is too thin or ambiguous for a precise score. ' : 'Medium confidence. '}{dim.confidenceReason ?? ''}
+            </div>
+          )}
           {!insufficient && shown.length === 0 && <div style={{ fontSize: 13, color: 'var(--lv-text-muted)', marginTop: 12 }}>Score derived from the overall interview; see the transcript section for full context.</div>}
           {shown.map((q, qi) => (
             <div key={qi} style={{ marginTop: 12, borderLeft: `3px solid ${INDIGO}`, paddingLeft: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)' }}>{q.questionText}{typeof q.score === 'number' ? <span style={{ color: 'var(--lv-text-muted)', fontWeight: 600 }}> · {q.score}/10</span> : null}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text-body)' }}>{q.questionText}{q.status === INSUFFICIENT ? <span style={{ color: 'var(--lv-text-muted)', fontWeight: 600 }}> · not scored</span> : typeof q.score === 'number' ? <span style={{ color: 'var(--lv-text-muted)', fontWeight: 600 }}> · {q.confidence === 'low' ? '~' : ''}{q.score}/10</span> : null} {q.confidence === 'low' && <ConfidenceTag level="low" reason="Short or unevaluated answer" />}</div>
               {q.candidateResponseExcerpt && <div style={{ fontSize: 13, color: 'var(--lv-text-body)', marginTop: 4, fontStyle: 'italic' }}>“{q.candidateResponseExcerpt}”</div>}
               {q.evaluatorNote && <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 4 }}>{q.evaluatorNote}</div>}
               {(q.keyPointsCovered?.length || q.keyPointsMissed?.length) ? (

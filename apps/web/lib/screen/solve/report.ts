@@ -13,6 +13,7 @@ import type { FinalTestRow, IntegritySummary } from './evaluate'
 import type { DefenseTurn } from './defense'
 import type { AiExchange } from './assistant'
 import { aiUsageMetrics, scoreAiFluency, checkCodeProvenance, type AiUsageMetrics, type AiFluency } from './ai-usage'
+import { minConfidence, type Confidence } from '@/lib/screen/session/confidence'
 
 // ── Solve report (Screen-scoped, server-only) ──────────────────────────────
 // Evidence-based and verdict-forward, like the Screen report:
@@ -29,7 +30,8 @@ import { aiUsageMetrics, scoreAiFluency, checkCodeProvenance, type AiUsageMetric
 export type Recommendation = 'strong_yes' | 'yes' | 'maybe' | 'no'
 
 export interface SolveReport {
-  verdict: { recommendation: Recommendation | null; score: number | null; insufficientEvidence: boolean; headline: string; reasons: string[] }
+  // confidence (engine principle 3): the verdict is no more certain than the evidence behind its blend. Absent on older reports.
+  verdict: { recommendation: Recommendation | null; score: number | null; insufficientEvidence: boolean; headline: string; reasons: string[]; confidence?: Confidence; needsReview?: boolean }
   summary: string
   strengths: string[]
   concerns: string[]
@@ -121,7 +123,11 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
   const testsLine = tests.length ? `${tests.filter((t) => t.passed).length}/${tests.length} tests passing (hidden included)` : 'tests not run'
   const exchanges = cfg.aiPolicy === 'allowed' ? openArray<AiExchange>(row.aiLog) : []
   const aiMetrics = exchanges.length ? aiUsageMetrics(exchanges, timeline, code, task.starterCode) : null
-  const fluency = aiMetrics ? await scoreAiFluency({ task, language: row.language, code, exchanges, metrics: aiMetrics, timeline, testsLine, defenseLines }) : null
+  const fluencyRaw = aiMetrics ? await scoreAiFluency({ task, language: row.language, code, exchanges, metrics: aiMetrics, timeline, testsLine, defenseLines }) : null
+  // Two questions to an assistant is not much to judge fluency from.
+  const fluency: AiFluency | null = fluencyRaw && aiMetrics
+    ? { ...fluencyRaw, ...(aiMetrics.prompts < 2 ? { confidence: 'low' as const, confidenceReason: 'Only one assistant exchange to judge from.' } : aiMetrics.prompts < 4 ? { confidence: 'medium' as const, confidenceReason: 'A few assistant exchanges to judge from.' } : { confidence: 'high' as const }) }
+    : null
   if (aiMetrics && !fluency) console.warn(JSON.stringify({ evt: 'solve_ai_fluency_missing', id }))
   let provenanceChecked = false
   if (cfg.aiPolicy === 'not_allowed' && row.position.aiAssistCheck) {
@@ -183,9 +189,22 @@ export async function generateSolveReport(id: string): Promise<SolveReport> {
     recommendation = 'maybe'
     reasons.push('The defense interview was required but not completed, so ownership of the work is unverified.')
   }
+  // Graded confidence of the verdict: correctness from server-run tests is
+  // solid; the judged axes carry their own (evidence-capped) confidence.
+  const judged: { name: string; conf?: Confidence; weight: number }[] = [
+    { name: 'approach', conf: scores.approach.score !== null ? scores.approach.confidence : undefined, weight: WEIGHTS.approach },
+    { name: 'critical thinking', conf: scores.criticalThinking.score !== null ? scores.criticalThinking.confidence : undefined, weight: WEIGHTS.criticalThinking },
+    ...(defended && scores.defense.score !== null ? [{ name: 'defense', conf: scores.defense.confidence, weight: WEIGHTS.defense }] : []),
+    ...(fluency?.score != null ? [{ name: 'AI fluency', conf: fluency.confidence, weight: WEIGHTS.aiFluency }] : []),
+  ]
+  const lowJudged = judged.filter((x) => x.conf === 'low')
+  const verdictConfidence: Confidence = !correctness ? minConfidence('medium', ...judged.map((x) => x.conf))
+    : lowJudged.some((x) => x.weight >= 0.2) || lowJudged.length >= 2 ? 'low'
+    : judged.some((x) => x.conf !== 'high') ? 'medium' : 'high'
+  if (verdictConfidence === 'low') reasons.push(`Low confidence — needs human review: ${lowJudged.map((x) => x.name).join(', ') || 'the evidence'} rests on thin or ambiguous evidence.`)
   return {
     ...base,
-    verdict: { recommendation, score: tier.score, insufficientEvidence: false, headline: typeof j.headline === 'string' ? j.headline.slice(0, 300) : '', reasons },
+    verdict: { recommendation, score: tier.score, insufficientEvidence: false, headline: typeof j.headline === 'string' ? j.headline.slice(0, 300) : '', reasons, confidence: verdictConfidence, needsReview: verdictConfidence === 'low' },
     summary: scores.summary,
     strengths: strList(j.strengths, 5),
     concerns: strList(j.concerns, 5),

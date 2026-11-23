@@ -12,6 +12,7 @@ import { readSelection } from '@/lib/screen/rubrics/types'
 import { mustRubricIds, rubricSkillNodes, rubricTierGuidance } from '@/lib/screen/rubrics/coverage'
 import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-config'
 import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
+import { DELIBERATION_GUIDANCE, sanitizeDeliberation, reconcileDecision } from '@/lib/screen/interview/deliberation'
 
 // Optional light delivery tags for v3/v4 voices (ELEVENLABS_TTS_AUDIO_TAGS=1).
 function audioTagsOn(): boolean {
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const questionText: string            = body.questionText ?? ''
     const expectedKeyPoints: string[]     = body.expectedKeyPoints ?? []
-    const candidateResponse: string       = body.candidateResponse ?? ''
+    const candidateResponse: string       = typeof body.candidateResponse === 'string' ? body.candidateResponse : ''
     const previousResponses: Array<{ question: string; response: string }> = body.previousResponses ?? []
     const dynamicIntensity: string        = body.dynamicIntensity ?? 'standard'
     // How many follow-ups already asked on THIS question (Part 3a depth cap).
@@ -119,6 +120,14 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return NextResponse.json({ error: 'No API key' }, { status: 500 })
 
+    // ENGINE PRINCIPLE: the candidate's REAL answer must reach the deliberation
+    // step. An empty answer here is either genuine silence or the old
+    // empty-context bug — log it loudly so it can never hide, and tell the
+    // model explicitly rather than passing "" as if it were an answer.
+    const answerText = candidateResponse.trim()
+    if (!answerText) console.warn(JSON.stringify({ evt: 'brain_empty_answer', interviewId: interviewId || null, questionChars: questionText.length, followUpCount }))
+    const answerForModel = answerText ? `"${answerText}"` : '(no answer was captured — the candidate said nothing or the audio was lost; treat it as no answer, NOT as a wrong answer)'
+
     const client = new Anthropic({ apiKey })
 
     // Real prior answers now flow in (the caller used to send empty responses).
@@ -135,13 +144,15 @@ export async function POST(req: NextRequest) {
 
     const callBrain = () => client.messages.create({
       model: INTERVIEW_MODEL,
-      max_tokens: 700,
+      // +200 for the short deliberation written before the decision (~30–60 tokens in practice).
+      max_tokens: 900,
       // NOTE: Opus 4.8 rejects temperature/top_p/top_k. Low effort keeps this
       // per-turn decision fast; thinking stays off (we demand JSON-only output).
       output_config: { effort: 'low' },
       system:
         `You are the decision engine for ${INTERVIEWER_NAME}, a professional AI interviewer.\n\n` +
         `ROLE: Evaluate candidate responses objectively and decide how ${INTERVIEWER_NAME} should proceed.\n` +
+        DELIBERATION_GUIDANCE +
         'Only credit points the candidate explicitly mentioned — never infer or assume knowledge not demonstrated.\n' +
         'Keep evaluatorNote to 1-2 factual sentences only.\n\n' +
         `${INTERVIEWER_NAME.toUpperCase()}'S TONE RULES (apply to all generated text):\n` +
@@ -183,13 +194,14 @@ export async function POST(req: NextRequest) {
         content:
           `Question: "${questionText}"\n` +
           `Expected key points: ${expectedKeyPoints.join(', ')}\n` +
-          `Candidate response: "${candidateResponse}"\n` +
+          `Candidate response: ${answerForModel}\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
           `${budgetLine}${prevCtx}${workBlock}${ctx.block}` +
           (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
           `\n\n` +
-          `Return ONLY this JSON:\n` +
+          `Return ONLY this JSON (write "deliberation" FIRST — your decision below must follow from it):\n` +
           `{\n` +
+          `  "deliberation": { "answer": "complete|partial|thin|off_topic|none", "state": "confident|thinking|stuck|unsure|meta", "gap": "<the single biggest gap, max 12 words, or empty>", "move": "probe_gap|go_deeper|pivot|ease_off|move_on" },\n` +
           `  "score": <integer 0-10>,\n` +
           `  "relevanceScore": <integer 0-10>,\n` +
           `  "keyPointsCovered": ["point1"],\n` +
@@ -221,8 +233,14 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!result) throw new Error('brain returned no result')
+    // Deliberate-before-responding: validate the reasoning, then make the
+    // decision consistent with it AND with the hard rules (budget cap).
+    const deliberation = sanitizeDeliberation(result.deliberation, { answerEmpty: !answerText })
+    const fixed = reconcileDecision(result, deliberation, { followUpsLeft })
+    result = { ...fixed.result, deliberation }
+    if (fixed.changed.length) console.info(JSON.stringify({ evt: 'brain_reconciled', interviewId: interviewId || null, changed: fixed.changed, move: deliberation.move }))
     // Latency telemetry (pairs with the room's turn_timing line).
-    console.info(JSON.stringify({ evt: 'brain_turn', model: INTERVIEW_MODEL, ms: Date.now() - brainT0, attempts, interviewId: interviewId || null }))
+    console.info(JSON.stringify({ evt: 'brain_turn', model: INTERVIEW_MODEL, ms: Date.now() - brainT0, attempts, interviewId: interviewId || null, move: deliberation.move, state: deliberation.state, answer: deliberation.answer }))
     // Delivery tags never reach the transcript/report: the fields stay clean and
     // a tagged copy (≤1 tag) goes in `speech` for the voice only.
     const speech: Record<string, string> = {}

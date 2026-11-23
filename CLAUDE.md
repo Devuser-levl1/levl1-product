@@ -129,6 +129,20 @@ levl1/                       (repo root; the Next.js app lives in apps/web)
 - All AI calls are async and queued via pg-boss — never block the request.
 - Return structured JSON from Claude using XML tags in the prompt.
 
+## Screen engine principles (must hold across every engine change)
+Full text: apps/web/lib/screen/interview/principles.ts.
+1. Evidence — every score traces to evidence (quote, question, M#/D#/A#); none → INSUFFICIENT_EVIDENCE, never a number.
+2. Deliberate before responding — evaluate-response writes a short `deliberation`
+   (answer complete? gap? candidate state? best next move) BEFORE its decision, in the
+   same call (lib/screen/interview/deliberation.ts). The candidate's real answer must
+   reach it (empty → loud `brain_empty_answer`). ≤3 follow-ups, one ease-off when stuck,
+   termination/meta and barge-in rules still win.
+3. Honest about uncertainty — every score carries confidence = min(model judgment,
+   evidence cap) (lib/screen/session/confidence.ts). Low → "needs human review", shown
+   as approximate, never precise. Graded INSUFFICIENT_EVIDENCE: none < low < medium < high.
+4. Loud, not silent — degraded brain/voice/STT/Judge0 is logged + surfaced, and lowers confidence.
+5. Responsive — no extra round-trips on the live turn; TTS stays streamed.
+
 ## Key environment variables
 ```
 DATABASE_URL         Render PostgreSQL connection string

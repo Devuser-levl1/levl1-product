@@ -111,6 +111,9 @@ export interface AiFluency {
   dimensions: Record<FluencyDimension, { rating: FluencyRating; note: string }>
   caughtMistakes: { ref: string; note: string }[]
   summary: string
+  // Engine principle 3: how much AI use there was to judge (deterministic; absent on older reports).
+  confidence?: 'high' | 'medium' | 'low'
+  confidenceReason?: string
 }
 
 const RATINGS: FluencyRating[] = ['strong', 'adequate', 'weak', 'not_evidenced']

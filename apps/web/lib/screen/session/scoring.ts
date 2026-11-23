@@ -15,7 +15,9 @@ const FILLER = new Set([
 // to contain a substantive answer.
 export function isNonEvaluableResponse(raw: string | null | undefined): boolean {
   if (!raw) return true
-  const t = raw.toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').replace(/\s+/g, ' ').trim()
+  // Strip punctuation/symbols only — NOT letters of other scripts (it used to keep
+  // only a–z, so an answer transcribed in Devanagari counted as no evidence).
+  const t = raw.toLowerCase().replace(/[!-&(-/:-@[-`{-~\u2013\u2014\u2026\u201c\u201d\u2018\u2019]/g, ' ').replace(/\s+/g, ' ').trim()
   if (!t) return true
   if (FILLER.has(t)) return true
   const words = t.split(' ').filter((w) => w.length > 1)

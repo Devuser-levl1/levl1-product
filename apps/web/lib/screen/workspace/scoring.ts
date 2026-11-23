@@ -6,6 +6,7 @@ import { openArray, openText } from '@/lib/screen/privacy/fields'
 import { digest, type TimelineEvent } from './timeline'
 import { sanitizeTask, type WorkSampleTask } from './task'
 import { sanitizeRubric, DIMENSION_LABEL } from '@/lib/screen/taskbank/types'
+import { isConfidence, minConfidence, type Confidence } from '@/lib/screen/session/confidence'
 
 // ── Work-sample judgment scoring (Screen-scoped, server-only) ──────────────
 // SEPARATE axes from the competency score — never blended into it:
@@ -16,7 +17,8 @@ import { sanitizeRubric, DIMENSION_LABEL } from '@/lib/screen/taskbank/types'
 // Every judgment cites evidence: a timeline moment (M#) or a defense quote (D#).
 // Runs after the main report is saved; failure never affects the report.
 
-export interface AxisScore { score: number | null; rationale: string; evidence: { ref: string; note: string }[] }
+// confidence (engine principle 3): min(model judgment, what was observed) — absent on older rows.
+export interface AxisScore { score: number | null; rationale: string; evidence: { ref: string; note: string }[]; confidence?: Confidence; confidenceReason?: string }
 export interface WorkSampleScores {
   approach: AxisScore; criticalThinking: AxisScore; defense: AxisScore
   correctness: { passed: number; total: number; score: number | null }
@@ -41,6 +43,7 @@ const axis = (v: unknown): AxisScore => {
   return {
     score: Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null,
     rationale: typeof o.rationale === 'string' ? o.rationale.slice(0, 600) : '',
+    confidence: isConfidence(o.confidence) ? o.confidence : 'medium',
     evidence: (Array.isArray(o.evidence) ? o.evidence : []).slice(0, 5).flatMap((e) => {
       const r = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>
       return typeof r.ref === 'string' && typeof r.note === 'string' ? [{ ref: r.ref.slice(0, 8), note: r.note.slice(0, 300) }] : []
@@ -112,6 +115,7 @@ export async function scoreWork(input: WorkScoringInput): Promise<WorkSampleScor
       'You assess a candidate\'s hands-on WORK SAMPLE in a technical interview: how they worked, not just the final answer. ' +
       'Score three SEPARATE axes 0-100. Cite evidence for every claim using refs: timeline moments "M1".."Mn" or defense lines "D1".."Dn" (as numbered below). ' +
       'Only credit what is evidenced. A large paste that the candidate could not explain under follow-up lowers approach and defense. ' +
+      'For each axis also give "confidence" (high|medium|low) in your own score: low when there was little to observe or the defense was thin or ambiguous. Never inflate it. ' +
       'Plain text, no emoji. Return ONLY JSON.',
     messages: [{
       role: 'user',
@@ -124,7 +128,7 @@ export async function scoreWork(input: WorkScoringInput): Promise<WorkSampleScor
         `\nTIMELINE (how the work evolved):\n${tl.text}\n` +
         `\nDEFENSE (explanation + follow-ups):\n${defense.length ? defense.map((l, i) => `D${i + 1} ${l}`).join('\n') : '(none captured)'}\n\n` +
         (input.context ? `CONTEXT: ${input.context}\n\n` : '') +
-        'Return JSON: {"approach":{"score":0,"rationale":"…","evidence":[{"ref":"M2","note":"…"}]},' +
+        'Return JSON: {"approach":{"score":0,"confidence":"high|medium|low","rationale":"…","evidence":[{"ref":"M2","note":"…"}]},' +
         '"criticalThinking":{…same…},"defense":{…same…},' +
         (rubric.criteria.length ? '"criteria":[{"id":"c1","verdict":"strong|partial|weak|not_evidenced","note":"…","ref":"M2"}],' : '') +
         '"summary":"2-3 sentences for the hiring team"}',
@@ -133,8 +137,19 @@ export async function scoreWork(input: WorkScoringInput): Promise<WorkSampleScor
   if (res.stop_reason === 'max_tokens' || res.stop_reason === 'refusal') return null
   const j = outermostJson(res.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join(''))
   if (!j) return null
+  // Cap each axis's confidence by what was actually observed.
+  const candLines = defense.filter((l) => l.startsWith('Candidate:')).length
+  const observed = input.timeline.filter((e) => e.k !== 'snapshot').length
+  const cap = (a: AxisScore, c: Confidence, why: string | null): AxisScore => {
+    if (a.score === null) return { ...a, confidence: undefined }
+    const conf = minConfidence(a.confidence, c)
+    return { ...a, confidence: conf, ...(conf !== 'high' && why ? { confidenceReason: why } : {}) }
+  }
+  const workCap: [Confidence, string | null] = observed < 5 ? ['low', 'Very little of the work process was captured.'] : observed < 15 ? ['medium', 'Only part of the work process was captured.'] : ['high', null]
   const scores: WorkSampleScores = {
-    approach: axis(j.approach), criticalThinking: axis(j.criticalThinking), defense: axis(j.defense),
+    approach: cap(axis(j.approach), ...workCap),
+    criticalThinking: cap(axis(j.criticalThinking), tl.testRuns === 0 ? 'medium' : workCap[0], tl.testRuns === 0 ? 'The tests were never run, so testing discipline is judged from the code alone.' : workCap[1]),
+    defense: cap(axis(j.defense), candLines < 2 ? 'low' : candLines < 4 ? 'medium' : 'high', candLines < 2 ? 'Too few defense answers to judge.' : candLines < 4 ? 'A short defense.' : null),
     correctness,
     criteria: rubric.criteria.flatMap((c) => {
       const got = (Array.isArray(j.criteria) ? j.criteria : []).find((x) => x && typeof x === 'object' && (x as { id?: unknown }).id === c.id) as Record<string, unknown> | undefined

@@ -38,7 +38,9 @@ interface ReportPayload {
   recommendation: string
   overallScore: number
   professionalSummary: string
-  sectionScores: Record<string, { score: number; outOf: number; status?: string }>
+  sectionScores: Record<string, { score: number; outOf: number; status?: string; confidence?: 'high' | 'medium' | 'low'; confidenceReason?: string; needsReview?: boolean }>
+  // Graded confidence (engine principle 3). Absent on reports generated before 2026-11-23.
+  scoreConfidence?: { level: 'high' | 'medium' | 'low' | null; needsReview: boolean; lowAreas: { key: string; reason: string }[]; summary: string } | null
   communication: Communication | null
   questionWiseEvaluation: EvidenceQuestion[]
   strengthAreas: string[]
@@ -178,7 +180,9 @@ export default function ReportPage() {
 
   const dimensions: Dimension[] = Object.entries(R.sectionScores || {}).map(([key, s]) => ({
     key, label: SECTION_LABELS[key] ?? key, score: s?.status === 'INSUFFICIENT_EVIDENCE' ? null : (s?.score ?? null), outOf: s?.outOf ?? 100, status: s?.status, color: SECTION_COLORS[key],
+    confidence: s?.confidence, confidenceReason: s?.confidenceReason,
   }))
+  const conf = R.scoreConfidence ?? null
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--lv-surface-sunken)', fontFamily: 'var(--lv-font-sans)' }}>
@@ -218,8 +222,15 @@ export default function ReportPage() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 44, fontWeight: 600, color: insufficient ? 'var(--lv-text-muted)' : verdict.color, fontFamily: 'var(--lv-font-display)', lineHeight: 1 }}>{insufficient ? '—' : R.overallScore}</div>
               <div style={{ fontSize: 12, color: 'var(--lv-text-muted)', marginTop: 2 }}>{insufficient ? 'not scored' : 'composite / 100'}</div>
+              {!insufficient && conf?.level && <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: conf.level === 'low' ? 'var(--lv-warning)' : 'var(--lv-text-muted)' }}>{conf.level === 'high' ? 'High confidence' : conf.level === 'medium' ? 'Medium confidence' : 'Low confidence'}</div>}
             </div>
           </div>
+          {!insufficient && conf?.needsReview && (
+            <div role="note" style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, border: '1px solid color-mix(in srgb, var(--lv-warning) 35%, transparent)', background: 'color-mix(in srgb, var(--lv-warning) 8%, transparent)', fontSize: 13, color: 'var(--lv-text-body)', lineHeight: 1.55 }}>
+              <strong style={{ color: 'var(--lv-text)' }}>Needs human review.</strong> {conf.summary}
+              {conf.lowAreas.length > 0 && <> Low-confidence areas: {conf.lowAreas.map((a) => SECTION_LABELS[a.key] ?? a.key).join(', ')}.</>}
+            </div>
+          )}
           {R.professionalSummary && <p style={{ fontSize: 14, color: 'var(--lv-text-body)', lineHeight: 1.65, margin: '16px 0 0', paddingTop: 16, borderTop: '1px solid var(--lv-surface-muted)' }}>{R.professionalSummary}</p>}
         </section>
 

@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { Code2, ChevronDown, ChevronUp, CheckCircle2, XCircle, EyeOff } from 'lucide-react'
+import { ConfidenceTag, type ConfidenceLevel } from './report-visuals'
 
 // ── Work-sample report panel (Observe & Defend) ────────────────────────────
 // The task, the candidate's solution, test results, how the work evolved
 // (timeline moments M#) and the SEPARATE judgment axes, each citing evidence.
 
-interface Axis { score: number | null; rationale: string; evidence: { ref: string; note: string }[] }
+interface Axis { score: number | null; rationale: string; evidence: { ref: string; note: string }[]; confidence?: ConfidenceLevel; confidenceReason?: string }
 export interface WorkSampleShape {
   task: { title: string; prompt: string; minutes: number; testCount: number }
   language: string
@@ -28,13 +29,19 @@ const tone = (s: number | null) => s === null ? 'var(--lv-text-muted)' : s >= 75
 
 function AxisCard({ label, hint, axis }: { label: string; hint: string; axis: Axis | null }) {
   const s = axis?.score ?? null
+  const low = s !== null && axis?.confidence === 'low'
   return (
     <div style={{ border: '1px solid var(--lv-border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--lv-text)' }}>{label}</span>
-        <span style={{ fontSize: 18, fontWeight: 600, color: tone(s), fontVariantNumeric: 'tabular-nums' }}>{s ?? '—'}<span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 500 }}>{s !== null ? '/100' : ''}</span></span>
+        <span title={low ? 'Approximate — low confidence' : undefined} style={{ fontSize: 18, fontWeight: 600, color: low ? 'var(--lv-text-muted)' : tone(s), fontVariantNumeric: 'tabular-nums' }}>{low ? '~' : ''}{s ?? '—'}<span style={{ fontSize: 11, color: 'var(--lv-text-muted)', fontWeight: 500 }}>{s !== null ? '/100' : ''}</span></span>
       </div>
       <span style={{ fontSize: 11, color: 'var(--lv-text-muted)' }}>{hint}</span>
+      {s !== null && axis?.confidence && axis.confidence !== 'high' && (
+        <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', fontSize: 11, color: 'var(--lv-text-muted)' }}>
+          <ConfidenceTag level={axis.confidence} reason={axis.confidenceReason} />{axis.confidenceReason}
+        </span>
+      )}
       {axis?.rationale && <p style={{ fontSize: 12, color: 'var(--lv-text-body)', lineHeight: 1.55, margin: 0 }}>{axis.rationale}</p>}
       {!!axis?.evidence?.length && (
         <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'grid', gap: 4 }}>

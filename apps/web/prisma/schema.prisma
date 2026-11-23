@@ -909,6 +909,9 @@ model Report {
   // Position.conceptRubric entry at generation time.
   conceptAssessment      Json?
   rubricAssessment       Json?     // { items: [{ rubricId, tier, rating, evidence }], gate } — tiered rubric results
+  // Graded confidence (engine principle 3): { level: high|medium|low|null, needsReview, lowAreas[], summary }.
+  // Per-section confidence lives on each sectionScores entry. lib/screen/session/confidence.ts
+  scoreConfidence        Json?
   generatedAt            DateTime  @default(now())
 }
 
