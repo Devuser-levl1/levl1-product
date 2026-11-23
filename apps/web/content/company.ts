@@ -108,7 +108,7 @@ export const pricingPage = {
     { q: 'Does the AI make hiring decisions?', a: 'No. It recommends and flags; your team decides. Integrity flags always go to a person, and nothing is auto-rejected.' },
     { q: 'What happens to candidate data?', a: 'It’s used to run interviews and produce reports for your team. Recordings and transcripts are encrypted at rest and purged automatically after fixed periods. We don’t sell personal data.' },
     { q: 'Can we try it first?', a: 'Yes — take a live demo interview with no sign-up, then talk to us about trying it on your own roles.' },
-    { q: `When will ${PRODUCTS.takeHome.name} and ${PRODUCTS.liveInterview.name} be available?`, a: 'Both are in development. Join early access on their pages and you’ll hear first — and help shape them.' },
+    { q: `Is ${PRODUCTS.takeHome.name} available? When will ${PRODUCTS.liveInterview.name} be?`, a: `${PRODUCTS.takeHome.name} is available now — turn it on per position in your ${PRODUCTS.screen.name} workspace. ${PRODUCTS.liveInterview.name} is in development; join early access on its page to hear first and help shape it.` },
   ] as FAQItem[],
 }
 

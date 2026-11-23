@@ -7,7 +7,7 @@ export const OG_PAGES = {
   home: { eyebrow: 'Levl1', title: 'Interviews that show their work.' },
   screen: { eyebrow: `${PRODUCTS.screen.name} · Stage ${PRODUCTS.screen.stage}`, title: 'A first-round interviewer that can’t be fooled by a good story.' },
   screenDemo: { eyebrow: 'Live demo · no sign-up', title: 'Sit in the candidate’s chair.' },
-  takeHome: { eyebrow: `${PRODUCTS.takeHome.name} · Coming soon`, title: 'Real work, not trivia.' },
+  takeHome: { eyebrow: `${PRODUCTS.takeHome.name} · Available now`, title: 'A take-home they have to defend.' },
   liveInterview: { eyebrow: `${PRODUCTS.liveInterview.name} · Coming soon`, title: 'Make every interviewer as good as your best one.' },
   integrity: { eyebrow: 'Integrity', title: 'Flags with evidence. A person makes the call.' },
   agencies: { eyebrow: 'For recruitment agencies', title: 'Verify before you submit.' },

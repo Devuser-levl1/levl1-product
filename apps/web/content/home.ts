@@ -1,5 +1,5 @@
 import { INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES, TALK_TO_US, TRY_LIVE, type ProductKey } from '@/config/site'
-import { DEMO_PERSONAS } from '@/lib/screen/demo/personas'
+import { DEMO_PERSONAS, FEATURED_DEMO_PERSONAS } from '@/lib/screen/demo/personas'
 import type { ComparisonRow, CTA, Heading, Item, Pillar, TabItem, TimelineStep } from './types'
 import type { Evidence } from '@/components/marketing/sections/hero'
 
@@ -8,7 +8,7 @@ const demoMins = DEMO_PERSONAS.map((p) => p.durationMin)
 const DEMO_LENGTH = Math.min(...demoMins) === Math.max(...demoMins) ? `${Math.min(...demoMins)} minutes` : `${Math.min(...demoMins)}–${Math.max(...demoMins)} minutes`
 
 /** Role chips that open the live demo for that role. */
-export const DEMO_ROLE_CHIPS: CTA[] = DEMO_PERSONAS.map((p) => ({ label: p.category, href: `${ROUTES.screenDemo}?role=${p.slug}#try-live` }))
+export const DEMO_ROLE_CHIPS: CTA[] = FEATURED_DEMO_PERSONAS.map((p) => ({ label: p.category, href: `${ROUTES.screenDemo}?role=${p.slug}#try-live` }))
 export const DEMO_MICROCOPY = `No sign-up · ${DEMO_LENGTH} · microphone needed`
 
 export const home = {
@@ -109,10 +109,10 @@ export const home = {
     ] as TabItem[],
   },
   funnel: {
-    heading: { eyebrow: 'One funnel', title: 'Stage one of three.', lead: `${NAME} is live. ${PRODUCTS.takeHome.name} and ${PRODUCTS.liveInterview.name} are in development.` } as Heading,
+    heading: { eyebrow: 'One funnel', title: 'Three stages. Two are live.', lead: `${NAME} and ${PRODUCTS.takeHome.name} are live. ${PRODUCTS.liveInterview.name} is in development.` } as Heading,
     details: {
       screen: 'Live AI technical interviews with integrity checks and evidence reports.',
-      takeHome: 'A real-world task in a real IDE, evaluated against your rubric and tests.',
+      takeHome: 'A real-world take-home, run against your tests and rubric, then defended in a short AI interview.',
       liveInterview: 'Your interviewers, with an AI copilot for follow-ups, notes and scorecards.',
     } as Record<ProductKey, string>,
   },

@@ -18,14 +18,14 @@ export const INTERVIEW_LENGTH_LABEL = '~30 minutes'
 // app (sidebar). Rename a product here and every user-facing mention follows.
 // Keys, slugs and routes are functional and don't change with names.
 //   Stage 1 Screen    — AI technical screening (live)
-//   Stage 2 Solve     — real-world take-home, defended (coming soon)
+//   Stage 2 Solve     — real-world take-home, defended (live)
 //   Stage 3 Interview — human-led, AI-assisted technical interview (coming soon)
 export type ProductKey = 'screen' | 'takeHome' | 'liveInterview'
 export interface Product { name: string; stage: number; tagline: string; status: 'live' | 'soon'; href: string }
 
 export const PRODUCTS: Record<ProductKey, Product> = {
   screen: { name: 'Screen', stage: 1, tagline: 'AI technical screening', status: 'live', href: '/products/screen' },
-  takeHome: { name: 'Solve', stage: 2, tagline: 'Real-world take-home, defended — can’t be faked', status: 'soon', href: '/products/take-home' },
+  takeHome: { name: 'Solve', stage: 2, tagline: 'Real-world take-home, defended — can’t be faked', status: 'live', href: '/products/take-home' },
   liveInterview: { name: 'Interview', stage: 3, tagline: 'Human-led, AI-assisted technical interview', status: 'soon', href: '/products/live-interview' },
 }
 export const PRODUCT_ORDER: ProductKey[] = ['screen', 'takeHome', 'liveInterview']

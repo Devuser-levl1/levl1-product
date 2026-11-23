@@ -1,6 +1,14 @@
 import { INTERVIEW_LENGTH_LABEL, PRODUCTS, ROUTES, TALK_TO_US, TRY_LIVE } from '@/config/site'
 import type { CTA, Heading, Item, SplitBlock, Step, TabItem } from './types'
 import { DEMO_MICROCOPY, DEMO_ROLE_CHIPS } from './home'
+import { DEMO_PERSONAS } from '@/lib/screen/demo/personas'
+
+// Demo facts come from the persona config, so copy can't drift from the gallery.
+const DEMO_MINUTES = Math.max(...DEMO_PERSONAS.map((p) => p.durationMin))
+const DEMO_ROLE_LIST = (() => {
+  const names = DEMO_PERSONAS.map((p, i) => (i === 0 ? p.category : p.category === 'DevOps' || p.category === 'ML' ? p.category : p.category.toLowerCase()))
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}` : names[0]
+})()
 
 const NAME = PRODUCTS.screen.name
 
@@ -108,20 +116,20 @@ export const screenDemo = {
     badge: 'Live demo · no sign-up',
     badgeTone: 'live' as const,
     title: 'Sit in the candidate’s chair.',
-    lead: `Pick a role and talk it through by voice, right in your browser. The demo takes a few minutes — a real interview takes ${INTERVIEW_LENGTH_LABEL}.`,
+    lead: `Pick a role, solve a short coding task and talk it through by voice, right in your browser. The demo takes about ${DEMO_MINUTES} minutes — a real interview takes ${INTERVIEW_LENGTH_LABEL}.`,
   },
   expect: {
-    heading: { eyebrow: 'What you’ll experience', title: 'Three steps, a few minutes.' } as Heading,
+    heading: { eyebrow: 'What you’ll experience', title: `Three steps, about ${DEMO_MINUTES} minutes.` } as Heading,
     items: [
-      { title: 'Pick a role', body: 'Backend, data or full-stack — each with its own short question set.' },
-      { title: 'Talk it through', body: 'Answer out loud. Interrupt, push back, ask for clarification — it adapts.' },
+      { title: 'Pick a role', body: `${DEMO_ROLE_LIST} — each with a real coding task and its own questions.` },
+      { title: 'Solve it, then defend it', body: 'Write and run code against tests in the workspace, then explain your decisions out loud. Interrupt, push back, ask for clarification — it adapts.' },
       { title: 'See the evidence', body: 'Get the evidence report at the end, the way a hiring manager would.' },
     ] as Step[],
   },
   full: {
     heading: { eyebrow: 'What the full interview adds', title: 'The demo is a taste. The real thing goes deeper.' } as Heading,
     items: [
-      { icon: 'terminal', title: 'Observe & defend', body: 'A real task in a coding workspace, run against tests, then defended.' },
+      { icon: 'terminal', title: 'The full length', body: `${INTERVIEW_LENGTH_LABEL} instead of ${DEMO_MINUTES}: more questions, deeper follow-ups, logistics and culture fit.` },
       { icon: 'shield', title: 'Integrity checks', body: 'Signals for outside help, with evidence — AI-answer checks where enabled for a role.' },
       { icon: 'sliders', title: 'Your rubric', body: 'Questions and must-haves drafted from your JD and approved by your team.' },
       { icon: 'users', title: 'The recruiter side', body: 'Self-scheduling, the Control Room, playback and CSV export.' },

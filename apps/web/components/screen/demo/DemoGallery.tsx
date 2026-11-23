@@ -7,7 +7,8 @@ import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 
 // Embeddable demo gallery — rendered on /products/screen/demo inside the
 // marketing site (styled with its mk.* tokens). One click → lead gate →
-// /api/demo/start → live voice interview at /interview/[id]?demo=1.
+// /api/demo/start → live voice interview at /interview/[id]?demo=1 — the REAL
+// room + engine (coding IDE, observe-and-defend, consent) with demo content.
 export function DemoGallery() {
   const router = useRouter()
   const [starting, setStarting] = useState(false)
@@ -57,6 +58,13 @@ export function DemoGallery() {
             <div className="mt-4 flex flex-wrap gap-1.5">
               {p.skills.map((s) => <span key={s} className="rounded-md border border-mk-line px-2 py-0.5 text-[0.75rem] font-medium text-mk-slate">{s}</span>)}
             </div>
+            {p.work && (
+              <div className="mt-4 rounded-lg border border-mk-line px-3 py-2">
+                <div className="text-[0.75rem] font-medium text-mk-muted">Hands-on task, then defend it</div>
+                <div className="mt-0.5 text-[0.88rem] font-medium text-mk-ink">{p.work.taskTitle}</div>
+                <div className="mt-0.5 text-[0.75rem] text-mk-muted">{p.work.language}</div>
+              </div>
+            )}
             <p className="mt-4 text-[0.82rem] text-mk-muted">~{p.durationMin} min · {p.accent} · {p.language}</p>
             <div className="mt-auto pt-6">
               <button type="button" data-demo-slug={p.slug} onClick={(e) => openLead(p.slug, e.currentTarget)} className="mk-btn mk-btn-primary w-full">

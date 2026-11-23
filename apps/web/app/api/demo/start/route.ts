@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getDemoPersona } from '@/lib/screen/demo/personas'
+import { demoWorkSample } from '@/lib/screen/demo/work-sample'
+import { DEFAULT_VOICE_KEY } from '@/lib/voiceOptions'
 import { sweepStaleDemoData } from '@/lib/screen/demo/cleanup'
 import { normalizeEmail, businessEmailError } from '@/lib/screen/auth/email'
 import { sendEmail } from '@/lib/emailService'
@@ -105,13 +107,19 @@ export async function POST(req: NextRequest) {
 
     // Fresh, isolated demo Position with the SHORT demo duration (decoupled from
     // the 30-min production envelope) and pre-approved status (single-approver
-    // default already satisfied for demos).
+    // default already satisfied for demos). Same room + engine as a real
+    // interview: technical mode + an approved work sample → the Monaco + Judge0
+    // IDE and observe-and-defend run exactly as in production.
+    const workSample = demoWorkSample(persona)
     const position = await prisma.position.create({
       data: {
         agencyId, isDemo: true,
         title: persona.title, company: 'Levl1 Demo', experienceLevel: 'mid',
         roleType: 'IC', techStack: persona.skills, status: 'active',
-        interviewDuration: persona.durationMin, voiceAccent: 'neutral',
+        interviewDuration: persona.durationMin,
+        // The default interviewer (Ananya) — was 'neutral', which isn't a voice key.
+        voiceAccent: DEFAULT_VOICE_KEY,
+        ...(workSample ? { interviewMode: 'technical', workSampleTask: workSample as never } : {}),
         jdText: persona.jdText, jdSource: 'generated',
         techLeadApproved: true, hrApproved: true, rubricApproved: true,
       },
@@ -134,8 +142,10 @@ export async function POST(req: NextRequest) {
       data: { name, email, positionId: position.id, isDemo: true, topSkills: persona.skills, status: 'pending' },
     })
 
+    // Consent is NOT pre-filled: the prospect sees the same consent + capture
+    // notice in the room as a real candidate (both are recorded in the audit log).
     const interview = await prisma.interview.create({
-      data: { candidateId: candidate.id, positionId: position.id, isDemo: true, status: 'scheduled', duration: persona.durationMin, consentGiven: true, consentGivenAt: new Date() },
+      data: { candidateId: candidate.id, positionId: position.id, isDemo: true, status: 'scheduled', duration: persona.durationMin },
     })
     await prisma.interviewToken.create({ data: { interviewId: interview.id, expiresAt: new Date(Date.now() + 2 * 3600_000) } })
 

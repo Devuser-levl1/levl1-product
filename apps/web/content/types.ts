@@ -29,5 +29,6 @@ export interface TabItem { id: string; label: string; shortLabel?: string; title
 export type VisualKey =
   | 'screenRoom' | 'screenReport' | 'screenIntegrity' | 'screenConsent' | 'screenApproval' | 'screenControl'
   | 'snipVoice' | 'snipCode' | 'snipWhiteboard' | 'snipFollowup' | 'snipLogistics' | 'snipCulture'
+  | 'solveWork' | 'solveReport'
   | 'hpBrief' | 'hpProfile' | 'hpPipeline' | 'hpLev' | 'hpInbox' | 'hpSubmit' | 'hpAR' | 'hpNurture'
   | 'hpTeam' | 'hpCareers' | 'hpSourcing' | 'hpMatch'

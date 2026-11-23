@@ -369,8 +369,10 @@ export default function InterviewPage() {
         }
         isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
         if (data.interviewer?.name) setInterviewer({ name: data.interviewer.name, voiceKey: data.interviewer.voiceKey ?? null })
-        setConsentOk(!!data.consentGiven || !!data.isDemo)  // I-P0-1 soft consent gate
-        setMediaOk(!!data.mediaConsentGiven || !!data.isDemo)
+        // Same consent gate for demos and real interviews — a demo shows the real
+        // capture notice (it IS the product, with demo content).
+        setConsentOk(!!data.consentGiven)  // I-P0-1 soft consent gate
+        setMediaOk(!!data.mediaConsentGiven)
         if (data.privacy) setPrivacy({ orgName: data.position?.agency?.name ?? 'The hiring team', mediaRetentionDays: data.privacy.mediaRetentionDays, transcriptRetentionDays: data.privacy.transcriptRetentionDays })
         const existsInStore = useAppStore.getState().interviews.find(i => i.id === interviewId)
         if (existsInStore) { updateInterview(interviewId, iv) } else { addInterview(iv) }
