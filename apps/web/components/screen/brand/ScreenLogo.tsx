@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- static brand asset; plain <img> keeps it usable in server + client components without next/image config */
 
+import { SITE_ICONS } from '@/lib/brand/site-icons'
+
 // ── Product brand mark ──────────────────────────────────────────────────────
 // The app (sign-in, sign-up, dashboard sidebar, candidate, report and approval
 // pages) shows the Levl1 wordmark — the same artwork as the marketing site
@@ -47,11 +49,7 @@ export function ScreenIcon({ size = 28 }: { size?: number }) {
   return <img src="/brand/levl1-icon.png" alt="Levl1" width={size} height={size} draggable={false} style={{ width: size, height: size, display: 'block', borderRadius: 6 }} />
 }
 
-/** Route metadata icons for Screen pages. Uses the single Levl1 site icon
- *  (app/favicon.ico, app/apple-icon.png, public/icons) so every page and
- *  product shares one favicon. */
-export const SCREEN_ICONS = {
-  // /favicon.ico is added automatically from app/favicon.ico.
-  icon: [{ url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' }],
-  apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
-}
+/** Route metadata icons for Screen pages — the single, versioned Levl1 site
+ *  icon set (lib/brand/site-icons.ts), so every page and product shares one
+ *  favicon and a version bump reaches every browser (incl. Safari's cache). */
+export const SCREEN_ICONS = SITE_ICONS

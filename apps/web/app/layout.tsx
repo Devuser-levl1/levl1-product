@@ -22,6 +22,7 @@ import "./globals.css";
 import "./screen-tokens.css";  // Screen design tokens (--lv-*) — additive, namespaced
 import "./screen-ui.css";      // Screen canonical component styles (.lv-*) — namespaced
 import { Toaster } from "react-hot-toast";
+import { SITE_ICONS } from "@/lib/brand/site-icons";
 import { ServiceWorkerRegistrar } from "@/components/layout/ServiceWorkerRegistrar";
 import { ScreenThemeScope, screenThemeScript } from "@/components/screen/ScreenTheme";
 
@@ -31,6 +32,8 @@ export const metadata: Metadata = {
   description:
     "Voice AI L1 interviews for tech and product roles. Built for recruitment agencies and enterprises.",
   manifest: "/manifest.json",
+  // Versioned icon URLs (Safari caches favicons hard) — lib/brand/site-icons.ts
+  icons: SITE_ICONS,
   openGraph: {
     title: "Levl1 — The AI hiring & interview platform",
     description:
