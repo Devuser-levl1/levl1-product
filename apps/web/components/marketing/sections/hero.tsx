@@ -14,7 +14,7 @@ export function EvidenceSnippet({ e, className = '' }: { e: Evidence; className?
 // Page hero. With a `visual` it splits text | product panel (two columns from
 // tablet width up); without, it is a left-aligned text hero.
 export function Hero({ eyebrow, badge, badgeTone = 'neutral', title, lead, primary, secondary, points, visual, compact = false,
-  display = false, chips, chipsLabel, microcopy, evidence }: {
+  display = false, chips, chipsLabel, microcopy, evidence, capture, visualCaption }: {
   eyebrow?: string; badge?: string; badgeTone?: 'neutral' | 'live'; title: string; highlight?: string; lead?: string
   primary?: CTA; secondary?: CTA; points?: string[]; visual?: React.ReactNode; compact?: boolean
   /** Use the largest display size (Home only). */
@@ -25,6 +25,11 @@ export function Hero({ eyebrow, badge, badgeTone = 'neutral', title, lead, prima
   microcopy?: string
   /** Evidence snippets floated on the product panel. */
   evidence?: Evidence[]
+  /** An inline form (e.g. early-access capture) in place of the primary button;
+   *  `secondary` then shows as a text link under it. */
+  capture?: React.ReactNode
+  /** Small caption under the product panel (e.g. "illustrative preview"). */
+  visualCaption?: string
 }) {
   const h = display ? 'mk-display' : compact ? 'mk-h2' : 'mk-h1'
   return (
@@ -46,7 +51,13 @@ export function Hero({ eyebrow, badge, badgeTone = 'neutral', title, lead, prima
               </div>
             )}
 
-            {(primary || secondary) && (
+            {capture && (
+              <div className="mk-intro mt-9" style={{ ['--d' as string]: '200ms' }}>
+                {capture}
+                {secondary && <div className="mt-3"><TextLink cta={secondary} /></div>}
+              </div>
+            )}
+            {!capture && (primary || secondary) && (
               <div className={`mk-intro flex flex-wrap items-center gap-x-5 gap-y-3 ${chips ? 'mt-6' : 'mt-9'}`} style={{ ['--d' as string]: '200ms' }}>
                 {primary && <ButtonLink cta={primary} />}
                 {secondary && (chips ? <TextLink cta={secondary} /> : <ButtonLink cta={secondary} variant="secondary" />)}
@@ -80,6 +91,7 @@ export function Hero({ eyebrow, badge, badgeTone = 'neutral', title, lead, prima
                   </>
                 )}
               </div>
+              {visualCaption && <p className="mt-3 text-center text-[0.8rem] text-mk-muted">{visualCaption}</p>}
             </div>
           )}
         </div>

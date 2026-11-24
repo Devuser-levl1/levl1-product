@@ -2,6 +2,7 @@ import type { VisualKey } from '@/content/types'
 import { ScreenApprovalMock, ScreenConsentMock, ScreenControlMock, ScreenIntegrityMock, ScreenReportMock, ScreenRoomMock } from './screen'
 import { HireMatchMock } from './hirematch'
 import { SolveReportMock, SolveWorkspaceMock } from './solve'
+import { InterviewCalibrationMock, InterviewCoachingMock, InterviewCompareMock, InterviewCopilotMock } from './interview'
 import { CodeSnippet, CultureSnippet, FollowupSnippet, LogisticsSnippet, VoiceSnippet, WhiteboardSnippet } from './snippets'
 import { ApplyFormMock, CandidateProfileMock, KanbanMock } from './index'
 import { ARMock, InboxMock, JDRubricMock, LevPanelMock, NurtureMock, SourcingMock, SubmitSheetMock, TeamMock } from './hirepilot'
@@ -22,6 +23,10 @@ const VISUALS: Record<VisualKey, () => JSX.Element> = {
   snipCulture: CultureSnippet,
   solveWork: SolveWorkspaceMock,
   solveReport: SolveReportMock,
+  ivCopilot: InterviewCopilotMock,
+  ivCalibration: InterviewCalibrationMock,
+  ivCompare: InterviewCompareMock,
+  ivCoaching: InterviewCoachingMock,
   hpBrief: JDRubricMock,
   hpProfile: CandidateProfileMock,
   hpPipeline: KanbanMock,

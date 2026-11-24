@@ -30,5 +30,6 @@ export type VisualKey =
   | 'screenRoom' | 'screenReport' | 'screenIntegrity' | 'screenConsent' | 'screenApproval' | 'screenControl'
   | 'snipVoice' | 'snipCode' | 'snipWhiteboard' | 'snipFollowup' | 'snipLogistics' | 'snipCulture'
   | 'solveWork' | 'solveReport'
+  | 'ivCopilot' | 'ivCalibration' | 'ivCompare' | 'ivCoaching'
   | 'hpBrief' | 'hpProfile' | 'hpPipeline' | 'hpLev' | 'hpInbox' | 'hpSubmit' | 'hpAR' | 'hpNurture'
   | 'hpTeam' | 'hpCareers' | 'hpSourcing' | 'hpMatch'

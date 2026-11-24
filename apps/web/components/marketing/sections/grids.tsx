@@ -4,14 +4,16 @@ import { Container, Section, SectionHeading } from './primitives'
 
 // Pain points — numbered hairline grid, read as tension before the answer.
 export function ProblemGrid({ heading, items }: { heading: Heading; items: Item[] }) {
-  const cols = items.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'
+  // Five items: two wide cells over three, so no empty cell shows the hairline.
+  const cols = items.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : items.length === 5 ? 'md:grid-cols-6' : 'md:grid-cols-3'
+  const span = (i: number) => (items.length === 5 ? (i < 2 ? 'md:col-span-3' : 'md:col-span-2') : '')
   return (
     <Section tone="mist">
       <Container>
         <SectionHeading {...heading} />
         <div className={`mt-14 grid gap-px overflow-hidden rounded-xl border border-mk-line bg-mk-line ${cols}`}>
           {items.map((it, i) => (
-            <div key={it.title} data-reveal style={{ ['--d' as string]: `${i * 70}ms` }} className="bg-mk-surface p-7">
+            <div key={it.title} data-reveal style={{ ['--d' as string]: `${i * 70}ms` }} className={`bg-mk-surface p-7 ${span(i)}`}>
               <p className="font-mono text-[0.8rem] text-mk-muted">{String(i + 1).padStart(2, '0')}</p>
               <h3 className="mk-h3 mt-6">{it.title}</h3>
               <p className="mt-3 leading-relaxed text-mk-slate">{it.body}</p>
