@@ -33,6 +33,23 @@ export function ttsContext(): AudioContext | null {
   return ctx
 }
 
+/* ── passive analyser on the playback path (drives the room's voice wave) ── */
+// Pass-through only: source → analyser → speakers. If it can't be created,
+// sources connect straight to the destination exactly as before.
+let analyser: AnalyserNode | null = null
+export function ttsAnalyser(): AnalyserNode | null {
+  const c = ttsContext()
+  if (!c) return null
+  if (analyser && analyser.context === c) return analyser
+  try {
+    analyser = c.createAnalyser()
+    analyser.fftSize = 512
+    analyser.smoothingTimeConstant = 0.55
+    analyser.connect(c.destination)
+  } catch { analyser = null }
+  return analyser
+}
+
 /** Call from a click/tap handler (e.g. "Start interview") so later playback isn't blocked. */
 export async function unlockTtsAudio(): Promise<boolean> {
   const c = ttsContext()
@@ -121,7 +138,7 @@ export async function playStreamedSpeech(o: PlayOptions): Promise<'done' | 'stop
       pending = []; pendingLen = 0
       const src = c.createBufferSource()
       src.buffer = buf
-      src.connect(c.destination)
+      src.connect(ttsAnalyser() ?? c.destination)
       // Underrun (network slower than speech) → resume from "now" with a small lead.
       const at = Math.max(nextTime, c.currentTime + 0.04)
       src.start(at)

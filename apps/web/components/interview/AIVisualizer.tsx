@@ -1,7 +1,7 @@
 'use client'
 
 import { Mic, Volume2, Loader2, Hourglass } from 'lucide-react'
-import { VoiceOrb } from './VoiceOrb'
+import { VoiceWave, type WaveMode } from './VoiceWave'
 import type { InterviewPhase } from '@/store/appStore'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 
@@ -51,9 +51,9 @@ interface Props {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AIVisualizer — white panel with the interviewer's VoiceOrb.
-   Orb energy by phase: speaking > thinking > listening (rises while the
-   candidate talks) > idle. Presentation only; props unchanged.
+   AIVisualizer — white panel with the interviewer's VoiceWave, driven by
+   the real audio (TTS while speaking, mic while listening). Presentation
+   only; props unchanged.
 ═══════════════════════════════════════════════════════════════ */
 export function AIVisualizer({
   phase,
@@ -65,11 +65,14 @@ export function AIVisualizer({
   compact = false,
 }: Props) {
   const speaking = phase === 'speaking' || phase === 'intro' || phase === 'closing'
-  const energy =
-    speaking                  ? 0.9
-    : phase === 'processing'  ? 0.45
-    : phase === 'listening'   ? (liveTranscriptLength > 0 ? 0.6 : 0.25)
-    :                           0.12
+  // The wave follows the real audio: the interviewer's voice while speaking,
+  // the candidate's mic while listening.
+  const mode: WaveMode =
+    speaking                  ? 'speaking'
+    : phase === 'processing'  ? 'thinking'
+    : phase === 'listening'   ? 'listening'
+    :                           'idle'
+  void liveTranscriptLength   // kept in the props contract; the mic level now drives the wave
 
   const st = STATUS[isWarmingUp ? 'warmup' : phase] ?? FALLBACK
 
@@ -116,9 +119,9 @@ export function AIVisualizer({
         </div>
       )}
 
-      {/* ── Voice orb ── */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <VoiceOrb energy={energy} size={compact ? 150 : 190} label={`${INTERVIEWER_NAME} — ${st.label}`} />
+      {/* ── Voice wave ── */}
+      <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <VoiceWave mode={mode} height={compact ? 140 : 170} label={`${INTERVIEWER_NAME} — ${st.label}`} />
       </div>
 
       {/* ── Speaker state ── */}

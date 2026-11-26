@@ -19,6 +19,8 @@
 //
 // Tunable via NEXT_PUBLIC_ env (read at build): see BARGE_IN_CONFIG.
 
+import { publishMicLevel } from './voice-level'
+
 const num = (v: string | undefined, d: number) => (v !== undefined && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : d)
 
 export const BARGE_IN_CONFIG = {
@@ -142,6 +144,10 @@ export class BargeInDetector {
 
   // ── per-frame VAD ──────────────────────────────────────────────────────
   private onFrame(input: Float32Array) {
+    // Visualizer only (the room's voice wave) — computed before the VAD gate.
+    let sq = 0
+    for (let i = 0; i < input.length; i++) sq += input[i] * input[i]
+    publishMicLevel(Math.sqrt(sq / input.length))
     if (!this.armed) return
     const frame = new Float32Array(input)  // copy — the input buffer is reused
     const frameMs = (frame.length / this.rate) * 1000
