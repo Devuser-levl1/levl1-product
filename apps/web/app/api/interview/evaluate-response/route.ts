@@ -14,6 +14,7 @@ import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-con
 import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
 import { DELIBERATION_GUIDANCE, sanitizeDeliberation, reconcileDecision, type Deliberation } from '@/lib/screen/interview/deliberation'
 import { sanitizeFacts, factsBlock, FACTS_JSON_HINT } from '@/lib/screen/session/facts'
+import { fairScoringRules, reconcileQuestionScore, reframeProbe } from '@/lib/screen/session/fair-scoring'
 import { oneQuestion } from '@/lib/screen/interview/single-question'
 
 type Processed = { payload: Record<string, unknown>; deliberation: Deliberation; changed: string[] }
@@ -88,6 +89,16 @@ export async function POST(req: NextRequest) {
     const expectedKeyPoints: string[]     = body.expectedKeyPoints ?? []
     const candidateResponse: string       = typeof body.candidateResponse === 'string' ? body.candidateResponse : ''
     const previousResponses: Array<{ question: string; response: string }> = body.previousResponses ?? []
+    // Fair scoring: the exact line the candidate is answering now (a follow-up is
+    // narrower than the original question) + everything already said on THIS
+    // question, so the score is for the question so far, not one turn in isolation.
+    const askedNow: string = typeof body.askedNow === 'string' ? body.askedNow.slice(0, 400) : ''
+    const soFar: { ask: string; answer: string }[] = (Array.isArray(body.thisQuestionSoFar) ? body.thisQuestionSoFar : [])
+      .filter((t: unknown): t is { ask: string; answer: string } => !!t && typeof (t as { ask?: unknown }).ask === 'string' && typeof (t as { answer?: unknown }).answer === 'string')
+      .slice(-6).map((t: { ask: string; answer: string }) => ({ ask: t.ask.slice(0, 300), answer: t.answer.slice(0, 1200) }))
+    // Probe before scoring a gap: 'first' = the candidate just said they didn't
+    // own / do this (ask ONE reframing follow-up first); 'after' = this answers that probe.
+    const gapProbe: 'first' | 'after' | null = body.gapProbe === 'first' || body.gapProbe === 'after' ? body.gapProbe : null
     const dynamicIntensity: string        = body.dynamicIntensity ?? 'standard'
     // How many follow-ups already asked on THIS question (Part 3a depth cap).
     const followUpCount: number           = Math.max(0, Number(body.followUpCount) || 0)
@@ -165,8 +176,10 @@ export async function POST(req: NextRequest) {
         `You are the decision engine for ${INTERVIEWER_NAME}, a professional AI interviewer.\n\n` +
         `ROLE: Evaluate candidate responses objectively and decide how ${INTERVIEWER_NAME} should proceed.\n` +
         DELIBERATION_GUIDANCE +
-        'Only credit points the candidate explicitly mentioned — never infer or assume knowledge not demonstrated.\n' +
-        'Keep evaluatorNote to 1-2 factual sentences only.\n\n' +
+        fairScoringRules('0-10') + '\n' +
+        '- "score" is for the WHOLE QUESTION SO FAR (the original answer plus every follow-up on it), not this turn in isolation.\n' +
+        'Keep evaluatorNote to 1-2 factual sentences: what they demonstrated first, then the main gap.\n\n' +
+        'PROBE BEFORE SCORING A GAP: when the candidate candidly says they did not own / were not directly involved in / have not done the thing asked, do NOT just record the gap and move on. Ask ONE reframing follow-up that tests the ADJACENT, APPLIED knowledge from where they actually sat (e.g. "You didn\'t set the gates up — as delivery owner, what did you rely on them for?"). One question, no stacking. After that one probe, score on both answers and move on.\n\n' +
         `${INTERVIEWER_NAME.toUpperCase()}'S TONE RULES (apply to all generated text):\n` +
         '- NEVER use: "Great answer", "Excellent", "Perfect", "Wonderful", "Fantastic"\n' +
         '- ALWAYS use: "Thank you", "Understood", "Got it", "Noted", "That is helpful"\n' +
@@ -208,7 +221,11 @@ export async function POST(req: NextRequest) {
         content:
           `Question: "${questionText}"\n` +
           `Expected key points: ${expectedKeyPoints.join(', ')}\n` +
+          (askedNow && askedNow.trim() !== questionText.trim() ? `The candidate is answering THIS follow-up (narrower than the question): "${askedNow}"\n` : '') +
+          (soFar.length ? `Already said on THIS question (earlier turns — part of the same question's evidence):\n${soFar.map((t, i) => `  T${i + 1} asked: ${t.ask}\n  T${i + 1} answer: ${t.answer}`).join('\n')}\n` : '') +
           `Candidate response: ${answerForModel}\n` +
+          (gapProbe === 'first' ? `ADMITTED GAP: the candidate has just said they did not own / do this. Set shouldAskFollowUp=true and ask ONE reframing follow-up about the adjacent, applied side (what they relied on it for, what happened when it was weak, how they worked with whoever owned it). The score is provisional — score what is demonstrated so far; candour is not penalised.\n` : '') +
+          (gapProbe === 'after' ? `THIS ANSWERS A REFRAMING PROBE after the candidate admitted a gap. Score the question on BOTH answers together, crediting adjacent / applied knowledge. If after this fair probe the knowledge genuinely is not there, a low score is correct. Do not probe the gap again.\n` : '') +
           `Dynamic intensity: ${dynamicIntensity}\n` +
           `${budgetLine}${prevCtx}${workBlock}${ctx.block}` +
           `\n\n${factsBlock(knownFacts)}` +
@@ -219,14 +236,14 @@ export async function POST(req: NextRequest) {
           `Return ONLY this JSON, in EXACTLY this key order (deliberation first — every decision below must follow from it; key points and the note come last):\n` +
           `{\n` +
           `  "deliberation": { "answer": "complete|partial|thin|off_topic|none", "state": "confident|thinking|stuck|unsure|meta", "gap": "<the single biggest gap, max 12 words, or empty>", "move": "probe_gap|go_deeper|pivot|ease_off|move_on" },\n` +
-          `  "score": <integer 0-10>,\n` +
+          `  "score": <integer 0-10 — the QUESTION so far, per the SCORING RULES scale>,\n` +
           `  "relevanceScore": <integer 0-10>,\n` +
           `  "shouldAskFollowUp": true|false,\n` +
           `  "followUpQuestion": "only if shouldAskFollowUp is true, else empty string",\n` +
           `  "confirmBack": "one-sentence restatement of a substantive answer when NOT following up, else empty string",\n` +
           `  "keyPointsCovered": ["point1"],\n` +
           `  "keyPointsMissed": ["point2"],\n` +
-          `  "evaluatorNote": "1-2 sentences",\n` +
+          `  "evaluatorNote": "1-2 sentences: what they demonstrated first, then the main gap",\n` +
           `  "facts": ${FACTS_JSON_HINT} — FILL IN every hard fact the candidate stated in THIS answer, even in passing (e.g. "four years at Flipkart as a backend engineer" → "yearsExperience":4,"currentCompany":"Flipkart","currentRole":"Backend engineer"; "I am in Pune" → "location":"Pune"). null only for what they did not say; never guess\n` +
           `}`,
       }],
@@ -248,6 +265,24 @@ export async function POST(req: NextRequest) {
         const split = oneQuestion(result.followUpQuestion)
         result.followUpQuestion = split.text
         if (split.rest.length) { result.heldQuestions = split.rest; fixed.changed.push('split_clubbed_question') }
+      }
+      // Probe before scoring a gap — enforced in code: an admitted gap always
+      // gets ONE reframing follow-up (outside the normal budget) before it's scored.
+      if (gapProbe === 'first') {
+        if (!result.shouldAskFollowUp || typeof result.followUpQuestion !== 'string' || !result.followUpQuestion.trim()) {
+          result.shouldAskFollowUp = true
+          result.followUpQuestion = reframeProbe(typeof body.topic === 'string' ? body.topic.slice(0, 60) : undefined)
+          fixed.changed.push('forced_gap_reframe')
+        }
+        result.gapReframe = true
+      } else if (gapProbe === 'after' && result.shouldAskFollowUp && deliberation.move === 'ease_off') {
+        // Never probe the same admitted gap twice.
+        result.shouldAskFollowUp = false; result.followUpQuestion = ''
+      }
+      // Score ↔ evidence consistency (once key points are present — the final payload).
+      if (typeof result.score === 'number' && Array.isArray(result.keyPointsCovered)) {
+        const c = reconcileQuestionScore({ score: result.score, keyPointsCovered: result.keyPointsCovered, keyPointsMissed: result.keyPointsMissed })
+        if (c.adjusted) { result.score = c.score; fixed.changed.push(c.adjusted) }
       }
       // Facts newly stated in this answer (sanitized; the room merges them).
       if ('facts' in result) result.facts = sanitizeFacts(result.facts)
@@ -406,7 +441,7 @@ function streamDecision(o: {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' } })
 }
 
-const DECISION_FIELDS = ['deliberation', 'score', 'relevanceScore', 'shouldAskFollowUp', 'followUpQuestion', 'heldQuestions', 'confirmBack', 'speech'] as const
+const DECISION_FIELDS = ['deliberation', 'score', 'relevanceScore', 'shouldAskFollowUp', 'followUpQuestion', 'heldQuestions', 'gapReframe', 'confirmBack', 'speech'] as const
 function pickDecision(d: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const k of DECISION_FIELDS) if (k in d) out[k] = d[k]

@@ -22,6 +22,7 @@ import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fi
 import { PRODUCTION_INTERVIEW_MINUTES, CULTURE_FIT_RESERVE_SEC, MIN_QUESTION_SEC } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
 import { LINK_REPLACED_MESSAGE } from '@/lib/screen/recovery/state'
+import { admitsGap } from '@/lib/screen/session/fair-scoring'
 import { LIVE_ELSEWHERE_MESSAGE } from '@/lib/screen/recovery/candidate-route'
 import { wrapLine, signOff, noQuestions, closingFallback, isScoredSegment, CLOSING_ASK, CLOSING_ANYTHING_ELSE, CLOSING_MAX_QUESTIONS, CLOSING_REPLY_TIMEOUT_MS } from '@/lib/screen/session/closing'
 import { logisticsIntro, LOGISTICS_MAX_MS, LOGISTICS_HARD_CAP_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
@@ -620,6 +621,7 @@ export default function InterviewPage() {
   const extraFollowUpsRef     = useRef(0)                               // #2 follow-up allowance for held parts (≤2)
   const turnSeqRef            = useRef(0)                               // #3 bump to abandon an in-flight turn (reopened)
   const reopenPrefixRef       = useRef<string | null>(null)             // #3 what they'd said before resuming
+  const gapProbedForRef       = useRef<string | null>(null)           // fair scoring: question id whose admitted gap was already probed once
   const closingQaRef          = useRef(false)                           // #4 listening allowed during the closing questions
   const interruptedLineRef    = useRef<{ text: string; at: number } | null>(null)  // #5 line cut by a barge-in
   const redeliverRef          = useRef<(() => Promise<void>) | null>(null)         // #5 finish an interrupted line
@@ -1663,22 +1665,14 @@ export default function InterviewPage() {
       return
     }
 
-    // ── 5b. Fix 3: No experience — accept immediately and move on ────
-    const isNoExperience = NO_EXPERIENCE_PHRASES.some(p => lower.includes(p))
-    if (isNoExperience) {
-      addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
-      const ack = pick([
-        "Understood, let's move on.",
-        "Got it, no problem at all.",
-        "That's fine. Let me ask you something different.",
-        "Noted. Moving on.",
-      ] as const)
-      addTranscript({ speaker: 'ai', text: ack, type: 'transition' })
-      await speakText(ack)
-      await delay(800)
-      await moveToQuestion(currentQIdxRef.current + 1)
-      return
-    }
+    // ── 5b. Admitted gap → PROBE before scoring (fair scoring) ───────
+    // A candid "I didn't own / haven't done that" used to be accepted on the
+    // spot and scored as a raw gap. Now it gets ONE reframing follow-up on the
+    // adjacent, applied knowledge (enforced server-side), and the question is
+    // scored on both answers. A second admission after the probe moves on.
+    const gapProbe: 'first' | 'after' | undefined = gapProbedForRef.current === q.id
+      ? 'after'
+      : (admitsGap(responseText) || NO_EXPERIENCE_PHRASES.some(p => lower.includes(p))) ? 'first' : undefined
 
     // ── 5b. Reopen window (#3, real-user bug): until the brain's decision is in,
     // fresh speech means the candidate wasn't finished — abandon this turn and
@@ -1734,8 +1728,20 @@ export default function InterviewPage() {
 
       if (!turnTimingRef.current) turnTimingRef.current = { lastHeard: null, commit: Date.now(), path: 'editor' }
       turnTimingRef.current.brainStart = Date.now()
+      // Everything already said on THIS question (original + follow-ups) and the
+      // exact line being answered now — the score is for the question so far.
+      const soFar: { ask: string; answer: string }[] = []
+      let lastAsk = q.question
+      for (const e of transcriptRef.current) {
+        if (e.questionId !== q.id) continue
+        if (e.speaker === 'ai') lastAsk = e.text
+        else soFar.push({ ask: lastAsk, answer: e.text })
+      }
       const evaluation = await fetchEvaluation({
           questionText:      q.question,
+          askedNow:          lastAsk,
+          thisQuestionSoFar: soFar.slice(-6),
+          ...(gapProbe ? { gapProbe, topic: q.techTag || '' } : {}),
           expectedKeyPoints: q.expectedKeyPoints,
           candidateResponse: responseText,
           previousResponses: prevQ,
@@ -1848,7 +1854,7 @@ export default function InterviewPage() {
     if (finalEval && !ev.degraded) {
       void finalEval.then((f) => {
         if (!Array.isArray(f.keyPointsCovered) && !f.evaluatorNote) return
-        const full: QuestionResponse = { ...qr, keyPointsCovered: f.keyPointsCovered ?? [], keyPointsMissed: f.keyPointsMissed ?? [], evaluatorNote: f.evaluatorNote ?? qr.evaluatorNote }
+        const full: QuestionResponse = { ...qr, ...(typeof f.score === 'number' ? { score: Math.round((f.score / 10) * 100) } : {}), keyPointsCovered: f.keyPointsCovered ?? [], keyPointsMissed: f.keyPointsMissed ?? [], evaluatorNote: f.evaluatorNote ?? qr.evaluatorNote }
         responsesRef.current = responsesRef.current.map((r) => (r === qr ? full : r))
         setQuestionResponses(responsesRef.current)
         upsertQuestionResponse(full)
@@ -1872,9 +1878,12 @@ export default function InterviewPage() {
     // recorded as partially-evidenced (gaps already in keyPointsMissed).
     // #2: a split question's held parts get their own allowance (≤2) on top of 3.
     const MAX_FOLLOWUPS = 3 + extraFollowUpsRef.current
-    const withinBudget  = followUpCountRef.current < MAX_FOLLOWUPS
+    // The one reframing probe after an admitted gap is allowed outside the budget.
+    const gapReframe    = !!(ev as unknown as { gapReframe?: boolean }).gapReframe && gapProbedForRef.current !== q.id
+    const withinBudget  = followUpCountRef.current < MAX_FOLLOWUPS || gapReframe
     if (ev.shouldAskFollowUp && ev.followUpQuestion && withinBudget) {
       followUpCountRef.current += 1
+      if (gapReframe) gapProbedForRef.current = q.id
       // A held part that this follow-up now asks is no longer pending.
       if (pendingPartsRef.current.length) {
         const words = (t: string) => new Set(t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3))

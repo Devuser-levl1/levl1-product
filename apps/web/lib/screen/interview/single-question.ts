@@ -13,6 +13,11 @@ const JOINER = new RegExp(`(?:,\\s*|;\\s*|\\s+[—–-]\\s+)(?:and\\s+)?(?:also\
 // The head clause opens like a question / prompt (after an optional "So," / "Okay," …).
 const ASKS = new RegExp(`^\\s*(?:(?:so|okay|ok|and|now|great|right|alright)[,\\s]+)*(?:${WH}|tell me|walk me|talk me|describe|explain|share|give me)\\b`, 'i')
 
+// "When tickets pile up, what…" / "If the cache fails, how…" — a subordinate
+// clause leading INTO the question, not a question of its own. (A real question
+// puts an auxiliary straight after: "When WOULD you…", "If you HAD to…" is still a clause.)
+const SUBORDINATE = /^\s*(?:(?:so|okay|ok|and|now|great|right|alright)[,\s]+)*(?:when|where|if|while|once|since|as|given|after|before|whenever|suppose|say)\b(?!\s+(?:would|do|did|does|is|are|was|were|should|could|can|will|have|has)\b)/i
+
 export interface SplitQuestion { text: string; rest: string[] }
 
 /** Lead-in + the first question only. `rest` holds the other asks (as questions). */
@@ -30,7 +35,7 @@ export function oneQuestion(raw: string): SplitQuestion {
   // Only when the head is itself a question ("How did you X, and what Y?") — never
   // a lead-in clause ("After adding the cache, how did you measure it?").
   const m = JOINER.exec(question)
-  if (m && m.index > 12 && ASKS.test(question.slice(0, m.index))) {
+  if (m && m.index > 12 && ASKS.test(question.slice(0, m.index)) && !SUBORDINATE.test(question.slice(0, m.index))) {
     const tail = question.slice(m.index).replace(/^[,;\s—–-]+(and\s+)?(also\s+)?/i, '')
     question = question.slice(0, m.index).replace(/[,;\s]+$/, '') + '?'
     const t = tail.trim().replace(/^./, (c) => c.toUpperCase())

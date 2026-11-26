@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/emailService'
 import { dispatchInterviewsWebhook, agencyIdForInterview } from '@/lib/interviews/webhooks'
 import { isNonEvaluableResponse, interviewHasAnyEvidence, INSUFFICIENT_EVIDENCE } from '@/lib/screen/session/scoring'
 import { SCORING_MODEL } from '@/lib/screen/interview/model'
+import { fairScoringRules, reconcileQuestionScore } from '@/lib/screen/session/fair-scoring'
 import { sectionEvidence, gradeSection, communicationCap, overallConfidence, questionConfidence, minConfidence, isConfidence, type EvidenceContext, type ScoredSection } from '@/lib/screen/session/confidence'
 import { scoreWorkSample } from '@/lib/screen/workspace/scoring'
 import { Prisma } from '@prisma/client'
@@ -185,10 +186,25 @@ export async function POST(req: NextRequest) {
       .map((t: { speaker: string; text: string }) => `[${t.speaker.toUpperCase()}]: ${t.text}`)
       .join('\n')
 
-    const responsesText = questionResponses
-      .map((r: { questionText: string; candidateResponse: string; score: number; keyPointsCovered: string[]; keyPointsMissed: string[] }, i: number) =>
-        `Q${i + 1}: ${r.questionText}\nCandidate Response: ${r.candidateResponse}\nScore: ${r.score}/100\nKey Points Covered: ${r.keyPointsCovered.join(', ')}\nKey Points Missed: ${r.keyPointsMissed.join(', ')}`
-      )
+    // Fair scoring: the room records one entry per TURN (the answer + each
+    // follow-up answer). Group them by question so each question is judged on
+    // everything said about it — a narrow follow-up answer is not a separate,
+    // standalone "miss" of the whole question. The live score shown is the
+    // latest (it covers the question so far).
+    type QR = { questionId?: string; questionText: string; candidateResponse: string; score: number; keyPointsCovered?: string[]; keyPointsMissed?: string[] }
+    const groups: { key: string; items: QR[] }[] = []
+    for (const r of (Array.isArray(questionResponses) ? questionResponses : []) as QR[]) {
+      const key = r.questionId || r.questionText
+      const g = groups.find((x) => x.key === key)
+      if (g) g.items.push(r); else groups.push({ key, items: [r] })
+    }
+    const responsesText = groups
+      .map((g, i) => {
+        const last = g.items[g.items.length - 1]
+        const turns = g.items.map((r, j) => `  ${j === 0 ? 'Answer' : `Follow-up answer ${j}`}: ${r.candidateResponse}`).join('\n')
+        const covered = Array.from(new Set(g.items.flatMap((r) => r.keyPointsCovered ?? [])))
+        return `Q${i + 1}: ${g.items[0].questionText}\n${turns}\nLive score for the question so far: ${last.score}/100\nKey Points Covered (any turn): ${covered.join(', ')}\nKey Points Missed (latest): ${(last.keyPointsMissed ?? []).join(', ')}`
+      })
       .join('\n\n---\n\n')
 
     const resumeExcerpt = resumeText.slice(0, 1500)
@@ -207,6 +223,9 @@ export async function POST(req: NextRequest) {
         'Be specific — quote or closely reference actual candidate statements. ' +
         'Be balanced — note genuine strengths and genuine concerns. ' +
         'Never fabricate. Never hallucinate. ' +
+        '\n\n' + fairScoringRules('0-10') + '\n' +
+        '- Apply the same rules to sectionScores (0-100): a section of correct-but-shallow answers sits mid-scale, not near zero; genuinely empty or wrong answers stay low; do not inflate.\n' +
+        '- Each questionWiseEvaluation item is ONE question including all its follow-up answers (see the transcript); its evaluatorNote states what was demonstrated first, then the gap.\n\n' +
         'Be honest about uncertainty: for every score also say how CONFIDENT you are given the evidence — "low" when answers were thin, vague, mostly prompted, contradictory, or the transcript looks garbled (likely speech-to-text errors); "medium" when usable but limited; "high" only when well evidenced. Never inflate confidence. ' +
         'Return strict JSON only, no markdown, no preamble.',
       messages: [
@@ -327,9 +346,12 @@ export async function POST(req: NextRequest) {
         .map((e: { text?: string }) => ({ response: e.text }))
       // Per-question evidence tag (evidence-linked, audit-able).
       if (Array.isArray(report.questionWiseEvaluation)) {
-        report.questionWiseEvaluation = report.questionWiseEvaluation.map((q: { candidateResponse?: string }) => ({
-          ...q, status: isNonEvaluableResponse(q.candidateResponse) ? INSUFFICIENT_EVIDENCE : 'SCORED',
-        }))
+        report.questionWiseEvaluation = report.questionWiseEvaluation.map((q: { candidateResponse?: string; score?: number; keyPointsCovered?: unknown; keyPointsMissed?: unknown }) => {
+          // Score ↔ evidence consistency (fair scoring safety net, both directions).
+          const c = typeof q.score === 'number' ? reconcileQuestionScore({ score: q.score, keyPointsCovered: q.keyPointsCovered, keyPointsMissed: q.keyPointsMissed }) : null
+          if (c?.adjusted) console.info(JSON.stringify({ evt: 'question_score_reconciled', interviewId, from: q.score, to: c.score, why: c.adjusted }))
+          return { ...q, ...(c ? { score: c.score } : {}), status: isNonEvaluableResponse(q.candidateResponse) ? INSUFFICIENT_EVIDENCE : 'SCORED' }
+        })
       }
       // Whole-interview gate: an unengaged interview is NOT a polished pass/fail.
       if (!interviewHasAnyEvidence(evResponses)) {
