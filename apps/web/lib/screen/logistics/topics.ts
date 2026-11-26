@@ -1,6 +1,7 @@
 import type { KnockoutQuestion } from '@/lib/screen/position-config'
 import type { LogisticsConfig } from './config'
 import { workAuthQuestion } from './config'
+import { knockoutAnsweredByFacts, type CandidateFacts } from '@/lib/screen/session/facts'
 
 // ── Logistics topic tracking (Fixpack 6 #4) — Screen-scoped ────────────────
 // The segment used to rely on the model re-deriving "what have I asked?" from
@@ -90,7 +91,7 @@ export function isRepeat(topic: LogisticsTopic, state: TopicState): boolean {
 /** Deterministic line for a topic — used when the model's line would repeat one. */
 export function scriptedForTopic(topic: LogisticsTopic, cfg: LogisticsConfig, knockouts: KnockoutQuestion[], state: TopicState): string {
   const lead = state.lastReplySilent ? `No problem — we can come back to that with the recruiter. ` : `Thanks. `
-  if (topic === 'notice') return `${lead}What's your current notice period, and what's the earliest you could start?`
+  if (topic === 'notice') return `${lead}What's your current notice period?`
   if (topic === 'comp') return `${lead}What are your compensation expectations for this role?`
   if (topic === 'workauth') return `${lead}${workAuthQuestion(cfg)}`
   if (topic.startsWith('knockout:')) {
@@ -98,7 +99,7 @@ export function scriptedForTopic(topic: LogisticsTopic, cfg: LogisticsConfig, kn
     const firstKnockout = !state.asked.has(topicOrder(knockouts).find((t) => t.startsWith('knockout:')) ?? 'close')
     return `${firstKnockout ? `${lead}A couple of quick ones from the hiring team. ` : `${lead}`}${k?.question ?? ''}`.trim()
   }
-  if (topic === 'location') return `${lead}Where are you based, and what kind of work setup are you looking for?`
+  if (topic === 'location') return `${lead}Where are you based at the moment?`
   return `Thanks — I've noted all of that for the team.`
 }
 
@@ -116,4 +117,30 @@ export function describeTopics(topicsIn: Iterable<LogisticsTopic>, knockouts: Kn
     }
   }
   return names.length ? names.join('; ') : 'none yet'
+}
+
+// ── Known-facts guards (real-user bug: "relocate to <the city they're in>") ──
+
+export interface FactSkips { state: TopicState; acks: string[]; answers: Record<string, string> }
+
+/**
+ * Hiring-team questions already answered by known facts are marked asked (so
+ * nextUncovered skips them) and recorded — never read out verbatim. Returns the
+ * acknowledgements to speak ("You're already in Pune, so relocation isn't a concern.").
+ */
+export function skipAnsweredKnockouts(state: TopicState, knockouts: KnockoutQuestion[], facts: CandidateFacts, jobLocation?: string, alreadySkipped: Record<string, string> = {}): FactSkips {
+  const asked = new Set(state.asked)
+  const acks: string[] = []
+  const answers: Record<string, string> = { ...alreadySkipped }
+  for (const k of knockouts) {
+    const topic = `knockout:${k.id}` as LogisticsTopic
+    if (asked.has(topic)) continue
+    if (answers[k.id]) { asked.add(topic); continue }
+    const hit = knockoutAnsweredByFacts(k.question, facts, jobLocation)
+    if (!hit) continue
+    asked.add(topic)
+    answers[k.id] = hit.answer
+    if (!acks.includes(hit.ack)) acks.push(hit.ack)
+  }
+  return { state: { ...state, asked }, acks, answers }
 }

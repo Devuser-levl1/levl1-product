@@ -23,14 +23,19 @@ const num = (v: string | undefined, d: number) => (v !== undefined && v.trim() !
 
 export const BARGE_IN_CONFIG = {
   enabled: (process.env.NEXT_PUBLIC_BARGE_IN_ENABLED ?? 'true') !== 'false',
-  /** Sustained candidate speech needed to interrupt (ms). Higher = fewer false triggers, slower. */
-  minSpeechMs: num(process.env.NEXT_PUBLIC_BARGE_IN_MIN_SPEECH_MS, 400),
-  /** Speech must be this many × louder than the calibrated ambient+echo level. */
-  ratio: num(process.env.NEXT_PUBLIC_BARGE_IN_RATIO, 3),
-  /** Absolute floor in dBFS — quieter than this is never speech. */
-  minDb: num(process.env.NEXT_PUBLIC_BARGE_IN_MIN_DB, -42),
-  calibrateMs: 300,
-  armGraceMs: 600,
+  // Real-user bug #5 (2026-11-26): a question was cut off mid-sentence — echo of
+  // the interviewer's own voice (speakers on) or a cough tripped the detector.
+  // Thresholds raised and calibration made robust; a trigger that turns out to
+  // be echo / no speech now re-delivers the question (room: turn-guards).
+  /** Sustained candidate speech needed to interrupt (ms). Higher = fewer false triggers, slower. (was 400) */
+  minSpeechMs: num(process.env.NEXT_PUBLIC_BARGE_IN_MIN_SPEECH_MS, 650),
+  /** Speech must be this many × louder than the calibrated ambient+echo level. (was 3) */
+  ratio: num(process.env.NEXT_PUBLIC_BARGE_IN_RATIO, 3.5),
+  /** Absolute floor in dBFS — quieter than this is never speech. (was -42) */
+  minDb: num(process.env.NEXT_PUBLIC_BARGE_IN_MIN_DB, -40),
+  /** Calibration window (ms) — long enough to hear the TTS at full level, not just its quiet onset. (was 300) */
+  calibrateMs: num(process.env.NEXT_PUBLIC_BARGE_IN_CALIBRATE_MS, 600),
+  armGraceMs: 800,
   preRollMs: 250,       // audio kept from before the detected onset
   maxBufferMs: 12_000,  // stop buffering if nobody takes it
 }
@@ -158,8 +163,10 @@ export class BargeInDetector {
 
     if (elapsed < this.cfg.calibrateMs) { this.calib.push(rms); return }
     if (!this.threshold) {
+      // 75th percentile, not the median: TTS starts softly, so the median
+      // underestimated the echo level and later loud phrases self-triggered.
       const sorted = [...this.calib].sort((a, b) => a - b)
-      this.baseline = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 1e-4
+      this.baseline = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))] : 1e-4
       this.threshold = this.thresholdFor(this.baseline)
     }
     if (elapsed < this.cfg.armGraceMs) return
@@ -173,7 +180,8 @@ export class BargeInDetector {
         this.onsetFrame = -1
         // Track the echo level as the TTS gets louder/softer (slow EMA over
         // non-speech frames only), so a loud later phrase can't self-trigger.
-        this.baseline = this.baseline * 0.9 + rms * 0.1
+        // Rises fast, falls slow — echo peaks matter more than troughs.
+        this.baseline = rms > this.baseline ? this.baseline * 0.7 + rms * 0.3 : this.baseline * 0.95 + rms * 0.05
         this.threshold = this.thresholdFor(this.baseline)
       }
     }

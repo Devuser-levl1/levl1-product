@@ -89,7 +89,7 @@ export function constraintsForModel(cfg: LogisticsConfig): string {
     ...(cfg.hybridDaysPerWeek && cfg.workModes?.includes('hybrid')
       ? [`- Hybrid means ${cfg.hybridDaysPerWeek} day${cfg.hybridDaysPerWeek > 1 ? 's' : ''} per week in the office${cfg.location ? ` (${cfg.location})` : ''} → if they want hybrid, confirm they can do that many office days; negotiate like a work-mode conflict if not`]
       : []),
-    cfg.relocation ? `- Relocation: ${RELOCATION_LABEL[cfg.relocation]}` : `- Relocation: not specified → just record`,
+    cfg.relocation ? `- Relocation: ${RELOCATION_LABEL[cfg.relocation]}${cfg.location ? ` — applies ONLY to candidates NOT already based in ${cfg.location}` : ''}` : `- Relocation: not specified → just record`,
     cfg.maxNoticeDays !== undefined || cfg.targetStartBy
       ? `- Start: the team hopes to have someone start soon (do NOT state exact internal targets; just capture their notice period and earliest start)`
       : `- Start: not specified → just record notice period and earliest start`,

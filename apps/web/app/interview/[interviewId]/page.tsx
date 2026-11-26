@@ -21,6 +21,7 @@ import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
 import { PRODUCTION_INTERVIEW_MINUTES, CULTURE_FIT_RESERVE_SEC, MIN_QUESTION_SEC } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
+import { wrapLine, signOff, noQuestions, closingFallback, isScoredSegment, CLOSING_ASK, CLOSING_ANYTHING_ELSE, CLOSING_MAX_QUESTIONS, CLOSING_REPLY_TIMEOUT_MS } from '@/lib/screen/session/closing'
 import { logisticsIntro, LOGISTICS_MAX_MS, LOGISTICS_HARD_CAP_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
 import { CaptureNotice, MediaConsent } from '@/components/screen/candidate/CaptureNotice'
@@ -28,6 +29,9 @@ import { digest, type TimelineEvent } from '@/lib/screen/workspace/timeline'
 import { LANGUAGE_LABEL, WORKSPACE_LANGUAGES, type PublicTask } from '@/lib/screen/workspace/task'
 import { hasWorkspace, isInterviewMode, type InterviewMode } from '@/lib/screen/workspace/modes'
 import { ScreenLogo } from '@/components/screen/brand/ScreenLogo'
+import { mergeFacts, sanitizeFacts, locationFromText, type CandidateFacts } from '@/lib/screen/session/facts'
+import { oneQuestion } from '@/lib/screen/interview/single-question'
+import { endsMidThought, isLikelyEcho, hasRealWords } from '@/lib/screen/interview/turn-guards'
 
 /* ── Utility helpers ─────────────────────────────────────────────── */
 const wordCount0 = (t: string) => t.trim().split(/\s+/).filter(Boolean).length
@@ -64,7 +68,10 @@ const SILENCE_THRESHOLDS = {
 // every turn, the single biggest source of perceived "robotic" lag. 1500ms still
 // tolerates a thinking pause (the timer resets on each new interim transcript)
 // but responds far more promptly. Env-tunable for further tuning.
-const RESPONSE_ENDPOINT_MS = Math.max(700, Number(process.env.NEXT_PUBLIC_RESPONSE_ENDPOINT_MS) || 1500)
+// Web Speech fallback end-of-turn silence. Real-user bug #3: 1500 ms cut answers
+// on a thinking pause → 2200 ms, +1500 ms when the answer ends mid-thought.
+const RESPONSE_ENDPOINT_MS = Math.max(700, Number(process.env.NEXT_PUBLIC_RESPONSE_ENDPOINT_MS) || 2200)
+const RESPONSE_ENDPOINT_INCOMPLETE_EXTRA_MS = 1500
 
 /* ── Keyword trigger lists (checked before calling Claude) ───────── */
 // Candidate asking about fit/suitability → redirect and continue
@@ -572,6 +579,17 @@ export default function InterviewPage() {
   const redirectGivenRef      = useRef(false)    // irrelevance redirect given this question
   const shortAnswerAskedRef   = useRef(false)    // follow-up for short answer already asked
   const stuckActiveRef        = useRef(false)    // Bug A: gave the one diluted hint; next weak reply → move on
+  // ── Real-user fixes (2026-11-26) ──
+  const factsRef              = useRef<CandidateFacts>({})              // #1 running candidate facts (warm-up → logistics → Q&A)
+  const warmupLinesRef        = useRef<string[]>([])                    // #1 warm-up replies (context for fact extraction)
+  const skippedKnockoutsRef   = useRef<Record<string, string>>({})      // #1 hiring-team questions answered by known facts
+  const pendingPartsRef       = useRef<string[]>([])                    // #2 held parts of a split (clubbed) question
+  const extraFollowUpsRef     = useRef(0)                               // #2 follow-up allowance for held parts (≤2)
+  const turnSeqRef            = useRef(0)                               // #3 bump to abandon an in-flight turn (reopened)
+  const reopenPrefixRef       = useRef<string | null>(null)             // #3 what they'd said before resuming
+  const closingQaRef          = useRef(false)                           // #4 listening allowed during the closing questions
+  const interruptedLineRef    = useRef<{ text: string; at: number } | null>(null)  // #5 line cut by a barge-in
+  const redeliverRef          = useRef<(() => Promise<void>) | null>(null)         // #5 finish an interrupted line
   const lastConfirmBackRef    = useRef(false)    // mirroring: never confirm-back on consecutive turns
   const followUpCountRef      = useRef(0)        // I-P0-3: follow-ups asked on this question (cap 3)
   const awaitingMoveOnChoiceRef = useRef(false)  // waiting for candidate's "more time or move on" reply
@@ -987,6 +1005,9 @@ export default function InterviewPage() {
   const speakText = useCallback(async (text: string, opts: { bargeIn?: boolean } = {}): Promise<'done' | 'interrupted'> => {
     // Always cancel previous audio before starting new (Fix 4)
     stopAllAudio()
+    // #3: a resume-window watcher (reopen the candidate's turn) must never stay
+    // armed while Ananya speaks; speakText re-arms barge-in itself below.
+    bargeInRef.current?.disarm()
 
     // Fix 4: Sanitize text — remove non-ASCII chars that cause gibberish
     const cleanText = text
@@ -1020,6 +1041,8 @@ export default function InterviewPage() {
         if (wrapUpFiredRef.current || !isMountedRef.current) return
         interrupted = true
         bargeInPendingRef.current = true
+        // #5: remember the line that was cut, so echo / no-speech re-delivers it.
+        interruptedLineRef.current = { text: cleanText, at: Date.now() }
         aiSpeakingRef.current = false   // what follows is the candidate, not echo
         reportVoice('barge_in')         // telemetry: proves barge-in fires in real interviews
         stop()
@@ -1083,6 +1106,7 @@ export default function InterviewPage() {
         if (interrupted) return 'interrupted'
         void result
         bargeInRef.current?.disarm()
+        interruptedLineRef.current = null   // delivered in full
         // Brief grace so the tail/echo of the last words isn't captured as speech.
         setTimeout(() => { aiSpeakingRef.current = false }, 500)
         return 'done'
@@ -1127,7 +1151,7 @@ export default function InterviewPage() {
     const bargedIn = bargeInPendingRef.current
     bargeInPendingRef.current = false
     const takeBargeInAudio = bargedIn ? () => bargeInRef.current?.takePreroll() ?? null : undefined
-    if (wrapUpFiredRef.current || phaseRef.current === 'closing' || phaseRef.current === 'completed') { bargeInRef.current?.disarm(); return }
+    if ((wrapUpFiredRef.current || phaseRef.current === 'closing' || phaseRef.current === 'completed') && !closingQaRef.current) { bargeInRef.current?.disarm(); return }
     if (micFailed) { bargeInRef.current?.disarm(); setTextInputMode(true); return }
 
     // Reset per-listen state (shared by Deepgram + Web Speech fallback)
@@ -1150,12 +1174,30 @@ export default function InterviewPage() {
       // false-termination loop (his "…end the interview…" being re-heard as a request).
       if (aiSpeakingRef.current) { liveTranscriptRef.current = ''; setLiveTranscript(''); return }
       if (!text.trim() || capturedRef.current) return
+      // #5: the first capture after a barge-in may be Ananya's OWN interrupted
+      // line (echo in the pre-roll) or just a breath — never treat that as an
+      // answer: finish the question instead.
+      const intr = interruptedLineRef.current
+      if (intr && Date.now() - intr.at < 60_000) {
+        if (isLikelyEcho(text, intr.text) || !hasRealWords(text)) {
+          capturedRef.current = true
+          console.warn('[turn] discarded echo/noise after barge-in; re-delivering the line')
+          void redeliverRef.current?.()
+          return
+        }
+        interruptedLineRef.current = null   // a genuine barge-in: the candidate is answering
+      }
       capturedRef.current = true
       candidateSpokeRef.current = true   // genuine candidate input captured this session
       noInputStrikesRef.current = 0      // reset the silence counter
       const warmupCb = warmupCaptureRef.current
       if (warmupCb) warmupCb(text)
-      else captureResponse(text)
+      else {
+        // #3: they resumed after the turn closed — join it to what they'd already said.
+        const prefix = reopenPrefixRef.current
+        reopenPrefixRef.current = null
+        captureResponse(prefix ? `${prefix} ${text}` : text)
+      }
     }
 
     // ── Web Speech fallback — only if Deepgram can't start (no key, mic denied,
@@ -1177,7 +1219,7 @@ export default function InterviewPage() {
           if (speechStartedAtRef.current === null) speechStartedAtRef.current = Date.now()
           setListeningHint('')
           clearSilenceTimers()
-          const captureTimer = setTimeout(() => captureNow(liveTranscriptRef.current), RESPONSE_ENDPOINT_MS)
+          const captureTimer = setTimeout(() => captureNow(liveTranscriptRef.current), RESPONSE_ENDPOINT_MS + (endsMidThought(text) ? RESPONSE_ENDPOINT_INCOMPLETE_EXTRA_MS : 0))
           silenceTimersRef.current = [captureTimer]
         }
       }
@@ -1245,6 +1287,18 @@ export default function InterviewPage() {
 
     setIsListening(true)
     setPhase('listening')
+
+    // #5: a barge-in followed by silence was most likely noise/echo — finish the
+    // interrupted line rather than leave the candidate with half a question.
+    if (bargedIn && interruptedLineRef.current) {
+      const t = setTimeout(() => {
+        if (!hasSpokenRef.current && !capturedRef.current && interruptedLineRef.current && phaseRef.current === 'listening') {
+          capturedRef.current = true
+          void redeliverRef.current?.()
+        }
+      }, 4500)
+      silenceTimersRef.current.push(t)
+    }
 
     // ── Graduated cold-start silence timers ───────────────────
     // t5: show text indicator — no audio
@@ -1330,7 +1384,8 @@ export default function InterviewPage() {
       }
     }, SILENCE_THRESHOLDS.AUTO_ADVANCE * 1000)
 
-    silenceTimersRef.current = [t5, t12, t20, t30]
+    // Keep any timer set earlier in THIS listen (e.g. the #5 re-delivery timer).
+    silenceTimersRef.current = [...silenceTimersRef.current, t5, t12, t20, t30]
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [micFailed, setPhase, clearSilenceTimers])
 
@@ -1342,6 +1397,21 @@ export default function InterviewPage() {
     setListeningHint('')
     liveTranscriptRef.current = ''
   }, [clearSilenceTimers, stopActiveRecognizer])
+
+  // #5 (real-user bug): finish a line that a FALSE barge-in cut off (echo of
+  // Ananya's own voice, a cough, background noise). Fail loud: it's logged and
+  // the question is re-delivered in full — never silently dropped.
+  redeliverRef.current = async () => {
+    const line = interruptedLineRef.current?.text
+    interruptedLineRef.current = null
+    if (!line || (wrapUpFiredRef.current && !closingQaRef.current)) return
+    stopListening()
+    reportVoice('barge_in', 'false_trigger_redelivered')
+    const note = 'Sorry, let me finish that.'
+    addTranscript({ speaker: 'ai', text: note, type: 'transition' })
+    if ((await speakText(`${note} ${line}`, { bargeIn: true })) !== 'interrupted') await delay(300)
+    startListening()
+  }
 
   /* ── Submit text input (fallback) ─────────────────────────── */
   const submitTextInput = useCallback(() => {
@@ -1575,7 +1645,34 @@ export default function InterviewPage() {
       return
     }
 
-    addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+    // ── 5b. Reopen window (#3, real-user bug): until the brain's decision is in,
+    // fresh speech means the candidate wasn't finished — abandon this turn and
+    // keep listening, joining what they say to what they'd already said.
+    // (The candidate line is added to the transcript only after this window,
+    // so a reopened turn is never recorded twice.)
+    const turnSeq = ++turnSeqRef.current
+    {
+      const det = bargeInRef.current
+      const sig = liveSignalsRef.current
+      if (det && BARGE_IN_CONFIG.enabled && !sig.micFailed && !sig.textInputMode && !warmupActiveRef.current) {
+        det.arm(() => {
+          if (turnSeq !== turnSeqRef.current || wrapUpFiredRef.current || aiSpeakingRef.current) return
+          turnSeqRef.current++                 // abandon the in-flight evaluation
+          reopenPrefixRef.current = responseText
+          bargeInPendingRef.current = true     // the next listen takes the buffered audio — no lost words
+          console.info('[turn] candidate resumed — reopening the turn')
+          startListening()
+          // If it was only noise and they don't actually continue, keep the original answer.
+          const reopenSeq = turnSeqRef.current
+          setTimeout(() => {
+            if (turnSeqRef.current !== reopenSeq || hasSpokenRef.current || capturedRef.current || reopenPrefixRef.current !== responseText) return
+            reopenPrefixRef.current = null
+            capturedRef.current = true
+            void captureResponse(responseText)
+          }, 4000)
+        })
+      }
+    }
 
     // ── 6. (Bug B) Short answers no longer get a HARDCODED, context-free probe
     // ("Could you walk me through a specific example of that?") — that fired out of
@@ -1621,14 +1718,36 @@ export default function InterviewPage() {
           timeLeftSec: timeRemainingRef.current,
           // Stuck handling: the room already gave its ONE simpler hint here.
           easedOff: stuckActiveRef.current,
+          // #1 running facts (never re-ask) · #2 held parts of a split question + their allowance.
+          facts: factsRef.current,
+          pendingParts: pendingPartsRef.current,
+          extraFollowUps: extraFollowUpsRef.current,
       })
       ev = evaluation.ev
       finalEval = evaluation.final
+      // #1: facts the candidate stated in this answer → the running record.
+      void evaluation.final.then((f) => {
+        const nf = (f as unknown as { facts?: unknown }).facts
+        if (nf) factsRef.current = mergeFacts(factsRef.current, sanitizeFacts(nf))
+      }).catch(() => {})
       if (turnTimingRef.current) { turnTimingRef.current.brainEnd = Date.now(); turnTimingRef.current.brainDegraded = !!ev.degraded }
       const cov = (ev as unknown as { coverage?: { uncoveredKeys?: unknown } }).coverage
       if (cov && Array.isArray(cov.uncoveredKeys)) uncoveredKeysRef.current = (cov.uncoveredKeys as unknown[]).filter((k): k is string => typeof k === 'string')
     } catch {
       ev = { ...ev, degraded: true, degradedReason: 'network', evaluatorNote: 'Not evaluated live — the AI evaluator was unreachable.' }
+    }
+
+    // #3: close the reopen window. If the candidate resumed, this turn is void —
+    // the reopened listen carries their full answer.
+    bargeInRef.current?.disarm()
+    if (turnSeq !== turnSeqRef.current) return
+    addTranscript({ speaker: 'candidate', text: responseText, questionId: q.id, type: 'preset' })
+    // #2: asks the brain held back (it may only ask one at a time) join the queue.
+    const held = (ev as unknown as { heldQuestions?: unknown }).heldQuestions
+    if (Array.isArray(held) && held.length) {
+      const add = held.filter((h): h is string => typeof h === 'string' && !pendingPartsRef.current.includes(h))
+      pendingPartsRef.current = [...pendingPartsRef.current, ...add].slice(0, 3)
+      extraFollowUpsRef.current = Math.min(2, Math.max(extraFollowUpsRef.current, pendingPartsRef.current.length))
     }
 
     // ── 7b. Brain unavailable → never silently accept ─────────────────
@@ -1716,10 +1835,17 @@ export default function InterviewPage() {
     // I-P0-3 (Part 3a): honour at most MAX_FOLLOWUPS per question. Past the cap we
     // advance gracefully even if the model still wants to drill — the dimension is
     // recorded as partially-evidenced (gaps already in keyPointsMissed).
-    const MAX_FOLLOWUPS = 3
+    // #2: a split question's held parts get their own allowance (≤2) on top of 3.
+    const MAX_FOLLOWUPS = 3 + extraFollowUpsRef.current
     const withinBudget  = followUpCountRef.current < MAX_FOLLOWUPS
     if (ev.shouldAskFollowUp && ev.followUpQuestion && withinBudget) {
       followUpCountRef.current += 1
+      // A held part that this follow-up now asks is no longer pending.
+      if (pendingPartsRef.current.length) {
+        const words = (t: string) => new Set(t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3))
+        const fq = words(ev.followUpQuestion)
+        pendingPartsRef.current = pendingPartsRef.current.filter((p) => { const pw = Array.from(words(p)); return !pw.length || pw.filter((w) => fq.has(w)).length / pw.length < 0.4 })
+      }
       addTranscript({ speaker: 'ai', text: ev.followUpQuestion, questionId: q.id, type: 'followup' })
       if ((await speakText(ev.speech?.followUpQuestion || ev.followUpQuestion, { bargeIn: true })) !== 'interrupted') await delay(1500)
       startListening()
@@ -1784,6 +1910,8 @@ export default function InterviewPage() {
     shortAnswerAskedRef.current   = false
     stuckActiveRef.current        = false // Bug A: fresh stuck-state per question
     followUpCountRef.current       = 0    // I-P0-3: fresh follow-up budget per question
+    pendingPartsRef.current        = []   // #2: no held parts from the previous question
+    extraFollowUpsRef.current      = 0
     awaitingMoveOnChoiceRef.current = false
     resetAnswerTelemetry()                // Build 02: fresh T2 timing/paste capture per question
 
@@ -1826,10 +1954,16 @@ export default function InterviewPage() {
       await delay(500)
     }
 
-    // Speak the question itself
-    addTranscript({ speaker: 'ai', text: q.question, questionId: q.id, type: 'preset' })
+    // Speak the question itself — ONE ask per turn (#2). A clubbed bank question
+    // is split: the first ask now, the rest held as follow-ups (with their own
+    // allowance, so the cap doesn't starve them). Work samples / whiteboard keep
+    // their full brief.
+    const split = q.kind === 'worksample' || q.section === 'whiteboard' ? { text: q.question, rest: [] as string[] } : oneQuestion(q.question)
+    pendingPartsRef.current = split.rest
+    extraFollowUpsRef.current = Math.min(2, split.rest.length)
+    addTranscript({ speaker: 'ai', text: split.text, questionId: q.id, type: 'preset' })
     // Barge-in allowed except on whiteboard questions (they need the board first).
-    if ((await speakText(q.question, { bargeIn: q.section !== 'whiteboard' && q.kind !== 'worksample' })) === 'interrupted') {
+    if ((await speakText(split.text, { bargeIn: q.section !== 'whiteboard' && q.kind !== 'worksample' })) === 'interrupted') {
       startListening()
       return
     }
@@ -1891,7 +2025,7 @@ export default function InterviewPage() {
       duration:         position.interviewDuration ?? PRODUCTION_INTERVIEW_MINUTES,
       // Logistics (comp / notice / work-auth) is evaluated separately and is
       // recruiter-only — never fed into competency scoring.
-      transcript:       transcriptRef.current.filter(e => e.segment !== 'logistics'),
+      transcript:       transcriptRef.current.filter(e => isScoredSegment(e.segment)),
       questionResponses: responsesRef.current,
       resumeText:       '',
       techStack:        position.techStack ?? [],
@@ -1997,7 +2131,7 @@ export default function InterviewPage() {
   }, [candidate, interview, interviewId, stopAllAudio, stopListening, addTranscript, speakText, setPhase, updateInterview])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const startClosing = useCallback(async (opts?: { closing?: string; alreadyClaimed?: boolean }) => {
+  const startClosing = useCallback(async (opts?: { timeUp?: boolean; alreadyClaimed?: boolean }) => {
     // exactly-once wrap-up (Build 01-B2). handleTimeUp claims the flag itself and
     // passes alreadyClaimed so this doesn't no-op out from under it.
     if (!opts?.alreadyClaimed) {
@@ -2006,14 +2140,19 @@ export default function InterviewPage() {
     }
     setPhase('closing')
     const firstName = candidate?.name.split(' ')[0] || 'there'
-    const closing = opts?.closing ??
-      `Thank you ${firstName}, that brings us to the end of our interview today. ` +
-      `You covered a great deal of ground and I appreciate your thoughtfulness in each response. ` +
-      `The team will review your evaluation and be in touch with next steps. ` +
-      `It was great speaking with you.`
 
-    addTranscript({ speaker: 'ai', text: closing, type: 'closing' })
-    await speakText(closing)
+    // #4 (real-user bug): no more abrupt end. wrap-up signal → "any questions for
+    // me?" → honest answers (no invented specifics) → sign-off. Runs on a normal
+    // end, an early end AND time-up (one question then). The candidate's
+    // questions are UNSCORED: segment 'closing_qa' is excluded by every scorer.
+    const wrap = wrapLine(firstName, !!opts?.timeUp)
+    addTranscript({ speaker: 'ai', text: wrap, type: 'closing' })
+    await speakText(wrap)
+    await runClosingQa(opts?.timeUp ? 1 : CLOSING_MAX_QUESTIONS)
+    const bye = signOff(firstName)
+    addTranscript({ speaker: 'ai', text: bye, type: 'closing' })
+    setPhase('closing')
+    await speakText(bye)
     finishInterview()
     generateReport().catch(console.error)
     // Increment usage counter (fire-and-forget) — NEVER for demo runs (Build 05),
@@ -2027,6 +2166,49 @@ export default function InterviewPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, setPhase, addTranscript, speakText])
+
+  /* ── Closing Q&A (#4): the candidate's questions, unscored ─────────────── */
+  // Reuses the warm-up reply routing (warmupCaptureRef) so Q&A silence timers and
+  // evaluation stay off. closingQaRef lets startListening run after wrap-up.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const runClosingQa = useCallback(async (maxQuestions: number) => {
+    const sig = liveSignalsRef.current
+    closingQaRef.current = true
+    warmupActiveRef.current = true
+    try {
+      for (let i = 0; i < maxQuestions; i++) {
+        const ask = i === 0 ? CLOSING_ASK : CLOSING_ANYTHING_ELSE
+        addTranscript({ speaker: 'ai', text: ask, type: 'closing', segment: 'closing_qa' })
+        await speakText(ask, { bargeIn: true })
+        if (sig.micFailed && !sig.textInputMode) break
+        const reply = await awaitWarmupReply(CLOSING_REPLY_TIMEOUT_MS)
+        // "No", silence, or "I'm done" here all just mean: no (more) questions.
+        if (!reply || noQuestions(reply) || detectTerminationIntent(reply)) {
+          if (reply) addTranscript({ speaker: 'candidate', text: reply, type: 'closing', segment: 'closing_qa' })
+          break
+        }
+        addTranscript({ speaker: 'candidate', text: reply, type: 'closing', segment: 'closing_qa' })
+        setPhase('closing')
+        let answer = ''
+        try {
+          const r = await fetch('/api/interview/closing', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: reply, role: position?.title, company: position?.company, interviewerName: interviewerRef.current.name }),
+          })
+          if (r.ok) answer = (await r.json()).line ?? ''
+        } catch { /* fallback below */ }
+        if (!answer) answer = closingFallback(reply)
+        addTranscript({ speaker: 'ai', text: answer, type: 'closing', segment: 'closing_qa' })
+        await speakText(answer, { bargeIn: true })
+      }
+    } finally {
+      closingQaRef.current = false
+      warmupActiveRef.current = false
+      warmupCaptureRef.current = null
+      stopListening()
+    }
+  // awaitWarmupReply is declared further down (called at run time, not in deps).
+  }, [addTranscript, speakText, stopListening, setPhase, position])
 
   /* ── Likert culture-fit segment (Build 08): after Q&A, before closing ─── */
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2107,11 +2289,8 @@ export default function InterviewPage() {
     wrapUpFiredRef.current = true
     stopAllAudio()       // cut off any in-progress next-question TTS
     stopListening()
-    const firstName = candidate?.name.split(' ')[0] || 'there'
-    const closing = `Thank you ${firstName} — that's the time we have for today. ` +
-      `I appreciate everything you shared. The team will review your evaluation and be in touch with next steps. It was great speaking with you.`
-    await startClosing({ closing, alreadyClaimed: true })
-  }, [stopListening, stopAllAudio, startClosing, candidate])
+    await startClosing({ timeUp: true, alreadyClaimed: true })
+  }, [stopListening, stopAllAudio, startClosing])
 
   // Fix 2: Whiteboard Done handler — resume AI flow after candidate submits diagram
   const handleWhiteboardDone = useCallback(async () => {
@@ -2252,7 +2431,7 @@ export default function InterviewPage() {
       if (!turns.some(t => t.speaker === 'candidate')) return
       fetch('/api/interview/logistics', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interviewId, action: 'finalize', turns, completed }),
+        body: JSON.stringify({ interviewId, action: 'finalize', turns, completed, facts: factsRef.current, skipped: skippedKnockoutsRef.current }),
       }).catch(() => {})
     }
     const say = async (text: string, bargeIn = true, topic?: string) => {
@@ -2261,7 +2440,8 @@ export default function InterviewPage() {
       await speakText(text, { bargeIn })
     }
 
-    await say(logisticsIntro(), true, 'location')
+    // #1: open on what we DON'T know yet (location said in the warm-up is skipped).
+    await say(logisticsIntro(factsRef.current), true, 'location')   // work setup is part of the location topic
     let silent = 0
     let budgetMs = LOGISTICS_MAX_MS   // server may extend it for recruiter knockout questions
     while (!wrapUpFiredRef.current) {
@@ -2281,14 +2461,17 @@ export default function InterviewPage() {
       }
       const wrapNow = silent >= 2 || Date.now() - startedAt > budgetMs
       setPhase('processing')
-      let next: { say?: string; done?: boolean; budgetMs?: number; topic?: string } = {}
+      let next: { say?: string; done?: boolean; budgetMs?: number; topic?: string; facts?: unknown; skipped?: Record<string, string> } = {}
       try {
         const r = await fetch('/api/interview/logistics', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ interviewId, action: 'turn', turns, wrapNow }),
+          // #1: the running facts + what the warm-up already heard + knockouts already answered.
+          body: JSON.stringify({ interviewId, action: 'turn', turns, wrapNow, facts: factsRef.current, earlier: warmupLinesRef.current, skipped: skippedKnockoutsRef.current }),
         })
         if (r.ok) next = await r.json()
       } catch { /* fall through — never block the interview */ }
+      if (next.facts) factsRef.current = mergeFacts(factsRef.current, sanitizeFacts(next.facts))
+      if (next.skipped && typeof next.skipped === 'object') skippedKnockoutsRef.current = { ...skippedKnockoutsRef.current, ...next.skipped }
       if (typeof next.budgetMs === 'number' && next.budgetMs > budgetMs) budgetMs = Math.min(next.budgetMs, LOGISTICS_HARD_CAP_MS)
       if (wrapUpFiredRef.current) break
       if (!next.say) break
@@ -2324,6 +2507,14 @@ export default function InterviewPage() {
     addTranscript({ speaker: 'ai', text: opener, type: 'intro' })
     await speakText(opener, { bargeIn: true })
     const reply1 = await awaitWarmupReply(15000)
+    // #1: remember what the candidate says in passing ("calling from Pune").
+    const noteWarmup = (r: string) => {
+      if (!r) return
+      warmupLinesRef.current = [...warmupLinesRef.current, r].slice(-4)
+      const loc = locationFromText(r)
+      if (loc && !factsRef.current.location) factsRef.current = mergeFacts(factsRef.current, { location: loc })
+    }
+    noteWarmup(reply1)
 
     // Preserve Build-01: honor explicit termination even during warm-up.
     const term1 = detectTerminationIntent(reply1)
@@ -2342,6 +2533,7 @@ export default function InterviewPage() {
     addTranscript({ speaker: 'ai', text: followup, type: 'transition' })
     await speakText(followup, { bargeIn: true })
     const reply2 = await awaitWarmupReply(12000)
+    noteWarmup(reply2)
     const term2 = detectTerminationIntent(reply2)
     if (term2) { warmupActiveRef.current = false; warmupCaptureRef.current = null; await endByTermination(term2.reason); return }
 

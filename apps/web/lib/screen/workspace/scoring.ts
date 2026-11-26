@@ -7,6 +7,7 @@ import { digest, type TimelineEvent } from './timeline'
 import { sanitizeTask, type WorkSampleTask } from './task'
 import { sanitizeRubric, DIMENSION_LABEL } from '@/lib/screen/taskbank/types'
 import { isConfidence, minConfidence, type Confidence } from '@/lib/screen/session/confidence'
+import { isScoredSegment } from '@/lib/screen/session/closing'
 
 // ── Work-sample judgment scoring (Screen-scoped, server-only) ──────────────
 // SEPARATE axes from the competency score — never blended into it:
@@ -56,7 +57,7 @@ function defenseExchange(transcript: StoredEntry[], taskTitle: string): string[]
   const start = transcript.findIndex((e) => e.speaker === 'ai' && typeof e.text === 'string' && e.text.includes(taskTitle))
   if (start < 0) return []
   return transcript.slice(start + 1, start + 16)
-    .filter((e) => (e.speaker === 'ai' || e.speaker === 'candidate') && typeof e.text === 'string' && e.segment !== 'logistics')
+    .filter((e) => (e.speaker === 'ai' || e.speaker === 'candidate') && typeof e.text === 'string' && isScoredSegment(e.segment))
     .map((e) => `${e.speaker === 'ai' ? 'Interviewer' : 'Candidate'}: ${(e.text as string).slice(0, 700)}`)
 }
 

@@ -10,7 +10,9 @@ import {
 import { sanitizeKnockouts } from '@/lib/screen/position-config'
 import { resolveInterviewerVoice } from '@/lib/screen/interviewer-voice'
 import { computeVerdicts, sanitizeExtraction } from '@/lib/screen/logistics/result'
-import { describeTopics, inferTopic, isRepeat, nextUncovered, scriptedForTopic, topicState, type LogisticsTopic } from '@/lib/screen/logistics/topics'
+import { describeTopics, inferTopic, isRepeat, nextUncovered, scriptedForTopic, skipAnsweredKnockouts, topicState, type LogisticsTopic } from '@/lib/screen/logistics/topics'
+import { sanitizeFacts, mergeFacts, factsBlock, sameLocation, asksRelocation, type CandidateFacts } from '@/lib/screen/session/facts'
+import { oneQuestion } from '@/lib/screen/interview/single-question'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -66,6 +68,11 @@ export async function POST(req: NextRequest) {
     const budget = logisticsBudget(knockouts.length)
     const turns = cleanTurns(body.turns)
     const candidateTurns = turns.filter((t) => t.speaker === 'candidate').length
+    // Running candidate facts (warm-up → logistics → Q&A) + warm-up lines for context.
+    let facts: CandidateFacts = sanitizeFacts(body.facts)
+    const earlier = (Array.isArray(body.earlier) ? body.earlier : []).filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 400)).slice(-4)
+    const skippedIn = (body.skipped && typeof body.skipped === 'object' ? body.skipped : {}) as Record<string, unknown>
+    const skippedPrev: Record<string, string> = Object.fromEntries(Object.entries(skippedIn).filter(([k, v]) => typeof v === 'string' && /^[\w-]{1,40}$/.test(k)).map(([k, v]) => [k, (v as string).slice(0, 200)]))
     const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null
 
     // ── Finalize: extract → deterministic verdicts → persist ──
@@ -78,7 +85,10 @@ export async function POST(req: NextRequest) {
           const r = await client.messages.create({
             model: LIVE_INTERVIEW_MODEL, max_tokens: 500, temperature: 0,
             system: extractionSystem(cfg, defaultCurrency, new Date().toISOString().slice(0, 10), knockouts),
-            messages: [{ role: 'user', content: logisticsTurnUser(turns, false).replace(/\n\nWRAP_NOW[\s\S]*$/, '') + '\n\nExtract the JSON now.' }],
+            messages: [{ role: 'user', content: logisticsTurnUser(turns, false, undefined, undefined, earlier).replace(/\n\nWRAP_NOW[\s\S]*$/, '') +
+              `\n\n${factsBlock(facts)}` +
+              (Object.keys(skippedPrev).length ? `\nHiring-team questions answered from facts stated earlier (not asked aloud): ${Object.entries(skippedPrev).map(([id, a]) => `${id}: ${a}`).join('; ')}. Judge their verdicts from these.` : '') +
+              '\n\nExtract the JSON now.' }],
           })
           const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
           extracted = sanitizeExtraction(parseJson(text))
@@ -99,12 +109,26 @@ export async function POST(req: NextRequest) {
     // ── Turn ──
     const wrapNow = body.wrapNow === true || candidateTurns >= budget.maxReplies
     // Fixpack 6 #4: deterministic topic tracking — no topic is ever re-asked.
-    const state = topicState(turns, knockouts)
+    // Known facts can already answer a hiring-team question → skip it (never read it out).
+    const skips = skipAnsweredKnockouts(topicState(turns, knockouts), knockouts, facts, cfg.location, skippedPrev)
+    const state = skips.state
     const next = nextUncovered(state, knockouts)
+    const alreadyThere = sameLocation(cfg.location, facts.location) === true
+    // Acks only for questions skipped THIS turn (earlier skips were acknowledged then).
+    const ackPrefix = skips.acks.join(' ')
     const closeTurn = { say: `Thanks — I've noted all of that for the team.`, done: true, topic: 'close' as LogisticsTopic }
     // Guard every candidate line (model or scripted) against repeats.
-    const guard = (say: string, done: boolean, claimed?: unknown) => {
-      if (done || wrapNow) return { say, done: true, topic: 'close' as LogisticsTopic }
+    const guard = (rawSay: string, done: boolean, claimed?: unknown) => {
+      if (done || wrapNow) return { say: rawSay, done: true, topic: 'close' as LogisticsTopic }
+      // ONE question per turn (real-user bug: clubbed questions).
+      let say = oneQuestion(rawSay).text
+      // Never ask someone already in the job location to relocate there.
+      if (alreadyThere && asksRelocation(say)) {
+        console.warn(JSON.stringify({ evt: 'logistics_blocked_relocation', interviewId, location: facts.location }))
+        const ack = `You're already in ${facts.location}, so relocation isn't a concern.`
+        return next ? { say: `${ack} ${scriptedForTopic(next, cfg, knockouts, state).replace(/^Thanks\. /, '')}`, done: false, topic: next } : { say: `${ack} I've noted all of that for the team.`, done: true, topic: 'close' as LogisticsTopic }
+      }
+      if (ackPrefix && !say.includes(ackPrefix)) say = `${ackPrefix} ${say}`
       const topic = inferTopic(say, knockouts) ?? (typeof claimed === 'string' ? claimed as LogisticsTopic : null)
       if (topic && isRepeat(topic, state)) {
         console.warn('[interview/logistics] blocked repeat of topic', topic, '→', next ?? 'close')
@@ -116,7 +140,7 @@ export async function POST(req: NextRequest) {
       const s = scriptedTurn(cfg, candidateTurns, wrapNow, knockouts)
       return guard(s.say, s.done)
     }
-    if (!client) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
+    if (!client) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs, facts, skipped: skips.answers })
     try {
       const r = await client.messages.create({
         model: LIVE_INTERVIEW_MODEL, max_tokens: 220, temperature: 0.6,
@@ -124,16 +148,18 @@ export async function POST(req: NextRequest) {
         messages: [{ role: 'user', content: logisticsTurnUser(turns, wrapNow, {
           asked: describeTopics(state.asked, knockouts),
           next: next ? describeTopics([next], knockouts) : 'none — confirm and close (done=true)',
-        }) }],
+        }, facts, earlier) }],
       })
       const text = r.content.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text).join('')
       const j = parseJson(text)
+      // Facts the model extracted from the whole conversation so far (merged, never dropped).
+      facts = mergeFacts(facts, sanitizeFacts(j?.facts))
       const say = typeof j?.say === 'string' ? j.say.trim() : ''
-      if (!say) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
-      return NextResponse.json({ ...guard(say, j?.done === true, j?.topic), budgetMs: budget.maxMs })
+      if (!say) return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs, facts, skipped: skips.answers })
+      return NextResponse.json({ ...guard(say, j?.done === true, j?.topic), budgetMs: budget.maxMs, facts, skipped: skips.answers })
     } catch (e) {
       console.error('[interview/logistics] turn failed:', e instanceof Error ? e.message : e)
-      return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs })
+      return NextResponse.json({ ...scripted(), budgetMs: budget.maxMs, facts, skipped: skips.answers })
     }
   } catch (err) {
     console.error('[interview/logistics]', err instanceof Error ? err.message : err)

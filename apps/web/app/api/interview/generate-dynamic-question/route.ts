@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { INTERVIEW_MODEL } from '@/lib/screen/interview/model'
+import { oneQuestion } from '@/lib/screen/interview/single-question'
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       output_config: { effort: 'low' },
       system:
         'You are a senior technical interviewer conducting a live interview. ' +
-        'Generate exactly ONE focused question. ' +
+        'Generate exactly ONE focused question — one ask, one question mark, short enough to say in one breath (≤ 30 words). Never join asks with "and also" / "and what about". ' +
         'Reference the candidate\'s specific experience, projects, or technologies where possible. ' +
         'Prefer questions that test depth via a relevant edge case (failure modes, scale, concurrency, error handling) when the topic is technical. ' +
         'Be conversational — this should feel natural in a live interview, not like a written quiz. ' +
@@ -55,9 +56,11 @@ export async function POST(req: NextRequest) {
       }],
     })
 
-    const question = res.content[0].type === 'text'
+    const raw = res.content[0].type === 'text'
       ? res.content[0].text.trim()
       : 'Can you tell me more about that?'
+    // ONE question per turn, enforced in code (real-user bug: clubbed questions).
+    const question = oneQuestion(raw).text || raw
 
     return NextResponse.json({ question }, { status: 200 })
   } catch (err: unknown) {

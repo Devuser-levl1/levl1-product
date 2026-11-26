@@ -23,6 +23,7 @@
 // Realtime only — the interview-long recording for batch fraud diarization is
 // handled separately.
 
+import { endsMidThought } from './turn-guards'
 export interface ScribeWord { text: string; start?: number; end?: number }
 
 export interface ScribeSttHandlers {
@@ -56,8 +57,12 @@ export const SCRIBE_DEFAULTS = {
   // Segment commit after this much silence (ElevenLabs default ≈ 1.5s).
   vadSilenceSecs: num(process.env.NEXT_PUBLIC_SCRIBE_VAD_SILENCE_SECS, 1.4, 0.5, 4),
   // Turn ends when no new speech arrives this long after a commit.
-  // Effective pause tolerance ≈ vadSilenceSecs + commitGraceMs (default ≈ 2.3s).
-  commitGraceMs: num(process.env.NEXT_PUBLIC_SCRIBE_COMMIT_GRACE_MS, 900, 0, 4000),
+  // Effective pause tolerance ≈ vadSilenceSecs + commitGraceMs (default ≈ 2.8s).
+  // Real-user bug #3: 900 ms ended answers on a normal thinking pause — raised.
+  commitGraceMs: num(process.env.NEXT_PUBLIC_SCRIBE_COMMIT_GRACE_MS, 1400, 0, 6000),
+  // When the answer so far ends mid-thought ("…and", "so the", no full stop),
+  // wait this long instead (pause tolerance ≈ 1.4 + 3.2 ≈ 4.6s).
+  incompleteGraceMs: num(process.env.NEXT_PUBLIC_SCRIBE_INCOMPLETE_GRACE_MS, 3200, 0, 8000),
   // ScriptProcessor block size in samples (2048 @16 kHz ≈ 128 ms per chunk).
   chunkSamples: [1024, 2048, 4096].includes(Number(process.env.NEXT_PUBLIC_SCRIBE_CHUNK_SAMPLES)) ? Number(process.env.NEXT_PUBLIC_SCRIBE_CHUNK_SAMPLES) : 2048,
   filterBackgroundAudio: process.env.NEXT_PUBLIC_SCRIBE_FILTER_BACKGROUND === '1',
@@ -80,7 +85,7 @@ export const DEFAULT_KEYTERMS = [
 ]
 
 /* ── token pre-fetch (one spare token, used by the next turn) ─────────────── */
-export interface SttServerConfig { model: string; commitStrategy: 'vad' | 'turn_prediction'; vadSilenceSecs?: number; commitGraceMs?: number }
+export interface SttServerConfig { model: string; commitStrategy: 'vad' | 'turn_prediction'; vadSilenceSecs?: number; commitGraceMs?: number; incompleteGraceMs?: number }
 interface Minted { token: string; config: SttServerConfig }
 let spare: (Minted & { at: number }) | null = null
 let spareInflight: Promise<void> | null = null
@@ -99,6 +104,7 @@ async function mintToken(): Promise<Minted | null> {
         commitStrategy: c.commitStrategy === 'turn_prediction' ? 'turn_prediction' : 'vad',
         vadSilenceSecs: typeof c.vadSilenceSecs === 'number' ? c.vadSilenceSecs : undefined,
         commitGraceMs: typeof c.commitGraceMs === 'number' ? c.commitGraceMs : undefined,
+        incompleteGraceMs: typeof c.incompleteGraceMs === 'number' ? c.incompleteGraceMs : undefined,
       },
     }
   } catch { return null }
@@ -142,12 +148,14 @@ export class ScribeStt {
   private graceTimer: ReturnType<typeof setTimeout> | null = null
   private ended = false
   private grace: number
+  private incompleteGrace: number
   private vad: number
   private model = FALLBACK_MODEL
   private commitStrategy: 'vad' | 'turn_prediction' = 'vad'
 
   constructor(private handlers: ScribeSttHandlers, private opts: ScribeSttOptions = {}) {
     this.grace = opts.commitGraceMs ?? SCRIBE_DEFAULTS.commitGraceMs
+    this.incompleteGrace = SCRIBE_DEFAULTS.incompleteGraceMs
     this.vad = opts.vadSilenceSecs ?? SCRIBE_DEFAULTS.vadSilenceSecs
   }
 
@@ -160,6 +168,7 @@ export class ScribeStt {
     // Explicit per-call options win; then server env; then client defaults.
     if (this.opts.vadSilenceSecs === undefined && c.vadSilenceSecs !== undefined) this.vad = c.vadSilenceSecs
     if (this.opts.commitGraceMs === undefined && c.commitGraceMs !== undefined) this.grace = c.commitGraceMs
+    if (c.incompleteGraceMs !== undefined) this.incompleteGrace = c.incompleteGraceMs
   }
 
   // Returns false if STT can't start (caller falls back to Web Speech).
@@ -307,9 +316,14 @@ export class ScribeStt {
         if (msg.words?.length) this.words.push(...msg.words)
         this.handlers.onInterim?.(this.fix(this.fullText()))
         // Wait a beat for more speech before ending the turn (0 = old behaviour).
+        // An answer that ends mid-thought ("…and", no full stop) gets a longer
+        // wait, so a thinking pause doesn't cut the candidate off (bug #3).
         this.clearGrace()
-        if (this.grace <= 0) this.finishTurn()
-        else this.graceTimer = setTimeout(() => this.finishTurn(), this.grace)
+        {
+          const wait = endsMidThought(this.fullText()) ? Math.max(this.grace, this.incompleteGrace) : this.grace
+          if (wait <= 0) this.finishTurn()
+          else this.graceTimer = setTimeout(() => this.finishTurn(), wait)
+        }
         break
       case 'auth_error':
         if (cachedToken && !this.retried && !this.gotTranscript) { void this.retryWithFreshToken(); break }

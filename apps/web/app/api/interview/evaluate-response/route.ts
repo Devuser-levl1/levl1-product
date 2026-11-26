@@ -13,6 +13,8 @@ import { mustRubricIds, rubricSkillNodes, rubricTierGuidance } from '@/lib/scree
 import { ttsModel, ttsSupportsAudioTags } from '@/lib/screen/interview/voice-config'
 import { stripAudioTags, limitAudioTags } from '@/lib/screen/interview/audio-tags'
 import { DELIBERATION_GUIDANCE, sanitizeDeliberation, reconcileDecision, type Deliberation } from '@/lib/screen/interview/deliberation'
+import { sanitizeFacts, factsBlock, FACTS_JSON_HINT } from '@/lib/screen/session/facts'
+import { oneQuestion } from '@/lib/screen/interview/single-question'
 
 type Processed = { payload: Record<string, unknown>; deliberation: Deliberation; changed: string[] }
 
@@ -89,7 +91,13 @@ export async function POST(req: NextRequest) {
     const dynamicIntensity: string        = body.dynamicIntensity ?? 'standard'
     // How many follow-ups already asked on THIS question (Part 3a depth cap).
     const followUpCount: number           = Math.max(0, Number(body.followUpCount) || 0)
-    const followUpsLeft                   = Math.max(0, MAX_FOLLOWUPS - followUpCount)
+    // A clubbed question split into parts gets one extra follow-up per held part
+    // (≤2), so the broken-down asks aren't starved by the cap (real-user bug #2).
+    const extraFollowUps                  = Math.max(0, Math.min(2, Number(body.extraFollowUps) || 0))
+    const followUpsLeft                   = Math.max(0, MAX_FOLLOWUPS + extraFollowUps - followUpCount)
+    // Running candidate facts (location, notice, …) — never ask for these again (real-user bug #1).
+    const knownFacts                      = sanitizeFacts(body.facts)
+    const pendingParts: string[]          = (Array.isArray(body.pendingParts) ? body.pendingParts : []).filter((x: unknown): x is string => typeof x === 'string').map((x: string) => x.slice(0, 240)).slice(0, 3)
     // The room already gave its one simpler hint on this question (stuck handling).
     const easedOff                        = body.easedOff === true
     // Recent interviewer lines — so phrasing can be varied, not repeated.
@@ -143,8 +151,8 @@ export async function POST(req: NextRequest) {
 
     // followUpsLeft === 0 → the depth cap is reached; force advance, no more drilling.
     const budgetLine = followUpsLeft === 0
-      ? `FOLLOW-UP BUDGET: EXHAUSTED. You have already asked ${followUpCount} follow-ups on this question (cap is ${MAX_FOLLOWUPS}). You MUST set shouldAskFollowUp=false now and move on gracefully, even if the answer is unsatisfactory — record what is missing in keyPointsMissed and do NOT drill further.`
-      : `FOLLOW-UP BUDGET: ${followUpsLeft} of ${MAX_FOLLOWUPS} follow-ups remain on this question. Only ask one if it is genuinely high-signal; otherwise advance. Never exceed the cap.`
+      ? `FOLLOW-UP BUDGET: EXHAUSTED. You have already asked ${followUpCount} follow-ups on this question (cap is ${MAX_FOLLOWUPS + extraFollowUps}). You MUST set shouldAskFollowUp=false now and move on gracefully, even if the answer is unsatisfactory — record what is missing in keyPointsMissed and do NOT drill further.`
+      : `FOLLOW-UP BUDGET: ${followUpsLeft} of ${MAX_FOLLOWUPS + extraFollowUps} follow-ups remain on this question. Only ask one if it is genuinely high-signal; otherwise advance. Never exceed the cap.`
 
     const params: Anthropic.MessageCreateParamsNonStreaming = {
       model: INTERVIEW_MODEL,
@@ -175,6 +183,8 @@ export async function POST(req: NextRequest) {
         '- Off-topic → acknowledge briefly and steer back to the specific aspect of the question.\n' +
         '- Candidate struggled → ease off gently (one simpler angle at most), never stack angles.\n' +
         '- VARY YOUR WORDING. Write each follow-up fresh, anchored in the candidate\'s actual words. Do NOT reuse openers or stock phrases that appear in the RECENT INTERVIEWER LINES below (e.g. if "walk me through" or "can you get more concrete" was used recently, phrase it differently). Variety of phrasing only — this does NOT change how many follow-ups you ask.\n\n' +
+        'ONE QUESTION PER TURN (hard rule): followUpQuestion asks exactly ONE thing — one idea, one question mark, short enough to say in one natural breath (≤ 30 words). Never join asks with "and also", "and what about", or a second question. If there are several things to explore, ask the single most important one now; the others can come as later follow-ups driven by the answer.\n' +
+        'KNOWN FACTS: never ask the candidate for anything listed under KNOWN FACTS (location, notice period, relocation, experience, current role…), in any wording.\n\n' +
         'WORK-SAMPLE MODE (only when a WORK SAMPLE block is present):\n' +
         '- The candidate is explaining work they actually did. Every follow-up MUST be about THEIR code and process — never generic theory.\n' +
         '- Anchor in specifics: name a function/variable/line they wrote, a test that failed, or a moment from the timeline (e.g. "around 4:10 you rewrote most of it — what made you change approach?").\n' +
@@ -201,6 +211,8 @@ export async function POST(req: NextRequest) {
           `Candidate response: ${answerForModel}\n` +
           `Dynamic intensity: ${dynamicIntensity}\n` +
           `${budgetLine}${prevCtx}${workBlock}${ctx.block}` +
+          `\n\n${factsBlock(knownFacts)}` +
+          (pendingParts.length ? `\n\nPARTS OF THIS QUESTION NOT YET ASKED (the question was split so the candidate gets one ask at a time): ${pendingParts.map((p) => `"${p}"`).join('; ')}. If the answer did not already cover the first of these, make IT your follow-up (in your own words, anchored in what they said).` : '') +
           (easedOff ? `\n\nSTUCK HANDLING: the candidate was already given ONE simpler hint on this question. Do NOT ease off again: probe only if this answer gives you something real to probe, otherwise move_on.` : '') +
           (recentAiLines.length ? `\n\nRECENT INTERVIEWER LINES (do not repeat their phrasing):\n${recentAiLines.map((l) => `- ${l}`).join('\n')}` : '') +
           `\n\n` +
@@ -214,7 +226,8 @@ export async function POST(req: NextRequest) {
           `  "confirmBack": "one-sentence restatement of a substantive answer when NOT following up, else empty string",\n` +
           `  "keyPointsCovered": ["point1"],\n` +
           `  "keyPointsMissed": ["point2"],\n` +
-          `  "evaluatorNote": "1-2 sentences"\n` +
+          `  "evaluatorNote": "1-2 sentences",\n` +
+          `  "facts": ${FACTS_JSON_HINT} — FILL IN every hard fact the candidate stated in THIS answer, even in passing (e.g. "four years at Flipkart as a backend engineer" → "yearsExperience":4,"currentCompany":"Flipkart","currentRole":"Backend engineer"; "I am in Pune" → "location":"Pune"). null only for what they did not say; never guess\n` +
           `}`,
       }],
     }
@@ -229,6 +242,15 @@ export async function POST(req: NextRequest) {
       const deliberation = sanitizeDeliberation(raw.deliberation, { answerEmpty: !answerText })
       const fixed = reconcileDecision(raw, deliberation, { followUpsLeft, easedOff })
       const result: Record<string, unknown> = { ...fixed.result, deliberation }
+      // ONE question per turn, enforced in code: keep the first ask; hand the rest
+      // back so the room can ask them as later follow-ups (real-user bug #2).
+      if (typeof result.followUpQuestion === 'string' && result.followUpQuestion) {
+        const split = oneQuestion(result.followUpQuestion)
+        result.followUpQuestion = split.text
+        if (split.rest.length) { result.heldQuestions = split.rest; fixed.changed.push('split_clubbed_question') }
+      }
+      // Facts newly stated in this answer (sanitized; the room merges them).
+      if ('facts' in result) result.facts = sanitizeFacts(result.facts)
       // Delivery tags never reach the transcript/report: the fields stay clean and
       // a tagged copy (≤1 tag) goes in `speech` for the voice only.
       const speech: Record<string, string> = {}
@@ -384,7 +406,7 @@ function streamDecision(o: {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' } })
 }
 
-const DECISION_FIELDS = ['deliberation', 'score', 'relevanceScore', 'shouldAskFollowUp', 'followUpQuestion', 'confirmBack', 'speech'] as const
+const DECISION_FIELDS = ['deliberation', 'score', 'relevanceScore', 'shouldAskFollowUp', 'followUpQuestion', 'heldQuestions', 'confirmBack', 'speech'] as const
 function pickDecision(d: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const k of DECISION_FIELDS) if (k in d) out[k] = d[k]

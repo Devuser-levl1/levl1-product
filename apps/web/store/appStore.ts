@@ -156,7 +156,8 @@ export interface TranscriptEntry {
   type: 'intro' | 'preset' | 'dynamic' | 'followup' | 'transition' | 'closing'
   // Logistics/filtering segment (comp, notice, work-auth) — kept OUT of the
   // competency-scoring payload; evaluated separately and recruiter-only.
-  segment?: 'logistics'
+  // 'closing_qa' = the candidate's own questions at the end (#4) — also unscored.
+  segment?: 'logistics' | 'closing_qa'
 }
 
 export interface QuestionResponse {

@@ -66,7 +66,9 @@ export function sttClientConfig() {
     commitStrategy: sttCommitStrategy(m),
     // Scribe accepts 0.192–3.0 s.
     vadSilenceSecs: optNum('ELEVENLABS_STT_VAD_SILENCE_SECS', 0.3, 3),
-    commitGraceMs: optNum('ELEVENLABS_STT_COMMIT_GRACE_MS', 0, 4000),
+    commitGraceMs: optNum('ELEVENLABS_STT_COMMIT_GRACE_MS', 0, 6000),
+    // Longer wait when the answer so far ends mid-thought (client default 3200 ms).
+    incompleteGraceMs: optNum('ELEVENLABS_STT_INCOMPLETE_GRACE_MS', 0, 8000),
   }
 }
 
