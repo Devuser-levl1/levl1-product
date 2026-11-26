@@ -431,9 +431,26 @@ model Interview {
   reportError         String?   @db.Text
   reportAttempts      Int       @default(0)
   reportUpdatedAt     DateTime?
+  // ── Interview Test Sandbox (admin-only) ─────────────────────────────────
+  // Sandbox runs are ALSO isDemo=true and live under the internal sandbox
+  // agency, so every real view/report/metric/queue already excludes them;
+  // isSandbox restores production room behaviour (logistics, culture-fit…)
+  // and marks them for the admin sandbox. sandboxConfig = { facts, label, … }.
+  isSandbox           Boolean   @default(false)
+  sandboxConfig       Json?
+  // ── Recovery & scheduling ──────────────────────────────────────────────
+  // attempt = the CURRENT attempt number. A retake archives the previous
+  // attempt into InterviewAttempt (never deleted) and increments this.
+  attempt             Int       @default(1)
+  // Set when a link is re-issued: candidate links then carry ?k=<inviteKey>
+  // and older links stop working. null = legacy links (no key) stay valid.
+  inviteKey           String?
+  rescheduleCount     Int       @default(0)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  attempts        InterviewAttempt[]
+  auditEvents     InterviewAuditEvent[]
   token           InterviewToken?
   verification    InterviewVerification?
   integrityEvents InterviewIntegrityEvent[]
@@ -741,6 +758,60 @@ model InterviewIntegrityEvent {
   // Structured, evidence-linked metadata (Build 02): { span, latencyMs,
   // pasteSize, rationale, correlatedWith, ... }. Never raw video/clipboard.
   meta        Json?
+  // Which attempt of the interview this event belongs to (retakes keep the
+  // earlier attempt's events; reports read the current attempt's).
+  attempt     Int       @default(1)
+  createdAt   DateTime  @default(now())
+  @@index([interviewId])
+}
+
+// ── Interview attempts (Screen-scoped) ─────────────────────────────────────
+// A superseded attempt of an interview, archived when a retake is issued. The
+// live Interview row always holds the CURRENT attempt (the one used for the
+// hiring decision); earlier attempts stay here, visible to reviewers with their
+// status, failure reason and who authorised the retake. Never auto-deleted
+// except by the captured-data retention policy (same windows as Interview).
+model InterviewAttempt {
+  id                  String    @id @default(cuid())
+  interviewId         String
+  interview           Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  attempt             Int
+  status              String    // interrupted | abandoned | terminated | completed
+  startedAt           DateTime?
+  endedAt             DateTime?
+  terminationReason   String?
+  failureReason       String?   @db.Text
+  transcript          Json?     // encrypted, copied as stored
+  questionResponses   Json?     // encrypted, copied as stored
+  codeEditorContent   String?   @db.Text
+  runningScore        Int?
+  // workSample / logistics / cultureFit / verification (non-media) / liveState / report rows, as JSON
+  snapshot            Json?
+  // Media (encrypted as stored) — purged on the media retention window.
+  photoUrl            String?   @db.Text
+  recordingData       Bytes?
+  recordingMime       String?
+  recordingStartedAt  DateTime?
+  recordingDurationMs Int?
+  mediaPurgedAt       DateTime?
+  transcriptPurgedAt  DateTime?
+  supersededAt        DateTime  @default(now())
+  supersededBy        String    // who authorised the retake (user email / 'candidate')
+  retakeMode          String    // admin | recruiter | self
+  retakeReason        String?   @db.Text
+  @@unique([interviewId, attempt])
+}
+
+// Who did what to an interview's link / schedule / attempts (append-only).
+// action: link_resent | retake_approved | retake_self | rescheduled |
+//         interrupted_reported
+model InterviewAuditEvent {
+  id          String    @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  action      String
+  actor       String    // user email, 'candidate' or 'system'
+  detail      Json?
   createdAt   DateTime  @default(now())
   @@index([interviewId])
 }

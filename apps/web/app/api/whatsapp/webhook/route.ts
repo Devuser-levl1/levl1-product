@@ -4,6 +4,7 @@ import { sendWhatsAppConfirmation } from '@/lib/whatsappService'
 import { sendEmail, agencyFromAddress } from '@/lib/emailService'
 import { formatSlotLabel } from '@/lib/slots'
 import { appUrl } from '@/lib/screen/app-url'
+import { withKey } from '@/lib/screen/recovery/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,8 +71,13 @@ export async function POST(req: NextRequest) {
       const baseUrl = appUrl()
       console.log('[whatsapp/webhook] Consent not given — blocking booking for', candidate.id)
       return twimlMessage(
-        `Before we can confirm a time, please open your scheduling link and tap “I understand and consent”: ${baseUrl}/schedule/${candidate.interview.id}`,
+        `Before we can confirm a time, please open your scheduling link and tap “I understand and consent”: ${withKey(`${baseUrl}/schedule/${candidate.interview.id}`, candidate.interview.inviteKey)}`,
       )
+    }
+
+    // An interview that has already been started can't be (re)booked by a reply.
+    if (candidate.interview.status === 'in_progress' || candidate.interview.status === 'completed') {
+      return twimlMessage('This interview has already been started, so its time can no longer be changed. Please contact the hiring team if you need help.')
     }
 
     // Resolve the exact slot that was offered (persisted at invite time)
@@ -88,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     const scheduledAt = selected.startTime
     const baseUrl = appUrl()
-    const interviewUrl = `${baseUrl}/interview/${candidate.interview.id}`
+    const interviewUrl = withKey(`${baseUrl}/interview/${candidate.interview.id}`, candidate.interview.inviteKey)
     const dateStr = formatSlotLabel(scheduledAt)
 
     // Book everything atomically

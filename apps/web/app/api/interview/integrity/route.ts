@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const interviewId = typeof body.interviewId === 'string' ? body.interviewId : ''
     if (!interviewId) return NextResponse.json({ error: 'interviewId required' }, { status: 400 })
 
-    const interview = await prisma.interview.findUnique({ where: { id: interviewId }, select: { id: true, isDemo: true, mediaConsentGiven: true, consentWithdrawnAt: true } })
+    const interview = await prisma.interview.findUnique({ where: { id: interviewId }, select: { id: true, isDemo: true, attempt: true, mediaConsentGiven: true, consentWithdrawnAt: true } })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
     // Camera / focus monitoring is covered by the specific media consent.
     if (!interview.isDemo && (!interview.mediaConsentGiven || interview.consentWithdrawnAt)) {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (clean.length === 0) return NextResponse.json({ ok: true, stored: 0 })
 
     await prisma.interviewIntegrityEvent.createMany({
-      data: clean.map((e) => ({ interviewId, type: e.type, occurredAt: new Date(e.occurredAt), durationMs: e.durationMs ?? null, confidence: e.confidence ?? 1, detail: e.detail ?? null, meta: (e.meta ?? undefined) as Prisma.InputJsonValue | undefined })),
+      data: clean.map((e) => ({ interviewId, attempt: interview.attempt, type: e.type, occurredAt: new Date(e.occurredAt), durationMs: e.durationMs ?? null, confidence: e.confidence ?? 1, detail: e.detail ?? null, meta: (e.meta ?? undefined) as Prisma.InputJsonValue | undefined })),
     })
     return NextResponse.json({ ok: true, stored: clean.length })
   } catch (err) {
@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
   if (!interviewId) return NextResponse.json({ error: 'interviewId required' }, { status: 400 })
   const session = getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
-  const owned = await prisma.interview.findFirst({ where: { id: interviewId, position: { agencyId: session.agencyId } }, select: { id: true } })
+  const owned = await prisma.interview.findFirst({ where: { id: interviewId, position: { agencyId: session.agencyId } }, select: { id: true, attempt: true } })
   if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  const events = await prisma.interviewIntegrityEvent.findMany({ where: { interviewId }, orderBy: { occurredAt: 'asc' } })
+  const events = await prisma.interviewIntegrityEvent.findMany({ where: { interviewId, attempt: owned.attempt }, orderBy: { occurredAt: 'asc' } })
   return NextResponse.json({ summary: summarizeIntegrity(revealEvents(events)) })
 }

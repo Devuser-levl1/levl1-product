@@ -51,13 +51,15 @@ export async function GET(req: NextRequest) {
       }),
       prisma.interview.findMany({
         where: interviewScope,
-        select: { id: true, status: true, terminationReason: true, startedAt: true, actualDuration: true },
+        select: { id: true, status: true, terminationReason: true, startedAt: true, actualDuration: true, attempt: true },
       }),
       prisma.interviewIntegrityEvent.findMany({
         where: { interview: interviewScope },
-        select: { interviewId: true, type: true, occurredAt: true, durationMs: true, confidence: true, detail: true, meta: true },
+        select: { interviewId: true, attempt: true, type: true, occurredAt: true, durationMs: true, confidence: true, detail: true, meta: true },
       }),
     ])
+    // Current attempt only (a retake's earlier attempt is reviewed in its history).
+    const attemptOf = new Map(interviewRows.map((i) => [i.id, i.attempt]))
 
     const reports: ReportRow[] = reportRows.map((r) => ({
       overallScore: r.overallScore,
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
 
     // Group integrity events by interview for the per-session review verdict.
     const eventsByInterview = new Map<string, IntegrityEventRecord[]>()
-    for (const e of integrityRows) {
+    for (const e of integrityRows.filter((x) => x.attempt === attemptOf.get(x.interviewId))) {
       const list = eventsByInterview.get(e.interviewId) ?? []
       list.push({ type: e.type, occurredAt: e.occurredAt, durationMs: e.durationMs, confidence: e.confidence, detail: e.detail, meta: e.meta })
       eventsByInterview.set(e.interviewId, list)

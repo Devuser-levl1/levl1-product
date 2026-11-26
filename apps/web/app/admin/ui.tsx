@@ -12,6 +12,7 @@ export function Shell({ children, onSignOut }: { children: React.ReactNode; onSi
             <Link href="/admin/interviews" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Interviews</Link>
             <Link href="/admin/demo-leads" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Demo Leads</Link>
             <Link href="/admin/hire" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Hire</Link>
+            <Link href="/admin/interview-sandbox" style={{ fontSize: 13, color: '#94A3B8', textDecoration: 'none' }}>Interview Sandbox</Link>
           </div>
           {onSignOut && (
             <button onClick={onSignOut} style={{ fontSize: 13, color: '#94A3B8', background: 'none', border: '1px solid #1F2937', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Sign out</button>

@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       ...(from || to ? { completedAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
     },
     select: {
-      id: true, startedAt: true, completedAt: true, actualDuration: true, terminationReason: true,
+      id: true, startedAt: true, completedAt: true, actualDuration: true, terminationReason: true, attempt: true,
       candidate: {
         select: {
           name: true, email: true,
@@ -54,11 +54,12 @@ export async function GET(req: NextRequest) {
   const events = interviews.length
     ? await prisma.interviewIntegrityEvent.findMany({
         where: { interviewId: { in: interviews.map((i) => i.id) } },
-        select: { interviewId: true, type: true, occurredAt: true, durationMs: true, confidence: true, detail: true, meta: true },
+        select: { interviewId: true, attempt: true, type: true, occurredAt: true, durationMs: true, confidence: true, detail: true, meta: true },
       })
     : []
+  const attemptOf = new Map(interviews.map((i) => [i.id, i.attempt]))
   const eventsBy = new Map<string, typeof events>()
-  for (const e of events) {
+  for (const e of events.filter((x) => x.attempt === attemptOf.get(x.interviewId))) {
     const list = eventsBy.get(e.interviewId) ?? []
     list.push(e)
     eventsBy.set(e.interviewId, list)

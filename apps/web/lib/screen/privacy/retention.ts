@@ -28,6 +28,8 @@ export async function purgeMediaFor(interviewId: string) {
     prisma.interviewRecording.deleteMany({ where: { interviewId } }),
     prisma.interviewVerification.updateMany({ where: { interviewId }, data: { photoUrl: null } }),
     prisma.interview.update({ where: { id: interviewId }, data: { mediaPurgedAt: new Date() } }),
+    // Earlier attempts (retakes) carry copies of their media — same rule.
+    prisma.interviewAttempt.updateMany({ where: { interviewId, mediaPurgedAt: null }, data: { photoUrl: null, recordingData: null, mediaPurgedAt: new Date() } }),
   ])
 }
 
@@ -53,7 +55,7 @@ async function purgeTranscriptFor(interviewId: string) {
   ])
 }
 
-export interface RetentionResult { media: number; transcripts: number; liveTails: number; recordingsExpired: number }
+export interface RetentionResult { media: number; transcripts: number; liveTails: number; recordingsExpired: number; attemptMedia?: number; attemptTranscripts?: number }
 
 export async function runRetentionPurge(now = new Date()): Promise<RetentionResult> {
   const policy = readCapturePolicy()
@@ -90,8 +92,30 @@ export async function runRetentionPurge(now = new Date()): Promise<RetentionResu
     data: { transcriptTail: Prisma.DbNull, interim: null },
   })
 
-  const result = { media: media.length, transcripts: transcripts.length, liveTails: tails.count, recordingsExpired: expired.count }
-  if (result.media || result.transcripts || result.liveTails || result.recordingsExpired) console.info('[retention] purged', JSON.stringify(result))
+  // 4. Archived attempts (retakes): same windows, counted from when that attempt ended.
+  const attemptEnded = (cutoff: Date) => ({ OR: [{ endedAt: { lt: cutoff } }, { endedAt: null, supersededAt: { lt: cutoff } }] })
+  const attemptMedia = await prisma.interviewAttempt.updateMany({
+    where: { mediaPurgedAt: null, OR: [attemptEnded(mediaCutoff), { interview: { consentWithdrawnAt: { not: null } } }] },
+    data: { photoUrl: null, recordingData: null, mediaPurgedAt: now },
+  })
+  // Transcript-class data in the snapshot (work-sample code + timeline, live
+  // question text) goes too; scores / report / verdicts stay, like on Interview.
+  const dueAttempts = await prisma.interviewAttempt.findMany({
+    where: { transcriptPurgedAt: null, ...attemptEnded(transcriptCutoff) }, select: { id: true, snapshot: true }, take: BATCH,
+  })
+  for (const a of dueAttempts) {
+    const snap = (a.snapshot && typeof a.snapshot === 'object' ? { ...(a.snapshot as Record<string, unknown>) } : null)
+    if (snap?.workSample && typeof snap.workSample === 'object') snap.workSample = { ...(snap.workSample as Record<string, unknown>), code: null, timeline: null }
+    if (snap?.liveState && typeof snap.liveState === 'object') snap.liveState = { ...(snap.liveState as Record<string, unknown>), questionText: null }
+    await prisma.interviewAttempt.update({
+      where: { id: a.id },
+      data: { transcript: Prisma.DbNull, questionResponses: Prisma.DbNull, codeEditorContent: null, transcriptPurgedAt: now, ...(snap ? { snapshot: snap as Prisma.InputJsonValue } : {}) },
+    }).catch((e) => console.error('[retention] attempt transcript purge failed', a.id, e instanceof Error ? e.message : e))
+  }
+  const attemptTranscripts = { count: dueAttempts.length }
+
+  const result = { media: media.length, transcripts: transcripts.length, liveTails: tails.count, recordingsExpired: expired.count, attemptMedia: attemptMedia.count, attemptTranscripts: attemptTranscripts.count }
+  if (result.media || result.transcripts || result.liveTails || result.recordingsExpired || result.attemptMedia || result.attemptTranscripts) console.info('[retention] purged', JSON.stringify(result))
   return result
 }
 

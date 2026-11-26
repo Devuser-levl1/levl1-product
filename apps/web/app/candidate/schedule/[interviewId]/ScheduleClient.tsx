@@ -31,6 +31,9 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
   const [instantStart, setInstantStart] = useState(true)
   const alreadyBooked = !!data.scheduledAt && data.status === 'scheduled' && new Date(data.scheduledAt).getTime() > Date.now() - 30 * 60_000
   const [changing, setChanging] = useState(false)    // already booked → "pick a different time"
+  // A re-issued link carries ?k= — keep it on every call and navigation.
+  const kq = data.linkKey ? `?k=${encodeURIComponent(data.linkKey)}` : ''
+  const canChange = data.reschedulesLeft > 0
 
   useEffect(() => {
     if (!consented) return
@@ -87,7 +90,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     setError(null)
     try {
       const endpoint = alreadyBooked ? 'reschedule' : 'confirm'
-      const res = await fetch(`/api/schedule/${data.interviewId}/${endpoint}`, {
+      const res = await fetch(`/api/schedule/${data.interviewId}/${endpoint}${kq}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selectedSlot: selected }),
@@ -96,7 +99,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
       if (!res.ok) throw new Error(d.error || 'failed')
       setDone(true)
       // Move on to the pre-interview page after a moment
-      setTimeout(() => router.push(`/candidate/join/${data.interviewId}`), 1800)
+      setTimeout(() => router.push(`/candidate/join/${data.interviewId}${kq}`), 1800)
     } catch (e) {
       setBooking(false)
       setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Couldn\'t confirm your slot. Please try again or contact your recruiter.')
@@ -107,10 +110,10 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     setStarting(true)
     setError(null)
     try {
-      const res = await fetch(`/api/schedule/${data.interviewId}/start-now`, { method: 'POST' })
+      const res = await fetch(`/api/schedule/${data.interviewId}/start-now${kq}`, { method: 'POST' })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d.error || 'failed')
-      router.push(d.next || `/candidate/join/${data.interviewId}`)
+      router.push(`${d.next || `/candidate/join/${data.interviewId}`}${kq}`)
     } catch (e) {
       setStarting(false)
       setError(e instanceof Error && e.message !== 'failed' ? e.message : 'Couldn\'t start the interview. Please try again or pick a time.')
@@ -184,7 +187,7 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
     <Shell brand={brand} agencyName={data.agencyName} logo={data.agencyLogoUrl}>
       {alreadyBooked && (
         <Alert tone="success" title="You're booked" style={{ marginBottom: 20 }}
-          action={<BrandButton brand={brand} variant="outline" fullWidth={false} onClick={() => router.push(`/candidate/join/${data.interviewId}`)}>Go to interview</BrandButton>}>
+          action={<BrandButton brand={brand} variant="outline" fullWidth={false} onClick={() => router.push(`/candidate/join/${data.interviewId}${kq}`)}>Go to interview</BrandButton>}>
           {bookedLabel}
         </Alert>
       )}
@@ -204,10 +207,15 @@ export default function ScheduleClient({ data }: { data: CandidatePortalData }) 
         </section>
       )}
 
-      {alreadyBooked && !changing && (
+      {alreadyBooked && !changing && canChange && (
         <button type="button" className="lv-btn lv-btn--tertiary lv-btn--sm" onClick={() => setChanging(true)} style={{ marginTop: instantStart ? 0 : 4 }}>
           Pick a different time
         </button>
+      )}
+      {alreadyBooked && !canChange && (
+        <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: '4px 0 0' }}>
+          You&apos;ve already changed this booking the maximum number of times. If you need another time, please contact {data.agencyName}.
+        </p>
       )}
 
       {showPicker && (

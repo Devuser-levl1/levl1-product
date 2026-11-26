@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, CheckCircle2, Clock, Edit3, Users, FileText,
   BarChart3, Plus, Mail, Download, AlertCircle,
-  Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown, ClipboardList,
+  Tag, Zap, Target, Shield, Send, Trash2, Trophy, X, ChevronDown, ClipboardList, Link2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CandidateUploadFlow from '@/components/candidates/CandidateUploadFlow'
@@ -15,6 +15,7 @@ import { readLogisticsConfig, type LogisticsConfig } from '@/lib/screen/logistic
 import { ConceptRubricEditor, KnockoutEditor } from '@/components/positions/SetupFields'
 import { sanitizeConceptRubric, sanitizeKnockouts, type ConceptRubricItem, type KnockoutQuestion } from '@/lib/screen/position-config'
 import { InviteTemplateEditor } from '@/components/interviews/InviteTemplateEditor'
+import { InterviewRecoveryPanel } from '@/components/interviews/InterviewRecoveryPanel'
 import { WorkSampleCard } from '@/components/positions/WorkSampleCard'
 import { ApproverEmailsEditor } from '@/components/positions/ApproverEmails'
 import { RubricSelector } from '@/components/rubrics/RubricSelector'
@@ -101,6 +102,7 @@ interface Position {
   createdAt: string
   questionSet?: QuestionSet
   candidates?: Candidate[]
+  interviews?: { id: string; candidateId: string }[]
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -202,6 +204,8 @@ export default function PositionDetailPage() {
 
   // Fix 6: delete candidate modal
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  // Link & recovery panel (resend link / approve retake / attempt history).
+  const [recoveryTarget, setRecoveryTarget] = useState<{ interviewId: string; name: string } | null>(null)
   const [deleteReason, setDeleteReason] = useState('')
   const [deleting, setDeleting]         = useState(false)
 
@@ -471,6 +475,12 @@ export default function PositionDetailPage() {
         {c.status === 'completed' && (
           <Button variant="secondary" size="sm" leftIcon={<FileText size={14} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
         )}
+        {(() => {
+          const ivId = position?.interviews?.find((iv) => iv.candidateId === c.id)?.id
+          return ivId && c.status !== 'pending' ? (
+            <Button variant="secondary" size="sm" leftIcon={<Link2 size={14} />} onClick={() => setRecoveryTarget({ interviewId: ivId, name: c.name })}>Link &amp; recovery</Button>
+          ) : null
+        })()}
         <Button variant="ghost" size="sm" iconOnly aria-label={`Delete ${c.name}`} title="Delete candidate"
           onClick={() => setDeleteTarget({ id: c.id, name: c.name })} style={{ color: lv.danger }}>
           <Trash2 size={14} />
@@ -491,6 +501,13 @@ export default function PositionDetailPage() {
 
       {/* Fix 5: upload modal pre-set to this position */}
       {showUpload && <CandidateUploadFlow onClose={() => setShowUpload(false)} presetPositionId={id} onAdded={() => { setTab('candidates'); void refreshPosition() }} />}
+
+      {/* Link & recovery: resend link, approve retake, attempt history */}
+      <Modal open={!!recoveryTarget} onClose={() => setRecoveryTarget(null)} size="lg"
+        title={recoveryTarget ? `${recoveryTarget.name}: link & recovery` : 'Link & recovery'}
+        description="Resend a broken or lost link, approve a retake after a technical failure, and review every attempt.">
+        {recoveryTarget && <InterviewRecoveryPanel interviewId={recoveryTarget.interviewId} candidateName={recoveryTarget.name} onChanged={() => { void refreshPosition() }} />}
+      </Modal>
 
       {/* Fix 6: delete candidate confirmation */}
       <Modal open={!!deleteTarget} onClose={closeDelete} dismissible={!deleting} size="sm" title="Delete candidate"

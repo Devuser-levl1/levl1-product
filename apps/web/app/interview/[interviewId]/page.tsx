@@ -21,6 +21,8 @@ import { buildSessionContext, buildOpener, buildTransition } from '@/lib/screen/
 import { LIKERT_OPTIONS, type LikertItem } from '@/lib/screen/session/culture-fit'
 import { PRODUCTION_INTERVIEW_MINUTES, CULTURE_FIT_RESERVE_SEC, MIN_QUESTION_SEC } from '@/lib/screen/session/duration'
 import { INTERVIEWER_NAME } from '@/lib/screen/interviewer'
+import { LINK_REPLACED_MESSAGE } from '@/lib/screen/recovery/state'
+import { LIVE_ELSEWHERE_MESSAGE } from '@/lib/screen/recovery/candidate-route'
 import { wrapLine, signOff, noQuestions, closingFallback, isScoredSegment, CLOSING_ASK, CLOSING_ANYTHING_ELSE, CLOSING_MAX_QUESTIONS, CLOSING_REPLY_TIMEOUT_MS } from '@/lib/screen/session/closing'
 import { logisticsIntro, LOGISTICS_MAX_MS, LOGISTICS_HARD_CAP_MS, type SegmentTurn } from '@/lib/screen/logistics/prompts'
 import { ConsentCheckbox } from '@/components/interviews/ConsentCheckbox'
@@ -400,9 +402,18 @@ export default function InterviewPage() {
     if (interview && candidate && position) { setDbLoading(false); return }
     if (!interviewId) { setDbLoading(false); return }
 
-    fetch(`/api/interviews/${interviewId}`)
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    // A re-issued link carries ?k= (older links are refused with 410).
+    const linkKey = new URLSearchParams(window.location.search).get('k')
+    const kq = linkKey ? `?k=${encodeURIComponent(linkKey)}` : ''
+    fetch(`/api/interviews/${interviewId}${kq}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status === 410 ? 'link_replaced' : r.status))
       .then((data) => {
+        // Recovery (candidate link only — recruiters get the full record, no
+        // `recovery`): never start a fresh session over one that already ran.
+        const rs = data.recovery?.state as string | undefined
+        if (rs === 'interrupted' || rs === 'terminated') { router.replace(`/candidate/recover/${interviewId}${kq}`); return }
+        if (rs === 'live') { setDbError(LIVE_ELSEWHERE_MESSAGE); setDbLoading(false); return }
+        if (rs === 'completed' || rs === 'withdrawn') { setDbError('This interview has already been completed.'); setDbLoading(false); return }
         // Hydrate store so the rest of the component works normally
         const { updateInterview, addInterview } = useAppStore.getState()
         const iv = {
@@ -419,7 +430,15 @@ export default function InterviewPage() {
           score:         data.runningScore ?? undefined,
           isDemo:        !!data.isDemo,
         }
-        isDemoRef.current = !!data.isDemo  // Build 05: demo runs must not bill usage
+        // Sandbox runs are tagged isDemo for isolation but run the PRODUCTION
+        // flow (logistics, culture-fit…); they only skip billing.
+        isSandboxRef.current = !!data.isSandbox
+        isDemoRef.current = !!data.isDemo && !data.isSandbox  // Build 05: demo runs must not bill usage
+        if (data.isSandbox) {
+          // Seed the same candidate-facts state the engine keeps (admin's sandbox context).
+          factsRef.current = mergeFacts({}, sanitizeFacts(data.sandbox?.facts))
+          setSandboxLabel(data.sandbox?.label || 'Sandbox run')
+        }
         if (data.interviewer?.name) setInterviewer({ name: data.interviewer.name, voiceKey: data.interviewer.voiceKey ?? null })
         // Same consent gate for demos and real interviews — a demo shows the real
         // capture notice (it IS the product, with demo content).
@@ -454,7 +473,7 @@ export default function InterviewPage() {
       })
       .catch((err) => {
         console.error('[interview room] DB load failed:', err)
-        setDbError('Interview not found. Please check your link.')
+        setDbError(err === 'link_replaced' ? LINK_REPLACED_MESSAGE : 'Interview not found. Please check your link.')
         setDbLoading(false)
       })
   // Only run on mount — subsequent store updates handle everything
@@ -605,6 +624,8 @@ export default function InterviewPage() {
   const warmupActiveRef = useRef(false)
   const warmupCaptureRef = useRef<((text: string) => void) | null>(null)
   const isDemoRef = useRef(false)  // demo-gallery run (Build 05) — never bills usage
+  const isSandboxRef = useRef(false)  // admin test sandbox — production flow, never bills usage
+  const [sandboxLabel, setSandboxLabel] = useState<string | null>(null)
   const [consentOk, setConsentOk] = useState(false)  // soft consent gate before start (I-P0-1)
   // Checkbox state for the gate: never pre-checked; only counts once the server
   // has recorded it (a failed save unticks the box and shows an error).
@@ -2157,7 +2178,7 @@ export default function InterviewPage() {
     generateReport().catch(console.error)
     // Increment usage counter (fire-and-forget) — NEVER for demo runs (Build 05),
     // so a logged-in prospect trying the demo can't burn their paid quota.
-    if (!isDemoRef.current) {
+    if (!isDemoRef.current && !isSandboxRef.current) {
       fetch('/api/usage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2890,6 +2911,13 @@ export default function InterviewPage() {
      RENDER
   ═══════════════════════════════════════════════════════════ */
 
+  // Admin test sandbox: always-visible marker (never shown on real interviews).
+  const sandboxBanner = sandboxLabel ? (
+    <div role="status" style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, pointerEvents: 'none', background: '#B45309', color: '#fff', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', padding: '4px 14px', borderRadius: '0 0 6px 6px' }}>
+      SANDBOX / TEST — not a real interview · {sandboxLabel}
+    </div>
+  ) : null
+
   if (dbLoading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
@@ -2926,6 +2954,21 @@ export default function InterviewPage() {
           <div style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.6 }}>
             This interview is optimised for desktop. Please open this link on a laptop or desktop computer to begin.
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'completed' && isSandboxRef.current) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)' }}>
+        {sandboxBanner}
+        <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
+          <div style={{ fontFamily: 'var(--lv-font-sans)', fontSize: 24, fontWeight: 600, color: 'var(--lv-text)', marginBottom: 10 }}>Sandbox run finished</div>
+          <div style={{ fontSize: 14, color: 'var(--lv-text-muted)', lineHeight: 1.7 }}>
+            Nothing from this run reaches a real candidate, hiring team, report list or metric. The report takes about a minute to generate.
+          </div>
+          <a href={`/admin/interview-sandbox/${interviewId}`} className="lv-btn lv-btn--primary" style={{ marginTop: 24, display: 'inline-flex' }}>Review transcript and report</a>
         </div>
       </div>
     )
@@ -2977,6 +3020,7 @@ export default function InterviewPage() {
   if (phase === 'waiting') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--lv-surface-sunken)', gap: 32 }}>
+        {sandboxBanner}
         <ScreenLogo height={40} tone="auto" />
         <div style={{ textAlign: 'center', maxWidth: 520, padding: '40px 48px', background: 'var(--lv-surface)', borderRadius: 8, border: '1px solid var(--lv-border)', boxShadow: 'none' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 20px', background: 'var(--lv-brand-soft)', color: 'var(--lv-brand)', border: '1px solid var(--lv-brand-soft-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -3048,6 +3092,7 @@ export default function InterviewPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--lv-bg)', overflow: 'hidden' }}>
+      {sandboxBanner}
 
       {/* Tier-1 proctoring (Build 01-A) — the single live capture instance now renders
           INLINE in the top-left video slot below (one camera stream + one CV client). */}

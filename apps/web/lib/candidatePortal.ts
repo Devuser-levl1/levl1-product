@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { readCapturePolicy } from '@/lib/screen/privacy/policy'
+import { LINK_REPLACED_MESSAGE, linkKeyOk, maxReschedules, recoveryState, type RecoveryState } from '@/lib/screen/recovery/state'
 
 /**
  * Candidate-safe view of an interview. ONLY the fields a candidate is allowed
@@ -23,18 +24,24 @@ export interface CandidatePortalData {
   agencyName: string
   agencyLogoUrl: string | null
   brandColor: string
+  // Recovery: the link key the candidate arrived with (carried on every
+  // navigation / API call), the derived state, and reschedule allowance.
+  linkKey: string | null
+  recovery: RecoveryState
+  reschedulesLeft: number
 }
 
 export type PortalResult =
   | { ok: true; data: CandidatePortalData }
   | { ok: false; reason: string }
 
-export async function loadCandidateInterview(interviewId: string): Promise<PortalResult> {
+export async function loadCandidateInterview(interviewId: string, linkKey?: string | null): Promise<PortalResult> {
   if (!interviewId) return { ok: false, reason: 'Invalid interview link. Please contact your recruiter.' }
 
   const interview = await prisma.interview.findUnique({
     where: { id: interviewId },
     include: {
+      liveState: { select: { lastBeatAt: true } },
       candidate: { select: { name: true } },
       position: {
         select: {
@@ -49,6 +56,9 @@ export async function loadCandidateInterview(interviewId: string): Promise<Porta
   if (!interview) {
     return { ok: false, reason: 'Invalid interview link. Please contact your recruiter.' }
   }
+
+  // A re-issued link supersedes older ones (legacy links without a key stay valid).
+  if (!linkKeyOk(interview.inviteKey, linkKey)) return { ok: false, reason: LINK_REPLACED_MESSAGE }
 
   const agency = interview.position.agency
   const policy = readCapturePolicy()
@@ -69,6 +79,9 @@ export async function loadCandidateInterview(interviewId: string): Promise<Porta
       agencyName: agency?.name ?? 'The hiring team',
       agencyLogoUrl: agency?.logoUrl ?? null,
       brandColor: agency?.brandColor ?? '#4F46E5',
+      linkKey: interview.inviteKey ? linkKey ?? null : null,
+      recovery: recoveryState({ status: interview.status, terminationReason: interview.terminationReason, lastBeatAt: interview.liveState?.lastBeatAt, startedAt: interview.startedAt }),
+      reschedulesLeft: Math.max(0, maxReschedules() - interview.rescheduleCount),
     },
   }
 }

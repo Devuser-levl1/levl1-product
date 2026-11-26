@@ -116,7 +116,7 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
 
   function startInterview() {
     setStarting(true)
-    router.push(`/interview/${data.interviewId}`)
+    router.push(`/interview/${data.interviewId}${data.linkKey ? `?k=${encodeURIComponent(data.linkKey)}` : ''}`)
   }
 
   const scheduledLabel = data.scheduledAt
@@ -154,6 +154,12 @@ export default function JoinClient({ data }: { data: CandidatePortalData }) {
             <div style={{ fontSize: 13, color: 'var(--lv-text-body)', background: 'var(--lv-surface-sunken)', border: '1px solid var(--lv-border)', borderRadius: 8, padding: '8px 12px' }}>
               Scheduled for {scheduledLabel}
             </div>
+          )}
+          {scheduledLabel && data.reschedulesLeft > 0 && (
+            <p style={{ fontSize: 13, color: 'var(--lv-text-muted)', margin: '10px 0 0' }}>
+              Can&apos;t make this time?{' '}
+              <a href={`/candidate/schedule/${data.interviewId}${data.linkKey ? `?k=${encodeURIComponent(data.linkKey)}` : ''}`} style={{ color: 'var(--lv-brand-text, var(--lv-brand))', fontWeight: 600 }}>Pick a different time</a>
+            </p>
           )}
         </section>
 

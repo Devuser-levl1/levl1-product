@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
       where: { interviewId: interview.id },
       select: { mimeType: true, sizeBytes: true, startedAt: true, durationMs: true, expiresAt: true },
     }).then((r) => (r && r.expiresAt.getTime() > Date.now() ? r : null)),
-    prisma.interviewIntegrityEvent.findMany({ where: { interviewId: interview.id }, orderBy: { occurredAt: 'asc' } }),
+    prisma.interviewIntegrityEvent.findMany({ where: { interviewId: interview.id, attempt: interview.attempt }, orderBy: { occurredAt: 'asc' } }),
   ])
   const summary = summarizeIntegrity(revealEvents(events))
 

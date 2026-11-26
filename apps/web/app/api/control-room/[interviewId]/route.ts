@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { interviewId:
   const [live, events, recording] = await Promise.all([
     prisma.interviewLiveState.findUnique({ where: { interviewId: interview.id } }),
     prisma.interviewIntegrityEvent.findMany({
-      where: { interviewId: interview.id }, orderBy: { occurredAt: 'desc' }, take: 40,
+      where: { interviewId: interview.id, attempt: interview.attempt }, orderBy: { occurredAt: 'desc' }, take: 40,
       select: { id: true, type: true, occurredAt: true, confidence: true, detail: true, durationMs: true, meta: true },
     }).then(revealEvents),
     prisma.interviewRecording.findUnique({ where: { interviewId: interview.id }, select: { id: true } }),

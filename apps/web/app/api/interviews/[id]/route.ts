@@ -9,6 +9,9 @@ import { openArray, sealJson } from '@/lib/screen/privacy/fields'
 import { purgeMediaFor } from '@/lib/screen/privacy/retention'
 import { logWithdrawal } from '@/lib/screen/privacy/consent'
 import { readCapturePolicy } from '@/lib/screen/privacy/policy'
+import { archiveAttempt, linkKeyError } from '@/lib/screen/recovery/server'
+import { recoveryState, retakePolicy, maxSelfRetakes } from '@/lib/screen/recovery/state'
+import { sanitizeFacts } from '@/lib/screen/session/facts'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +27,10 @@ const PUBLIC_SELECT = {
   id: true, candidateId: true, positionId: true, status: true, isDemo: true,
   scheduledAt: true, startedAt: true, completedAt: true, duration: true,
   agentOnline: true, candidateJoined: true, consentGiven: true, mediaConsentGiven: true, createdAt: true,
+  // Recovery (resend / retake / reschedule) + sandbox. inviteKey and
+  // sandboxConfig are read server-side and never echoed raw.
+  terminationReason: true, attempt: true, isSandbox: true, sandboxConfig: true, inviteKey: true,
+  liveState: { select: { lastBeatAt: true } },
   candidate: { select: { id: true, name: true, email: true, status: true, topSkills: true, uploadedAt: true } },
   position: {
     select: {
@@ -65,7 +72,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
     const interview = await prisma.interview.findUnique({ where: { id: params.id }, select: PUBLIC_SELECT })
     if (!interview) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(withEffectiveDuration(interview))
+    // A re-issued link supersedes older ones (legacy links without a key stay valid).
+    const keyErr = linkKeyError(interview.inviteKey, req)
+    if (keyErr) return NextResponse.json(keyErr, { status: 410 })
+    const { inviteKey: _k, sandboxConfig, liveState, ...rest } = interview
+    void _k
+    const state = recoveryState({ status: interview.status, terminationReason: interview.terminationReason, lastBeatAt: liveState?.lastBeatAt, startedAt: interview.startedAt })
+    const selfRetakesUsed = state === 'interrupted' || state === 'terminated'
+      ? await prisma.interviewAttempt.count({ where: { interviewId: interview.id, retakeMode: 'self' } }) : 0
+    return NextResponse.json(withEffectiveDuration({
+      ...rest,
+      recovery: { state, selfRetake: retakePolicy() === 'self' && selfRetakesUsed < maxSelfRetakes() },
+      // Sandbox only: the candidate context the admin seeded (same facts state the engine keeps).
+      ...(interview.isSandbox ? { sandbox: { facts: sanitizeFacts((sandboxConfig as { facts?: unknown } | null)?.facts), label: (sandboxConfig as { label?: string } | null)?.label ?? null } } : {}),
+    }))
   } catch (err) {
     console.error('GET /api/interviews/[id] error:', err)
     return NextResponse.json({ error: 'Failed to fetch interview' }, { status: 500 })
@@ -96,7 +116,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const current = await prisma.interview.findUnique({
       where: { id: params.id },
-      select: { status: true, isDemo: true, consentGiven: true, mediaConsentGiven: true, consentWithdrawnAt: true, position: { select: { agencyId: true } } },
+      select: { status: true, isDemo: true, startedAt: true, consentGiven: true, mediaConsentGiven: true, consentWithdrawnAt: true, position: { select: { agencyId: true } } },
     })
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isRecruiter = !!session && current.position.agencyId === session.agencyId
@@ -122,6 +142,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // report is generated, tracked and retried from scratch — not hidden behind
     // the old one.
     if (data.status === 'in_progress' && current.status !== 'in_progress') {
+      // Attempt history: a session that already ran (e.g. reset by a recruiter
+      // and started again) is ARCHIVED first — never silently overwritten.
+      if (current.startedAt && !current.isDemo) {
+        await archiveAttempt(params.id, { actor: isRecruiter ? session!.email : 'candidate', mode: 'recruiter', reason: 'Interview was reset and started again', keepVerification: true })
+      }
       Object.assign(data, { completedAt: null, terminationReason: null, reportStatus: null, reportError: null, reportAttempts: 0, reportUpdatedAt: null })
     }
     if (body.startedAt !== undefined) data.startedAt = isoDate(body.startedAt)

@@ -7,6 +7,7 @@ import { buildInviteEmail } from '@/lib/screen/recruiter/invite-email'
 import { sendWhatsAppInvite } from '@/lib/whatsappService'
 import { generateAvailableSlots, formatSlotLabel } from '@/lib/slots'
 import { appUrl } from '@/lib/screen/app-url'
+import { withKey } from '@/lib/screen/recovery/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,9 +70,9 @@ export async function POST(req: NextRequest) {
 
     // 2. Scheduling URL — candidate picks their slot here first
     const baseUrl       = appUrl()
-    const schedulingUrl = `${baseUrl}/schedule/${interview.id}`
+    const schedulingUrl = withKey(`${baseUrl}/schedule/${interview.id}`, interview.inviteKey)
     // Direct join URL (used in confirmation email after scheduling)
-    const joinUrl       = `${baseUrl}/interview/${interview.id}`
+    const joinUrl       = withKey(`${baseUrl}/interview/${interview.id}`, interview.inviteKey)
 
     console.log('[send-invite] schedulingUrl:', schedulingUrl)
     console.log('[send-invite] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY)
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     const emailConfigured = !!process.env.RESEND_API_KEY
     // Recruiter-editable template: position override → agency → default.
     // Variables are substituted + HTML-escaped server-side (invite-template.ts).
-    const email = buildInviteEmail({ interviewId: interview.id, candidateName: candidate.name, position: candidate.position, agency })
+    const email = buildInviteEmail({ interviewId: interview.id, candidateName: candidate.name, position: candidate.position, agency, inviteKey: interview.inviteKey })
     if (emailConfigured) {
       await sendEmail({
         to:      candidate.email,

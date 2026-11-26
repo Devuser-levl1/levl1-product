@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
           isDemo: false,
         },
         select: {
-          id: true, isDemo: true, startedAt: true, duration: true,
+          id: true, isDemo: true, startedAt: true, duration: true, attempt: true,
           candidate: { select: { id: true, name: true } },
           position: { select: { id: true, title: true, company: true } },
           liveState: {
@@ -55,11 +55,10 @@ export async function GET(req: NextRequest) {
       prisma.interview.findMany({
         where: { ...scope, isDemo: false, status: 'completed', completedAt: { gte: new Date(now - RECENT_ENDED_MS) } },
         select: {
-          id: true, completedAt: true, terminationReason: true,
+          id: true, completedAt: true, terminationReason: true, attempt: true,
           candidate: { select: { name: true } },
           position: { select: { title: true, company: true } },
           recording: { select: { id: true } },
-          _count: { select: { integrityEvents: true } },
         },
         orderBy: { completedAt: 'desc' },
         take: 12,
@@ -67,18 +66,27 @@ export async function GET(req: NextRequest) {
     ])
 
     const ids = interviews.map((i) => i.id)
-    const [allFlags, recentFlags] = ids.length
-      ? await Promise.all([
-          prisma.interviewIntegrityEvent.groupBy({
-            by: ['interviewId'], where: { interviewId: { in: ids }, type: { in: HIGH_TYPES } }, _count: { _all: true },
-          }),
-          prisma.interviewIntegrityEvent.groupBy({
-            by: ['interviewId', 'type'],
-            where: { interviewId: { in: ids }, occurredAt: { gte: new Date(now - RECENT_WINDOW_MS) } },
-            _count: { _all: true },
-          }),
-        ])
-      : [[], []]
+    // Integrity counts are per CURRENT attempt — a retake never shows the
+    // interrupted attempt's flags as its own (they stay in the attempt history).
+    const attemptOf = new Map<string, number>([...interviews, ...recentlyEnded].map((i) => [i.id, i.attempt]))
+    const current = <T extends { interviewId: string; attempt: number }>(g: T) => g.attempt === attemptOf.get(g.interviewId)
+    const endedIds = recentlyEnded.map((r) => r.id)
+    const [allFlagsRaw, recentFlagsRaw, endedCountsRaw] = await Promise.all([
+      ids.length ? prisma.interviewIntegrityEvent.groupBy({
+        by: ['interviewId', 'attempt'], where: { interviewId: { in: ids }, type: { in: HIGH_TYPES } }, _count: { _all: true },
+      }) : [],
+      ids.length ? prisma.interviewIntegrityEvent.groupBy({
+        by: ['interviewId', 'attempt', 'type'],
+        where: { interviewId: { in: ids }, occurredAt: { gte: new Date(now - RECENT_WINDOW_MS) } },
+        _count: { _all: true },
+      }) : [],
+      endedIds.length ? prisma.interviewIntegrityEvent.groupBy({
+        by: ['interviewId', 'attempt'], where: { interviewId: { in: endedIds } }, _count: { _all: true },
+      }) : [],
+    ])
+    const allFlags = allFlagsRaw.filter(current)
+    const recentFlags = recentFlagsRaw.filter(current)
+    const endedCount = new Map(endedCountsRaw.filter(current).map((g) => [g.interviewId, g._count._all]))
 
     const totalBy = new Map(allFlags.map((g) => [g.interviewId, g._count._all]))
     const recentBy = new Map<string, { type: string; count: number }[]>()
@@ -128,7 +136,7 @@ export async function GET(req: NextRequest) {
       recentlyEnded: recentlyEnded.map((r) => ({
         id: r.id, candidate: r.candidate.name, position: r.position.title, company: r.position.company,
         completedAt: r.completedAt, terminationReason: r.terminationReason,
-        hasRecording: !!r.recording, integrityEvents: r._count.integrityEvents,
+        hasRecording: !!r.recording, integrityEvents: endedCount.get(r.id) ?? 0,
       })),
     })
   } catch (err) {

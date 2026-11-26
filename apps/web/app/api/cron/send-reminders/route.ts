@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/emailService'
 import { sendWhatsAppReminder } from '@/lib/whatsappService'
 import { appUrl } from '@/lib/screen/app-url'
+import { withKey } from '@/lib/screen/recovery/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +53,7 @@ async function run(req: NextRequest) {
           : null
 
         const joinUrl = meta.joinUrl
-          ?? (candidate?.interview ? `${baseUrl}/interview/${candidate.interview.id}` : baseUrl)
+          ?? (candidate?.interview ? withKey(`${baseUrl}/interview/${candidate.interview.id}`, candidate.interview.inviteKey) : baseUrl)
 
         // Email reminder
         if (email.to && process.env.RESEND_API_KEY) {

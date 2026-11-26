@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { sendEmail, confirmationEmailHtml } from '@/lib/emailService'
 import { appUrl } from '@/lib/screen/app-url'
+import { withKey } from '@/lib/screen/recovery/server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
     // The interview room is /interview/{id} (same link the self-booked
     // confirmation sends). /candidate/interview/* expects a one-time TOKEN, so
     // the interview id there was an "invalid link" for every candidate.
-    const interviewUrl = `${baseUrl}/interview/${interview.id}`
+    const interviewUrl = withKey(`${baseUrl}/interview/${interview.id}`, interview.inviteKey)
 
     await sendEmail({
       to: candidate.email,

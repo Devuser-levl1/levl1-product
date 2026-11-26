@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { summarizeIntegrity } from '@/lib/screen/integrity/summary'
 import { getSessionFromRequest } from '@/lib/auth'
+import { isAdmin } from '@/lib/adminAuth'
 import { openArray, openText, revealEvents } from '@/lib/screen/privacy/fields'
 import { digest, type TimelineEvent } from '@/lib/screen/workspace/timeline'
 import { sanitizeTask } from '@/lib/screen/workspace/task'
@@ -39,7 +40,10 @@ export async function GET(
 
     // Recruiter-only, agency-scoped. Demo-gallery runs stay public — the
     // anonymous prospect who just took the demo views their own report.
-    if (!interview.isDemo) {
+    // Sandbox runs (internal test tool) are visible to platform admins only.
+    if (interview.isSandbox) {
+      if (!isAdmin(req)) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
+    } else if (!interview.isDemo) {
       const session = getSessionFromRequest(req)
       if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
       if (interview.candidate?.position?.agencyId !== session.agencyId) {
@@ -108,7 +112,9 @@ export async function GET(
       } : null,
       // Tier-1 proctoring summary (Build 01-A) — evidence-linked, human-review
       // routed, SEPARATE from the competency score. Build 04 styles this panel.
-      integrity: summarizeIntegrity(revealEvents(interview.integrityEvents)),
+      // Current attempt only: a retake's report never inherits the interrupted
+      // attempt's events (those stay visible in the attempt history).
+      integrity: summarizeIntegrity(revealEvents(interview.integrityEvents.filter((e) => e.attempt === interview.attempt))),
       // Culture/values fit (Build 08) — SEPARATE axis, never blended into competency.
       cultureFit: interview.cultureFit
         ? { fitScore: interview.cultureFit.fitScore, summary: interview.cultureFit.summary, responses: interview.cultureFit.responses }
@@ -137,6 +143,7 @@ export async function GET(
       // Demo run (Build 05) — drives the report's conversion gating + hiding the
       // integrity panel when no integrity data was captured.
       isDemo: interview.isDemo,
+      attempt: interview.attempt,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch report'

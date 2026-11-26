@@ -4,6 +4,8 @@ import { bookSlot } from '@/lib/screen/scheduling/booking'
 import { sendBookingEmail } from '@/lib/screen/scheduling/emails'
 import { appUrl } from '@/lib/screen/app-url'
 import { earliestSlotStart } from '@/lib/screen/scheduling/config'
+import { linkKeyError, replaceReminders, withKey } from '@/lib/screen/recovery/server'
+import { recoveryState } from '@/lib/screen/recovery/state'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,10 +21,14 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
 
     const interview = await prisma.interview.findUnique({
       where: { id: params.interviewId },
-      include: { candidate: true, position: { include: { agency: true } } },
+      include: { candidate: true, position: { include: { agency: true } }, liveState: { select: { lastBeatAt: true } } },
     })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
-    if (interview.status === 'completed') return NextResponse.json({ error: 'This interview has already been completed' }, { status: 409 })
+    const keyErr = linkKeyError(interview.inviteKey, req)
+    if (keyErr) return NextResponse.json({ ...keyErr, error: 'This link has been replaced by a newer one. Please use the most recent link sent to you.' }, { status: 410 })
+    // Never touch an interview that has started (live, interrupted or done).
+    const rs = recoveryState({ status: interview.status, terminationReason: interview.terminationReason, lastBeatAt: interview.liveState?.lastBeatAt, startedAt: interview.startedAt })
+    if (rs !== 'not_started' && rs !== 'cancelled') return NextResponse.json({ error: rs === 'completed' || rs === 'withdrawn' ? 'This interview has already been completed' : 'This interview has already been started, so its time can no longer be changed.', state: rs }, { status: 409 })
     // Consent soft-gate: must be acknowledged before a slot can be confirmed.
     if (!interview.consentGiven) return NextResponse.json({ error: 'Please acknowledge the consent notice before booking.', needsConsent: true }, { status: 403 })
     // Lead-time floor (config, default 0 = today's remaining slots are bookable).
@@ -43,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
     await prisma.candidate.update({ where: { id: interview.candidateId }, data: { status: 'scheduled', scheduledAt } })
 
     const baseUrl = appUrl()
-    const joinUrl = `${baseUrl}/interview/${interview.id}`
+    const joinUrl = withKey(`${baseUrl}/interview/${interview.id}`, interview.inviteKey)
 
     await sendBookingEmail('confirm', {
       interviewId: interview.id, candidateName: interview.candidate.name, candidateEmail: interview.candidate.email,
@@ -52,16 +58,9 @@ export async function POST(req: NextRequest, { params }: { params: { interviewId
       start: booked.start, end: booked.end, joinUrl,
     }).catch((e) => console.error('[schedule/confirm] notify failed:', e))
 
-    // Reminder records (a cron sends these).
-    const m24 = new Date(scheduledAt.getTime() - 24 * 3600_000)
-    const m15 = new Date(scheduledAt.getTime() - 15 * 60_000)
-    // Only reminders that are still ahead — a same-day booking must not trigger
-    // an immediate "interview tomorrow" email from the cron.
-    const reminders = [
-      { to: interview.candidate.email, subject: `Reminder: Interview tomorrow — ${interview.position.title}`, type: '24hr_reminder', scheduledAt: m24, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
-      { to: interview.candidate.email, subject: `Your interview starts in 15 minutes — ${interview.position.title}`, type: '15min_reminder', scheduledAt: m15, candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', metadata: { joinUrl } },
-    ].filter((r) => r.scheduledAt.getTime() > Date.now())
-    if (reminders.length) await prisma.scheduledEmail.createMany({ data: reminders }).catch(() => {})
+    // Reminder records (a cron sends these). Replaces any earlier ones, and only
+    // reminders still ahead are created (no instant "tomorrow" email same-day).
+    await replaceReminders({ candidateId: interview.candidateId, agencyId: interview.position.agencyId ?? '', email: interview.candidate.email, positionTitle: interview.position.title, scheduledAt, joinUrl })
 
     return NextResponse.json({ success: true, scheduledAt: scheduledAt.toISOString(), joinUrl })
   } catch (err) {

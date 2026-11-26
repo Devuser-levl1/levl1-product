@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/adminAuth'
 import { PLANS } from '@/lib/plans'
+import { INTERNAL_AGENCY_NAMES } from '@/lib/screen/sandbox/run'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,9 +17,11 @@ export async function GET(req: NextRequest) {
 
   try {
     const [agencies, interviewsTotal, recent] = await Promise.all([
-      prisma.agency.findMany({ select: { plan: true } }),
-      prisma.interview.count(),
+      // Real customers + real interviews only (demo gallery and sandbox runs excluded).
+      prisma.agency.findMany({ where: { name: { notIn: INTERNAL_AGENCY_NAMES } }, select: { plan: true } }),
+      prisma.interview.count({ where: { isDemo: false } }),
       prisma.interview.findMany({
+        where: { isDemo: false },
         take: 10,
         orderBy: { createdAt: 'desc' },
         select: {

@@ -1,6 +1,7 @@
 import { renderInviteEmail, resolveTemplate } from './invite-template'
 import { effectiveInterviewMinutes } from '@/lib/screen/session/duration'
 import { appUrl } from '@/lib/screen/app-url'
+import { candidateLinks } from '@/lib/screen/recovery/state'
 
 // Server-side: build the candidate invite for an interview from the
 // recruiter's template (position override → agency → default). Used by every
@@ -13,10 +14,11 @@ export function buildInviteEmail(opts: {
   candidateName: string
   position: TemplateFields & { title: string; company: string; interviewDuration: number | null; isDemo?: boolean | null }
   agency: TemplateFields & { name: string; senderName: string | null }
+  /** Set once a link has been re-issued — links then carry ?k= (older ones stop working). */
+  inviteKey?: string | null
 }) {
   const baseUrl = appUrl()
-  const schedulingUrl = `${baseUrl}/schedule/${opts.interviewId}`
-  const joinUrl = `${baseUrl}/interview/${opts.interviewId}`
+  const { schedulingUrl, joinUrl } = candidateLinks(baseUrl, opts.interviewId, opts.inviteKey)
   const name = opts.candidateName.trim()
   return renderInviteEmail(resolveTemplate(opts.position, opts.agency), {
     candidate_name: name,

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Resolve interview + the per-tier AI-assist cost toggle (Position.aiAssistCheck).
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { id: true, position: { select: { aiAssistCheck: true } }, candidate: { select: { currentTitle: true } } },
+      select: { id: true, attempt: true, position: { select: { aiAssistCheck: true } }, candidate: { select: { currentTitle: true } } },
     })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     // Correlate with Build-01 focus events: did the candidate leave the window
     // just before answering? Strengthens latency/paste signals.
     const recentBlur = await prisma.interviewIntegrityEvent.findFirst({
-      where: { interviewId, type: { in: ['tab_switch', 'window_blur'] }, occurredAt: { gte: new Date(now - BLUR_LOOKBACK_MS) } },
+      where: { interviewId, attempt: interview.attempt, type: { in: ['tab_switch', 'window_blur'] }, occurredAt: { gte: new Date(now - BLUR_LOOKBACK_MS) } },
       orderBy: { occurredAt: 'desc' }, select: { occurredAt: true },
     })
     const precedingBlurMs = recentBlur ? now - recentBlur.occurredAt.getTime() : null
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       }
       await prisma.interviewIntegrityEvent.createMany({
         data: flags.map((f) => ({
-          interviewId, type: f.type, confidence: f.confidence, detail: f.rationale,
+          interviewId, attempt: interview.attempt, type: f.type, confidence: f.confidence, detail: f.rationale,
           meta: { ...f.meta, ...qCtx } as Prisma.InputJsonValue,
         })),
       })

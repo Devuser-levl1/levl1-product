@@ -54,12 +54,13 @@ export async function POST(req: NextRequest) {
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { status: true, isDemo: true, completedAt: true, position: { select: { logistics: true, knockoutQuestions: true, voiceAccent: true, agency: { select: { voiceAccent: true } } } } },
+      select: { status: true, isDemo: true, isSandbox: true, completedAt: true, position: { select: { logistics: true, knockoutQuestions: true, voiceAccent: true, agency: { select: { voiceAccent: true } } } } },
     })
     if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
     const live = interview.status === 'in_progress'
       || (interview.status === 'completed' && interview.completedAt && Date.now() - interview.completedAt.getTime() < FINAL_GRACE_MS)
-    if (!live || interview.isDemo) return NextResponse.json({ error: 'not_available' }, { status: 409 })
+    // Demo runs skip logistics; sandbox runs exercise the production flow.
+    if (!live || (interview.isDemo && !interview.isSandbox)) return NextResponse.json({ error: 'not_available' }, { status: 409 })
 
     const cfg = readLogisticsConfig(interview.position.logistics)
     // Recruiter knockout questions (#14) — asked verbatim at the end of the

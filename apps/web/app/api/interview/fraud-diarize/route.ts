@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { id: true, isDemo: true, status: true, completedAt: true, mediaConsentGiven: true, consentWithdrawnAt: true },
+      select: { id: true, isDemo: true, isSandbox: true, attempt: true, status: true, completedAt: true, mediaConsentGiven: true, consentWithdrawnAt: true },
     })
     if (!interview) return NextResponse.json({ error: 'interview not found' }, { status: 404 })
     if (!interview.isDemo && (!interview.mediaConsentGiven || interview.consentWithdrawnAt)) {
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       await prisma.interviewIntegrityEvent.createMany({
         data: segments.map((s) => ({
           interviewId,
+          attempt: interview.attempt,
           type: 'second_voice',
           occurredAt: now,
           durationMs: Math.round((s.endSec - s.startSec) * 1000),

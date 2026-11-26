@@ -17,7 +17,7 @@ export async function findScopedInterview(interviewId: string, agencyId: string)
   return prisma.interview.findFirst({
     where: { id: interviewId, position: { agencyId } },
     select: {
-      id: true, status: true, isDemo: true, startedAt: true, completedAt: true, duration: true,
+      id: true, status: true, isDemo: true, startedAt: true, completedAt: true, duration: true, attempt: true,
       actualDuration: true, terminationReason: true, transcript: true,
       candidate: { select: { id: true, name: true, email: true } },
       position: { select: { id: true, title: true, company: true } },

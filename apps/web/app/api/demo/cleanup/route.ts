@@ -17,10 +17,11 @@ export async function POST(req: NextRequest) {
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      select: { id: true, isDemo: true, candidateId: true, positionId: true },
+      select: { id: true, isDemo: true, isSandbox: true, candidateId: true, positionId: true },
     })
     // Guard: only ever delete a genuinely-demo session.
-    if (!interview || !interview.isDemo) return NextResponse.json({ ok: true, deleted: false })
+    // Admin sandbox runs have their own lifecycle (reviewed after the run).
+    if (!interview || !interview.isDemo || interview.isSandbox) return NextResponse.json({ ok: true, deleted: false })
 
     await deleteDemoSession(interview.candidateId, interview.positionId, interview.id)
     return NextResponse.json({ ok: true, deleted: true })

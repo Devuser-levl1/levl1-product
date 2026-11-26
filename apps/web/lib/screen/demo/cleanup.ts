@@ -25,7 +25,8 @@ export async function deleteDemoSession(candidateId: string, positionId: string,
 export async function sweepStaleDemoData(ttlMinutes = 60) {
   const cutoff = new Date(Date.now() - ttlMinutes * 60_000)
   const stale = await prisma.interview.findMany({
-    where: { isDemo: true, createdAt: { lt: cutoff } },
+    // Sandbox runs (also isDemo) have their own, longer TTL — see lib/screen/sandbox.
+    where: { isDemo: true, isSandbox: false, createdAt: { lt: cutoff } },
     select: { id: true, candidateId: true, positionId: true },
   })
   for (const iv of stale) await deleteDemoSession(iv.candidateId, iv.positionId, iv.id)

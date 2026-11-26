@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/adminAuth'
 import { PLANS } from '@/lib/plans'
+import { INTERNAL_AGENCY_NAMES } from '@/lib/screen/sandbox/run'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const agencies = await prisma.agency.findMany({
+      // Internal demo / sandbox agencies are not customers.
+      where: { name: { notIn: INTERNAL_AGENCY_NAMES } },
       orderBy: { createdAt: 'desc' },
       include: {
         users: { select: { lastLoginAt: true } },
