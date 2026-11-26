@@ -11,7 +11,7 @@ import { Prisma } from '@prisma/client'
 import { reconcileMustHaves } from '@/lib/screen/recruiter/must-haves'
 import { reconcileConcepts, sanitizeConceptRubric } from '@/lib/screen/position-config'
 import { appUrl } from '@/lib/screen/app-url'
-import { markReport, serverReportInput } from '@/lib/screen/report/pipeline'
+import { claimReport, markReport, serverReportInput } from '@/lib/screen/report/pipeline'
 import { readSelection, TIER_INFO } from '@/lib/screen/rubrics/types'
 import { applyTierVerdict, reconcileRubricResults, type RubricAssessment } from '@/lib/screen/rubrics/scoring'
 
@@ -76,7 +76,14 @@ export async function POST(req: NextRequest) {
     if (!interviewId) {
       return NextResponse.json({ error: 'interviewId is required' }, { status: 400 })
     }
-    await markReport(interviewId, 'generating', null, true)
+    // Idempotent: one generation at a time per interview. The room, the server
+    // safety net and a recruiter's "Retry" can all ask; only one runs, and a
+    // duplicate gets 409 instead of a second (paid) scoring call.
+    const claim = await claimReport(interviewId)
+    if (claim === 'busy') {
+      console.info(JSON.stringify({ evt: 'report_already_generating', interviewId }))
+      return NextResponse.json({ error: 'already_generating', interviewId }, { status: 409 })
+    }
 
     // Recruiter-marked must-have requirements for this position (Screen F3).
     // Recruiter-marked must-haves (F3) + the JD-derived concept rubric (#13).

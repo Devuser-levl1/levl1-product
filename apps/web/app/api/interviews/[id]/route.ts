@@ -11,6 +11,7 @@ import { logWithdrawal } from '@/lib/screen/privacy/consent'
 import { readCapturePolicy } from '@/lib/screen/privacy/policy'
 import { archiveAttempt, linkKeyError } from '@/lib/screen/recovery/server'
 import { recoveryState, retakePolicy, maxSelfRetakes } from '@/lib/screen/recovery/state'
+import { ensureReportAutomation, syncCandidateStage } from '@/lib/screen/report/lifecycle'
 import { sanitizeFacts } from '@/lib/screen/session/facts'
 
 export const dynamic = 'force-dynamic'
@@ -116,7 +117,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const current = await prisma.interview.findUnique({
       where: { id: params.id },
-      select: { status: true, isDemo: true, startedAt: true, consentGiven: true, mediaConsentGiven: true, consentWithdrawnAt: true, position: { select: { agencyId: true } } },
+      select: { status: true, isDemo: true, startedAt: true, terminationReason: true, consentGiven: true, mediaConsentGiven: true, consentWithdrawnAt: true, position: { select: { agencyId: true } } },
     })
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isRecruiter = !!session && current.position.agencyId === session.agencyId
@@ -150,6 +151,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       Object.assign(data, { completedAt: null, terminationReason: null, reportStatus: null, reportError: null, reportAttempts: 0, reportUpdatedAt: null })
     }
     if (body.startedAt !== undefined) data.startedAt = isoDate(body.startedAt)
+    // Completion is written ONCE: the room now persists it the moment wrap-up
+    // begins and again at the very end — the first time + reason stand.
+    const alreadyDone = current.status === 'completed' && !isRecruiter
+    if (alreadyDone) { delete body.completedAt; if (current.terminationReason) delete body.terminationReason }
     if (body.completedAt !== undefined) data.completedAt = isoDate(body.completedAt)
     if (body.consentWithdrawnAt !== undefined) data.consentWithdrawnAt = isoDate(body.consentWithdrawnAt)
     if (typeof body.terminationReason === 'string' && TERMINATIONS.has(body.terminationReason)) data.terminationReason = body.terminationReason
@@ -171,6 +176,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data,
       select: { id: true, status: true, startedAt: true, completedAt: true, terminationReason: true },
     })
+    // Interview state → candidate pipeline stage + report (server-side, never
+    // dependent on the candidate's tab). Report generation itself is started by
+    // the room and guaranteed by the in-process safety net (lifecycle.ts).
+    if (data.status && data.status !== current.status && !current.isDemo) {
+      await syncCandidateStage(params.id, data.status as string, (data.completedAt as Date | undefined) ?? new Date())
+    }
+    ensureReportAutomation()
     // Consent withdrawn → captured media is deleted now, not at the next purge.
     if (data.consentWithdrawnAt && !current.consentWithdrawnAt) {
       await purgeMediaFor(params.id).catch((e) => console.error('[interviews/patch] media purge on withdrawal failed:', e instanceof Error ? e.message : e))

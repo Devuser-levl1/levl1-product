@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runReportSweep } from '@/lib/screen/report/sweep'
 import { runRetentionPurge } from '@/lib/screen/privacy/retention'
 import { runSolveSweep } from '@/lib/screen/solve/sweep'
+import { reconcileStages, alertMissingReports } from '@/lib/screen/report/lifecycle'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -23,6 +24,9 @@ async function run(req: NextRequest) {
   }
   try {
     const result = await runReportSweep({ limit: 10 })
+    // Same safety net as the in-process loop: stuck stages + missing-report alerts.
+    const stages = await reconcileStages().catch(() => null)
+    const alerts = await alertMissingReports().catch(() => null)
     // Same scheduler also enforces captured-data retention (privacy build).
     const retention = await runRetentionPurge().catch((e) => {
       console.error('[cron/report-sweep] retention purge failed:', e instanceof Error ? e.message : e)
@@ -33,7 +37,7 @@ async function run(req: NextRequest) {
       console.error('[cron/report-sweep] solve sweep failed:', e instanceof Error ? e.message : e)
       return null
     })
-    return NextResponse.json({ ok: true, ...result, retention, solve })
+    return NextResponse.json({ ok: true, ...result, stages, alerts, retention, solve })
   } catch (err) {
     console.error('[cron/report-sweep]', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'sweep_failed' }, { status: 500 })

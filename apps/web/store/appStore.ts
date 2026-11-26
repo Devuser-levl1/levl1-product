@@ -43,6 +43,10 @@ export interface Candidate {
   remindersSent?: number
   interviewId?: string
   reportGenerated?: boolean
+  // Server report pipeline state (generating | ready | failed) — shown on the card so a
+  // missing report is never silent.
+  reportStatus?: string | null
+  reportError?: string | null
   reportGeneratedAt?: string
   isDemo?: boolean   // public-gallery demo run — never shown in a real agency's UI
 }

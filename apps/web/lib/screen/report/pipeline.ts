@@ -13,14 +13,35 @@ import { isScoredSegment } from '@/lib/screen/session/closing'
 
 export type ReportStatus = 'generating' | 'ready' | 'failed'
 
-/** After this many failed attempts the sweep stops retrying; the recruiter can still retry manually. */
-export const MAX_AUTO_ATTEMPTS = 3
+/** After this many failed attempts the sweep stops retrying; the recruiter can still retry manually.
+ *  With the backoff below, 6 attempts span ~2.5 hours — enough to ride out a model / billing outage
+ *  (2026-11-12: three back-to-back failures on "credit balance too low" exhausted the old limit of 3). */
+export const MAX_AUTO_ATTEMPTS = 6
+/** Wait before retrying a FAILED report: 5, 10, 20, 40, 60… minutes. */
+export const retryBackoffMs = (attempts: number) => Math.min(60, 5 * 2 ** Math.max(0, attempts - 1)) * 60_000
 /** Don't race the live client: the room starts its own generation right after the closing line. */
 const SETTLE_MS = 3 * 60_000
 /** A 'generating' row older than this is treated as dead (process restarted mid-call). */
 const STUCK_MS = 10 * 60_000
 /** An in_progress interview with no heartbeat for this long was abandoned (tab closed, etc). */
 const ABANDON_MS = 20 * 60_000
+
+/**
+ * Atomically claim report generation for an interview (idempotency): succeeds
+ * unless another generation is already running (status 'generating' updated
+ * within STUCK_MS). Returns 'claimed' | 'busy' | 'unknown' (no such interview —
+ * legacy callers keyed by candidate id; they proceed unclaimed as before).
+ */
+export async function claimReport(interviewId: string): Promise<'claimed' | 'busy' | 'unknown'> {
+  const now = new Date()
+  const r = await prisma.interview.updateMany({
+    where: { id: interviewId, OR: [{ reportStatus: null }, { reportStatus: { not: 'generating' } }, { reportUpdatedAt: null }, { reportUpdatedAt: { lt: new Date(now.getTime() - STUCK_MS) } }] },
+    data: { reportStatus: 'generating', reportError: null, reportUpdatedAt: now, reportAttempts: { increment: 1 } },
+  }).catch(() => ({ count: 0 }))
+  if (r.count === 1) return 'claimed'
+  const exists = await prisma.interview.findUnique({ where: { id: interviewId }, select: { id: true } }).catch(() => null)
+  return exists ? 'busy' : 'unknown'
+}
 
 export async function markReport(interviewId: string, status: ReportStatus, error?: string | null, countAttempt = false) {
   try {
@@ -116,18 +137,21 @@ export async function findPendingReports(opts: { agencyId?: string; limit?: numb
       candidate: { report: null },
       reportAttempts: { lt: MAX_AUTO_ATTEMPTS },
     },
-    select: { id: true, reportStatus: true, reportUpdatedAt: true },
+    select: { id: true, reportStatus: true, reportUpdatedAt: true, reportAttempts: true },
     orderBy: { completedAt: 'asc' },
-    take: opts.limit ?? 5,
+    take: 50,
   })
   // 3. RETAKES: the candidate still has the previous attempt's report, so
   //    "report: null" misses a retake whose own report failed. A report older
   //    than the interview's latest completion is stale → regenerate.
   const stale2 = await staleReportInterviews({ ...opts, minAgeMs: SETTLE_MS, maxAttempts: MAX_AUTO_ATTEMPTS })
-  const ids = new Set(rows
-    .filter((r) => r.reportStatus !== 'generating' || !r.reportUpdatedAt || now - r.reportUpdatedAt.getTime() > STUCK_MS)
-    .map((r) => r.id))
-  for (const s of stale2) if (s.reportStatus !== 'generating' || !s.reportUpdatedAt || now - s.reportUpdatedAt.getTime() > STUCK_MS) ids.add(s.id)
+  // A failed report waits out its backoff before the next automatic attempt.
+  const due = (r: { reportStatus: string | null; reportUpdatedAt: Date | null; reportAttempts: number }) =>
+    r.reportStatus === 'generating' ? (!r.reportUpdatedAt || now - r.reportUpdatedAt.getTime() > STUCK_MS)
+      : r.reportStatus === 'failed' ? (!r.reportUpdatedAt || now - r.reportUpdatedAt.getTime() > retryBackoffMs(r.reportAttempts))
+      : true
+  const ids = new Set(rows.filter(due).map((r) => r.id))
+  for (const s of stale2) if (due(s)) ids.add(s.id)
   return Array.from(ids).slice(0, opts.limit ?? 5)
 }
 

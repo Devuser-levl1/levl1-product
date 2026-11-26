@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recruiterAccess } from '@/lib/screen/recruiter/access'
 import { MAX_AUTO_ATTEMPTS, staleReportInterviews } from '@/lib/screen/report/pipeline'
+import { ensureReportAutomation } from '@/lib/screen/report/lifecycle'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic'
 // pipeline status, so the Reports page can show "Generating…" / "Report failed"
 // instead of nothing. Fixpack 6 #3.
 export async function GET(req: NextRequest) {
+  ensureReportAutomation()
   const access = recruiterAccess(req)
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status })
   const rows = await prisma.interview.findMany({

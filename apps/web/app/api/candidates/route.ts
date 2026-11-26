@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { ensureReportAutomation } from '@/lib/screen/report/lifecycle'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,13 +10,14 @@ export async function GET(req: Request) {
     const session = getSessionFromRequest(req as never)
     if (!session) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
+    ensureReportAutomation()   // keep the completion → report/stage safety net running
     const candidates = await prisma.candidate.findMany({
       where: {
         position: { agencyId: session.agencyId },
       },
       include: {
         position: { select: { id: true, title: true, company: true } },
-        interview: { select: { id: true, status: true } },
+        interview: { select: { id: true, status: true, reportStatus: true, reportError: true } },
         report: { select: { id: true } },
       },
       orderBy: { uploadedAt: 'desc' },

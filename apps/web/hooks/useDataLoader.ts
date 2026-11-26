@@ -86,6 +86,8 @@ export function useDataLoader() {
               invitedAt: c.invitedAt,
               interviewId: c.interview?.id,
               reportGenerated: !!c.report,
+              reportStatus: c.interview?.reportStatus ?? null,
+              reportError: c.interview?.reportError ?? null,
             })),
           )
         }

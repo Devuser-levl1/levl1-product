@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sanitizeHeartbeat } from '@/lib/screen/control-room/live'
 import { sealJson, sealText } from '@/lib/screen/privacy/fields'
+import { ensureReportAutomation } from '@/lib/screen/report/lifecycle'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const interviewId = typeof body.interviewId === 'string' ? body.interviewId.trim() : ''
+    ensureReportAutomation()   // the completion → report/stage safety net runs whenever interviews are live
     if (!interviewId) return NextResponse.json({ error: 'interviewId required' }, { status: 400 })
 
     const interview = await prisma.interview.findUnique({

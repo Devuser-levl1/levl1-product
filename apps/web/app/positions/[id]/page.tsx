@@ -102,7 +102,7 @@ interface Position {
   createdAt: string
   questionSet?: QuestionSet
   candidates?: Candidate[]
-  interviews?: { id: string; candidateId: string }[]
+  interviews?: { id: string; candidateId: string; status?: string; reportStatus?: string | null; reportError?: string | null }[]
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -472,9 +472,26 @@ export default function PositionDetailPage() {
             Invite
           </Button>
         )}
-        {c.status === 'completed' && (
-          <Button variant="secondary" size="sm" leftIcon={<FileText size={14} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
-        )}
+        {c.status === 'completed' && (() => {
+          // Fail loud: a completed interview whose report failed says so, with a retry.
+          const iv = position?.interviews?.find((x) => x.candidateId === c.id)
+          if (iv && iv.reportStatus === 'failed' && c.score === undefined) {
+            return (
+              <>
+                <Badge tone="danger" title={iv.reportError ?? undefined}>Report failed</Badge>
+                <Button variant="secondary" size="sm" onClick={async () => {
+                  const r = await fetch('/api/generate-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interviewId: iv.id, candidateId: c.id }) }).catch(() => null)
+                  if (r?.status === 409) toast('The report is already being generated.')
+                  else if (r?.ok) toast.success('Report generated')
+                  else toast.error('Report generation failed again. It will keep retrying automatically.')
+                  void refreshPosition()
+                }}>Retry report</Button>
+              </>
+            )
+          }
+          if (iv && iv.reportStatus === 'generating' && c.score === undefined) return <Badge tone="info">Generating report…</Badge>
+          return <Button variant="secondary" size="sm" leftIcon={<FileText size={14} />} onClick={() => router.push(`/reports/${id}`)}>Report</Button>
+        })()}
         {(() => {
           const ivId = position?.interviews?.find((iv) => iv.candidateId === c.id)?.id
           return ivId && c.status !== 'pending' ? (

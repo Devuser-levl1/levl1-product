@@ -392,6 +392,20 @@ export default function InterviewPage() {
   const interview = interviews.find(i => i.id === interviewId)
   const candidate = interview ? candidates.find(c => c.id === interview.candidateId) : null
   const position  = interview ? positions.find(p => p.id === interview.positionId) : null
+  // Always-current session entities, read from the store at CALL time. Several
+  // callbacks are memoized on the first render (before the DB load hydrates the
+  // store) and are reached through chains of other memoized callbacks; reading
+  // the closure there saw null and silently skipped the report
+  // (real-user bug 2026-11-26: interview completed, no report generated).
+  const liveSession = () => {
+    const st = useAppStore.getState()
+    const iv = st.interviews.find(i => i.id === interviewId)
+    return {
+      interview: iv ?? null,
+      candidate: iv ? st.candidates.find(c => c.id === iv.candidateId) ?? null : null,
+      position:  iv ? st.positions.find(p => p.id === iv.positionId) ?? null : null,
+    }
+  }
 
   const [dbLoading, setDbLoading] = useState(!interview)
   const [dbError,   setDbError]   = useState('')
@@ -2030,8 +2044,12 @@ export default function InterviewPage() {
 
   // ── Generate report (called fire-and-forget after interview ends) ──
   const generateReport = useCallback(async () => {
-    if (!candidate || !position || !interview) {
-      console.warn('[generateReport] Missing data — candidate:', !!candidate, 'position:', !!position, 'interview:', !!interview)
+    const { candidate, position } = liveSession()
+    if (!candidate || !position) {
+      // Never skip silently: the server rebuilds the input from what it already
+      // persisted (heartbeat transcript + saved responses) for this interview.
+      console.error(JSON.stringify({ evt: 'report_client_missing_session', interviewId, candidate: !!candidate, position: !!position }))
+      fetch('/api/generate-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interviewId }), keepalive: true }).catch(() => {})
       return
     }
 
@@ -2083,6 +2101,9 @@ export default function InterviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(payload),
         })
+        // 409 = a generation for this interview is already running (server
+        // safety net or a retry) — that's the report being made, not a failure.
+        if (res.status === 409) { console.info('[generateReport] already generating on the server'); return true }
         if (!res.ok) {
           const errBody = await res.text().catch(() => '(unreadable)')
           console.error('[generateReport] HTTP', res.status, errBody)
@@ -2126,7 +2147,7 @@ export default function InterviewPage() {
     stopAndUploadFraudRecording()  // ship audio for post-interview diarization
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
 
-    const firstName = candidate?.name.split(' ')[0] || 'there'
+    const firstName = liveSession().candidate?.name.split(' ')[0] || 'there'
     const closing = reason === TERMINATION_REASONS.CONSENT_WITHDRAWN
       ? `Understood, ${firstName}. I'm stopping the interview now, and your withdrawal of consent has been recorded. Thank you for your time.`
       : `Understood, ${firstName}. We'll end the interview here as you've asked. Thank you for your time — the team will follow up on next steps.`
@@ -2135,7 +2156,7 @@ export default function InterviewPage() {
 
     setPhase('completed')
     stopListening()
-    if (interview) updateInterview(interview.id, { status: 'completed', candidateJoined: true })
+    { const ivNow = liveSession().interview; if (ivNow) updateInterview(ivNow.id, { status: 'completed', candidateJoined: true }) }
     fetch(`/api/interviews/${interviewId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2160,7 +2181,16 @@ export default function InterviewPage() {
       wrapUpFiredRef.current = true
     }
     setPhase('closing')
-    const firstName = candidate?.name.split(' ')[0] || 'there'
+    const firstName = liveSession().candidate?.name.split(' ')[0] || 'there'
+
+    // The scored interview is over the moment wrap-up begins: persist completion
+    // NOW (the server keeps the first completion + reason, moves the candidate
+    // to Completed and guarantees a report) — so a candidate who closes the tab
+    // during the closing questions never leaves it "in progress".
+    fetch(`/api/interviews/${interviewId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+      body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString(), terminationReason: TERMINATION_REASONS.COMPLETED, questionResponses: responsesRef.current }),
+    }).catch(() => {})
 
     // #4 (real-user bug): no more abrupt end. wrap-up signal → "any questions for
     // me?" → honest answers (no invented specifics) → sign-off. Runs on a normal
@@ -2279,11 +2309,12 @@ export default function InterviewPage() {
     stopListening()
     stopAndUploadFraudRecording()  // ship audio for post-interview diarization
 
-    updateCandidate(interview?.candidateId ?? '', {
+    const { interview: ivNow } = liveSession()
+    updateCandidate(ivNow?.candidateId ?? '', {
       status: 'completed',
       score: runningScore > 0 ? runningScore : 72,
     })
-    if (interview) updateInterview(interview.id, { status: 'completed', candidateJoined: true })
+    if (ivNow) updateInterview(ivNow.id, { status: 'completed', candidateJoined: true })
 
     // Save completion to DB
     fetch(`/api/interviews/${interviewId}`, {

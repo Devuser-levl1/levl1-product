@@ -118,7 +118,10 @@ function CandidateCard({
           roleType: (position as unknown as Record<string, string>)?.roleType ?? '',
         }),
       });
-      if (res.ok) {
+      if (res.status === 409) {
+        toast('The report is already being generated. It will appear shortly.');
+        updateCandidate(candidate.id, { reportStatus: 'generating' });
+      } else if (res.ok) {
         toast.success('Report generated!');
         updateCandidate(candidate.id, { reportGenerated: true });
         router.push(`/report/${candidate.interviewId}`);
@@ -238,9 +241,19 @@ function CandidateCard({
       {/* ── View / Generate Report (completed candidates) ── */}
       {isCompleted && candidate.interviewId && (
         <div style={divider}>
+          {/* Fail loud: a missing report says why and offers a retry. */}
+          {!candidate.reportGenerated && candidate.reportStatus === 'failed' && (
+            <div role="alert" style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: text.xs, color: lv.danger, marginBottom: 6 }}>
+              <AlertTriangle size={12} aria-hidden="true" style={{ marginTop: 2, flexShrink: 0 }} />
+              <span>Report generation failed{candidate.reportError ? `: ${candidate.reportError.slice(0, 90)}` : ""}. Retry below; it is also retried automatically.</span>
+            </div>
+          )}
+          {!candidate.reportGenerated && candidate.reportStatus === 'generating' && (
+            <div aria-live="polite" style={{ fontSize: text.xs, color: lv.textMuted, marginBottom: 6 }}>Report is being generated…</div>
+          )}
           <Button variant="secondary" size="sm" fullWidth onClick={handleGenerateReport} loading={generatingReport}
             leftIcon={<FileText size={14} />}>
-            {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : "Generate Report"}
+            {generatingReport ? "Generating…" : candidate.reportGenerated ? "View Report" : candidate.reportStatus === 'failed' ? "Retry report" : "Generate Report"}
           </Button>
         </div>
       )}
